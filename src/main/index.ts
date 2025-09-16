@@ -163,6 +163,14 @@ function setupCoreHandlers(): void {
     return await openCodeService?.ensureBinary()
   })
 
+  // Core API - Direct OpenCode SDK usage
+  ipcMain.handle('core:prompt', async (_, text: string) => {
+    if (!core) {
+      throw new Error('Core not initialized')
+    }
+    return await core.prompt(text)
+  })
+
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common

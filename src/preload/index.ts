@@ -15,6 +15,10 @@ const api = {
     getServiceStatus: (serviceName: string): Promise<any> =>
       ipcRenderer.invoke('core:get-service-status', serviceName),
 
+    // Core OpenCode SDK API
+    prompt: (text: string): Promise<string> =>
+      ipcRenderer.invoke('core:prompt', text),
+
 
     // Events
     onServiceStatusChange: (callback: (data: any) => void): (() => void) => {

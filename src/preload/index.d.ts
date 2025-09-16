@@ -61,6 +61,9 @@ export interface CoreAPI {
   stopService: (serviceName: string) => Promise<void>
   getServiceStatus: (serviceName: string) => Promise<ServiceStatus>
 
+  // Core OpenCode SDK API
+  prompt: (text: string) => Promise<string>
+
 
   // Events
   onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void) => () => void
