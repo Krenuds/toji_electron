@@ -9,7 +9,9 @@
       "Bash(npm:*)",
       "Bash(cat:*)",
       "Bash(rm:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git add:*)",
+      "Read(//c/Users/donth/OneDrive/Desktop/**)"
     ],
     "deny": [],
     "ask": []

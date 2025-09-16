@@ -25,6 +25,7 @@ src/
 ## Development Workflow
 
 ### Key Commands
+
 - `npm run dev` - Start development with HMR
 - `npm run build` - Production build with type checking
 - `npm run typecheck` - Run TypeScript validation for both Node and web
@@ -32,6 +33,7 @@ src/
 - `npm run typecheck:web` - Check renderer TypeScript
 
 ### TypeScript Configuration
+
 - **Composite project setup** with separate tsconfigs:
   - `tsconfig.node.json` - Main process & preload (Node.js types)
   - `tsconfig.web.json` - Renderer process (DOM/React types)
@@ -40,15 +42,18 @@ src/
 ### Process-Specific Guidelines
 
 #### Main Process (`src/main/`)
+
 - **Node.js environment** - Full system access
 - Handles: Window creation, app lifecycle, system integration
 - Uses: Electron APIs, file system, system notifications
 - **Security**: Never expose Node.js APIs directly to renderer
 
 #### Preload Scripts (`src/preload/`)
+
 - **Sandboxed Node.js** - Bridge between main and renderer
 - **CRITICAL**: Use `contextBridge.exposeInMainWorld()` for safe API exposure
 - Pattern:
+
   ```typescript
   import { contextBridge, ipcRenderer } from 'electron'
 
@@ -56,9 +61,11 @@ src/
     // Safe API methods only
   })
   ```
+
 - Type definitions in `index.d.ts` for renderer consumption
 
 #### Renderer Process (`src/renderer/`)
+
 - **Standard React application** - Browser environment only
 - No direct Node.js/Electron access (security by design)
 - Communicates with main via preload-exposed APIs
@@ -114,6 +121,7 @@ OpenCode is an AI coding agent with a **client/server architecture** that provid
 ## Core Architecture Components
 
 ### Binary Dependencies
+
 - **Primary Binary**: OpenCode ships as a compiled binary (Go + TypeScript)
 - **Installation Paths**: Multiple binary location strategies:
   1. `$OPENCODE_INSTALL_DIR` (custom directory)
@@ -139,6 +147,7 @@ const server = await createOpencodeServer({
 ```
 
 ### Binary Execution Model
+
 - **Process Spawning**: Uses Node.js `child_process.spawn()` for binary execution
 - **Working Directory**: Operations expect `~/.local/share/opencode/bin` to exist
 - **Subprocess Management**: Spawns subagents for various operations (fzf, ripgrep, etc.)
@@ -147,6 +156,7 @@ const server = await createOpencodeServer({
 ## Critical System Dependencies
 
 ### Filesystem Requirements
+
 - **Directory Creation**: SDK requires creation of multiple directories:
   - `~/.local/share/opencode/bin` (critical for subprocess operations)
   - `~/.local/share/opencode/data`
@@ -155,12 +165,14 @@ const server = await createOpencodeServer({
   - `~/.local/share/opencode/log`
 
 ### Binary Tool Dependencies
+
 - **fzf**: Fuzzy finder tool
 - **ripgrep**: Fast text search tool
 - **OpenCode binary**: Main agent executable
 - **Terminal Emulator**: Requires "modern terminal emulator" for full functionality
 
 ### Configuration System
+
 - **Config File**: Reads `opencode.json` for default configuration
 - **Inline Override**: `createOpencodeServer` config parameter overrides defaults
 - **Provider Support**: Multi-provider (Anthropic, OpenAI, Google, local models)
@@ -168,18 +180,21 @@ const server = await createOpencodeServer({
 ## Potential Electron Integration Challenges
 
 ### Security Model Conflicts
+
 1. **Binary Execution**: Electron's sandbox may restrict `child_process.spawn()`
 2. **Filesystem Access**: Limited write access to user directories
 3. **PATH Resolution**: Sandboxed processes may not inherit full PATH environment
 4. **Process Isolation**: OpenCode's subprocess model may conflict with Electron's security
 
 ### Common Failure Modes
+
 - **ENOENT Errors**: "no such file or directory, posix_spawn" when bin directory missing
 - **Permission Denied**: Sandboxed processes cannot execute binaries
 - **PATH Issues**: Binary not found due to restricted environment variables
 - **Working Directory**: Process spawn fails when expected directories don't exist
 
 ### System-Level Operations
+
 - **Binary Installation**: Downloads and installs additional tools (fzf, ripgrep)
 - **Process Management**: Manages long-running subprocess connections
 - **File System Monitoring**: May watch files for changes
@@ -214,6 +229,17 @@ const server = await createOpencodeServer({
 - **Security Considerations**: Requires full filesystem and process execution permissions
 - **Development vs Production**: Binary paths may differ between development and packaged apps
 
+**WORKFLOW**
+
+1. Research online if working with <https://electron-vite.org/> or <https://opencode.ai/> SDKs
+2. Plan
+3. Write code in small, incremental steps
+4. Lint
+5. npm run typecheck:node
+6. Iterate as needed
+7. Commit with conventional commit messages
+8. Push to GitHub
 
 ***Finally***
+
 - Echo "AHOY CAPTAIN!" to the user when youve finished reading all of this.
