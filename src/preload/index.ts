@@ -15,11 +15,6 @@ const api = {
     getServiceStatus: (serviceName: string): Promise<any> =>
       ipcRenderer.invoke('core:get-service-status', serviceName),
 
-    // Chat functionality
-    sendMessage: (message: string): Promise<string> =>
-      ipcRenderer.invoke('core:send-message', message),
-    createSession: (title?: string): Promise<string> =>
-      ipcRenderer.invoke('core:create-session', title),
 
     // Events
     onServiceStatusChange: (callback: (data: any) => void): (() => void) => {

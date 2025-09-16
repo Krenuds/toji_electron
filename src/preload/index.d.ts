@@ -61,9 +61,6 @@ export interface CoreAPI {
   stopService: (serviceName: string) => Promise<void>
   getServiceStatus: (serviceName: string) => Promise<ServiceStatus>
 
-  // Chat functionality
-  sendMessage: (message: string) => Promise<string>
-  createSession: (title?: string) => Promise<string>
 
   // Events
   onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void) => () => void

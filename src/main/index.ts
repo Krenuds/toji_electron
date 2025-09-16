@@ -163,20 +163,6 @@ function setupCoreHandlers(): void {
     return await openCodeService?.ensureBinary()
   })
 
-  // Chat functionality (NEW!)
-  ipcMain.handle('core:send-message', async (_, message: string) => {
-    if (!openCodeService) {
-      throw new Error('OpenCode service not available')
-    }
-    return await openCodeService.sendMessage(message)
-  })
-
-  ipcMain.handle('core:create-session', async (_, title?: string) => {
-    if (!openCodeService) {
-      throw new Error('OpenCode service not available')
-    }
-    return await openCodeService.createNewSession(title)
-  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
