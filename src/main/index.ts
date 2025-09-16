@@ -10,8 +10,8 @@ let openCodeManager: OpenCodeManager | null = null
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 800,
+    height: 900,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -154,7 +154,7 @@ app.on('window-all-closed', async () => {
   if (openCodeManager) {
     await openCodeManager.cleanup()
   }
-  
+
   if (process.platform !== 'darwin') {
     app.quit()
   }

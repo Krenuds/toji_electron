@@ -9,12 +9,12 @@ const api = {
     getBinaryInfo: (): Promise<BinaryInfo> => ipcRenderer.invoke('opencode:get-binary-info'),
     downloadBinary: (): Promise<void> => ipcRenderer.invoke('opencode:download-binary'),
     ensureBinary: (): Promise<void> => ipcRenderer.invoke('opencode:ensure-binary'),
-    
+
     // Server Management
     startServer: (): Promise<ServerStatus> => ipcRenderer.invoke('opencode:start-server'),
     stopServer: (): Promise<void> => ipcRenderer.invoke('opencode:stop-server'),
     getServerStatus: (): Promise<ServerStatus> => ipcRenderer.invoke('opencode:get-server-status'),
-    
+
     // Configuration
     updateConfig: (config: Partial<OpenCodeConfig>): Promise<void> =>
       ipcRenderer.invoke('opencode:update-config', config),

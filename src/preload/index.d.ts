@@ -33,15 +33,15 @@ export interface OpenCodeAPI {
   getBinaryInfo: () => Promise<BinaryInfo>
   downloadBinary: () => Promise<void>
   ensureBinary: () => Promise<void>
-  
+
   // Server Management
   startServer: () => Promise<ServerStatus>
   stopServer: () => Promise<void>
   getServerStatus: () => Promise<ServerStatus>
-  
+
   // Configuration
   updateConfig: (config: Partial<OpenCodeConfig>) => Promise<void>
-  
+
   // Events
   onServerStatusChange: (callback: (status: ServerStatus) => void) => () => void
   onBinaryUpdate: (callback: (progress: BinaryProgress) => void) => () => void

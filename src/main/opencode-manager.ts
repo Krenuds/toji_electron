@@ -70,9 +70,27 @@ export class OpenCodeManager {
     process.env.OPENCODE_INSTALL_DIR = this.binDir
     process.env.XDG_DATA_HOME = this.dataDir
 
+    // CRITICAL: Set OPENCODE_BIN_PATH to tell SDK exactly where our binary is
+    const platform = process.platform
+    const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
+    const binaryPath = join(this.binDir, binaryName)
+    process.env.OPENCODE_BIN_PATH = binaryPath
+
+    // PATH fallback required - SDK spawns 'opencode' command via Node.js spawn()
+    const currentPath = process.env.PATH || ''
+    const pathSeparator = process.platform === 'win32' ? ';' : ':'
+    const pathIncludesBinDir = currentPath.includes(this.binDir)
+
+    if (!pathIncludesBinDir) {
+      process.env.PATH = this.binDir + pathSeparator + currentPath
+    }
+
     console.log('OpenCode environment configured:')
     console.log('  Binary directory:', this.binDir)
     console.log('  Data directory:', this.dataDir)
+    console.log('  OPENCODE_BIN_PATH:', process.env.OPENCODE_BIN_PATH)
+    console.log('  PATH already included binary dir:', pathIncludesBinDir)
+    console.log('  PATH now includes binary dir:', (process.env.PATH || '').includes(this.binDir))
   }
 
   async getBinaryInfo(): Promise<BinaryInfo> {
@@ -90,6 +108,25 @@ export class OpenCodeManager {
       try {
         const stats = await stat(binaryPath)
         info.version = `Size: ${stats.size} bytes, Modified: ${stats.mtime.toISOString()}`
+
+        // Check permissions on Unix systems
+        if (platform !== 'win32') {
+          const isExecutable = (stats.mode & parseInt('100', 8)) !== 0
+          console.log('Binary executable permission:', isExecutable)
+
+          if (!isExecutable) {
+            console.log('Fixing binary permissions...')
+            await chmod(binaryPath, '755')
+          }
+        }
+
+        console.log('Binary stats:', {
+          path: binaryPath,
+          size: stats.size,
+          mode: stats.mode.toString(8),
+          executable: platform === 'win32' || (stats.mode & parseInt('100', 8)) !== 0
+        })
+
       } catch (error) {
         console.warn('Could not read binary stats:', error)
       }
@@ -109,7 +146,7 @@ export class OpenCodeManager {
     // Platform and architecture mapping based on OpenCode repository
     const platformMap: Record<string, string> = {
       'win32': 'windows',
-      'darwin': 'darwin', 
+      'darwin': 'darwin',
       'linux': 'linux'
     }
 
@@ -124,7 +161,7 @@ export class OpenCodeManager {
 
     // For x64 architecture, we might need the baseline version for better compatibility
     const archSuffix = arch === 'x64' ? 'x64' : archMap[arch]
-    
+
     // Construct download URL based on actual OpenCode release structure
     // Format: opencode-{platform}-{arch}.zip
     const zipName = `opencode-${platformMap[platform]}-${archSuffix}.zip`
@@ -166,14 +203,14 @@ export class OpenCodeManager {
     const AdmZip = (await import('adm-zip')).default
     const zip = new AdmZip(zipPath)
     const { dirname, basename } = await import('path')
-    
+
     const entries = zip.getEntries()
     for (const entry of entries) {
       if (entry.entryName === 'opencode' || entry.entryName === 'opencode.exe') {
         // Extract to the directory, then rename to the final path
         const outputDir = dirname(outputPath)
         zip.extractEntryTo(entry, outputDir, false, true)
-        
+
         // If the extracted file has a different name, rename it
         const extractedPath = join(outputDir, entry.entryName)
         if (extractedPath !== outputPath) {
@@ -198,6 +235,36 @@ export class OpenCodeManager {
       // Ensure binary is available
       await this.ensureBinary()
 
+      // Debug: Verify binary exists and is executable
+      const platform = process.platform
+      const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
+      const binaryPath = join(this.binDir, binaryName)
+
+      console.log('Starting OpenCode server with:')
+      console.log('  Binary path:', binaryPath)
+      console.log('  Binary exists:', existsSync(binaryPath))
+      console.log('  OPENCODE_INSTALL_DIR:', process.env.OPENCODE_INSTALL_DIR)
+      console.log('  XDG_DATA_HOME:', process.env.XDG_DATA_HOME)
+
+      // Test if we can execute the binary directly
+      if (existsSync(binaryPath)) {
+        const { spawn } = await import('child_process')
+        console.log('Testing binary execution...')
+
+        const testProcess = spawn(binaryPath, ['--version'], {
+          stdio: 'pipe',
+          env: process.env
+        })
+
+        testProcess.on('error', (error) => {
+          console.error('Binary test failed:', error)
+        })
+
+        testProcess.on('exit', (code) => {
+          console.log('Binary test exit code:', code)
+        })
+      }
+
       // Create OpenCode server
       this.server = await createOpencodeServer({
         hostname: this.config.hostname,
@@ -218,7 +285,8 @@ export class OpenCodeManager {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Failed to start OpenCode server:', errorMessage)
-      
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+
       return {
         running: false,
         error: errorMessage

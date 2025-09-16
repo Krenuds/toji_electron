@@ -9,15 +9,7 @@ function App(): React.JSX.Element {
   return (
     <>
       <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Hi, I&#39;m Toji.</div>
-      <div className="text">
-        Your computer&nbsp;
-        <span className="react">everywhere</span>
-        &nbsp;with you.
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
+      <OpenCodePanel className="opencode-section" />
       <div className="actions">
         <div className="action"></div>
         <div className="action">
@@ -26,9 +18,6 @@ function App(): React.JSX.Element {
           </a>
         </div>
       </div>
-      
-      <OpenCodePanel className="opencode-section" />
-      
       <Versions></Versions>
     </>
   )
