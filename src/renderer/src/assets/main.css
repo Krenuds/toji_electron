@@ -47,4 +47,86 @@ code {
   filter: drop-shadow(0 0 1.2em #6988e6aa);
 }
 
+/* App Layout */
+.app-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--ev-c-bg-soft);
+  border-bottom: 1px solid var(--ev-c-divider);
+  gap: 1rem;
+}
+
+.app-header .logo {
+  width: 48px;
+  height: 48px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--ev-c-text-1);
+  font-weight: 600;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.left-panel {
+  width: 400px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--ev-c-divider);
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.opencode-section,
+.chat-section {
+  flex: 1;
+  margin: 0;
+}
+
+/* Update body to remove centering */
+body {
+  display: block;
+  overflow: auto;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .app-content {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--ev-c-divider);
+    flex: 0 0 50%;
+  }
+
+  .right-panel {
+    flex: 1;
+  }
+}
