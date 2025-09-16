@@ -124,7 +124,7 @@ export class OpenCodeService implements Service {
     return this.currentSession
   }
 
-  // Expose manager methods for backward compatibility
+  // Expose only installation/setup methods (not server management)
   getBinaryInfo() {
     return this.manager.getBinaryInfo()
   }
@@ -135,22 +135,6 @@ export class OpenCodeService implements Service {
 
   ensureBinary() {
     return this.manager.ensureBinary()
-  }
-
-  startServer() {
-    return this.manager.startServer()
-  }
-
-  stopServer() {
-    return this.manager.stopServer()
-  }
-
-  getServerStatus() {
-    return this.manager.getServerStatus()
-  }
-
-  checkHealth() {
-    return this.manager.checkHealth()
   }
 
   updateConfig(config: Partial<OpenCodeConfig>) {
