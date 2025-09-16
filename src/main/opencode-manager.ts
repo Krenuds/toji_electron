@@ -1,9 +1,10 @@
 import { app } from 'electron'
 import { join } from 'path'
 import { mkdirSync, existsSync } from 'fs'
-import { chmod, stat } from 'fs/promises'
+import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
+import { createServer } from 'net'
 import { createOpencodeServer } from '@opencode-ai/sdk'
 
 export interface OpenCodeConfig {
@@ -13,24 +14,22 @@ export interface OpenCodeConfig {
   timeout?: number
 }
 
-export interface BinaryInfo {
-  path: string
-  version?: string
-  installed: boolean
-  lastChecked: Date
-}
-
 export interface ServerStatus {
   running: boolean
   url?: string
   error?: string
+  healthy?: boolean
+  port?: number
+  pid?: number
+  lastHealthCheck?: Date
 }
 
 export class OpenCodeManager {
   private binDir: string
   private dataDir: string
-  private server: any = null
+  private server: { close: () => void } | null = null
   private config: OpenCodeConfig
+  private healthCheckInterval: NodeJS.Timeout | null = null
 
   constructor(config: OpenCodeConfig = {}) {
     this.config = {
@@ -41,7 +40,6 @@ export class OpenCodeManager {
       ...config
     }
 
-    // Setup paths using Electron's userData directory
     const userDataPath = app.getPath('userData')
     this.binDir = join(userDataPath, 'opencode-bin')
     this.dataDir = join(userDataPath, 'opencode-data')
@@ -50,89 +48,30 @@ export class OpenCodeManager {
   }
 
   private setupEnvironment(): void {
-    // Create all required directories for OpenCode SDK
-    const requiredDirs = [
-      this.binDir,
-      join(this.dataDir, 'bin'),    // SDK working directory
-      join(this.dataDir, 'data'),
-      join(this.dataDir, 'config'),
-      join(this.dataDir, 'state'),
-      join(this.dataDir, 'log')
-    ]
+    // Create binary directory for our downloaded OpenCode executable
+    if (!existsSync(this.binDir)) {
+      mkdirSync(this.binDir, { recursive: true })
+    }
 
-    requiredDirs.forEach(dir => {
-      if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true })
-      }
-    })
+    // WORKAROUND: Create bin/ directory due to OpenCode bug #1856
+    // https://github.com/sst/opencode/issues/1856
+    // OpenCode fails to create this directory but requires it for operations
+    const opencodeBindir = join(this.dataDir, 'bin')
+    if (!existsSync(opencodeBindir)) {
+      mkdirSync(opencodeBindir, { recursive: true })
+    }
 
-    // Set environment variables for OpenCode SDK
     process.env.OPENCODE_INSTALL_DIR = this.binDir
     process.env.XDG_DATA_HOME = this.dataDir
 
-    // CRITICAL: Set OPENCODE_BIN_PATH to tell SDK exactly where our binary is
-    const platform = process.platform
-    const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
-    const binaryPath = join(this.binDir, binaryName)
-    process.env.OPENCODE_BIN_PATH = binaryPath
+    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
+    process.env.OPENCODE_BIN_PATH = join(this.binDir, binaryName)
 
-    // PATH fallback required - SDK spawns 'opencode' command via Node.js spawn()
     const currentPath = process.env.PATH || ''
     const pathSeparator = process.platform === 'win32' ? ';' : ':'
-    const pathIncludesBinDir = currentPath.includes(this.binDir)
-
-    if (!pathIncludesBinDir) {
+    if (!currentPath.includes(this.binDir)) {
       process.env.PATH = this.binDir + pathSeparator + currentPath
     }
-
-    console.log('OpenCode environment configured:')
-    console.log('  Binary directory:', this.binDir)
-    console.log('  Data directory:', this.dataDir)
-    console.log('  OPENCODE_BIN_PATH:', process.env.OPENCODE_BIN_PATH)
-    console.log('  PATH already included binary dir:', pathIncludesBinDir)
-    console.log('  PATH now includes binary dir:', (process.env.PATH || '').includes(this.binDir))
-  }
-
-  async getBinaryInfo(): Promise<BinaryInfo> {
-    const platform = process.platform
-    const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
-    const binaryPath = join(this.binDir, binaryName)
-
-    const info: BinaryInfo = {
-      path: binaryPath,
-      installed: existsSync(binaryPath),
-      lastChecked: new Date()
-    }
-
-    if (info.installed) {
-      try {
-        const stats = await stat(binaryPath)
-        info.version = `Size: ${stats.size} bytes, Modified: ${stats.mtime.toISOString()}`
-
-        // Check permissions on Unix systems
-        if (platform !== 'win32') {
-          const isExecutable = (stats.mode & parseInt('100', 8)) !== 0
-          console.log('Binary executable permission:', isExecutable)
-
-          if (!isExecutable) {
-            console.log('Fixing binary permissions...')
-            await chmod(binaryPath, '755')
-          }
-        }
-
-        console.log('Binary stats:', {
-          path: binaryPath,
-          size: stats.size,
-          mode: stats.mode.toString(8),
-          executable: platform === 'win32' || (stats.mode & parseInt('100', 8)) !== 0
-        })
-
-      } catch (error) {
-        console.warn('Could not read binary stats:', error)
-      }
-    }
-
-    return info
   }
 
   async downloadBinary(): Promise<void> {
@@ -141,77 +80,57 @@ export class OpenCodeManager {
     const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
     const binaryPath = join(this.binDir, binaryName)
 
-    console.log('Downloading OpenCode binary...')
-
-    // Platform and architecture mapping based on OpenCode repository
     const platformMap: Record<string, string> = {
-      'win32': 'windows',
-      'darwin': 'darwin',
-      'linux': 'linux'
+      win32: 'windows',
+      darwin: 'darwin',
+      linux: 'linux'
     }
 
     const archMap: Record<string, string> = {
-      'x64': 'x64',
-      'arm64': 'arm64'
+      x64: 'x64',
+      arm64: 'arm64'
     }
 
     if (!platformMap[platform] || !archMap[arch]) {
       throw new Error(`Unsupported platform/architecture: ${platform}/${arch}`)
     }
 
-    // For x64 architecture, we might need the baseline version for better compatibility
     const archSuffix = arch === 'x64' ? 'x64' : archMap[arch]
-
-    // Construct download URL based on actual OpenCode release structure
-    // Format: opencode-{platform}-{arch}.zip
     const zipName = `opencode-${platformMap[platform]}-${archSuffix}.zip`
     const downloadUrl = `https://github.com/sst/opencode/releases/latest/download/${zipName}`
 
-    console.log('Download URL:', downloadUrl)
+    const response = await fetch(downloadUrl)
+    if (!response.ok) {
+      throw new Error(
+        `Failed to download OpenCode binary: ${response.status} ${response.statusText}`
+      )
+    }
 
-    try {
-      const response = await fetch(downloadUrl)
-      if (!response.ok) {
-        throw new Error(`Failed to download OpenCode binary: ${response.status} ${response.statusText}`)
-      }
+    const tempZipPath = join(this.binDir, 'opencode-temp.zip')
+    const fileStream = createWriteStream(tempZipPath)
+    await pipeline(response.body as ReadableStream, fileStream)
 
-      // Download the ZIP file to a temporary location
-      const tempZipPath = join(this.binDir, 'opencode-temp.zip')
-      const fileStream = createWriteStream(tempZipPath)
-      await pipeline(response.body as any, fileStream)
+    await this.extractBinary(tempZipPath, binaryPath)
 
-      // Extract the binary from the ZIP
-      await this.extractBinary(tempZipPath, binaryPath)
+    const fs = await import('fs/promises')
+    await fs.unlink(tempZipPath)
 
-      // Clean up the temporary ZIP file
-      const fs = await import('fs/promises')
-      await fs.unlink(tempZipPath)
-
-      // Make executable on Unix-like systems
-      if (platform !== 'win32') {
-        await chmod(binaryPath, '755')
-      }
-
-      console.log('OpenCode binary installed successfully!')
-    } catch (error) {
-      console.error('Failed to download OpenCode binary:', error)
-      throw error
+    if (platform !== 'win32') {
+      await chmod(binaryPath, '755')
     }
   }
 
   private async extractBinary(zipPath: string, outputPath: string): Promise<void> {
     const AdmZip = (await import('adm-zip')).default
     const zip = new AdmZip(zipPath)
-    const { dirname, basename } = await import('path')
+    const { dirname } = await import('path')
 
     const entries = zip.getEntries()
     for (const entry of entries) {
       if (entry.entryName === 'opencode' || entry.entryName === 'opencode.exe') {
-        // Extract to the directory, then rename to the final path
         const outputDir = dirname(outputPath)
         zip.extractEntryTo(entry, outputDir, false, true)
 
-        // If the extracted file has a different name, rename it
         const extractedPath = join(outputDir, entry.entryName)
         if (extractedPath !== outputPath) {
           const fs = await import('fs/promises')
@@ -224,48 +143,42 @@ export class OpenCodeManager {
   }
 
   async ensureBinary(): Promise<void> {
-    const info = await this.getBinaryInfo()
-    if (!info.installed) {
+    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
+    const binaryPath = join(this.binDir, binaryName)
+
+    if (!existsSync(binaryPath)) {
       await this.downloadBinary()
+    }
+  }
+
+  getBinaryInfo(): {
+    path: string
+    installed: boolean
+    lastChecked: Date
+  } {
+    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
+    const binaryPath = join(this.binDir, binaryName)
+
+    return {
+      path: binaryPath,
+      installed: existsSync(binaryPath),
+      lastChecked: new Date()
     }
   }
 
   async startServer(): Promise<ServerStatus> {
     try {
-      // Ensure binary is available
       await this.ensureBinary()
 
-      // Debug: Verify binary exists and is executable
-      const platform = process.platform
-      const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
-      const binaryPath = join(this.binDir, binaryName)
-
-      console.log('Starting OpenCode server with:')
-      console.log('  Binary path:', binaryPath)
-      console.log('  Binary exists:', existsSync(binaryPath))
-      console.log('  OPENCODE_INSTALL_DIR:', process.env.OPENCODE_INSTALL_DIR)
-      console.log('  XDG_DATA_HOME:', process.env.XDG_DATA_HOME)
-
-      // Test if we can execute the binary directly
-      if (existsSync(binaryPath)) {
-        const { spawn } = await import('child_process')
-        console.log('Testing binary execution...')
-
-        const testProcess = spawn(binaryPath, ['--version'], {
-          stdio: 'pipe',
-          env: process.env
-        })
-
-        testProcess.on('error', (error) => {
-          console.error('Binary test failed:', error)
-        })
-
-        testProcess.on('exit', (code) => {
-          console.log('Binary test exit code:', code)
-        })
+      // Check if port is already in use
+      if (await this.isPortInUse(this.config.port!)) {
+        return {
+          running: false,
+          error: `Port ${this.config.port} is already in use`,
+          healthy: false
+        }
       }
 
-      // Create OpenCode server
       this.server = await createOpencodeServer({
         hostname: this.config.hostname,
         port: this.config.port,
@@ -276,45 +189,127 @@ export class OpenCodeManager {
       })
 
       const url = `http://${this.config.hostname}:${this.config.port}`
-      console.log('OpenCode server started successfully at:', url)
+
+      // Wait a moment for server to fully start
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Perform initial health check
+      const healthy = await this.performHealthCheck()
+
+      if (!healthy) {
+        console.warn('Server started but initial health check failed')
+      }
+
+      // Start periodic health checking
+      this.startHealthChecking()
 
       return {
         running: true,
-        url
+        url,
+        healthy,
+        port: this.config.port,
+        lastHealthCheck: new Date()
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Failed to start OpenCode server:', errorMessage)
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+
+      // Clean up if server creation failed
+      this.server = null
 
       return {
         running: false,
-        error: errorMessage
+        error: errorMessage,
+        healthy: false
       }
     }
+  }
+
+  private async isPortInUse(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const server = createServer()
+
+      server.listen(port, '127.0.0.1', () => {
+        server.once('close', () => resolve(false))
+        server.close()
+      })
+
+      server.on('error', () => resolve(true))
+    })
   }
 
   async stopServer(): Promise<void> {
+    this.stopHealthChecking()
+
     if (this.server) {
-      try {
-        await this.server.close()
-        console.log('OpenCode server stopped')
-      } catch (error) {
-        console.error('Error stopping OpenCode server:', error)
-      } finally {
-        this.server = null
-      }
+      this.server.close()
+      this.server = null
     }
   }
 
-  getServerStatus(): ServerStatus {
+  private async performHealthCheck(): Promise<boolean> {
+    if (!this.server) return false
+
+    try {
+      const url = `http://${this.config.hostname}:${this.config.port}`
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 3000)
+
+      // Try a simple GET request to see if server responds
+      const response = await fetch(url, {
+        signal: controller.signal,
+        method: 'GET'
+      })
+
+      clearTimeout(timeout)
+      // Even if it returns 404, the server is responsive
+      return response.status !== undefined
+    } catch (error) {
+      console.warn('Health check failed:', error)
+      return false
+    }
+  }
+
+  private startHealthChecking(): void {
+    this.stopHealthChecking()
+
+    this.healthCheckInterval = setInterval(async () => {
+      if (this.server) {
+        const healthy = await this.performHealthCheck()
+        if (!healthy) {
+          console.warn('OpenCode server health check failed')
+          // Optionally emit event or take corrective action
+        }
+      }
+    }, 30000) // Check every 30 seconds
+  }
+
+  private stopHealthChecking(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval)
+      this.healthCheckInterval = null
+    }
+  }
+
+  async getServerStatus(): Promise<ServerStatus> {
     if (this.server) {
+      const healthy = await this.performHealthCheck()
       return {
         running: true,
-        url: `http://${this.config.hostname}:${this.config.port}`
+        url: `http://${this.config.hostname}:${this.config.port}`,
+        healthy,
+        port: this.config.port,
+        lastHealthCheck: new Date()
       }
     }
-    return { running: false }
+    return {
+      running: false,
+      healthy: false
+    }
+  }
+
+  async checkHealth(): Promise<boolean> {
+    return await this.performHealthCheck()
   }
 
   updateConfig(newConfig: Partial<OpenCodeConfig>): void {
@@ -322,6 +317,7 @@ export class OpenCodeManager {
   }
 
   async cleanup(): Promise<void> {
+    this.stopHealthChecking()
     await this.stopServer()
   }
 }

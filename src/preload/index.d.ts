@@ -10,7 +10,6 @@ export interface OpenCodeConfig {
 
 export interface BinaryInfo {
   path: string
-  version?: string
   installed: boolean
   lastChecked: Date
 }
@@ -19,6 +18,10 @@ export interface ServerStatus {
   running: boolean
   url?: string
   error?: string
+  healthy?: boolean
+  port?: number
+  pid?: number
+  lastHealthCheck?: Date
 }
 
 export interface BinaryProgress {
@@ -38,6 +41,7 @@ export interface OpenCodeAPI {
   startServer: () => Promise<ServerStatus>
   stopServer: () => Promise<void>
   getServerStatus: () => Promise<ServerStatus>
+  checkHealth: () => Promise<boolean>
 
   // Configuration
   updateConfig: (config: Partial<OpenCodeConfig>) => Promise<void>

@@ -137,7 +137,13 @@ function setupOpenCodeHandlers(): void {
   })
 
   ipcMain.handle('opencode:get-server-status', async () => {
-    return openCodeManager!.getServerStatus()
+    return await openCodeManager!.getServerStatus()
+  })
+
+  // Health check
+  ipcMain.handle('opencode:health-check', async () => {
+    if (!openCodeManager) return false
+    return await openCodeManager.checkHealth()
   })
 
   // Configuration
@@ -150,13 +156,38 @@ function setupOpenCodeHandlers(): void {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', async () => {
+  console.log('All windows closed, cleaning up OpenCode manager...')
+
   // Cleanup OpenCode manager before quitting
   if (openCodeManager) {
-    await openCodeManager.cleanup()
+    try {
+      await openCodeManager.cleanup()
+      console.log('OpenCode manager cleanup completed')
+    } catch (error) {
+      console.error('Error during OpenCode cleanup:', error)
+    }
   }
 
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+// Handle application quit events
+app.on('before-quit', async (event) => {
+  if (openCodeManager) {
+    event.preventDefault()
+    console.log('App is quitting, cleaning up OpenCode manager...')
+
+    try {
+      await openCodeManager.cleanup()
+      console.log('OpenCode cleanup completed, quitting app')
+    } catch (error) {
+      console.error('Error during OpenCode cleanup:', error)
+    } finally {
+      openCodeManager = null
+      app.quit()
+    }
   }
 })
 

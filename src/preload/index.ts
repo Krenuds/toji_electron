@@ -14,6 +14,7 @@ const api = {
     startServer: (): Promise<ServerStatus> => ipcRenderer.invoke('opencode:start-server'),
     stopServer: (): Promise<void> => ipcRenderer.invoke('opencode:stop-server'),
     getServerStatus: (): Promise<ServerStatus> => ipcRenderer.invoke('opencode:get-server-status'),
+    checkHealth: (): Promise<boolean> => ipcRenderer.invoke('opencode:health-check'),
 
     // Configuration
     updateConfig: (config: Partial<OpenCodeConfig>): Promise<void> =>
@@ -21,10 +22,8 @@ const api = {
 
     // Events
     onServerStatusChange: (callback: (status: ServerStatus) => void): (() => void) => {
-      const subscription = (
-        _event: IpcRendererEvent,
-        status: ServerStatus
-      ): void => callback(status)
+      const subscription = (_event: IpcRendererEvent, status: ServerStatus): void =>
+        callback(status)
       ipcRenderer.on('opencode:server-status-changed', subscription)
       return (): void => {
         ipcRenderer.removeListener('opencode:server-status-changed', subscription)
@@ -32,10 +31,8 @@ const api = {
     },
 
     onBinaryUpdate: (callback: (progress: BinaryProgress) => void): (() => void) => {
-      const subscription = (
-        _event: IpcRendererEvent,
-        progress: BinaryProgress
-      ): void => callback(progress)
+      const subscription = (_event: IpcRendererEvent, progress: BinaryProgress): void =>
+        callback(progress)
       ipcRenderer.on('opencode:binary-update', subscription)
       return (): void => {
         ipcRenderer.removeListener('opencode:binary-update', subscription)

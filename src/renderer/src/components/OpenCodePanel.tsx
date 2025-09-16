@@ -3,15 +3,18 @@ import React, { useState, useEffect } from 'react'
 // Types (duplicated here to avoid import issues in renderer)
 interface BinaryInfo {
   path: string
-  version?: string
-  installed: boolean
   lastChecked: Date
+  installed: boolean
 }
 
 interface ServerStatus {
   running: boolean
   url?: string
   error?: string
+  healthy?: boolean
+  port?: number
+  pid?: number
+  lastHealthCheck?: Date
 }
 
 interface BinaryProgress {
@@ -102,6 +105,22 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
     }
   }
 
+  const handleRefreshStatus = async (): Promise<void> => {
+    if (isLoading) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const status = await window.api.opencode.getServerStatus()
+      setServerStatus(status)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh server status')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleStopServer = async (): Promise<void> => {
     if (isLoading) return
 
@@ -123,11 +142,19 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
         <div className="status-indicator">
           <span
             className={`status-dot ${
-              serverStatus?.running ? 'status-running' : 'status-stopped'
+              serverStatus?.running
+                ? serverStatus.healthy
+                  ? 'status-running'
+                  : 'status-unhealthy'
+                : 'status-stopped'
             }`}
           />
           <span className="status-text">
-            {serverStatus?.running ? 'Running' : 'Stopped'}
+            {serverStatus?.running
+              ? serverStatus.healthy
+                ? 'Running (Healthy)'
+                : 'Running (Unhealthy)'
+              : 'Stopped'}
           </span>
         </div>
       </div>
@@ -135,11 +162,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
       {error && (
         <div className="error-message">
           <strong>Error:</strong> {error}
-          <button
-            type="button"
-            className="error-dismiss"
-            onClick={() => setError(null)}
-          >
+          <button type="button" className="error-dismiss" onClick={() => setError(null)}>
             ×
           </button>
         </div>
@@ -159,10 +182,6 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
               <div className="info-row">
                 <span className="label">Path:</span>
                 <span className="value path">{binaryInfo.path}</span>
-              </div>
-              <div className="info-row">
-                <span className="label">Version:</span>
-                <span className="value">{binaryInfo.version || 'Unknown'}</span>
               </div>
             </>
           )}
@@ -186,10 +205,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
             </div>
             {progress.progress !== undefined && (
               <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${progress.progress}%` }}
-                />
+                <div className="progress-fill" style={{ width: `${progress.progress}%` }} />
               </div>
             )}
           </div>
@@ -197,12 +213,45 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
       </div>
 
       <div className="opencode-section">
-        <h3>Server Control</h3>
+        <div className="section-header">
+          <h3>Server Control</h3>
+          <button
+            type="button"
+            className="refresh-button"
+            onClick={handleRefreshStatus}
+            disabled={isLoading}
+            title="Refresh server status"
+          >
+            🔄
+          </button>
+        </div>
         <div className="server-info">
           {serverStatus?.running && serverStatus.url && (
             <div className="info-row">
               <span className="label">URL:</span>
               <span className="value url">{serverStatus.url}</span>
+            </div>
+          )}
+          {serverStatus?.port && (
+            <div className="info-row">
+              <span className="label">Port:</span>
+              <span className="value">{serverStatus.port}</span>
+            </div>
+          )}
+          {serverStatus?.running && (
+            <div className="info-row">
+              <span className="label">Health Status:</span>
+              <span className={`value ${serverStatus.healthy ? 'healthy' : 'unhealthy'}`}>
+                {serverStatus.healthy ? 'Healthy' : 'Unhealthy'}
+              </span>
+            </div>
+          )}
+          {serverStatus?.lastHealthCheck && (
+            <div className="info-row">
+              <span className="label">Last Health Check:</span>
+              <span className="value">
+                {new Date(serverStatus.lastHealthCheck).toLocaleTimeString()}
+              </span>
             </div>
           )}
           {serverStatus?.error && (
