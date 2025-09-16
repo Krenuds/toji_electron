@@ -1,4 +1,5 @@
 import { OpenCodePanel } from './components/OpenCodePanel'
+import { SimpleChatTerminal } from './components/SimpleChatTerminal'
 import electronLogo from './assets/toji.png'
 import './assets/opencode.css'
 
@@ -11,7 +12,13 @@ function App(): React.JSX.Element {
       </div>
 
       <div className="app-content">
-        <OpenCodePanel className="opencode-section" />
+        <div className="left-panel">
+          <OpenCodePanel className="opencode-section" />
+        </div>
+
+        <div className="right-panel">
+          <SimpleChatTerminal className="chat-section" />
+        </div>
       </div>
     </div>
   )
