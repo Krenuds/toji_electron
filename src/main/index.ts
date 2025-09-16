@@ -2,10 +2,11 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { OpenCodeManager } from './opencode-manager'
+import { Core } from './core/core'
+import { OpenCodeService } from './services/opencode-service'
 
-// Global OpenCode manager instance
-let openCodeManager: OpenCodeManager | null = null
+// Global Core instance
+let core: Core | null = null
 
 function createWindow(): void {
   // Create the browser window.
@@ -43,17 +44,20 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  // Initialize OpenCode manager
-  openCodeManager = new OpenCodeManager({
+  // Initialize Core and services
+  core = new Core()
+
+  const openCodeService = new OpenCodeService({
     model: 'anthropic/claude-3-5-sonnet-20241022',
     hostname: '127.0.0.1',
     port: 4096
   })
 
-  console.log('OpenCode manager initialized')
+  core.registerService(openCodeService)
+  console.log('Core initialized with OpenCode service')
 
-  // Set up IPC handlers for OpenCode
-  setupOpenCodeHandlers()
+  // Set up IPC handlers for Core
+  setupCoreHandlers()
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
@@ -75,13 +79,56 @@ app.whenReady().then(async () => {
   })
 })
 
-// Setup IPC handlers for OpenCode functionality
-function setupOpenCodeHandlers(): void {
-  if (!openCodeManager) return
+// Setup IPC handlers for Core functionality
+function setupCoreHandlers(): void {
+  if (!core) return
 
-  // Binary management
+  // Core status and service management
+  ipcMain.handle('core:get-status', async () => {
+    return core!.getAllStatus()
+  })
+
+  ipcMain.handle('core:start-service', async (_, serviceName: string) => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    try {
+      await core!.startService(serviceName)
+      if (mainWindow) {
+        mainWindow.webContents.send('core:service-status-changed', {
+          service: serviceName,
+          status: core!.getServiceStatus(serviceName)
+        })
+      }
+    } catch (error) {
+      if (mainWindow) {
+        mainWindow.webContents.send('core:service-error', {
+          service: serviceName,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+      throw error
+    }
+  })
+
+  ipcMain.handle('core:stop-service', async (_, serviceName: string) => {
+    await core!.stopService(serviceName)
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.send('core:service-status-changed', {
+        service: serviceName,
+        status: core!.getServiceStatus(serviceName)
+      })
+    }
+  })
+
+  ipcMain.handle('core:get-service-status', async (_, serviceName: string) => {
+    return core!.getServiceStatus(serviceName)
+  })
+
+  // OpenCode-specific methods (delegated through core)
+  const openCodeService = core.getService<OpenCodeService>('opencode')
+
   ipcMain.handle('opencode:get-binary-info', async () => {
-    return await openCodeManager!.getBinaryInfo()
+    return await openCodeService?.getBinaryInfo()
   })
 
   ipcMain.handle('opencode:download-binary', async () => {
@@ -94,7 +141,7 @@ function setupOpenCodeHandlers(): void {
     }
 
     try {
-      await openCodeManager!.downloadBinary()
+      await openCodeService?.downloadBinary()
       if (mainWindow) {
         mainWindow.webContents.send('opencode:binary-update', {
           stage: 'complete',
@@ -113,40 +160,22 @@ function setupOpenCodeHandlers(): void {
   })
 
   ipcMain.handle('opencode:ensure-binary', async () => {
-    return await openCodeManager!.ensureBinary()
+    return await openCodeService?.ensureBinary()
   })
 
-  // Server management
-  ipcMain.handle('opencode:start-server', async () => {
-    const status = await openCodeManager!.startServer()
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    if (mainWindow) {
-      mainWindow.webContents.send('opencode:server-status-changed', status)
+  // Chat functionality (NEW!)
+  ipcMain.handle('core:send-message', async (_, message: string) => {
+    if (!openCodeService) {
+      throw new Error('OpenCode service not available')
     }
-    return status
+    return await openCodeService.sendMessage(message)
   })
 
-  ipcMain.handle('opencode:stop-server', async () => {
-    await openCodeManager!.stopServer()
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    if (mainWindow) {
-      mainWindow.webContents.send('opencode:server-status-changed', { running: false })
+  ipcMain.handle('core:create-session', async (_, title?: string) => {
+    if (!openCodeService) {
+      throw new Error('OpenCode service not available')
     }
-  })
-
-  ipcMain.handle('opencode:get-server-status', async () => {
-    return await openCodeManager!.getServerStatus()
-  })
-
-  // Health check
-  ipcMain.handle('opencode:health-check', async () => {
-    if (!openCodeManager) return false
-    return await openCodeManager.checkHealth()
-  })
-
-  // Configuration
-  ipcMain.handle('opencode:update-config', async (_, config) => {
-    openCodeManager!.updateConfig(config)
+    return await openCodeService.createNewSession(title)
   })
 }
 
@@ -154,15 +183,18 @@ function setupOpenCodeHandlers(): void {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', async () => {
-  console.log('All windows closed, cleaning up OpenCode manager...')
+  console.log('All windows closed, cleaning up services...')
 
-  // Cleanup OpenCode manager before quitting
-  if (openCodeManager) {
+  // Cleanup services before quitting
+  if (core) {
     try {
-      await openCodeManager.cleanup()
-      console.log('OpenCode manager cleanup completed')
+      const openCodeService = core.getService<OpenCodeService>('opencode')
+      if (openCodeService) {
+        await openCodeService.cleanup()
+      }
+      console.log('Services cleanup completed')
     } catch (error) {
-      console.error('Error during OpenCode cleanup:', error)
+      console.error('Error during services cleanup:', error)
     }
   }
 
@@ -173,17 +205,20 @@ app.on('window-all-closed', async () => {
 
 // Handle application quit events
 app.on('before-quit', async (event) => {
-  if (openCodeManager) {
+  if (core) {
     event.preventDefault()
-    console.log('App is quitting, cleaning up OpenCode manager...')
+    console.log('App is quitting, cleaning up services...')
 
     try {
-      await openCodeManager.cleanup()
-      console.log('OpenCode cleanup completed, quitting app')
+      const openCodeService = core.getService<OpenCodeService>('opencode')
+      if (openCodeService) {
+        await openCodeService.cleanup()
+      }
+      console.log('Services cleanup completed, quitting app')
     } catch (error) {
-      console.error('Error during OpenCode cleanup:', error)
+      console.error('Error during services cleanup:', error)
     } finally {
-      openCodeManager = null
+      core = null
       app.quit()
     }
   }

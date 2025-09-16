@@ -39,12 +39,22 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
   useEffect(() => {
     const loadData = async (): Promise<void> => {
       try {
-        const [info, status] = await Promise.all([
-          window.api.opencode.getBinaryInfo(),
-          window.api.opencode.getServerStatus()
-        ])
+        // Use new Core API to get service status
+        const coreStatus = await window.api.core.getStatus()
+        const openCodeServiceStatus = coreStatus.services.opencode
+
+        // Use backward compatibility for binary info
+        const info = await window.api.opencode.getBinaryInfo()
         setBinaryInfo(info)
-        setServerStatus(status)
+
+        // Convert Core service status to our ServerStatus format
+        const serverStatus: ServerStatus = {
+          running: openCodeServiceStatus.running,
+          healthy: openCodeServiceStatus.healthy,
+          error: openCodeServiceStatus.error,
+          lastHealthCheck: openCodeServiceStatus.lastCheck
+        }
+        setServerStatus(serverStatus)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load OpenCode data')
       }
@@ -55,8 +65,18 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
 
   // Set up event listeners
   useEffect(() => {
-    const unsubscribeServer = window.api.opencode.onServerStatusChange((status) => {
-      setServerStatus(status)
+    // Listen to Core service status changes
+    const unsubscribeService = window.api.core.onServiceStatusChange((data) => {
+      if (data.service === 'opencode') {
+        // Convert Core service status to our ServerStatus format
+        const serverStatus: ServerStatus = {
+          running: data.status.running,
+          healthy: data.status.healthy,
+          error: data.status.error,
+          lastHealthCheck: data.status.lastCheck
+        }
+        setServerStatus(serverStatus)
+      }
     })
 
     const unsubscribeProgress = window.api.opencode.onBinaryUpdate((progressData) => {
@@ -68,7 +88,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
     })
 
     return () => {
-      unsubscribeServer()
+      unsubscribeService()
       unsubscribeProgress()
     }
   }, [])
@@ -96,8 +116,9 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
     setError(null)
 
     try {
-      const status = await window.api.opencode.startServer()
-      setServerStatus(status)
+      // Use Core API to start the OpenCode service
+      await window.api.core.startService('opencode')
+      // Status will be updated via event listener
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start server')
     } finally {
@@ -112,8 +133,15 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
     setError(null)
 
     try {
-      const status = await window.api.opencode.getServerStatus()
-      setServerStatus(status)
+      // Use Core API to get current service status
+      const serviceStatus = await window.api.core.getServiceStatus('opencode')
+      const serverStatus: ServerStatus = {
+        running: serviceStatus.running,
+        healthy: serviceStatus.healthy,
+        error: serviceStatus.error,
+        lastHealthCheck: serviceStatus.lastCheck
+      }
+      setServerStatus(serverStatus)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh server status')
     } finally {
@@ -127,7 +155,9 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
     setIsLoading(true)
 
     try {
-      await window.api.opencode.stopServer()
+      // Use Core API to stop the OpenCode service
+      await window.api.core.stopService('opencode')
+      // Status will be updated via event listener
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to stop server')
     } finally {

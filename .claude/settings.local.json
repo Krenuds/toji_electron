@@ -11,7 +11,8 @@
       "Bash(rm:*)",
       "Bash(sed:*)",
       "Bash(git add:*)",
-      "Read(//c/Users/donth/OneDrive/Desktop/**)"
+      "Read(//c/Users/donth/OneDrive/Desktop/**)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

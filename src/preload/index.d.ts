@@ -31,23 +31,52 @@ export interface BinaryProgress {
   error?: string
 }
 
+// Core API Types
+export interface ServiceStatus {
+  running: boolean
+  healthy?: boolean
+  error?: string
+  lastCheck?: Date
+}
+
+export interface CoreStatus {
+  services: Record<string, ServiceStatus>
+  currentWorkspace?: string
+}
+
+export interface ServiceStatusChangeEvent {
+  service: string
+  status: ServiceStatus
+}
+
+export interface ServiceErrorEvent {
+  service: string
+  error: string
+}
+
+export interface CoreAPI {
+  // Service Management
+  getStatus: () => Promise<CoreStatus>
+  startService: (serviceName: string) => Promise<void>
+  stopService: (serviceName: string) => Promise<void>
+  getServiceStatus: (serviceName: string) => Promise<ServiceStatus>
+
+  // Chat functionality
+  sendMessage: (message: string) => Promise<string>
+  createSession: (title?: string) => Promise<string>
+
+  // Events
+  onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void) => () => void
+  onServiceError: (callback: (data: ServiceErrorEvent) => void) => () => void
+}
+
 export interface OpenCodeAPI {
   // Binary Management
   getBinaryInfo: () => Promise<BinaryInfo>
   downloadBinary: () => Promise<void>
   ensureBinary: () => Promise<void>
 
-  // Server Management
-  startServer: () => Promise<ServerStatus>
-  stopServer: () => Promise<void>
-  getServerStatus: () => Promise<ServerStatus>
-  checkHealth: () => Promise<boolean>
-
-  // Configuration
-  updateConfig: (config: Partial<OpenCodeConfig>) => Promise<void>
-
   // Events
-  onServerStatusChange: (callback: (status: ServerStatus) => void) => () => void
   onBinaryUpdate: (callback: (progress: BinaryProgress) => void) => () => void
 }
 
@@ -55,6 +84,7 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
+      core: CoreAPI
       opencode: OpenCodeAPI
     }
   }
