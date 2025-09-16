@@ -4,7 +4,13 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin({ exclude: ['@opencode-ai/sdk'] })],
+    resolve: {
+      conditions: ['import', 'module', 'node', 'default'],
+      alias: {
+        '@opencode-ai/sdk': resolve(__dirname, 'node_modules/@opencode-ai/sdk/dist/index.js')
+      }
+    }
   },
   preload: {
     plugins: [externalizeDepsPlugin()]

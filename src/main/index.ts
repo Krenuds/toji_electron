@@ -1,7 +1,11 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/toji.png?asset'
+import { OpenCodeManager } from './opencode-manager'
+
+// Global OpenCode manager instance
+let openCodeManager: OpenCodeManager | null = null
 
 function createWindow(): void {
   // Create the browser window.
@@ -38,7 +42,19 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Initialize OpenCode manager
+  openCodeManager = new OpenCodeManager({
+    model: 'anthropic/claude-3-5-sonnet-20241022',
+    hostname: '127.0.0.1',
+    port: 4096
+  })
+
+  console.log('OpenCode manager initialized')
+
+  // Set up IPC handlers for OpenCode
+  setupOpenCodeHandlers()
+
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -61,10 +77,84 @@ app.whenReady().then(() => {
   })
 })
 
+// Setup IPC handlers for OpenCode functionality
+function setupOpenCodeHandlers(): void {
+  if (!openCodeManager) return
+
+  // Binary management
+  ipcMain.handle('opencode:get-binary-info', async () => {
+    return await openCodeManager!.getBinaryInfo()
+  })
+
+  ipcMain.handle('opencode:download-binary', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.send('opencode:binary-update', {
+        stage: 'downloading',
+        message: 'Downloading OpenCode binary...'
+      })
+    }
+
+    try {
+      await openCodeManager!.downloadBinary()
+      if (mainWindow) {
+        mainWindow.webContents.send('opencode:binary-update', {
+          stage: 'complete',
+          message: 'Binary downloaded successfully'
+        })
+      }
+    } catch (error) {
+      if (mainWindow) {
+        mainWindow.webContents.send('opencode:binary-update', {
+          stage: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+      throw error
+    }
+  })
+
+  ipcMain.handle('opencode:ensure-binary', async () => {
+    return await openCodeManager!.ensureBinary()
+  })
+
+  // Server management
+  ipcMain.handle('opencode:start-server', async () => {
+    const status = await openCodeManager!.startServer()
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.send('opencode:server-status-changed', status)
+    }
+    return status
+  })
+
+  ipcMain.handle('opencode:stop-server', async () => {
+    await openCodeManager!.stopServer()
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.send('opencode:server-status-changed', { running: false })
+    }
+  })
+
+  ipcMain.handle('opencode:get-server-status', async () => {
+    return openCodeManager!.getServerStatus()
+  })
+
+  // Configuration
+  ipcMain.handle('opencode:update-config', async (_, config) => {
+    openCodeManager!.updateConfig(config)
+  })
+}
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  // Cleanup OpenCode manager before quitting
+  if (openCodeManager) {
+    await openCodeManager.cleanup()
+  }
+  
   if (process.platform !== 'darwin') {
     app.quit()
   }
