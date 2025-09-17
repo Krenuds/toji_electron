@@ -31,6 +31,7 @@ src/
 - `npm run typecheck` - Run TypeScript validation for both Node and web
 - `npm run typecheck:node` - Check main/preload TypeScript
 - `npm run typecheck:web` - Check renderer TypeScript
+- `npm test` - Run all tests (Node.js unit tests + Playwright e2e tests)
 
 ### TypeScript Configuration
 
@@ -71,14 +72,14 @@ src/
 - Communicates with main via preload-exposed APIs
 - Uses Vite's development server with HMR
 
-## SST OpenCode Integration Strategy
+## OpenCode Agent Integration Strategy
 
-When integrating SST OpenCode SDK:
+Current implementation uses agent-based architecture:
 
-1. **Main Process Integration**: Install SDK in main process for system-level operations
-2. **Preload Bridge**: Expose safe SDK methods via contextBridge
-3. **Renderer Interface**: Create React components that call preload-exposed APIs
-4. **System Agent Functionality**: Implement in main process with appropriate permissions
+1. **Core API Layer**: `src/main/core/core.ts` manages agent lifecycle per directory
+2. **Binary Service**: `src/main/services/opencode-service.ts` handles SDK binary installation
+3. **Preload Bridge**: Exposes agent management APIs (`startOpencode`, `stopOpencode`, `prompt`)
+4. **Renderer Interface**: Simple AgentPanel for directory-based agent control
 
 ## Security Best Practices
 
@@ -105,8 +106,8 @@ When integrating SST OpenCode SDK:
 1. **Never bypass security**: Always use contextBridge for main→renderer communication
 2. **Process separation**: Keep business logic properly separated by process type
 3. **Type definitions**: Maintain type safety across process boundaries
-4. **Testing strategy**: Use `npm run typecheck` before builds
-5. **System agent features**: Implement in main process, expose via safe preload APIs
+4. **Testing strategy**: Run `npm test` and `npm run typecheck` before commits
+5. **Agent-based architecture**: OpenCode agents are ephemeral server instances per directory, not persistent services
 
 This architecture ensures secure, maintainable, and scalable desktop application development while leveraging modern web technologies within Electron's security model.
 

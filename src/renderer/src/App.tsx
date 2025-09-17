@@ -1,3 +1,4 @@
+import { InstallerComponent } from './components/InstallerComponent'
 import { AgentPanel } from './components/AgentPanel'
 import { SimpleChatTerminal } from './components/SimpleChatTerminal'
 import electronLogo from './assets/toji.png'
@@ -13,6 +14,7 @@ function App(): React.JSX.Element {
 
       <div className="app-content">
         <div className="left-panel">
+          <InstallerComponent className="installer-section" />
           <AgentPanel className="agent-section" />
         </div>
 

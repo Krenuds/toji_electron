@@ -47,12 +47,17 @@ app.whenReady().then(async () => {
   // Initialize binary service
   const openCodeService = new OpenCodeService()
 
+  // Check binary status on startup
+  const binaryInfo = openCodeService.getBinaryInfo()
+  console.log('Binary status on startup:', binaryInfo)
+
   // Initialize Core API with binary service
   core = new Core(openCodeService)
   console.log('Core API initialized')
 
-  // Set up IPC handlers for Core
+  // Set up IPC handlers for Core and Binary management
   setupCoreHandlers()
+  setupBinaryHandlers(openCodeService)
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
@@ -109,42 +114,42 @@ function setupCoreHandlers(): void {
     }
     return await core.prompt(text)
   })
+}
 
-  // Binary management (direct access to OpenCodeService)
-  ipcMain.handle('opencode:get-binary-info', async () => {
-    return await core!.binaryService.getBinaryInfo()
+// Setup IPC handlers for Binary management
+function setupBinaryHandlers(openCodeService: OpenCodeService): void {
+  // Get binary status
+  ipcMain.handle('binary:get-info', async () => {
+    return openCodeService.getBinaryInfo()
   })
 
-  ipcMain.handle('opencode:download-binary', async () => {
+  // Install binary
+  ipcMain.handle('binary:install', async () => {
     const mainWindow = BrowserWindow.getAllWindows()[0]
     if (mainWindow) {
-      mainWindow.webContents.send('opencode:binary-update', {
+      mainWindow.webContents.send('binary:status-update', {
         stage: 'downloading',
         message: 'Downloading OpenCode binary...'
       })
     }
 
     try {
-      await core!.binaryService.downloadBinary()
+      await openCodeService.downloadBinary()
       if (mainWindow) {
-        mainWindow.webContents.send('opencode:binary-update', {
+        mainWindow.webContents.send('binary:status-update', {
           stage: 'complete',
-          message: 'Binary downloaded successfully'
+          message: 'Binary installed successfully'
         })
       }
     } catch (error) {
       if (mainWindow) {
-        mainWindow.webContents.send('opencode:binary-update', {
+        mainWindow.webContents.send('binary:status-update', {
           stage: 'error',
           error: error instanceof Error ? error.message : 'Unknown error'
         })
       }
       throw error
     }
-  })
-
-  ipcMain.handle('opencode:ensure-binary', async () => {
-    return await core!.binaryService.ensureBinary()
   })
 }
 

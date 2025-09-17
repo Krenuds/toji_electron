@@ -44,14 +44,13 @@ export interface CoreAPI {
   prompt: (text: string) => Promise<string>
 }
 
-export interface OpenCodeAPI {
+export interface BinaryAPI {
   // Binary Management
-  getBinaryInfo: () => Promise<BinaryInfo>
-  downloadBinary: () => Promise<void>
-  ensureBinary: () => Promise<void>
+  getInfo: () => Promise<BinaryInfo>
+  install: () => Promise<void>
 
   // Events
-  onBinaryUpdate: (callback: (progress: BinaryProgress) => void) => () => void
+  onStatusUpdate: (callback: (progress: BinaryProgress) => void) => () => void
 }
 
 declare global {
@@ -59,7 +58,7 @@ declare global {
     electron: ElectronAPI
     api: {
       core: CoreAPI
-      opencode: OpenCodeAPI
+      binary: BinaryAPI
     }
   }
 }

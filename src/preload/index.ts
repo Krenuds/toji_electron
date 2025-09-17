@@ -18,19 +18,18 @@ const api = {
     prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text)
   },
 
-  // OpenCode API - maintained for backward compatibility
-  opencode: {
-    getBinaryInfo: (): Promise<BinaryInfo> => ipcRenderer.invoke('opencode:get-binary-info'),
-    downloadBinary: (): Promise<void> => ipcRenderer.invoke('opencode:download-binary'),
-    ensureBinary: (): Promise<void> => ipcRenderer.invoke('opencode:ensure-binary'),
+  // Binary Management API - separated from core agent logic
+  binary: {
+    getInfo: (): Promise<BinaryInfo> => ipcRenderer.invoke('binary:get-info'),
+    install: (): Promise<void> => ipcRenderer.invoke('binary:install'),
 
     // Events
-    onBinaryUpdate: (callback: (progress: BinaryProgress) => void): (() => void) => {
+    onStatusUpdate: (callback: (progress: BinaryProgress) => void): (() => void) => {
       const subscription = (_event: IpcRendererEvent, progress: BinaryProgress): void =>
         callback(progress)
-      ipcRenderer.on('opencode:binary-update', subscription)
+      ipcRenderer.on('binary:status-update', subscription)
       return (): void => {
-        ipcRenderer.removeListener('opencode:binary-update', subscription)
+        ipcRenderer.removeListener('binary:status-update', subscription)
       }
     }
   }

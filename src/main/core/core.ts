@@ -36,9 +36,6 @@ export class Core {
       ...config
     }
 
-    // Ensure binary is available
-    await this.binaryService.ensureBinary()
-
     // Prepare directory (create, init git if needed)
     await this.prepareDirectory(directory)
 

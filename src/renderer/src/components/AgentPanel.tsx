@@ -1,32 +1,20 @@
 import React, { useState, useEffect } from 'react'
 
-interface BinaryInfo {
-  path: string
-  lastChecked: Date
-  installed: boolean
-}
-
 interface AgentPanelProps {
   className?: string
 }
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
-  const [binaryInfo, setBinaryInfo] = useState<BinaryInfo | null>(null)
   const [isAgentRunning, setIsAgentRunning] = useState(false)
   const [currentDirectory, setCurrentDirectory] = useState<string>('')
   const [directoryInput, setDirectoryInput] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load initial status
+  // Load initial agent status
   useEffect(() => {
-    const loadStatus = async (): Promise<void> => {
+    const loadAgentStatus = async (): Promise<void> => {
       try {
-        // Check binary status
-        const info = await window.api.opencode.getBinaryInfo()
-        setBinaryInfo(info)
-
-        // Check agent status
         const running = await window.api.core.isRunning()
         setIsAgentRunning(running)
 
@@ -36,29 +24,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
           setDirectoryInput(dir || '')
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load status')
+        setError(err instanceof Error ? err.message : 'Failed to load agent status')
       }
     }
 
-    loadStatus()
+    loadAgentStatus()
   }, [])
-
-  const handleDownloadBinary = async (): Promise<void> => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      await window.api.opencode.downloadBinary()
-
-      // Refresh binary info
-      const info = await window.api.opencode.getBinaryInfo()
-      setBinaryInfo(info)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download binary')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleStartAgent = async (): Promise<void> => {
     if (!directoryInput.trim()) {
@@ -101,7 +72,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
 
   return (
     <div className={`agent-panel ${className}`}>
-      <h2>OpenCode Agent</h2>
+      <h2>Agent Control</h2>
 
       {error && (
         <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>
@@ -109,31 +80,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
         </div>
       )}
 
-      {/* Binary Status */}
-      <div className="binary-status" style={{ marginBottom: '20px' }}>
-        <h3>Binary Status</h3>
-        {binaryInfo ? (
-          <div>
-            <p>Status: {binaryInfo.installed ? '✅ Installed' : '❌ Not Installed'}</p>
-            <p>Path: {binaryInfo.path}</p>
-            {!binaryInfo.installed && (
-              <button
-                onClick={handleDownloadBinary}
-                disabled={isLoading}
-                style={{ marginTop: '5px' }}
-              >
-                {isLoading ? 'Downloading...' : 'Download Binary'}
-              </button>
-            )}
-          </div>
-        ) : (
-          <p>Loading...</p>
-        )}
-      </div>
-
-      {/* Agent Control */}
       <div className="agent-control" style={{ marginBottom: '20px' }}>
-        <h3>Agent Control</h3>
 
         <div style={{ marginBottom: '10px' }}>
           <label>
@@ -172,7 +119,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
           ) : (
             <button
               onClick={handleStartAgent}
-              disabled={isLoading || !binaryInfo?.installed || !directoryInput.trim()}
+              disabled={isLoading || !directoryInput.trim()}
               style={{
                 backgroundColor: '#44aa44',
                 color: 'white',
@@ -204,7 +151,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
       <div className="usage-info" style={{ fontSize: '14px', color: '#666' }}>
         <h4>Quick Start:</h4>
         <ol>
-          <li>Ensure binary is installed</li>
           <li>Enter your project directory path</li>
           <li>Click &quot;Start Agent&quot;</li>
           <li>Use the chat panel to interact with OpenCode</li>
