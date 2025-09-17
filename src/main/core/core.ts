@@ -1,5 +1,5 @@
 import { createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
-import type { Part } from '@opencode-ai/sdk'
+import type { Part, Session } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 
 export interface Service {
@@ -139,27 +139,26 @@ export class Core {
     try {
       console.log(`Core: Sending prompt: "${text.substring(0, 100)}..."`)
 
-      // Create a simple session for the prompt
+      // Create a session for the conversation
       console.log('Core: Creating session...')
       const sessionResponse = await this.openCodeClient!.session.create({
         body: {
-          title: `Prompt ${new Date().toLocaleTimeString()}`
+          title: `Chat ${new Date().toLocaleTimeString()}`
         }
       })
 
-      // Session creation successful - extract ID
+      // Extract session from response
       if (!sessionResponse.data?.id) {
-        console.error('Core: Session creation failed, no ID found in response:', sessionResponse)
+        console.error('Core: Session creation failed:', sessionResponse)
         throw new Error('Failed to create session - no session ID returned')
       }
 
-      const sessionId = sessionResponse.data.id
+      const session: Session = sessionResponse.data
+      console.log(`Core: Created session ${session.id}`)
 
-      console.log(`Core: Created session ${sessionId}`)
-
-      // Send the prompt
+      // Send the user message to the session
       const promptResponse = await this.openCodeClient!.session.prompt({
-        path: { id: sessionId },
+        path: { id: session.id },
         body: {
           model: {
             providerID: 'opencode',
@@ -169,22 +168,35 @@ export class Core {
         }
       })
 
-      // Extract response text based on SDK types
+      // Extract response based on actual SDK structure
       console.log('Core: Prompt response:', JSON.stringify(promptResponse, null, 2))
 
-      // The response has parts array in data.parts
-      if (promptResponse?.data?.parts && promptResponse.data.parts.length > 0) {
-        // Find the first text part
-        const textPart = promptResponse.data.parts.find((part: Part) => part.type === 'text')
-        if (textPart && 'text' in textPart && textPart.text) {
-          console.log(`Core: Received response (${textPart.text.length} chars)`)
-          return textPart.text
-        }
+      if (!promptResponse?.data?.parts) {
+        console.warn('Core: No parts in response')
+        return 'No response received from AI'
       }
 
-      console.warn('Core: Empty or invalid response received')
-      console.log('Core: Available parts:', promptResponse?.data?.parts)
-      return 'No response received from AI'
+      const parts: Part[] = promptResponse.data.parts
+
+      // Find text parts in the response
+      const textParts = parts.filter(
+        (part: Part): part is Part & { text: string } =>
+          part.type === 'text' && 'text' in part && typeof part.text === 'string'
+      )
+
+      if (textParts.length === 0) {
+        console.warn('Core: No text parts found in response')
+        console.log(
+          'Core: Available part types:',
+          parts.map((p) => p.type)
+        )
+        return 'No text response received from AI'
+      }
+
+      // Combine all text parts
+      const responseText = textParts.map((part) => part.text).join('\n')
+      console.log(`Core: Received response (${responseText.length} chars)`)
+      return responseText
     } catch (error) {
       console.error('Core: Prompt failed:', error)
       // Clear client on error so it gets recreated next time
