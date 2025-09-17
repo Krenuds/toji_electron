@@ -26,7 +26,8 @@
       "Bash(do echo \"=== $ns namespace ===\")",
       "Bash(grep:*)",
       "Bash(done)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(timeout 15s npm run dev)"
     ],
     "deny": [],
     "ask": []

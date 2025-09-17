@@ -1,28 +1,50 @@
-import { InstallerComponent } from './components/InstallerComponent'
-import { AgentPanel } from './components/AgentPanel'
-import { SimpleChatTerminal } from './components/SimpleChatTerminal'
+import React from 'react'
+import { BinaryInstaller, AgentControl, ChatTerminal } from './components/features'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import electronLogo from './assets/toji.png'
 import './assets/opencode.css'
+import './assets/modern-components.css'
+import './assets/chat-terminal.css'
+import './assets/layout.css'
+import './assets/error-boundary.css'
 
 function App(): React.JSX.Element {
   return (
-    <div className="app-container">
-      <div className="app-header">
-        <img alt="logo" className="logo" src={electronLogo} />
-        <h1>Toji System Agent</h1>
-      </div>
+    <ErrorBoundary>
+      <div className="app-container">
+        <header className="app-header">
+          <div className="header-content">
+            <img alt="Toji Logo" className="logo" src={electronLogo} />
+            <div className="header-text">
+              <h1>Toji System Agent</h1>
+              <p className="header-subtitle">AI-Powered Development Assistant</p>
+            </div>
+          </div>
+        </header>
 
-      <div className="app-content">
-        <div className="left-panel">
-          <InstallerComponent className="installer-section" />
-          <AgentPanel className="agent-section" />
-        </div>
+        <main className="app-content">
+          <aside className="sidebar">
+            <ErrorBoundary>
+              <section className="sidebar-section">
+                <BinaryInstaller />
+              </section>
+            </ErrorBoundary>
 
-        <div className="right-panel">
-          <SimpleChatTerminal className="chat-section" />
-        </div>
+            <ErrorBoundary>
+              <section className="sidebar-section">
+                <AgentControl />
+              </section>
+            </ErrorBoundary>
+          </aside>
+
+          <ErrorBoundary>
+            <section className="main-content">
+              <ChatTerminal />
+            </section>
+          </ErrorBoundary>
+        </main>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }
 
