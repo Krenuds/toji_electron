@@ -15,7 +15,10 @@ const api = {
     stopOpencode: (): Promise<void> => ipcRenderer.invoke('core:stop-opencode'),
 
     // OpenCode SDK API
-    prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text)
+    prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text),
+    listProjects: (): Promise<any> => ipcRenderer.invoke('core:list-projects'),
+    listSessions: (): Promise<any> => ipcRenderer.invoke('core:list-sessions'),
+    deleteSession: (sessionId: string): Promise<void> => ipcRenderer.invoke('core:delete-session', sessionId)
   },
 
   // Binary Management API - separated from core agent logic

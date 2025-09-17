@@ -114,6 +114,30 @@ function setupCoreHandlers(): void {
     }
     return await core.prompt(text)
   })
+
+  // List projects
+  ipcMain.handle('core:list-projects', async () => {
+    if (!core) {
+      throw new Error('Core not initialized')
+    }
+    return await core.listProjects()
+  })
+
+  // List sessions
+  ipcMain.handle('core:list-sessions', async () => {
+    if (!core) {
+      throw new Error('Core not initialized')
+    }
+    return await core.listSessions()
+  })
+
+  // Delete session
+  ipcMain.handle('core:delete-session', async (_, sessionId: string) => {
+    if (!core) {
+      throw new Error('Core not initialized')
+    }
+    return await core.deleteSession(sessionId)
+  })
 }
 
 // Setup IPC handlers for Binary management

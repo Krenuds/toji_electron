@@ -171,6 +171,35 @@ export class Core {
     return this.currentDirectory
   }
 
+  async listProjects(): Promise<any> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+    
+    return await this.currentClient.project.list()
+  }
+
+  async listSessions(): Promise<any> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+    
+    return await this.currentClient.session.list()
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+    
+    await this.currentClient.session.delete({ path: { id: sessionId } })
+    
+    // Clear current session if it was deleted
+    if (this.currentSession?.id === sessionId) {
+      this.currentSession = undefined
+    }
+  }
+
   // Private helpers
   private async prepareDirectory(directory: string): Promise<void> {
     // Create directory if it doesn't exist

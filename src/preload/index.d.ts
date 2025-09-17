@@ -42,6 +42,9 @@ export interface CoreAPI {
 
   // OpenCode SDK API
   prompt: (text: string) => Promise<string>
+  listProjects: () => Promise<any>
+  listSessions: () => Promise<any>
+  deleteSession: (sessionId: string) => Promise<void>
 }
 
 export interface BinaryAPI {

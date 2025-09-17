@@ -1,5 +1,73 @@
 # Toji3 - Electron-Vite React TypeScript Desktop Application
 
+## Core Architectural Philosophy
+
+**FUNDAMENTAL PRINCIPLE**: This application is built as a **tools library**, not a workflow engine.
+
+### Separation of Concerns
+
+**Core API Layer** (`src/main/core/`)
+- **Purpose**: Provides callable tools and capabilities
+- **What it does**: Pure functions that can be invoked from interfaces
+- **What it NEVER does**: Make user-facing decisions or automate workflows
+- **Pattern**: "Here are the tools available" - not "Here's what should happen"
+
+**Interface Layers** (Electron, Discord, etc.)
+- **Purpose**: Contains all business logic and user-facing decisions  
+- **What it does**: Orchestrates core functions based on user intent
+- **Pattern**: Interface provides buttons/controls → Core provides functions
+
+**Service Layer** (OpenCode SDK, etc.)
+- **Purpose**: External dependencies with their own lifecycles
+- **Approach**: Respect existing lifecycles, don't reinvent or over-abstract
+
+### Development Guidelines
+
+1. **Core functions are tools** - each should be a discrete, callable component
+2. **No business logic in core** - decision-making happens in interfaces
+3. **Modular by design** - any interface should be able to call any core function
+4. **Simple over elaborate** - clear principles over complex systems
+5. **Interface-driven workflows** - let the UI/interface control the flow
+
+**Example Pattern:**
+```typescript
+// Core: Provides capability
+export function startAgent(directory: string): Promise<AgentInstance>
+
+// Interface: Makes decisions about when/how to use it
+const handleStartClick = () => startAgent(selectedDirectory)
+```
+
+### What Belongs Where
+
+**✅ Core API Should Contain:**
+- Pure functions that perform specific operations
+- Data transformation and processing logic
+- Service integration adapters (OpenCode SDK calls)
+- Resource management (file system, process lifecycle)
+- State management primitives (not business state decisions)
+
+**❌ Core API Should NEVER Contain:**
+- User interface logic or decisions
+- Workflow orchestration ("if this then that" logic)
+- User preference handling
+- Automatic behaviors or scheduling
+- Error presentation logic (logging yes, user messages no)
+
+**✅ Interface Layers Should Contain:**
+- All user-facing decision logic
+- Workflow orchestration and business rules
+- User preference management and storage
+- Error handling and user feedback
+- State management for UI concerns
+- Event handling and user interactions
+
+**🔄 Service Layer Guidelines:**
+- Respect existing service lifecycles (don't reinvent OpenCode's patterns)
+- Create thin adapters, not thick abstractions
+- Let services manage their own state and configuration
+- Focus on integration, not replacement
+
 ## Project Architecture Overview
 
 This is an **Electron application** built with **electron-vite**, **React**, and **TypeScript**. The project follows electron-vite's recommended tri-process architecture with strict separation of concerns for security and maintainability.
