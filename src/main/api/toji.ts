@@ -31,7 +31,7 @@ export class Toji {
     private opencodeService: OpenCodeService
   ) {
     // Initialize all managers with proper dependencies
-    this.server = new ServerManager(opencodeService)
+    this.server = new ServerManager(this.opencodeService)
     this.client = new ClientManager()
     this.workspace = new WorkspaceManager()
     this.session = new SessionManager(this.client)
@@ -135,7 +135,6 @@ export class Toji {
 
     console.log('Toji: Quick start complete - ready for interaction!')
   }
-
 
   /**
    * Check if Toji is ready for operations

@@ -25,7 +25,8 @@
       "Bash(for ns in project event config tool path session command find file app tui auth)",
       "Bash(do echo \"=== $ns namespace ===\")",
       "Bash(grep:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

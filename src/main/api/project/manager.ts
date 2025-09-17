@@ -17,46 +17,68 @@ export class ProjectManager {
    * List all projects
    */
   async list(): Promise<{ data: Project[] }> {
-    // TODO: Next session - implement project listing
-    // - Use client.project.list()
-    // - Return standardized response format
-    throw new Error('ProjectManager.list() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+    const response = await client.project.list()
+
+    return {
+      data: response.data || []
+    }
   }
 
   /**
    * Get current project
    */
   async getCurrent(): Promise<Project | null> {
-    // TODO: Next session - implement current project retrieval
-    // - Use client.project.current()
-    // - Handle cases where no current project exists
-    throw new Error('ProjectManager.getCurrent() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+
+    try {
+      const response = await client.project.current()
+      return response.data || null
+    } catch {
+      // Return null if no current project exists
+      return null
+    }
   }
 
   /**
    * Get project by ID
    */
-  async get(projectId: string): Promise<Project> {
-    // TODO: Next session - implement project retrieval by ID
-    throw new Error('ProjectManager.get() - To be implemented in next session')
+  async get(projectId: string): Promise<Project | null> {
+    const client = this.clientManager.getClientForManager()
+    const response = await client.project.list()
+    const projects = response.data || []
+
+    return projects.find((p) => p.id === projectId) || null
   }
 
   /**
    * Create a new project from template
    */
   async createFromTemplate(directory: string, template?: string): Promise<Project> {
-    // TODO: Next session - implement project creation
-    // - Set up project structure
-    // - Apply template if specified
-    // - Initialize with OpenCode
-    throw new Error('ProjectManager.createFromTemplate() - To be implemented in next session')
+    // Note: Project creation may not be directly available in SDK
+    // This would typically involve file system operations + git init
+    throw new Error(
+      `Project creation not implemented - would create project in ${directory} with template ${template || 'default'}`
+    )
   }
 
   /**
    * Log project information for debugging
    */
   async logInfo(): Promise<void> {
-    // TODO: Next session - implement project info logging
-    throw new Error('ProjectManager.logInfo() - To be implemented in next session')
+    try {
+      const current = await this.getCurrent()
+      const projects = await this.list()
+
+      console.log('=== Project Information ===')
+      console.log(`Current project: ${current?.id || 'None'}`)
+      console.log(`Total projects: ${projects.data.length}`)
+      console.log(
+        'All projects:',
+        projects.data.map((p) => ({ id: p.id, worktree: p.worktree }))
+      )
+    } catch (error) {
+      console.error('Failed to retrieve project information:', error)
+    }
   }
 }

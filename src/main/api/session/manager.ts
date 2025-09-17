@@ -19,54 +19,107 @@ export class SessionManager {
    * Send a prompt to the current or specified session
    */
   async prompt(text: string, sessionId?: string): Promise<string> {
-    // TODO: Next session - implement prompt functionality
-    // - Get client from clientManager
-    // - Use client.session.prompt() with proper parts structure
-    // - Handle response and extract text
-    // - Update current session if needed
-    throw new Error('SessionManager.prompt() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+
+    // Use specified session or current session
+    const targetSessionId = sessionId || this.currentSession?.id
+    if (!targetSessionId) {
+      throw new Error('No session specified and no current session available')
+    }
+
+    // Create proper text part input
+    const parts = [
+      {
+        type: 'text' as const,
+        text
+      }
+    ]
+
+    // Send prompt using exact SDK signature
+    const response = await client.session.prompt({
+      path: { id: targetSessionId },
+      body: {
+        model: {
+          providerID: 'anthropic',
+          modelID: 'claude-3-5-sonnet-20241022'
+        },
+        parts
+      }
+    })
+
+    // Extract text from response parts
+    return (
+      response.data?.parts
+        ?.map((part) => (part as { text?: string }).text)
+        .filter(Boolean)
+        .join('') || ''
+    )
   }
 
   /**
    * List all sessions
    */
   async list(): Promise<{ data: Session[] }> {
-    // TODO: Next session - implement session listing
-    // - Use client.session.list()
-    // - Return standardized response format
-    throw new Error('SessionManager.list() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+    const response = await client.session.list()
+
+    return {
+      data: response.data || []
+    }
   }
 
   /**
    * Get a specific session
    */
   async get(sessionId: string): Promise<Session> {
-    // TODO: Next session - implement session retrieval
-    throw new Error('SessionManager.get() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+    const response = await client.session.get({ path: { id: sessionId } })
+
+    if (!response.data) {
+      throw new Error(`Session ${sessionId} not found`)
+    }
+
+    return response.data
   }
 
   /**
    * Create a new session
    */
-  async create(): Promise<Session> {
-    // TODO: Next session - implement session creation
-    throw new Error('SessionManager.create() - To be implemented in next session')
+  async create(title?: string): Promise<Session> {
+    const client = this.clientManager.getClientForManager()
+    const response = await client.session.create({
+      body: { title }
+    })
+
+    if (!response.data) {
+      throw new Error('Failed to create session')
+    }
+
+    // Set as current session
+    this.currentSession = response.data
+    return response.data
   }
 
   /**
    * Delete a session
    */
   async delete(sessionId: string): Promise<void> {
-    // TODO: Next session - implement session deletion
-    throw new Error('SessionManager.delete() - To be implemented in next session')
+    const client = this.clientManager.getClientForManager()
+    await client.session.delete({ path: { id: sessionId } })
+
+    // Clear current session if it was deleted
+    if (this.currentSession?.id === sessionId) {
+      this.currentSession = undefined
+    }
   }
 
   /**
    * Get messages for a session
    */
-  async getMessages(sessionId: string): Promise<any[]> {
-    // TODO: Next session - implement message retrieval
-    throw new Error('SessionManager.getMessages() - To be implemented in next session')
+  async getMessages(sessionId: string): Promise<Part[]> {
+    const session = await this.get(sessionId)
+    // Note: Session type may contain messages - this needs verification from actual SDK
+    return (session as { messages?: Part[] }).messages || []
   }
 
   /**
