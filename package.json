@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
+  "type": "module",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
   "scripts": {
@@ -11,8 +12,12 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test": "node --test test/*.test.js",
+    "test:core": "node --test test/core.test.js",
+    "test:service": "node --test test/opencode-service.test.js",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:linux": "electron-vite dev --",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -25,7 +30,8 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@opencode-ai/sdk": "^0.9.6",
     "adm-zip": "^0.5.16",
-    "electron-store": "^10.1.0"
+    "electron-store": "^10.1.0",
+    "update": "^0.7.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
