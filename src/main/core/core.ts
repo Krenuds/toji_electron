@@ -134,9 +134,6 @@ export class Core {
         console.warn(`Core: OpenCode is using project in ${currentProject.data?.worktree} instead of ${targetDirectory}`)
       }
 
-      // Test file operations to see what OpenCode can access
-      console.log('Core: Testing file operations immediately after client init...')
-      await this.testFileOperations()
     } catch (error) {
       console.error('Core: Project debugging failed:', error)
     }
@@ -250,103 +247,4 @@ export class Core {
     }
   }
 
-  // File operation methods using the OpenCode SDK
-  async readFile(filePath: string): Promise<string> {
-    if (!this.openCodeClient) {
-      throw new Error('OpenCode client not initialized')
-    }
-
-    try {
-      console.log(`Core: Reading file: ${filePath}`)
-      const response = await this.openCodeClient.file.read({
-        query: { path: filePath }
-      })
-
-      if (response.data?.content) {
-        console.log(`Core: Successfully read file ${filePath} (${response.data.content.length} chars)`)
-        return response.data.content
-      } else {
-        throw new Error('No content returned from file read')
-      }
-    } catch (error) {
-      console.error(`Core: Failed to read file ${filePath}:`, error)
-      throw new Error(`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
-
-  async findFiles(pattern: string): Promise<string[]> {
-    if (!this.openCodeClient) {
-      throw new Error('OpenCode client not initialized')
-    }
-
-    try {
-      console.log(`Core: Finding files with pattern: ${pattern}`)
-      const response = await this.openCodeClient.find.files({
-        query: { query: pattern }
-      })
-
-      if (response.data && Array.isArray(response.data)) {
-        console.log(`Core: Found ${response.data.length} files matching ${pattern}`)
-        return response.data
-      } else {
-        console.log(`Core: No files found matching ${pattern}`)
-        return []
-      }
-    } catch (error) {
-      console.error(`Core: Failed to find files with pattern ${pattern}:`, error)
-      throw new Error(`Failed to find files: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
-
-  async searchText(searchTerm: string): Promise<any[]> {
-    if (!this.openCodeClient) {
-      throw new Error('OpenCode client not initialized')
-    }
-
-    try {
-      console.log(`Core: Searching for text: ${searchTerm}`)
-      const response = await this.openCodeClient.find.text({
-        query: { pattern: searchTerm }
-      })
-
-      if (response.data && Array.isArray(response.data)) {
-        console.log(`Core: Found ${response.data.length} text matches for ${searchTerm}`)
-        return response.data
-      } else {
-        console.log(`Core: No text matches found for ${searchTerm}`)
-        return []
-      }
-    } catch (error) {
-      console.error(`Core: Failed to search text ${searchTerm}:`, error)
-      throw new Error(`Failed to search text: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
-
-  // Method to test file operations - useful for debugging
-  async testFileOperations(): Promise<void> {
-    console.log('Core: Testing file operations...')
-
-    try {
-      // Test finding files
-      const allFiles = await this.findFiles('*')
-      console.log('Core: All files found:', allFiles)
-
-      // Test finding markdown files specifically
-      const mdFiles = await this.findFiles('*.md')
-      console.log('Core: Markdown files found:', mdFiles)
-
-      // If AGENTS.md exists, try to read it
-      if (mdFiles.includes('AGENTS.md')) {
-        const content = await this.readFile('AGENTS.md')
-        console.log('Core: AGENTS.md content:', content)
-      }
-
-      // Test searching for text
-      const clownMatches = await this.searchText('clown')
-      console.log('Core: Text search results for "clown":', clownMatches)
-
-    } catch (error) {
-      console.error('Core: File operations test failed:', error)
-    }
-  }
 }
