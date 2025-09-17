@@ -64,7 +64,6 @@ export interface CoreAPI {
   // Core OpenCode SDK API
   prompt: (text: string) => Promise<string>
 
-
   // Events
   onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void) => () => void
   onServiceError: (callback: (data: ServiceErrorEvent) => void) => () => void

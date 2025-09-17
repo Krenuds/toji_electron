@@ -1,28 +1,33 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { BinaryInfo, BinaryProgress } from './index.d'
+import type {
+  BinaryInfo,
+  BinaryProgress,
+  CoreStatus,
+  ServiceStatus,
+  ServiceStatusChangeEvent,
+  ServiceErrorEvent
+} from './index.d'
 
 // Custom APIs for renderer
 const api = {
   // Core API - new centralized interface
   core: {
     // Service Management
-    getStatus: (): Promise<any> => ipcRenderer.invoke('core:get-status'),
+    getStatus: (): Promise<CoreStatus> => ipcRenderer.invoke('core:get-status'),
     startService: (serviceName: string): Promise<void> =>
       ipcRenderer.invoke('core:start-service', serviceName),
     stopService: (serviceName: string): Promise<void> =>
       ipcRenderer.invoke('core:stop-service', serviceName),
-    getServiceStatus: (serviceName: string): Promise<any> =>
+    getServiceStatus: (serviceName: string): Promise<ServiceStatus> =>
       ipcRenderer.invoke('core:get-service-status', serviceName),
 
     // Core OpenCode SDK API
-    prompt: (text: string): Promise<string> =>
-      ipcRenderer.invoke('core:prompt', text),
-
+    prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text),
 
     // Events
-    onServiceStatusChange: (callback: (data: any) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: any): void =>
+    onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void): (() => void) => {
+      const subscription = (_event: IpcRendererEvent, data: ServiceStatusChangeEvent): void =>
         callback(data)
       ipcRenderer.on('core:service-status-changed', subscription)
       return (): void => {
@@ -30,8 +35,8 @@ const api = {
       }
     },
 
-    onServiceError: (callback: (data: any) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: any): void =>
+    onServiceError: (callback: (data: ServiceErrorEvent) => void): (() => void) => {
+      const subscription = (_event: IpcRendererEvent, data: ServiceErrorEvent): void =>
         callback(data)
       ipcRenderer.on('core:service-error', subscription)
       return (): void => {

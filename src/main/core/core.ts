@@ -1,4 +1,5 @@
 import { createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
+import type { Part } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 
 export interface Service {
@@ -95,12 +96,21 @@ export class Core {
     }
 
     // Create the client that Core will use
+    console.log(`Core: Creating OpenCode client with baseUrl: ${serverStatus.url}`)
     this.openCodeClient = createOpencodeClient({
-      baseUrl: serverStatus.url,
-      responseStyle: 'data'
+      baseUrl: serverStatus.url
+      // Removing responseStyle to see if that's causing the issue
     })
 
     console.log(`Core: OpenCode client initialized for ${serverStatus.url}`)
+
+    // Test if the client can connect
+    try {
+      console.log('Core: Testing client connectivity...')
+      // We'll test this when we create a session
+    } catch (error) {
+      console.error('Core: Client connectivity test failed:', error)
+    }
   }
 
   async prompt(text: string): Promise<string> {
@@ -130,17 +140,21 @@ export class Core {
       console.log(`Core: Sending prompt: "${text.substring(0, 100)}..."`)
 
       // Create a simple session for the prompt
+      console.log('Core: Creating session...')
       const sessionResponse = await this.openCodeClient!.session.create({
         body: {
           title: `Prompt ${new Date().toLocaleTimeString()}`
         }
       })
 
+      // Session creation successful - extract ID
       if (!sessionResponse.data?.id) {
-        throw new Error('Failed to create session')
+        console.error('Core: Session creation failed, no ID found in response:', sessionResponse)
+        throw new Error('Failed to create session - no session ID returned')
       }
 
       const sessionId = sessionResponse.data.id
+
       console.log(`Core: Created session ${sessionId}`)
 
       // Send the prompt
@@ -148,25 +162,29 @@ export class Core {
         path: { id: sessionId },
         body: {
           model: {
-            providerID: 'anthropic',
-            modelID: 'claude-3-5-sonnet-20241022'
+            providerID: 'opencode',
+            modelID: 'grok-code'
           },
           parts: [{ type: 'text', text: text.trim() }]
         }
       })
 
-      // Extract response text
-      if (promptResponse.data?.parts && promptResponse.data.parts.length > 0) {
-        const responsePart = promptResponse.data.parts[0]
-        if ('text' in responsePart && responsePart.text) {
-          console.log(`Core: Received response (${responsePart.text.length} chars)`)
-          return responsePart.text
+      // Extract response text based on SDK types
+      console.log('Core: Prompt response:', JSON.stringify(promptResponse, null, 2))
+
+      // The response has parts array in data.parts
+      if (promptResponse?.data?.parts && promptResponse.data.parts.length > 0) {
+        // Find the first text part
+        const textPart = promptResponse.data.parts.find((part: Part) => part.type === 'text')
+        if (textPart && 'text' in textPart && textPart.text) {
+          console.log(`Core: Received response (${textPart.text.length} chars)`)
+          return textPart.text
         }
       }
 
       console.warn('Core: Empty or invalid response received')
+      console.log('Core: Available parts:', promptResponse?.data?.parts)
       return 'No response received from AI'
-
     } catch (error) {
       console.error('Core: Prompt failed:', error)
       // Clear client on error so it gets recreated next time

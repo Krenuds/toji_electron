@@ -39,7 +39,7 @@ export class OpenCodeService implements Service {
       hostname: '127.0.0.1',
       port: 4096,
       timeout: 5000,
-      model: 'anthropic/claude-3-5-sonnet-20241022',
+      model: 'opencode/grok-code',
       ...config
     }
 

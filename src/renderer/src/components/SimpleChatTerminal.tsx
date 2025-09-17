@@ -11,16 +11,14 @@ interface SimpleChatTerminalProps {
   className?: string
 }
 
-export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
-  className = ''
-}) => {
+export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({ className = '' }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (): void => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
@@ -28,7 +26,7 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
     scrollToBottom()
   }, [messages])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
     if (!input.trim() || isLoading) return
@@ -40,7 +38,7 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
     setError(null)
@@ -56,7 +54,7 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
         timestamp: new Date()
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       setError(`Failed to get response: ${errorMessage}`)
@@ -83,16 +81,10 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
         {messages.map((message) => (
           <div key={message.id} className={`message ${message.type}`}>
             <div className="message-header">
-              <span className="sender">
-                {message.type === 'user' ? 'You' : 'AI'}
-              </span>
-              <span className="timestamp">
-                {message.timestamp.toLocaleTimeString()}
-              </span>
+              <span className="sender">{message.type === 'user' ? 'You' : 'AI'}</span>
+              <span className="timestamp">{message.timestamp.toLocaleTimeString()}</span>
             </div>
-            <div className="message-content">
-              {message.content}
-            </div>
+            <div className="message-content">{message.content}</div>
           </div>
         ))}
 
@@ -130,11 +122,7 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({
           disabled={isLoading}
           className="message-input"
         />
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          className="send-button"
-        >
+        <button type="submit" disabled={!input.trim() || isLoading} className="send-button">
           {isLoading ? 'Sending...' : 'Send'}
         </button>
       </form>
