@@ -1,80 +1,138 @@
-# NEXT.md - Architectural Discovery & Refactor Plan
+# NEXT.md - Toji API Implementation Plan
 
-## Key Discovery Today
+## What We Built Today
 
-**We've been treating OpenCode wrong.**
+**✅ Complete Toji API Structure**
 
-- **OLD THINKING:** OpenCode = Server management (persistent server, route clients to it)
-- **NEW REALITY:** OpenCode = Agent management (ephemeral agents per project, multiple clients per agent)
-
-## The Fundamental Shift
-
-### What OpenCode Actually Is
-
-- **Server = AI Agent brain** (holds context, conversation, project knowledge)
-- **Clients = Different interfaces** (TUI, web, mobile, VS Code, our Electron app)
-- **One agent per project/folder** - agents are tied to directories
-- **Multiple clients can connect** to same agent for collaboration
-
-### What This Means for Our Architecture
-
-- **Agents are ephemeral** - start/stop per project as needed
-- **Sessions persist independently** - can reconnect to agents later
-- **No "server management"** - just spawn agents when needed
-- **API layer manages SDK directly** - no complex service routing
-
-## Refactor Plan
-
-### OpenCodeService → Binary Management Only
+We created the full API folder structure that will house the entire OpenCode SDK plus our custom orchestration:
 
 ```
-KEEP:
-- Binary download/installation
-- Platform compatibility
-- Path configuration
-
-REMOVE:
-- createOpencodeServer() calls
-- Server lifecycle management
-- Health checking
-- Status tracking
+src/main/api/
+├── index.ts           # Main barrel export - exposes EVERYTHING
+├── types.ts           # Custom types + re-export all SDK types
+├── toji.ts            # Main orchestrator class
+│
+├── server/            # OpenCode server lifecycle management
+├── client/            # OpenCode client management
+├── workspace/         # Directory/workspace operations
+├── session/           # Session management
+├── project/           # Project management
+├── tts/               # Future: Text-to-speech
+└── stt/               # Future: Speech-to-text
 ```
 
-### Core → API Layer (Agent Management)
+**✅ Architecture Clarity**
 
+- **API Layer**: Orchestrates and exposes (no implementations)
+- **Services Layer**: Actual implementations (injected dependencies)
+- **The Toji Class**: Main orchestrator that all interfaces use
+
+## Next Session Implementation Plan
+
+### 1. Wrap OpenCode SDK in Managers (HIGH PRIORITY)
+
+**ServerManager**:
+
+- Implement `start()` using `createOpencodeServer()`
+- Move server lifecycle logic from current `core.ts`
+- Handle server configuration and status
+
+**ClientManager**:
+
+- Implement `connect()` using `createOpencodeClient()`
+- Manage client connection lifecycle
+- Provide access to full SDK client
+
+**SessionManager**:
+
+- Wrap all SDK session methods (`session.prompt()`, `session.list()`, etc.)
+- Enhance with convenience methods
+- Handle current session tracking
+
+**WorkspaceManager**:
+
+- Move directory preparation logic from `core.ts`
+- Handle git initialization
+- Manage workspace switching
+
+**ProjectManager**:
+
+- Wrap SDK project methods (`project.list()`, `project.current()`)
+- Add project template functionality
+
+### 2. Implement Toji Orchestrator
+
+**Main Methods**:
+
+```typescript
+await toji.initialize(directory, config) // Full setup
+await toji.quickStart(directory) // Fast setup with defaults
+await toji.shutdown() // Clean teardown
 ```
-MOVE HERE FROM SERVICE:
-- createOpencodeServer() calls
-- createOpencodeClient() calls
-- Session management
-- Project switching
 
-RENAME:
-- src/main/core/ → src/main/api/
-- Core becomes the central API hub
+**Business Logic**:
+
+```typescript
+await toji.beAwesome() // Example orchestration
+const status = toji.getStatus() // Overall system status
 ```
 
-### New Mental Model
+### 3. Migration Strategy
 
+**Phase 1**: Implement core managers (server, client, workspace, session)
+**Phase 2**: Create Toji orchestrator with initialize/shutdown
+**Phase 3**: Update main process to use Toji instead of Core
+**Phase 4**: Update preload/renderer to use new API structure
+
+### 4. Key Implementation Notes
+
+- **All 50+ SDK methods** must be accessible through managers or direct SDK import
+- **All 226 SDK types** re-exported through api/index.ts
+- **Clean dependency injection** - services injected into Toji constructor
+- **Backward compatibility** - existing functionality preserved during migration
+
+### 5. Success Criteria
+
+- ✅ Full OpenCode SDK wrapped and accessible
+- ✅ Toji orchestrator working with initialize/shutdown
+- ✅ Electron app still functions with new API
+- ✅ All TypeScript compilation passes
+- ✅ Clean separation: API orchestrates, Services implement
+
+## The End Goal
+
+**Single API Entry Point**:
+
+```typescript
+// Any interface (Electron, Discord, Slack, CLI)
+import { toji } from '@main/api'
+
+await toji.initialize('/my/project')
+const response = await toji.session.prompt('Hello')
+await toji.beAwesome()
 ```
-Electron/Discord → API Layer → OpenCode SDK → Agents (per project)
-                             ↓
-                    Services (binary management only)
+
+**Full SDK Access**:
+
+```typescript
+// Direct SDK access when needed
+import { createOpencodeClient, type Session } from '@main/api'
 ```
 
-## Implementation Strategy
+**Modular Management**:
 
-1. **Examine current bloat** - 663 lines between 2 files is too much
-2. **Strip unnecessary complexity** - over-engineered from yesterday's figuring-it-out
-3. **Move SDK calls to API layer** - clean separation of concerns
-4. **Simplify OpenCodeService** - just "is binary installed and executable?"
-5. **Test with simple agent spawn/connect pattern**
+```typescript
+// Individual managers
+import { SessionManager, ProjectManager } from '@main/api'
+```
 
-## Why This Simplifies Everything
+## Architecture Vision Realized
 
-- **No service management complexity** - just spawn agents as needed
-- **No server pooling or routing** - each project gets its own agent
-- **Clean separation** - infrastructure vs API vs SDK
-- **Matches OpenCode's actual design** - directory-bound agents with multi-client support
+This implementation will complete the vision:
 
-**Bottom line:** We discovered OpenCode's true architecture and can now build with the grain instead of against it.
+- **Toji API** = The platform brain
+- **OpenCode SDK** = One orchestrated service
+- **Multiple Interfaces** = All talk to Toji
+- **Clean Separation** = API/Services/Interfaces layers
+
+The next session transforms this structure from stubs into a fully functional API platform! 🚀

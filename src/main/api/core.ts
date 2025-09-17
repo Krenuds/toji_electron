@@ -1,19 +1,12 @@
 import { createOpencodeServer, createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
-import type { Part, Session, Project } from '@opencode-ai/sdk'
+import type { Part, Session, Project, ServerOptions } from '@opencode-ai/sdk'
 import { mkdirSync, existsSync } from 'fs'
 import { execSync } from 'child_process'
 import path from 'path'
 import type { OpenCodeService } from '../services/opencode-service'
 
 // Re-export SDK types for interfaces to use
-export type { Project, Session, Part } from '@opencode-ai/sdk'
-
-export interface AgentConfig {
-  model?: string
-  hostname?: string
-  port?: number
-  timeout?: number
-}
+export type { Project, Session, Part, ServerOptions } from '@opencode-ai/sdk'
 
 export class Core {
   private currentAgent: { close: () => void } | null = null
@@ -27,16 +20,30 @@ export class Core {
   }
 
   // Main API method - replicate "cd + opencode"
-  async startOpencodeInDirectory(directory: string, config: AgentConfig = {}): Promise<void> {
+  async startOpencodeInDirectory(
+    directory: string,
+    serverOptions: ServerOptions = {}
+  ): Promise<void> {
     // Stop any existing agent first
     await this.stopOpencode()
 
-    const agentConfig = {
+    const defaultServerOptions: ServerOptions = {
       hostname: '127.0.0.1',
       port: 4096,
       timeout: 5000,
-      model: 'opencode/grok-code',
-      ...config
+      config: {
+        model: 'opencode/grok-code'
+      }
+    }
+
+    // Merge user options with defaults, properly handling nested config
+    const finalOptions: ServerOptions = {
+      ...defaultServerOptions,
+      ...serverOptions,
+      config: {
+        ...defaultServerOptions.config,
+        ...serverOptions.config
+      }
     }
 
     // Prepare directory (create, init git if needed)
@@ -50,17 +57,10 @@ export class Core {
     try {
       // Start agent (replicating "opencode")
       console.log('Core: Starting OpenCode agent...')
-      this.currentAgent = await createOpencodeServer({
-        hostname: agentConfig.hostname,
-        port: agentConfig.port,
-        timeout: agentConfig.timeout,
-        config: {
-          model: agentConfig.model
-        }
-      })
+      this.currentAgent = await createOpencodeServer(finalOptions)
 
       // Create client to talk to agent
-      const baseUrl = `http://${agentConfig.hostname}:${agentConfig.port}`
+      const baseUrl = `http://${finalOptions.hostname}:${finalOptions.port}`
       this.currentClient = createOpencodeClient({ baseUrl })
       this.currentDirectory = directory
 

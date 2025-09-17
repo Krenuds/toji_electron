@@ -20,7 +20,12 @@
       "Read(//c/Users/donth/**)",
       "Bash(git pull:*)",
       "Bash(ELECTRON_DISABLE_SANDBOX=1 npm run dev)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(timeout 10s npm run dev)",
+      "Bash(for ns in project event config tool path session command find file app tui auth)",
+      "Bash(do echo \"=== $ns namespace ===\")",
+      "Bash(grep:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
