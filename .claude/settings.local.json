@@ -17,7 +17,8 @@
       "Bash(curl:*)",
       "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)",
       "Bash(opencode:*)",
-      "Read(//c/Users/donth/**)"
+      "Read(//c/Users/donth/**)",
+      "Bash(ELECTRON_DISABLE_SANDBOX=1 npm run dev)"
     ],
     "deny": [],
     "ask": []

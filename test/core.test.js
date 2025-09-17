@@ -36,7 +36,7 @@ const mockCreateOpencodeClient = (config) => {
       list: async () => ({ data: [] })
     },
     session: {
-      create: async () => ({ 
+      create: async () => ({
         data: { id: 'mock-session-123', title: 'Test Session' }
       }),
       prompt: async () => ({
@@ -68,17 +68,21 @@ describe('Core API Tests', () => {
 
   test('Core initialization', () => {
     const mockService = new MockOpenCodeService()
-    
+
     // We can't import the actual Core class easily due to ES modules
     // So let's test the logic conceptually
     assert.ok(mockService, 'OpenCodeService mock created')
-    assert.equal(mockService.getBinaryInfo().installed, true, 'Binary should be marked as installed')
+    assert.equal(
+      mockService.getBinaryInfo().installed,
+      true,
+      'Binary should be marked as installed'
+    )
   })
 
   test('Binary service functionality', () => {
     const mockService = new MockOpenCodeService()
     const binaryInfo = mockService.getBinaryInfo()
-    
+
     assert.equal(typeof binaryInfo.path, 'string', 'Binary path should be string')
     assert.equal(typeof binaryInfo.installed, 'boolean', 'Installed should be boolean')
     assert.ok(binaryInfo.lastChecked instanceof Date, 'LastChecked should be Date')
@@ -90,10 +94,10 @@ describe('Core API Tests', () => {
       hostname: '127.0.0.1',
       port: 4096
     })
-    
+
     assert.ok(server, 'Server mock should be created')
     assert.equal(typeof server.close, 'function', 'Server should have close method')
-    
+
     const client = mockSDK.createOpencodeClient({ baseUrl: 'http://localhost:4096' })
     assert.ok(client, 'Client mock should be created')
     assert.ok(client.project, 'Client should have project API')
@@ -103,25 +107,25 @@ describe('Core API Tests', () => {
   test('Directory preparation logic', () => {
     // Test the directory preparation logic
     const testSubDir = join(testDir, 'subproject')
-    
+
     if (!existsSync(testSubDir)) {
       mkdirSync(testSubDir, { recursive: true })
     }
-    
+
     assert.ok(existsSync(testSubDir), 'Test directory should be created')
   })
 
   test('Mock session workflow', async () => {
     const client = mockSDK.createOpencodeClient({ baseUrl: 'http://localhost:4096' })
-    
+
     // Test session creation
     const sessionResponse = await client.session.create({
       body: { title: 'Test Session' }
     })
-    
+
     assert.ok(sessionResponse.data, 'Session should be created')
     assert.equal(typeof sessionResponse.data.id, 'string', 'Session should have ID')
-    
+
     // Test prompting
     const promptResponse = await client.session.prompt({
       path: { id: sessionResponse.data.id },
@@ -130,7 +134,7 @@ describe('Core API Tests', () => {
         parts: [{ type: 'text', text: 'Hello test' }]
       }
     })
-    
+
     assert.ok(promptResponse.data, 'Prompt should return response')
     assert.ok(Array.isArray(promptResponse.data.parts), 'Response should have parts')
     assert.equal(promptResponse.data.parts[0].type, 'text', 'First part should be text')
@@ -139,7 +143,7 @@ describe('Core API Tests', () => {
   test('cleanup', () => {
     // Restore original directory
     process.chdir(originalCwd)
-    
+
     // Clean up test directory
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true })
