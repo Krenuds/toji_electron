@@ -31,7 +31,40 @@ src/
 - `npm run typecheck` - Run TypeScript validation for both Node and web
 - `npm run typecheck:node` - Check main/preload TypeScript
 - `npm run typecheck:web` - Check renderer TypeScript
-- `npm test` - Run all tests (Node.js unit tests + Playwright e2e tests)
+### Testing Standards
+
+**CRITICAL**: This is a TypeScript project. ALL tests must be written in TypeScript.
+
+- **NO JavaScript test files** - `.test.js` files are absolutely forbidden
+- **TypeScript Only** - All tests must use `.test.ts` or `.spec.ts` extensions  
+- **Type Safety** - Tests must be fully typed to maintain project integrity
+- **Consistency** - Mixed file types defeat the purpose of type safety
+
+**Why this matters:**
+- Testing in JavaScript while the project is TypeScript defeats the entire purpose
+- Type safety in tests catches integration issues at compile time
+- IDE support and intellisense are critical for test maintenance
+- Inconsistent typing makes refactoring dangerous
+
+**When setting up tests:**
+1. Use TypeScript test files exclusively
+2. Configure test runners for TypeScript compilation
+3. Ensure test types align with application types
+4. Never override linting rules to allow JavaScript tests
+
+**ENFORCEMENT MECHANISMS:**
+This project has multiple layers of protection against JavaScript files:
+
+1. **ESLint**: Configured to ERROR on any .js files in src/, test/, e2e/ directories
+2. **TypeScript**: Both tsconfig files explicitly set `allowJs: false` and `checkJs: false`
+3. **Git**: .gitignore prevents JavaScript files from being committed to source directories
+4. **Documentation**: This file serves as the final authority on the no-JavaScript rule
+
+**If you encounter JavaScript files in this project:**
+- STOP immediately
+- Do not override these protections
+- Convert the files to TypeScript (.ts/.tsx) instead
+- This is not negotiable - it's a core architectural decision
 
 ### TypeScript Configuration
 

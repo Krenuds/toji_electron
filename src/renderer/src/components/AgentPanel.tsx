@@ -81,7 +81,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({ className = '' }) => {
       )}
 
       <div className="agent-control" style={{ marginBottom: '20px' }}>
-
         <div style={{ marginBottom: '10px' }}>
           <label>
             Directory:

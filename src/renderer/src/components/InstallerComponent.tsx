@@ -55,12 +55,14 @@ export const InstallerComponent: React.FC<InstallerComponentProps> = ({ classNam
   const handleInstall = async (): Promise<void> => {
     setIsInstalling(true)
     setInstallStatus('Starting installation...')
-    
+
     try {
       await window.api.binary.install()
     } catch (error) {
       setIsInstalling(false)
-      setInstallStatus(`Installation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setInstallStatus(
+        `Installation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -77,26 +79,18 @@ export const InstallerComponent: React.FC<InstallerComponentProps> = ({ classNam
       <div className="installer-header">
         <h3>OpenCode Binary</h3>
       </div>
-      
+
       <div className="installer-status">
         <span style={{ color: status.color }}>{status.text}</span>
       </div>
 
       {!binaryInfo?.installed && (
-        <button 
-          onClick={handleInstall}
-          disabled={isInstalling}
-          className="install-button"
-        >
+        <button onClick={handleInstall} disabled={isInstalling} className="install-button">
           {isInstalling ? 'Installing...' : 'Install OpenCode'}
         </button>
       )}
 
-      {installStatus && (
-        <div className="install-status">
-          {installStatus}
-        </div>
-      )}
+      {installStatus && <div className="install-status">{installStatus}</div>}
     </div>
   )
 }
