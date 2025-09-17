@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
+  "type": "module",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
   "scripts": {
@@ -13,6 +14,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:linux": "electron-vite dev --",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
@@ -25,12 +27,14 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@opencode-ai/sdk": "^0.9.6",
     "adm-zip": "^0.5.16",
-    "electron-store": "^10.1.0"
+    "electron-store": "^10.1.0",
+    "update": "^0.7.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
+    "@playwright/test": "^1.55.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -42,6 +46,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "playwright": "^1.55.0",
     "prettier": "^3.6.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

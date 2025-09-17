@@ -4,3 +4,11 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# FORBIDDEN: No JavaScript files in source directories
+# This is a TypeScript-only project
+src/**/*.js
+test/**/*.js
+e2e/**/*.js
+**/*.test.js
+**/*.spec.js

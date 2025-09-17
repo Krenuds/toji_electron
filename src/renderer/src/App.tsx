@@ -1,4 +1,5 @@
-import { OpenCodePanel } from './components/OpenCodePanel'
+import { InstallerComponent } from './components/InstallerComponent'
+import { AgentPanel } from './components/AgentPanel'
 import { SimpleChatTerminal } from './components/SimpleChatTerminal'
 import electronLogo from './assets/toji.png'
 import './assets/opencode.css'
@@ -13,7 +14,8 @@ function App(): React.JSX.Element {
 
       <div className="app-content">
         <div className="left-panel">
-          <OpenCodePanel className="opencode-section" />
+          <InstallerComponent className="installer-section" />
+          <AgentPanel className="agent-section" />
         </div>
 
         <div className="right-panel">

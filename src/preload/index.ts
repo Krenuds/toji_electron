@@ -1,63 +1,40 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type {
-  BinaryInfo,
-  BinaryProgress,
-  CoreStatus,
-  ServiceStatus,
-  ServiceStatusChangeEvent,
-  ServiceErrorEvent
-} from './index.d'
+import type { BinaryInfo, BinaryProgress } from './index.d'
+import type { Project, Session } from '../main/core/core'
 
 // Custom APIs for renderer
 const api = {
-  // Core API - new centralized interface
+  // Core API - OpenCode agent management
   core: {
-    // Service Management
-    getStatus: (): Promise<CoreStatus> => ipcRenderer.invoke('core:get-status'),
-    startService: (serviceName: string): Promise<void> =>
-      ipcRenderer.invoke('core:start-service', serviceName),
-    stopService: (serviceName: string): Promise<void> =>
-      ipcRenderer.invoke('core:stop-service', serviceName),
-    getServiceStatus: (serviceName: string): Promise<ServiceStatus> =>
-      ipcRenderer.invoke('core:get-service-status', serviceName),
+    // Agent Management
+    isRunning: (): Promise<boolean> => ipcRenderer.invoke('core:is-running'),
+    getCurrentDirectory: (): Promise<string | undefined> =>
+      ipcRenderer.invoke('core:get-current-directory'),
+    startOpencode: (directory: string, config?: object): Promise<void> =>
+      ipcRenderer.invoke('core:start-opencode', directory, config),
+    stopOpencode: (): Promise<void> => ipcRenderer.invoke('core:stop-opencode'),
 
-    // Core OpenCode SDK API
+    // OpenCode SDK API
     prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text),
-
-    // Events
-    onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: ServiceStatusChangeEvent): void =>
-        callback(data)
-      ipcRenderer.on('core:service-status-changed', subscription)
-      return (): void => {
-        ipcRenderer.removeListener('core:service-status-changed', subscription)
-      }
-    },
-
-    onServiceError: (callback: (data: ServiceErrorEvent) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: ServiceErrorEvent): void =>
-        callback(data)
-      ipcRenderer.on('core:service-error', subscription)
-      return (): void => {
-        ipcRenderer.removeListener('core:service-error', subscription)
-      }
-    }
+    listProjects: (): Promise<{ data: Project[] }> => ipcRenderer.invoke('core:list-projects'),
+    listSessions: (): Promise<{ data: Session[] }> => ipcRenderer.invoke('core:list-sessions'),
+    deleteSession: (sessionId: string): Promise<void> =>
+      ipcRenderer.invoke('core:delete-session', sessionId)
   },
 
-  // OpenCode API - maintained for backward compatibility
-  opencode: {
-    getBinaryInfo: (): Promise<BinaryInfo> => ipcRenderer.invoke('opencode:get-binary-info'),
-    downloadBinary: (): Promise<void> => ipcRenderer.invoke('opencode:download-binary'),
-    ensureBinary: (): Promise<void> => ipcRenderer.invoke('opencode:ensure-binary'),
+  // Binary Management API - separated from core agent logic
+  binary: {
+    getInfo: (): Promise<BinaryInfo> => ipcRenderer.invoke('binary:get-info'),
+    install: (): Promise<void> => ipcRenderer.invoke('binary:install'),
 
     // Events
-    onBinaryUpdate: (callback: (progress: BinaryProgress) => void): (() => void) => {
+    onStatusUpdate: (callback: (progress: BinaryProgress) => void): (() => void) => {
       const subscription = (_event: IpcRendererEvent, progress: BinaryProgress): void =>
         callback(progress)
-      ipcRenderer.on('opencode:binary-update', subscription)
+      ipcRenderer.on('binary:status-update', subscription)
       return (): void => {
-        ipcRenderer.removeListener('opencode:binary-update', subscription)
+        ipcRenderer.removeListener('binary:status-update', subscription)
       }
     }
   }

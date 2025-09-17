@@ -1,149 +1,99 @@
-import { createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
-import type { Part, Session } from '@opencode-ai/sdk'
+import { createOpencodeServer, createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
+import type { Part, Session, Project } from '@opencode-ai/sdk'
+import { mkdirSync, existsSync } from 'fs'
+import { execSync } from 'child_process'
+import path from 'path'
 import type { OpenCodeService } from '../services/opencode-service'
-import type { ConfigProvider } from '../config/ConfigProvider'
 
-export interface Service {
-  name: string
-  start(): Promise<void>
-  stop(): Promise<void>
-  getStatus(): ServiceStatus
-}
+// Re-export SDK types for interfaces to use
+export type { Project, Session, Part } from '@opencode-ai/sdk'
 
-export interface ServiceStatus {
-  running: boolean
-  healthy?: boolean
-  error?: string
-  lastCheck?: Date
-}
-
-export interface CoreStatus {
-  services: Record<string, ServiceStatus>
-  currentWorkspace?: string
+export interface AgentConfig {
+  model?: string
+  hostname?: string
+  port?: number
+  timeout?: number
 }
 
 export class Core {
-  private services = new Map<string, Service>()
-  private currentWorkspace?: string
-  private openCodeClient?: OpencodeClient
+  private currentAgent: { close: () => void } | null = null
+  private currentClient?: OpencodeClient
   private currentSession?: Session
+  private currentDirectory?: string
+  private originalCwd?: string
 
-  constructor(private config: ConfigProvider) {
-    // Config is available to core
-    console.log(
-      'Core: Initialized with config, OpenCode working directory:',
-      config.getOpencodeWorkingDirectory()
-    )
+  constructor(public binaryService: OpenCodeService) {
+    console.log('Core: API layer initialized')
   }
 
-  getConfig(): ConfigProvider {
-    return this.config
-  }
+  // Main API method - replicate "cd + opencode"
+  async startOpencodeInDirectory(directory: string, config: AgentConfig = {}): Promise<void> {
+    // Stop any existing agent first
+    await this.stopOpencode()
 
-  registerService(service: Service): void {
-    this.services.set(service.name, service)
-  }
-
-  async startService(serviceName: string): Promise<void> {
-    const service = this.services.get(serviceName)
-    if (!service) {
-      throw new Error(`Service '${serviceName}' not found`)
-    }
-    await service.start()
-  }
-
-  async stopService(serviceName: string): Promise<void> {
-    const service = this.services.get(serviceName)
-    if (!service) {
-      throw new Error(`Service '${serviceName}' not found`)
-    }
-    await service.stop()
-  }
-
-  getServiceStatus(serviceName: string): ServiceStatus {
-    const service = this.services.get(serviceName)
-    if (!service) {
-      throw new Error(`Service '${serviceName}' not found`)
-    }
-    return service.getStatus()
-  }
-
-  getAllStatus(): CoreStatus {
-    const services: Record<string, ServiceStatus> = {}
-    for (const [name, service] of this.services) {
-      services[name] = service.getStatus()
-    }
-    return {
-      services,
-      currentWorkspace: this.currentWorkspace
-    }
-  }
-
-  setWorkspace(path: string): void {
-    this.currentWorkspace = path
-    // TODO: Notify services about workspace change
-  }
-
-  getCurrentWorkspace(): string | undefined {
-    return this.currentWorkspace
-  }
-
-  // Helper to get a specific service
-  getService<T extends Service>(serviceName: string): T | undefined {
-    return this.services.get(serviceName) as T
-  }
-
-  private async initializeOpenCodeClient(): Promise<void> {
-    const openCodeService = this.getService<OpenCodeService>('opencode')
-    if (!openCodeService) {
-      throw new Error('OpenCode service not registered')
+    const agentConfig = {
+      hostname: '127.0.0.1',
+      port: 4096,
+      timeout: 5000,
+      model: 'opencode/grok-code',
+      ...config
     }
 
-    // Get server status to get the URL
-    const serverStatus = await openCodeService.getServerStatus()
-    if (!serverStatus.running || !serverStatus.url) {
-      throw new Error('OpenCode server is not running')
-    }
+    // Prepare directory (create, init git if needed)
+    await this.prepareDirectory(directory)
 
-    // Create the client that Core will use
-    console.log(`Core: Creating OpenCode client with baseUrl: ${serverStatus.url}`)
-    this.openCodeClient = createOpencodeClient({
-      baseUrl: serverStatus.url
-      // Removing responseStyle to see if that's causing the issue
-    })
+    // Change to target directory (replicating "cd")
+    this.originalCwd = process.cwd()
+    console.log(`Core: Changing to directory: ${directory}`)
+    process.chdir(directory)
 
-    console.log(`Core: OpenCode client initialized for ${serverStatus.url}`)
-
-    // Debug: Check what project OpenCode thinks it's working with
     try {
-      console.log('Core: Checking current project...')
-      const currentProject = await this.openCodeClient.project.current()
-      console.log('Core: Current project:', JSON.stringify(currentProject, null, 2))
+      // Start agent (replicating "opencode")
+      console.log('Core: Starting OpenCode agent...')
+      this.currentAgent = await createOpencodeServer({
+        hostname: agentConfig.hostname,
+        port: agentConfig.port,
+        timeout: agentConfig.timeout,
+        config: {
+          model: agentConfig.model
+        }
+      })
 
-      console.log('Core: Listing all projects...')
-      const allProjects = await this.openCodeClient.project.list()
-      console.log('Core: All projects:', JSON.stringify(allProjects, null, 2))
+      // Create client to talk to agent
+      const baseUrl = `http://${agentConfig.hostname}:${agentConfig.port}`
+      this.currentClient = createOpencodeClient({ baseUrl })
+      this.currentDirectory = directory
 
-      // Check if we need to create or switch to the correct project
-      const targetDirectory = this.config.getOpencodeWorkingDirectory()
-      console.log('Core: Target directory:', targetDirectory)
+      console.log(`Core: OpenCode agent running in ${directory}`)
 
-      if (!currentProject.data || currentProject.data.worktree !== targetDirectory) {
-        console.log('Core: Current project is not the target directory, need to switch/create project')
-        // For now, we'll work with what we have but log the issue
-        console.warn(`Core: OpenCode is using project in ${currentProject.data?.worktree} instead of ${targetDirectory}`)
+      // Log project info for debugging
+      await this.logProjectInfo()
+    } catch (error) {
+      // Restore directory on failure
+      if (this.originalCwd) {
+        process.chdir(this.originalCwd)
+        this.originalCwd = undefined
       }
+      throw error
+    }
+  }
 
-    } catch (error) {
-      console.error('Core: Project debugging failed:', error)
+  async stopOpencode(): Promise<void> {
+    if (this.currentAgent) {
+      console.log('Core: Stopping OpenCode agent...')
+      this.currentAgent.close()
+      this.currentAgent = null
     }
 
-    // Test if the client can connect
-    try {
-      console.log('Core: Testing client connectivity...')
-      // We'll test this when we create a session
-    } catch (error) {
-      console.error('Core: Client connectivity test failed:', error)
+    this.currentClient = undefined
+    this.currentSession = undefined
+    this.currentDirectory = undefined
+
+    // Restore original directory
+    if (this.originalCwd) {
+      console.log('Core: Restoring original directory')
+      process.chdir(this.originalCwd)
+      this.originalCwd = undefined
     }
   }
 
@@ -152,53 +102,33 @@ export class Core {
       throw new Error('Prompt text cannot be empty')
     }
 
-    // Ensure OpenCode service is running
-    const openCodeService = this.getService<OpenCodeService>('opencode')
-    if (!openCodeService) {
-      throw new Error('OpenCode service not registered')
-    }
-
-    const serviceStatus = openCodeService.getStatus()
-    if (!serviceStatus.running) {
-      console.log('Core: Starting OpenCode service...')
-      await this.startService('opencode')
-    }
-
-    // Initialize client if needed
-    if (!this.openCodeClient) {
-      console.log('Core: Initializing OpenCode client...')
-      await this.initializeOpenCodeClient()
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
     }
 
     try {
-      console.log(`Core: Sending prompt: "${text.substring(0, 100)}..."`)
-
-      // Use persistent session or create new one
-      let session: Session
-      if (!this.currentSession) {
-        console.log('Core: Creating new persistent session...')
-        const sessionResponse = await this.openCodeClient!.session.create({
+      // Get or create session
+      let session = this.currentSession
+      if (!session) {
+        console.log('Core: Creating new session...')
+        const sessionResponse = await this.currentClient.session.create({
           body: {
-            title: `Persistent Chat Session - ${new Date().toLocaleString()}`
+            title: `Session - ${new Date().toLocaleString()}`
           }
         })
 
-        // Extract session from response
         if (!sessionResponse.data?.id) {
-          console.error('Core: Session creation failed:', sessionResponse)
-          throw new Error('Failed to create session - no session ID returned')
+          throw new Error('Failed to create session')
         }
 
         session = sessionResponse.data
         this.currentSession = session
-        console.log(`Core: Created new persistent session ${session.id}`)
-      } else {
-        session = this.currentSession
-        console.log(`Core: Using existing persistent session ${session.id}`)
+        console.log(`Core: Created session ${session.id}`)
       }
 
-      // Send the user message to the session
-      const promptResponse = await this.openCodeClient!.session.prompt({
+      // Send prompt
+      console.log(`Core: Sending prompt: "${text.substring(0, 100)}..."`)
+      const promptResponse = await this.currentClient.session.prompt({
         path: { id: session.id },
         body: {
           model: {
@@ -209,42 +139,124 @@ export class Core {
         }
       })
 
-      // Extract response based on actual SDK structure
-      console.log('Core: Prompt response:', JSON.stringify(promptResponse, null, 2))
-
+      // Extract response
       if (!promptResponse?.data?.parts) {
-        console.warn('Core: No parts in response')
         return 'No response received from AI'
       }
 
       const parts: Part[] = promptResponse.data.parts
-
-      // Find text parts in the response
       const textParts = parts.filter(
         (part: Part): part is Part & { text: string } =>
           part.type === 'text' && 'text' in part && typeof part.text === 'string'
       )
 
       if (textParts.length === 0) {
-        console.warn('Core: No text parts found in response')
-        console.log(
-          'Core: Available part types:',
-          parts.map((p) => p.type)
-        )
         return 'No text response received from AI'
       }
 
-      // Combine all text parts
       const responseText = textParts.map((part) => part.text).join('\n')
       console.log(`Core: Received response (${responseText.length} chars)`)
       return responseText
     } catch (error) {
       console.error('Core: Prompt failed:', error)
-      // Clear client and session on error so they get recreated next time
-      this.openCodeClient = undefined
+      // Clear session on error for clean retry
       this.currentSession = undefined
       throw new Error(`Prompt failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
+  // Simple status check
+  isRunning(): boolean {
+    return !!this.currentAgent && !!this.currentClient
+  }
+
+  getCurrentDirectory(): string | undefined {
+    return this.currentDirectory
+  }
+
+  async listProjects(): Promise<{ data: Project[] }> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+
+    const response = await this.currentClient.project.list()
+    if (!response.data) {
+      throw new Error('Failed to list projects')
+    }
+    return { data: response.data }
+  }
+
+  async listSessions(): Promise<{ data: Session[] }> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+
+    const response = await this.currentClient.session.list()
+    if (!response.data) {
+      throw new Error('Failed to list sessions')
+    }
+    return { data: response.data }
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    if (!this.currentClient) {
+      throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
+    }
+
+    await this.currentClient.session.delete({ path: { id: sessionId } })
+
+    // Clear current session if it was deleted
+    if (this.currentSession?.id === sessionId) {
+      this.currentSession = undefined
+    }
+  }
+
+  // Private helpers
+  private async prepareDirectory(directory: string): Promise<void> {
+    // Create directory if it doesn't exist
+    if (!existsSync(directory)) {
+      console.log(`Core: Creating directory: ${directory}`)
+      mkdirSync(directory, { recursive: true })
+    }
+
+    // Initialize Git if needed (OpenCode requires Git repos)
+    const gitDir = path.join(directory, '.git')
+    if (!existsSync(gitDir)) {
+      console.log('Core: Initializing Git repository...')
+      execSync('git init', { cwd: directory, stdio: 'pipe' })
+
+      // Create initial commit if there are files
+      try {
+        const statusOutput = execSync('git status --porcelain', {
+          cwd: directory,
+          stdio: 'pipe'
+        }).toString()
+
+        if (statusOutput.trim()) {
+          console.log('Core: Creating initial commit...')
+          execSync('git add .', { cwd: directory, stdio: 'pipe' })
+          execSync('git commit -m "Initial commit for OpenCode"', {
+            cwd: directory,
+            stdio: 'pipe'
+          })
+        }
+      } catch {
+        console.log('Core: Git commit not needed or failed, continuing...')
+      }
+    }
+  }
+
+  private async logProjectInfo(): Promise<void> {
+    if (!this.currentClient) return
+
+    try {
+      const currentProject = await this.currentClient.project.current()
+      console.log('Core: Current project:', JSON.stringify(currentProject, null, 2))
+
+      const allProjects = await this.currentClient.project.list()
+      console.log('Core: All projects:', JSON.stringify(allProjects, null, 2))
+    } catch (error) {
+      console.error('Core: Failed to get project info:', error)
+    }
+  }
 }

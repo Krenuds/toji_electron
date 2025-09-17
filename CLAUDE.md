@@ -1,5 +1,73 @@
 # Toji3 - Electron-Vite React TypeScript Desktop Application
 
+## Core Architectural Philosophy
+
+**FUNDAMENTAL PRINCIPLE**: This application is built as a **tools library**, not a workflow engine.
+
+### Separation of Concerns
+
+**Core API Layer** (`src/main/core/`)
+- **Purpose**: Provides callable tools and capabilities
+- **What it does**: Pure functions that can be invoked from interfaces
+- **What it NEVER does**: Make user-facing decisions or automate workflows
+- **Pattern**: "Here are the tools available" - not "Here's what should happen"
+
+**Interface Layers** (Electron, Discord, etc.)
+- **Purpose**: Contains all business logic and user-facing decisions  
+- **What it does**: Orchestrates core functions based on user intent
+- **Pattern**: Interface provides buttons/controls → Core provides functions
+
+**Service Layer** (OpenCode SDK, etc.)
+- **Purpose**: External dependencies with their own lifecycles
+- **Approach**: Respect existing lifecycles, don't reinvent or over-abstract
+
+### Development Guidelines
+
+1. **Core functions are tools** - each should be a discrete, callable component
+2. **No business logic in core** - decision-making happens in interfaces
+3. **Modular by design** - any interface should be able to call any core function
+4. **Simple over elaborate** - clear principles over complex systems
+5. **Interface-driven workflows** - let the UI/interface control the flow
+
+**Example Pattern:**
+```typescript
+// Core: Provides capability
+export function startAgent(directory: string): Promise<AgentInstance>
+
+// Interface: Makes decisions about when/how to use it
+const handleStartClick = () => startAgent(selectedDirectory)
+```
+
+### What Belongs Where
+
+**✅ Core API Should Contain:**
+- Pure functions that perform specific operations
+- Data transformation and processing logic
+- Service integration adapters (OpenCode SDK calls)
+- Resource management (file system, process lifecycle)
+- State management primitives (not business state decisions)
+
+**❌ Core API Should NEVER Contain:**
+- User interface logic or decisions
+- Workflow orchestration ("if this then that" logic)
+- User preference handling
+- Automatic behaviors or scheduling
+- Error presentation logic (logging yes, user messages no)
+
+**✅ Interface Layers Should Contain:**
+- All user-facing decision logic
+- Workflow orchestration and business rules
+- User preference management and storage
+- Error handling and user feedback
+- State management for UI concerns
+- Event handling and user interactions
+
+**🔄 Service Layer Guidelines:**
+- Respect existing service lifecycles (don't reinvent OpenCode's patterns)
+- Create thin adapters, not thick abstractions
+- Let services manage their own state and configuration
+- Focus on integration, not replacement
+
 ## Project Architecture Overview
 
 This is an **Electron application** built with **electron-vite**, **React**, and **TypeScript**. The project follows electron-vite's recommended tri-process architecture with strict separation of concerns for security and maintainability.
@@ -31,6 +99,40 @@ src/
 - `npm run typecheck` - Run TypeScript validation for both Node and web
 - `npm run typecheck:node` - Check main/preload TypeScript
 - `npm run typecheck:web` - Check renderer TypeScript
+### Testing Standards
+
+**CRITICAL**: This is a TypeScript project. ALL tests must be written in TypeScript.
+
+- **NO JavaScript test files** - `.test.js` files are absolutely forbidden
+- **TypeScript Only** - All tests must use `.test.ts` or `.spec.ts` extensions  
+- **Type Safety** - Tests must be fully typed to maintain project integrity
+- **Consistency** - Mixed file types defeat the purpose of type safety
+
+**Why this matters:**
+- Testing in JavaScript while the project is TypeScript defeats the entire purpose
+- Type safety in tests catches integration issues at compile time
+- IDE support and intellisense are critical for test maintenance
+- Inconsistent typing makes refactoring dangerous
+
+**When setting up tests:**
+1. Use TypeScript test files exclusively
+2. Configure test runners for TypeScript compilation
+3. Ensure test types align with application types
+4. Never override linting rules to allow JavaScript tests
+
+**ENFORCEMENT MECHANISMS:**
+This project has multiple layers of protection against JavaScript files:
+
+1. **ESLint**: Configured to ERROR on any .js files in src/, test/, e2e/ directories
+2. **TypeScript**: Both tsconfig files explicitly set `allowJs: false` and `checkJs: false`
+3. **Git**: .gitignore prevents JavaScript files from being committed to source directories
+4. **Documentation**: This file serves as the final authority on the no-JavaScript rule
+
+**If you encounter JavaScript files in this project:**
+- STOP immediately
+- Do not override these protections
+- Convert the files to TypeScript (.ts/.tsx) instead
+- This is not negotiable - it's a core architectural decision
 
 ### TypeScript Configuration
 
@@ -71,14 +173,14 @@ src/
 - Communicates with main via preload-exposed APIs
 - Uses Vite's development server with HMR
 
-## SST OpenCode Integration Strategy
+## OpenCode Agent Integration Strategy
 
-When integrating SST OpenCode SDK:
+Current implementation uses agent-based architecture:
 
-1. **Main Process Integration**: Install SDK in main process for system-level operations
-2. **Preload Bridge**: Expose safe SDK methods via contextBridge
-3. **Renderer Interface**: Create React components that call preload-exposed APIs
-4. **System Agent Functionality**: Implement in main process with appropriate permissions
+1. **Core API Layer**: `src/main/core/core.ts` manages agent lifecycle per directory
+2. **Binary Service**: `src/main/services/opencode-service.ts` handles SDK binary installation
+3. **Preload Bridge**: Exposes agent management APIs (`startOpencode`, `stopOpencode`, `prompt`)
+4. **Renderer Interface**: Simple AgentPanel for directory-based agent control
 
 ## Security Best Practices
 
@@ -105,8 +207,8 @@ When integrating SST OpenCode SDK:
 1. **Never bypass security**: Always use contextBridge for main→renderer communication
 2. **Process separation**: Keep business logic properly separated by process type
 3. **Type definitions**: Maintain type safety across process boundaries
-4. **Testing strategy**: Use `npm run typecheck` before builds
-5. **System agent features**: Implement in main process, expose via safe preload APIs
+4. **Testing strategy**: Run `npm test` and `npm run typecheck` before commits
+5. **Agent-based architecture**: OpenCode agents are ephemeral server instances per directory, not persistent services
 
 This architecture ensures secure, maintainable, and scalable desktop application development while leveraging modern web technologies within Electron's security model.
 
