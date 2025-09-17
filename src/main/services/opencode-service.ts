@@ -1,6 +1,8 @@
 import { app } from 'electron'
 import { join } from 'path'
 import { mkdirSync, existsSync } from 'fs'
+import { execSync } from 'child_process'
+import path from 'path'
 import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
@@ -220,6 +222,29 @@ export class OpenCodeService implements Service {
       if (!existsSync(workingDirectory)) {
         console.log('OpenCode Service: Creating working directory:', workingDirectory)
         mkdirSync(workingDirectory, { recursive: true })
+      }
+
+      // Ensure Git repository exists for proper OpenCode project detection
+      const gitDir = path.join(workingDirectory, '.git')
+      if (!existsSync(gitDir)) {
+        console.log('OpenCode Service: Initializing Git repository for project detection...')
+        execSync('git init', { cwd: workingDirectory, stdio: 'pipe' })
+
+        // Create initial commit if needed for project detection
+        try {
+          const statusOutput = execSync('git status --porcelain', { cwd: workingDirectory, stdio: 'pipe' }).toString()
+          if (statusOutput.trim()) {
+            console.log('OpenCode Service: Creating initial commit for project detection...')
+            execSync('git add .', { cwd: workingDirectory, stdio: 'pipe' })
+            execSync('git commit -m "Initial commit for OpenCode project detection"', {
+              cwd: workingDirectory,
+              stdio: 'pipe'
+            })
+          }
+        } catch (error) {
+          // If commit fails (e.g., no files to commit), that's okay
+          console.log('OpenCode Service: Git commit not needed or failed, continuing...')
+        }
       }
 
       // Change to the target directory before starting OpenCode server

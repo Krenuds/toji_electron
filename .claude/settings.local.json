@@ -14,7 +14,10 @@
       "Read(//c/Users/donth/OneDrive/Desktop/**)",
       "Bash(git commit:*)",
       "Bash(git log:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)",
+      "Bash(opencode:*)",
+      "Read(//c/Users/donth/**)"
     ],
     "deny": [],
     "ask": []
