@@ -45,22 +45,12 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  // Initialize config first
-  const config = new ConfigProvider()
-  console.log('Config initialized, working directory:', config.getOpencodeWorkingDirectory())
-
-  // Initialize Core with config
-  core = new Core(config)
-
-  // Initialize OpenCode service with config
-  const openCodeService = new OpenCodeService(config, {
-    model: 'opencode/grok-code',
-    hostname: '127.0.0.1',
-    port: 4096
-  })
-
-  core.registerService(openCodeService)
-  console.log('Core initialized with OpenCode service')
+  // Initialize binary service
+  const openCodeService = new OpenCodeService()
+  
+  // Initialize Core API with binary service
+  core = new Core(openCodeService)
+  console.log('Core API initialized')
 
   // Set up IPC handlers for Core
   setupCoreHandlers()
@@ -88,52 +78,42 @@ app.whenReady().then(async () => {
 function setupCoreHandlers(): void {
   if (!core) return
 
-  // Core status and service management
-  ipcMain.handle('core:get-status', async () => {
-    return core!.getAllStatus()
+  // Core API status
+  ipcMain.handle('core:is-running', async () => {
+    return core!.isRunning()
   })
 
-  ipcMain.handle('core:start-service', async (_, serviceName: string) => {
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    try {
-      await core!.startService(serviceName)
-      if (mainWindow) {
-        mainWindow.webContents.send('core:service-status-changed', {
-          service: serviceName,
-          status: core!.getServiceStatus(serviceName)
-        })
-      }
-    } catch (error) {
-      if (mainWindow) {
-        mainWindow.webContents.send('core:service-error', {
-          service: serviceName,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        })
-      }
-      throw error
+  ipcMain.handle('core:get-current-directory', async () => {
+    return core!.getCurrentDirectory()
+  })
+
+  // Main API - Start OpenCode in directory
+  ipcMain.handle('core:start-opencode', async (_, directory: string, config?: any) => {
+    if (!core) {
+      throw new Error('Core not initialized')
     }
+    return await core.startOpencodeInDirectory(directory, config)
   })
 
-  ipcMain.handle('core:stop-service', async (_, serviceName: string) => {
-    await core!.stopService(serviceName)
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    if (mainWindow) {
-      mainWindow.webContents.send('core:service-status-changed', {
-        service: serviceName,
-        status: core!.getServiceStatus(serviceName)
-      })
+  // Stop OpenCode
+  ipcMain.handle('core:stop-opencode', async () => {
+    if (!core) {
+      throw new Error('Core not initialized')
     }
+    return await core.stopOpencode()
   })
 
-  ipcMain.handle('core:get-service-status', async (_, serviceName: string) => {
-    return core!.getServiceStatus(serviceName)
+  // Send prompt to current agent
+  ipcMain.handle('core:prompt', async (_, text: string) => {
+    if (!core) {
+      throw new Error('Core not initialized')
+    }
+    return await core.prompt(text)
   })
 
-  // OpenCode-specific methods (delegated through core)
-  const openCodeService = core.getService<OpenCodeService>('opencode')
-
+  // Binary management (direct access to OpenCodeService)
   ipcMain.handle('opencode:get-binary-info', async () => {
-    return await openCodeService?.getBinaryInfo()
+    return await core!.binaryService.getBinaryInfo()
   })
 
   ipcMain.handle('opencode:download-binary', async () => {
@@ -146,7 +126,7 @@ function setupCoreHandlers(): void {
     }
 
     try {
-      await openCodeService?.downloadBinary()
+      await core!.binaryService.downloadBinary()
       if (mainWindow) {
         mainWindow.webContents.send('opencode:binary-update', {
           stage: 'complete',
@@ -165,15 +145,7 @@ function setupCoreHandlers(): void {
   })
 
   ipcMain.handle('opencode:ensure-binary', async () => {
-    return await openCodeService?.ensureBinary()
-  })
-
-  // Core API - Direct OpenCode SDK usage
-  ipcMain.handle('core:prompt', async (_, text: string) => {
-    if (!core) {
-      throw new Error('Core not initialized')
-    }
-    return await core.prompt(text)
+    return await core!.binaryService.ensureBinary()
   })
 }
 
@@ -181,18 +153,15 @@ function setupCoreHandlers(): void {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', async () => {
-  console.log('All windows closed, cleaning up services...')
+  console.log('All windows closed, cleaning up...')
 
-  // Cleanup services before quitting
+  // Stop any running OpenCode agents
   if (core) {
     try {
-      const openCodeService = core.getService<OpenCodeService>('opencode')
-      if (openCodeService) {
-        await openCodeService.cleanup()
-      }
-      console.log('Services cleanup completed')
+      await core.stopOpencode()
+      console.log('Cleanup completed')
     } catch (error) {
-      console.error('Error during services cleanup:', error)
+      console.error('Error during cleanup:', error)
     }
   }
 
@@ -205,16 +174,13 @@ app.on('window-all-closed', async () => {
 app.on('before-quit', async (event) => {
   if (core) {
     event.preventDefault()
-    console.log('App is quitting, cleaning up services...')
+    console.log('App is quitting, cleaning up...')
 
     try {
-      const openCodeService = core.getService<OpenCodeService>('opencode')
-      if (openCodeService) {
-        await openCodeService.cleanup()
-      }
-      console.log('Services cleanup completed, quitting app')
+      await core.stopOpencode()
+      console.log('Cleanup completed, quitting app')
     } catch (error) {
-      console.error('Error during services cleanup:', error)
+      console.error('Error during cleanup:', error)
     } finally {
       core = null
       app.quit()

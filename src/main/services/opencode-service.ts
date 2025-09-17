@@ -1,59 +1,19 @@
 import { app } from 'electron'
 import { join } from 'path'
 import { mkdirSync, existsSync } from 'fs'
-import { execSync } from 'child_process'
-import path from 'path'
 import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
-import { createServer } from 'net'
-import { createOpencodeServer } from '@opencode-ai/sdk'
-import { Service, ServiceStatus } from '../core/core'
-import type { ConfigProvider } from '../config/ConfigProvider'
 
-export interface OpenCodeConfig {
-  model?: string
-  hostname?: string
-  port?: number
-  timeout?: number
-}
-
-export interface ServerStatus {
-  running: boolean
-  url?: string
-  error?: string
-  healthy?: boolean
-  port?: number
-  pid?: number
-  lastHealthCheck?: Date
-}
-
-export class OpenCodeService implements Service {
-  name = 'opencode'
-
+export class OpenCodeService {
   private binDir: string
   private dataDir: string
-  private server: { close: () => void } | null = null
-  private config: OpenCodeConfig
-  private healthCheckInterval: NodeJS.Timeout | null = null
-  private originalCwd?: string
 
-  constructor(
-    private configProvider: ConfigProvider,
-    config: OpenCodeConfig = {}
-  ) {
-    this.config = {
-      hostname: '127.0.0.1',
-      port: 4096,
-      timeout: 5000,
-      model: 'opencode/grok-code',
-      ...config
-    }
-
+  constructor() {
     const userDataPath = app.getPath('userData')
     this.binDir = join(userDataPath, 'opencode-bin')
     this.dataDir = join(userDataPath, 'opencode-data')
-
+    
     this.setupEnvironment()
   }
 
@@ -84,40 +44,6 @@ export class OpenCodeService implements Service {
     }
   }
 
-  async start(): Promise<void> {
-    try {
-      await this.ensureBinary()
-      await this.startServer()
-    } catch (error) {
-      console.error('OpenCode Service: Failed to start:', error)
-      throw error
-    }
-  }
-
-  async stop(): Promise<void> {
-    this.stopHealthChecking()
-
-    if (this.server) {
-      this.server.close()
-      this.server = null
-    }
-
-    // Restore original working directory
-    if (this.originalCwd) {
-      console.log('OpenCode Service: Restoring original working directory:', this.originalCwd)
-      process.chdir(this.originalCwd)
-      this.originalCwd = undefined
-    }
-  }
-
-  getStatus(): ServiceStatus {
-    return {
-      running: !!this.server,
-      healthy: !!this.server,
-      error: this.server ? undefined : 'Service not started',
-      lastCheck: new Date()
-    }
-  }
 
   async downloadBinary(): Promise<void> {
     const platform = process.platform
@@ -211,203 +137,5 @@ export class OpenCodeService implements Service {
     }
   }
 
-  async startServer(): Promise<ServerStatus> {
-    try {
-      await this.ensureBinary()
 
-      // Get configured working directory and ensure it exists
-      const workingDirectory = this.configProvider.getOpencodeWorkingDirectory()
-      console.log('OpenCode Service: Using working directory:', workingDirectory)
-
-      if (!existsSync(workingDirectory)) {
-        console.log('OpenCode Service: Creating working directory:', workingDirectory)
-        mkdirSync(workingDirectory, { recursive: true })
-      }
-
-      // Ensure Git repository exists for proper OpenCode project detection
-      const gitDir = path.join(workingDirectory, '.git')
-      if (!existsSync(gitDir)) {
-        console.log('OpenCode Service: Initializing Git repository for project detection...')
-        execSync('git init', { cwd: workingDirectory, stdio: 'pipe' })
-
-        // Create initial commit if needed for project detection
-        try {
-          const statusOutput = execSync('git status --porcelain', { cwd: workingDirectory, stdio: 'pipe' }).toString()
-          if (statusOutput.trim()) {
-            console.log('OpenCode Service: Creating initial commit for project detection...')
-            execSync('git add .', { cwd: workingDirectory, stdio: 'pipe' })
-            execSync('git commit -m "Initial commit for OpenCode project detection"', {
-              cwd: workingDirectory,
-              stdio: 'pipe'
-            })
-          }
-        } catch (error) {
-          // If commit fails (e.g., no files to commit), that's okay
-          console.log('OpenCode Service: Git commit not needed or failed, continuing...')
-        }
-      }
-
-      // Change to the target directory before starting OpenCode server
-      this.originalCwd = process.cwd()
-      console.log('OpenCode Service: Changing process working directory from', this.originalCwd, 'to', workingDirectory)
-      process.chdir(workingDirectory)
-
-      // Set environment variables as additional guidance
-      process.env.PWD = workingDirectory
-      process.env.OPENCODE_WORKING_DIR = workingDirectory
-
-      // Check if port is already in use
-      if (await this.isPortInUse(this.config.port!)) {
-        // Restore original directory on failure
-        if (this.originalCwd) {
-          process.chdir(this.originalCwd)
-        }
-        return {
-          running: false,
-          error: `Port ${this.config.port} is already in use`,
-          healthy: false
-        }
-      }
-
-      try {
-        // Start OpenCode server - it should now detect the correct project
-        this.server = await createOpencodeServer({
-          hostname: this.config.hostname,
-          port: this.config.port,
-          timeout: this.config.timeout,
-          config: {
-            model: this.config.model
-          }
-        })
-      } catch (error) {
-        // Restore original directory on failure
-        if (this.originalCwd) {
-          process.chdir(this.originalCwd)
-        }
-        throw error
-      }
-
-      const url = `http://${this.config.hostname}:${this.config.port}`
-
-      // Wait a moment for server to fully start
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Perform initial health check
-      const healthy = await this.performHealthCheck()
-
-      if (!healthy) {
-        console.warn('Server started but initial health check failed')
-      }
-
-      // Start periodic health checking
-      this.startHealthChecking()
-
-      return {
-        running: true,
-        url,
-        healthy,
-        port: this.config.port,
-        lastHealthCheck: new Date()
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Failed to start OpenCode server:', errorMessage)
-
-      // Clean up if server creation failed
-      this.server = null
-
-      return {
-        running: false,
-        error: errorMessage,
-        healthy: false
-      }
-    }
-  }
-
-  private async isPortInUse(port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const server = createServer()
-
-      server.listen(port, '127.0.0.1', () => {
-        server.once('close', () => resolve(false))
-        server.close()
-      })
-
-      server.on('error', () => resolve(true))
-    })
-  }
-
-  private async performHealthCheck(): Promise<boolean> {
-    if (!this.server) return false
-
-    try {
-      const url = `http://${this.config.hostname}:${this.config.port}`
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 3000)
-
-      // Try a simple GET request to see if server responds
-      const response = await fetch(url, {
-        signal: controller.signal,
-        method: 'GET'
-      })
-
-      clearTimeout(timeout)
-      // Even if it returns 404, the server is responsive
-      return response.status !== undefined
-    } catch (error) {
-      console.warn('Health check failed:', error)
-      return false
-    }
-  }
-
-  private startHealthChecking(): void {
-    this.stopHealthChecking()
-
-    this.healthCheckInterval = setInterval(async () => {
-      if (this.server) {
-        const healthy = await this.performHealthCheck()
-        if (!healthy) {
-          console.warn('OpenCode server health check failed')
-          // Optionally emit event or take corrective action
-        }
-      }
-    }, 30000) // Check every 30 seconds
-  }
-
-  private stopHealthChecking(): void {
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval)
-      this.healthCheckInterval = null
-    }
-  }
-
-  async getServerStatus(): Promise<ServerStatus> {
-    if (this.server) {
-      const healthy = await this.performHealthCheck()
-      return {
-        running: true,
-        url: `http://${this.config.hostname}:${this.config.port}`,
-        healthy,
-        port: this.config.port,
-        lastHealthCheck: new Date()
-      }
-    }
-    return {
-      running: false,
-      healthy: false
-    }
-  }
-
-  async checkHealth(): Promise<boolean> {
-    return await this.performHealthCheck()
-  }
-
-  updateConfig(newConfig: Partial<OpenCodeConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-  }
-
-  async cleanup(): Promise<void> {
-    this.stopHealthChecking()
-    await this.stop()
-  }
 }
