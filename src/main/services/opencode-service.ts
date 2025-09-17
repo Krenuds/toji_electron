@@ -34,6 +34,7 @@ export class OpenCodeService implements Service {
   private server: { close: () => void } | null = null
   private config: OpenCodeConfig
   private healthCheckInterval: NodeJS.Timeout | null = null
+  private originalCwd?: string
 
   constructor(
     private configProvider: ConfigProvider,
@@ -97,6 +98,13 @@ export class OpenCodeService implements Service {
     if (this.server) {
       this.server.close()
       this.server = null
+    }
+
+    // Restore original working directory
+    if (this.originalCwd) {
+      console.log('OpenCode Service: Restoring original working directory:', this.originalCwd)
+      process.chdir(this.originalCwd)
+      this.originalCwd = undefined
     }
   }
 
@@ -214,13 +222,21 @@ export class OpenCodeService implements Service {
         mkdirSync(workingDirectory, { recursive: true })
       }
 
-      // Set environment variables to tell OpenCode where to operate
-      console.log('OpenCode Service: Setting working directory environment for OpenCode:', workingDirectory)
+      // Change to the target directory before starting OpenCode server
+      this.originalCwd = process.cwd()
+      console.log('OpenCode Service: Changing process working directory from', this.originalCwd, 'to', workingDirectory)
+      process.chdir(workingDirectory)
+
+      // Set environment variables as additional guidance
       process.env.PWD = workingDirectory
       process.env.OPENCODE_WORKING_DIR = workingDirectory
 
       // Check if port is already in use
       if (await this.isPortInUse(this.config.port!)) {
+        // Restore original directory on failure
+        if (this.originalCwd) {
+          process.chdir(this.originalCwd)
+        }
         return {
           running: false,
           error: `Port ${this.config.port} is already in use`,
@@ -228,15 +244,23 @@ export class OpenCodeService implements Service {
         }
       }
 
-      // Start OpenCode server - it should pick up the working directory from environment
-      this.server = await createOpencodeServer({
-        hostname: this.config.hostname,
-        port: this.config.port,
-        timeout: this.config.timeout,
-        config: {
-          model: this.config.model
+      try {
+        // Start OpenCode server - it should now detect the correct project
+        this.server = await createOpencodeServer({
+          hostname: this.config.hostname,
+          port: this.config.port,
+          timeout: this.config.timeout,
+          config: {
+            model: this.config.model
+          }
+        })
+      } catch (error) {
+        // Restore original directory on failure
+        if (this.originalCwd) {
+          process.chdir(this.originalCwd)
         }
-      })
+        throw error
+      }
 
       const url = `http://${this.config.hostname}:${this.config.port}`
 

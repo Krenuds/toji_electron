@@ -124,6 +124,16 @@ export class Core {
       const allProjects = await this.openCodeClient.project.list()
       console.log('Core: All projects:', JSON.stringify(allProjects, null, 2))
 
+      // Check if we need to create or switch to the correct project
+      const targetDirectory = this.config.getOpencodeWorkingDirectory()
+      console.log('Core: Target directory:', targetDirectory)
+
+      if (!currentProject.data || currentProject.data.worktree !== targetDirectory) {
+        console.log('Core: Current project is not the target directory, need to switch/create project')
+        // For now, we'll work with what we have but log the issue
+        console.warn(`Core: OpenCode is using project in ${currentProject.data?.worktree} instead of ${targetDirectory}`)
+      }
+
       // Test file operations to see what OpenCode can access
       console.log('Core: Testing file operations immediately after client init...')
       await this.testFileOperations()
