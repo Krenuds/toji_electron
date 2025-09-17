@@ -1,9 +1,12 @@
 import { createOpencodeServer, createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
-import type { Part, Session } from '@opencode-ai/sdk'
+import type { Part, Session, Project } from '@opencode-ai/sdk'
 import { mkdirSync, existsSync } from 'fs'
 import { execSync } from 'child_process'
 import path from 'path'
 import type { OpenCodeService } from '../services/opencode-service'
+
+// Re-export SDK types for interfaces to use
+export type { Project, Session, Part } from '@opencode-ai/sdk'
 
 export interface AgentConfig {
   model?: string
@@ -171,29 +174,37 @@ export class Core {
     return this.currentDirectory
   }
 
-  async listProjects(): Promise<any> {
+  async listProjects(): Promise<{ data: Project[] }> {
     if (!this.currentClient) {
       throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
     }
-    
-    return await this.currentClient.project.list()
+
+    const response = await this.currentClient.project.list()
+    if (!response.data) {
+      throw new Error('Failed to list projects')
+    }
+    return { data: response.data }
   }
 
-  async listSessions(): Promise<any> {
+  async listSessions(): Promise<{ data: Session[] }> {
     if (!this.currentClient) {
       throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
     }
-    
-    return await this.currentClient.session.list()
+
+    const response = await this.currentClient.session.list()
+    if (!response.data) {
+      throw new Error('Failed to list sessions')
+    }
+    return { data: response.data }
   }
 
   async deleteSession(sessionId: string): Promise<void> {
     if (!this.currentClient) {
       throw new Error('No OpenCode agent running. Call startOpencodeInDirectory() first.')
     }
-    
+
     await this.currentClient.session.delete({ path: { id: sessionId } })
-    
+
     // Clear current session if it was deleted
     if (this.currentSession?.id === sessionId) {
       this.currentSession = undefined

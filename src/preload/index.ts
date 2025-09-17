@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { BinaryInfo, BinaryProgress } from './index.d'
+import type { Project, Session } from '../main/core/core'
 
 // Custom APIs for renderer
 const api = {
@@ -16,9 +17,10 @@ const api = {
 
     // OpenCode SDK API
     prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text),
-    listProjects: (): Promise<any> => ipcRenderer.invoke('core:list-projects'),
-    listSessions: (): Promise<any> => ipcRenderer.invoke('core:list-sessions'),
-    deleteSession: (sessionId: string): Promise<void> => ipcRenderer.invoke('core:delete-session', sessionId)
+    listProjects: (): Promise<{ data: Project[] }> => ipcRenderer.invoke('core:list-projects'),
+    listSessions: (): Promise<{ data: Session[] }> => ipcRenderer.invoke('core:list-sessions'),
+    deleteSession: (sessionId: string): Promise<void> =>
+      ipcRenderer.invoke('core:delete-session', sessionId)
   },
 
   // Binary Management API - separated from core agent logic

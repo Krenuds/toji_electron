@@ -1,4 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import type { Project, Session } from '../main/core/core'
 
 // OpenCode API Types
 export interface OpenCodeConfig {
@@ -42,8 +43,8 @@ export interface CoreAPI {
 
   // OpenCode SDK API
   prompt: (text: string) => Promise<string>
-  listProjects: () => Promise<any>
-  listSessions: () => Promise<any>
+  listProjects: () => Promise<{ data: Project[] }>
+  listSessions: () => Promise<{ data: Session[] }>
   deleteSession: (sessionId: string) => Promise<void>
 }
 
