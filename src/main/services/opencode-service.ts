@@ -13,7 +13,7 @@ export class OpenCodeService {
     const userDataPath = app.getPath('userData')
     this.binDir = join(userDataPath, 'opencode-bin')
     this.dataDir = join(userDataPath, 'opencode-data')
-    
+
     this.setupEnvironment()
   }
 
@@ -43,7 +43,6 @@ export class OpenCodeService {
       process.env.PATH = this.binDir + pathSeparator + currentPath
     }
   }
-
 
   async downloadBinary(): Promise<void> {
     const platform = process.platform
@@ -136,6 +135,4 @@ export class OpenCodeService {
       lastChecked: new Date()
     }
   }
-
-
 }

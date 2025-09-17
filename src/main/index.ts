@@ -4,7 +4,6 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
 import { Core } from './core/core'
 import { OpenCodeService } from './services/opencode-service'
-import { ConfigProvider } from './config/ConfigProvider'
 
 // Global Core instance
 let core: Core | null = null
@@ -47,7 +46,7 @@ function createWindow(): void {
 app.whenReady().then(async () => {
   // Initialize binary service
   const openCodeService = new OpenCodeService()
-  
+
   // Initialize Core API with binary service
   core = new Core(openCodeService)
   console.log('Core API initialized')
@@ -88,7 +87,7 @@ function setupCoreHandlers(): void {
   })
 
   // Main API - Start OpenCode in directory
-  ipcMain.handle('core:start-opencode', async (_, directory: string, config?: any) => {
+  ipcMain.handle('core:start-opencode', async (_, directory: string, config?: object) => {
     if (!core) {
       throw new Error('Core not initialized')
     }

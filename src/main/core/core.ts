@@ -24,10 +24,7 @@ export class Core {
   }
 
   // Main API method - replicate "cd + opencode"
-  async startOpencodeInDirectory(
-    directory: string, 
-    config: AgentConfig = {}
-  ): Promise<void> {
+  async startOpencodeInDirectory(directory: string, config: AgentConfig = {}): Promise<void> {
     // Stop any existing agent first
     await this.stopOpencode()
 
@@ -71,7 +68,6 @@ export class Core {
 
       // Log project info for debugging
       await this.logProjectInfo()
-
     } catch (error) {
       // Restore directory on failure
       if (this.originalCwd) {
@@ -161,7 +157,6 @@ export class Core {
       const responseText = textParts.map((part) => part.text).join('\n')
       console.log(`Core: Received response (${responseText.length} chars)`)
       return responseText
-
     } catch (error) {
       console.error('Core: Prompt failed:', error)
       // Clear session on error for clean retry
@@ -195,11 +190,11 @@ export class Core {
 
       // Create initial commit if there are files
       try {
-        const statusOutput = execSync('git status --porcelain', { 
-          cwd: directory, 
-          stdio: 'pipe' 
+        const statusOutput = execSync('git status --porcelain', {
+          cwd: directory,
+          stdio: 'pipe'
         }).toString()
-        
+
         if (statusOutput.trim()) {
           console.log('Core: Creating initial commit...')
           execSync('git add .', { cwd: directory, stdio: 'pipe' })
@@ -208,7 +203,7 @@ export class Core {
             stdio: 'pipe'
           })
         }
-      } catch (error) {
+      } catch {
         console.log('Core: Git commit not needed or failed, continuing...')
       }
     }
