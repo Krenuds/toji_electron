@@ -79,6 +79,7 @@ export class OpenCodeService {
 
     const tempZipPath = join(this.binDir, 'opencode-temp.zip')
     const fileStream = createWriteStream(tempZipPath)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await pipeline(Readable.fromWeb(response.body as any), fileStream)
 
     await this.extractBinary(tempZipPath, binaryPath)

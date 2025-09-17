@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { Core } from './core/core'
+import { Core } from './api/core'
 import { OpenCodeService } from './services/opencode-service'
 
 // Global Core instance

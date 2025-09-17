@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { BinaryInfo, BinaryProgress } from './index.d'
-import type { Project, Session } from '../main/core/core'
+import type { Project, Session } from '../main/api/core'
 
 // Custom APIs for renderer
 const api = {

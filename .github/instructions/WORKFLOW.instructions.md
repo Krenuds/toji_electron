@@ -1,6 +1,7 @@
 ---
 applyTo: '**'
 ---
+
 Provide project context and coding guidelines that AI should follow when generating code, answering questions, or reviewing changes.
 
 1. Research online if working with https://electron-vite.org/ or https://opencode.ai/ SDKs

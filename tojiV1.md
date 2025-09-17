@@ -41,36 +41,44 @@ cd toji-bot
 ### For All Platforms:
 
 #### Step 2: Get Discord Bot Token
+
 1. Go to https://discord.com/developers/applications
 2. Create "New Application" → Add Bot → Reset Token
 3. Copy the token (looks like `MTIzNDU2...xyz`)
 
 #### Step 3: Configure
+
 Edit the config file that was created:
 
 **Linux/macOS:**
+
 ```bash
 nano config/settings.yaml
 ```
 
 **Windows:**
+
 ```cmd
 notepad config\settings.yaml
 ```
 
 Add your token:
+
 ```yaml
 discord:
-  token: "YOUR_BOT_TOKEN_HERE"
+  token: 'YOUR_BOT_TOKEN_HERE'
 ```
 
 #### Step 4: Start
+
 **Linux/macOS:**
+
 ```bash
 ./toji-bot
 ```
 
 **Windows:**
+
 ```cmd
 toji-bot.exe
 ```
@@ -96,6 +104,7 @@ toji-bot.exe
 3. **Get response** in ~500ms via voice
 
 ### Commands
+
 - **Voice**: Say "listen" to activate
 - **Slash**: `/join` `/leave` `/workspace`
 
@@ -109,12 +118,14 @@ toji-bot.exe
 ### Prerequisites
 
 **Required Software:**
+
 1. **Python 3.8+** with pip
 2. **Claude CLI** - authenticated and working
 3. **Docker & Docker Compose** - for voice services if you want them
 4. **Discord Account** - for bot creation
 
 **Required Accounts:**
+
 - **Discord Developer Account** (free)
 - **Claude AI Account** (for Claude CLI)
 
@@ -151,6 +162,7 @@ curl http://localhost:9001/health  # Piper TTS
 ```
 
 This gives you:
+
 - **Whisper STT** on port 9000
 - **Piper TTS** on port 9001
 
@@ -190,6 +202,7 @@ The token looks like: `MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjK
 #### 4.3. Configure Bot Settings
 
 In the Bot section:
+
 - ✅ Enable **"Public Bot"** (if you want others to invite it)
 - ✅ Enable **"Message Content Intent"**
 - ✅ Enable **"Server Members Intent"**
@@ -233,13 +246,13 @@ Open `config/settings.yaml` and add your bot token from step 4:
 
 ```yaml
 discord:
-  token: "MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz"
+  token: 'MTIzNDU2Nzg5MDEyMzQ1Njc4.GhIjKl.MnOpQrStUvWxYzAbCdEfGhIjKlMnOpQrStUvWxYz'
 
 whisper:
-  service_url: "http://localhost:9000"
+  service_url: 'http://localhost:9000'
 
 tts:
-  service_url: "http://localhost:9001"
+  service_url: 'http://localhost:9001'
 
 llm:
   enabled: true
@@ -321,6 +334,7 @@ The `config/settings.template.yaml` file contains full configuration documentati
 ## 🚨 Troubleshooting
 
 ### Bot Won't Start
+
 ```bash
 # Check Claude CLI
 claude status
@@ -334,11 +348,13 @@ pip list | grep -E "(py-cord|aiohttp)"
 ```
 
 ### Voice Not Working
+
 1. **Bot not in voice channel**: Use `/join`
 2. **Missing permissions**: Check bot has Connect + Speak permissions
 3. **Service issues**: Restart voice services with `docker-compose restart`
 
 ### Common Issues
+
 - **"ModuleNotFoundError"**: Activate virtual environment with `source toji_venv/bin/activate`
 - **"Permission denied"**: Make sure bot has required Discord permissions
 - **"Connection refused"**: Voice services aren't running - start with `docker-compose up -d`
@@ -355,6 +371,7 @@ Discord Voice → Whisper (9000) → Claude CLI → Piper (9001) → Discord Aud
 ```
 
 This is a **personal bot instance**:
+
 - You own the Discord bot
 - You control the voice services
 - Data stays on your infrastructure

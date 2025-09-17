@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Project, Session } from '../main/core/core'
+import type { Project, Session } from '../main/api/core'
 
 // OpenCode API Types
 export interface OpenCodeConfig {

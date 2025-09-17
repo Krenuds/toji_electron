@@ -22,13 +22,15 @@ npm run test:service   # Binary management logic
 ## Test Coverage
 
 ### Core API Tests (`core.test.js`)
+
 - ✅ Core initialization with OpenCodeService
-- ✅ Binary service functionality validation  
+- ✅ Binary service functionality validation
 - ✅ OpenCode SDK workflow simulation (mocked)
 - ✅ Directory preparation logic
 - ✅ Session creation and prompting workflow
 
 ### OpenCodeService Tests (`opencode-service.test.js`)
+
 - ✅ Environment setup and directory creation
 - ✅ Binary path resolution across platforms
 - ✅ Binary installation simulation
@@ -48,7 +50,7 @@ npm run test:service   # Binary management logic
 
 ```
 # tests 15
-# suites 2  
+# suites 2
 # pass 15
 # fail 0
 ```

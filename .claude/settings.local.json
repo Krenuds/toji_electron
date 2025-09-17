@@ -19,7 +19,8 @@
       "Bash(opencode:*)",
       "Read(//c/Users/donth/**)",
       "Bash(git pull:*)",
-      "Bash(ELECTRON_DISABLE_SANDBOX=1 npm run dev)"
+      "Bash(ELECTRON_DISABLE_SANDBOX=1 npm run dev)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []

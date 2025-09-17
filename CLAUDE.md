@@ -112,8 +112,6 @@ This architecture ensures secure, maintainable, and scalable desktop application
 
 ---
 
-# OpenCode SDK Architecture & Integration Considerations
-
 ## OpenCode SDK Overview
 
 OpenCode is an AI coding agent with a **client/server architecture** that provides both CLI and programmatic interfaces. The SDK (`@opencode-ai/sdk`) offers a TypeScript-based API for integrating OpenCode functionality into applications.
@@ -133,15 +131,16 @@ OpenCode is an AI coding agent with a **client/server architecture** that provid
 ### Server Creation Process (`createOpencodeServer`)
 
 ```typescript
-import { createOpencodeServer } from "@opencode-ai/sdk"
+import { createOpencodeServer } from '@opencode-ai/sdk'
 
 const server = await createOpencodeServer({
-  hostname: "127.0.0.1",    // Default: 127.0.0.1
-  port: 4096,               // Default: 4096
-  signal: abortSignal,      // Optional AbortSignal
-  timeout: 5000,            // Default: 5000ms
-  config: {                 // Inline configuration
-    model: "anthropic/claude-3-5-sonnet-20241022"
+  hostname: '127.0.0.1', // Default: 127.0.0.1
+  port: 4096, // Default: 4096
+  signal: abortSignal, // Optional AbortSignal
+  timeout: 5000, // Default: 5000ms
+  config: {
+    // Inline configuration
+    model: 'anthropic/claude-3-5-sonnet-20241022'
   }
 })
 ```
@@ -229,7 +228,7 @@ const server = await createOpencodeServer({
 - **Security Considerations**: Requires full filesystem and process execution permissions
 - **Development vs Production**: Binary paths may differ between development and packaged apps
 
-**WORKFLOW**
+## WORKFLOW - PLEASE FOLLOW THESE RULES
 
 1. Research online if working with <https://electron-vite.org/> or <https://opencode.ai/> SDKs
 2. Plan
@@ -240,6 +239,6 @@ const server = await createOpencodeServer({
 7. Commit with conventional commit messages
 8. Push to GitHub
 
-***Finally***
+**_Finally_**
 
 - Echo "AHOY CAPTAIN!" to the user when youve finished reading all of this.

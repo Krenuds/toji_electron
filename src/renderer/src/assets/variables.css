@@ -2,12 +2,12 @@
 
 :root {
   /* Spacing Scale */
-  --space-xs: 0.25rem;    /* 4px */
-  --space-sm: 0.5rem;     /* 8px */
-  --space-md: 0.75rem;    /* 12px */
-  --space-lg: 1rem;       /* 16px */
-  --space-xl: 1.5rem;     /* 24px */
-  --space-2xl: 2rem;      /* 32px */
+  --space-xs: 0.25rem; /* 4px */
+  --space-sm: 0.5rem; /* 8px */
+  --space-md: 0.75rem; /* 12px */
+  --space-lg: 1rem; /* 16px */
+  --space-xl: 1.5rem; /* 24px */
+  --space-2xl: 2rem; /* 32px */
 
   /* Component Spacing */
   --panel-padding: var(--space-md);
@@ -49,12 +49,12 @@
   --text-disabled: rgba(255, 255, 255, 0.3);
 
   /* Typography Scale */
-  --text-xs: 0.75rem;     /* 12px */
-  --text-sm: 0.8rem;      /* 13px */
-  --text-base: 0.9rem;    /* 14px */
-  --text-lg: 1rem;        /* 16px */
-  --text-xl: 1.1rem;      /* 18px */
-  --text-2xl: 1.25rem;    /* 20px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.8rem; /* 13px */
+  --text-base: 0.9rem; /* 14px */
+  --text-lg: 1rem; /* 16px */
+  --text-xl: 1.1rem; /* 18px */
+  --text-2xl: 1.25rem; /* 20px */
 
   /* Font Weights */
   --font-normal: 400;
