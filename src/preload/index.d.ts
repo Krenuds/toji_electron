@@ -31,42 +31,17 @@ export interface BinaryProgress {
   error?: string
 }
 
-// Core API Types
-export interface ServiceStatus {
-  running: boolean
-  healthy?: boolean
-  error?: string
-  lastCheck?: Date
-}
-
-export interface CoreStatus {
-  services: Record<string, ServiceStatus>
-  currentWorkspace?: string
-}
-
-export interface ServiceStatusChangeEvent {
-  service: string
-  status: ServiceStatus
-}
-
-export interface ServiceErrorEvent {
-  service: string
-  error: string
-}
+// Legacy types - can be removed later if not needed
 
 export interface CoreAPI {
-  // Service Management
-  getStatus: () => Promise<CoreStatus>
-  startService: (serviceName: string) => Promise<void>
-  stopService: (serviceName: string) => Promise<void>
-  getServiceStatus: (serviceName: string) => Promise<ServiceStatus>
+  // Agent Management
+  isRunning: () => Promise<boolean>
+  getCurrentDirectory: () => Promise<string | undefined>
+  startOpencode: (directory: string, config?: object) => Promise<void>
+  stopOpencode: () => Promise<void>
 
-  // Core OpenCode SDK API
+  // OpenCode SDK API
   prompt: (text: string) => Promise<string>
-
-  // Events
-  onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void) => () => void
-  onServiceError: (callback: (data: ServiceErrorEvent) => void) => () => void
 }
 
 export interface OpenCodeAPI {
