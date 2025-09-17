@@ -1,6 +1,7 @@
 import { createOpencodeClient, OpencodeClient } from '@opencode-ai/sdk'
 import type { Part, Session } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
+import type { ConfigProvider } from '../config/ConfigProvider'
 
 export interface Service {
   name: string
@@ -26,8 +27,16 @@ export class Core {
   private currentWorkspace?: string
   private openCodeClient?: OpencodeClient
 
-  constructor() {
-    // Services will be registered here
+  constructor(private config: ConfigProvider) {
+    // Config is available to core
+    console.log(
+      'Core: Initialized with config, OpenCode working directory:',
+      config.getOpencodeWorkingDirectory()
+    )
+  }
+
+  getConfig(): ConfigProvider {
+    return this.config
   }
 
   registerService(service: Service): void {

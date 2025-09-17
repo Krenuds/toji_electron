@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
 import { Core } from './core/core'
 import { OpenCodeService } from './services/opencode-service'
+import { ConfigProvider } from './config/ConfigProvider'
 
 // Global Core instance
 let core: Core | null = null
@@ -44,11 +45,16 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-  // Initialize Core and services
-  core = new Core()
+  // Initialize config first
+  const config = new ConfigProvider()
+  console.log('Config initialized, working directory:', config.getOpencodeWorkingDirectory())
 
-  const openCodeService = new OpenCodeService({
-    model: 'anthropic/claude-3-5-sonnet-20241022',
+  // Initialize Core with config
+  core = new Core(config)
+
+  // Initialize OpenCode service with config
+  const openCodeService = new OpenCodeService(config, {
+    model: 'opencode/grok-code',
     hostname: '127.0.0.1',
     port: 4096
   })
@@ -68,7 +74,6 @@ app.whenReady().then(async () => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
 
   createWindow()
 
@@ -170,7 +175,6 @@ function setupCoreHandlers(): void {
     }
     return await core.prompt(text)
   })
-
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common

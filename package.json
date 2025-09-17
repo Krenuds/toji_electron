@@ -24,7 +24,8 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@opencode-ai/sdk": "^0.9.6",
-    "adm-zip": "^0.5.16"
+    "adm-zip": "^0.5.16",
+    "electron-store": "^10.1.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

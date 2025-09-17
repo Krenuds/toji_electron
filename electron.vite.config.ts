@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['@opencode-ai/sdk'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['@opencode-ai/sdk', 'electron-store'] })],
     resolve: {
       conditions: ['import', 'module', 'node', 'default'],
       alias: {

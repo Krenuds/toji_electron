@@ -7,6 +7,7 @@ import { pipeline } from 'stream/promises'
 import { createServer } from 'net'
 import { createOpencodeServer } from '@opencode-ai/sdk'
 import { Service, ServiceStatus } from '../core/core'
+import type { ConfigProvider } from '../config/ConfigProvider'
 
 export interface OpenCodeConfig {
   model?: string
@@ -34,7 +35,10 @@ export class OpenCodeService implements Service {
   private config: OpenCodeConfig
   private healthCheckInterval: NodeJS.Timeout | null = null
 
-  constructor(config: OpenCodeConfig = {}) {
+  constructor(
+    private configProvider: ConfigProvider,
+    config: OpenCodeConfig = {}
+  ) {
     this.config = {
       hostname: '127.0.0.1',
       port: 4096,
@@ -200,6 +204,20 @@ export class OpenCodeService implements Service {
   async startServer(): Promise<ServerStatus> {
     try {
       await this.ensureBinary()
+
+      // Get configured working directory and ensure it exists
+      const workingDirectory = this.configProvider.getOpencodeWorkingDirectory()
+      console.log('OpenCode Service: Using working directory:', workingDirectory)
+
+      if (!existsSync(workingDirectory)) {
+        console.log('OpenCode Service: Creating working directory:', workingDirectory)
+        mkdirSync(workingDirectory, { recursive: true })
+      }
+
+      // Change to the configured working directory before starting OpenCode
+      const originalCwd = process.cwd()
+      console.log('OpenCode Service: Changing from', originalCwd, 'to', workingDirectory)
+      process.chdir(workingDirectory)
 
       // Check if port is already in use
       if (await this.isPortInUse(this.config.port!)) {
