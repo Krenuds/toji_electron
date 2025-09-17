@@ -113,16 +113,16 @@ export const SimpleChatTerminal: React.FC<SimpleChatTerminalProps> = ({ classNam
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSubmit} className="input-form">
+      <form onSubmit={handleSubmit} className="form-group">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."
           disabled={isLoading}
-          className="message-input"
+          className="form-input"
         />
-        <button type="submit" disabled={!input.trim() || isLoading} className="send-button">
+        <button type="submit" disabled={!input.trim() || isLoading} className="btn btn-primary">
           {isLoading ? 'Sending...' : 'Send'}
         </button>
       </form>

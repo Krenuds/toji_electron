@@ -26,6 +26,7 @@ export class Core {
   private services = new Map<string, Service>()
   private currentWorkspace?: string
   private openCodeClient?: OpencodeClient
+  private currentSession?: Session
 
   constructor(private config: ConfigProvider) {
     // Config is available to core
@@ -113,6 +114,23 @@ export class Core {
 
     console.log(`Core: OpenCode client initialized for ${serverStatus.url}`)
 
+    // Debug: Check what project OpenCode thinks it's working with
+    try {
+      console.log('Core: Checking current project...')
+      const currentProject = await this.openCodeClient.project.current()
+      console.log('Core: Current project:', JSON.stringify(currentProject, null, 2))
+
+      console.log('Core: Listing all projects...')
+      const allProjects = await this.openCodeClient.project.list()
+      console.log('Core: All projects:', JSON.stringify(allProjects, null, 2))
+
+      // Test file operations to see what OpenCode can access
+      console.log('Core: Testing file operations immediately after client init...')
+      await this.testFileOperations()
+    } catch (error) {
+      console.error('Core: Project debugging failed:', error)
+    }
+
     // Test if the client can connect
     try {
       console.log('Core: Testing client connectivity...')
@@ -148,22 +166,29 @@ export class Core {
     try {
       console.log(`Core: Sending prompt: "${text.substring(0, 100)}..."`)
 
-      // Create a session for the conversation
-      console.log('Core: Creating session...')
-      const sessionResponse = await this.openCodeClient!.session.create({
-        body: {
-          title: `Chat ${new Date().toLocaleTimeString()}`
+      // Use persistent session or create new one
+      let session: Session
+      if (!this.currentSession) {
+        console.log('Core: Creating new persistent session...')
+        const sessionResponse = await this.openCodeClient!.session.create({
+          body: {
+            title: `Persistent Chat Session - ${new Date().toLocaleString()}`
+          }
+        })
+
+        // Extract session from response
+        if (!sessionResponse.data?.id) {
+          console.error('Core: Session creation failed:', sessionResponse)
+          throw new Error('Failed to create session - no session ID returned')
         }
-      })
 
-      // Extract session from response
-      if (!sessionResponse.data?.id) {
-        console.error('Core: Session creation failed:', sessionResponse)
-        throw new Error('Failed to create session - no session ID returned')
+        session = sessionResponse.data
+        this.currentSession = session
+        console.log(`Core: Created new persistent session ${session.id}`)
+      } else {
+        session = this.currentSession
+        console.log(`Core: Using existing persistent session ${session.id}`)
       }
-
-      const session: Session = sessionResponse.data
-      console.log(`Core: Created session ${session.id}`)
 
       // Send the user message to the session
       const promptResponse = await this.openCodeClient!.session.prompt({
@@ -208,9 +233,110 @@ export class Core {
       return responseText
     } catch (error) {
       console.error('Core: Prompt failed:', error)
-      // Clear client on error so it gets recreated next time
+      // Clear client and session on error so they get recreated next time
       this.openCodeClient = undefined
+      this.currentSession = undefined
       throw new Error(`Prompt failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // File operation methods using the OpenCode SDK
+  async readFile(filePath: string): Promise<string> {
+    if (!this.openCodeClient) {
+      throw new Error('OpenCode client not initialized')
+    }
+
+    try {
+      console.log(`Core: Reading file: ${filePath}`)
+      const response = await this.openCodeClient.file.read({
+        query: { path: filePath }
+      })
+
+      if (response.data?.content) {
+        console.log(`Core: Successfully read file ${filePath} (${response.data.content.length} chars)`)
+        return response.data.content
+      } else {
+        throw new Error('No content returned from file read')
+      }
+    } catch (error) {
+      console.error(`Core: Failed to read file ${filePath}:`, error)
+      throw new Error(`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  async findFiles(pattern: string): Promise<string[]> {
+    if (!this.openCodeClient) {
+      throw new Error('OpenCode client not initialized')
+    }
+
+    try {
+      console.log(`Core: Finding files with pattern: ${pattern}`)
+      const response = await this.openCodeClient.find.files({
+        query: { query: pattern }
+      })
+
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Core: Found ${response.data.length} files matching ${pattern}`)
+        return response.data
+      } else {
+        console.log(`Core: No files found matching ${pattern}`)
+        return []
+      }
+    } catch (error) {
+      console.error(`Core: Failed to find files with pattern ${pattern}:`, error)
+      throw new Error(`Failed to find files: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  async searchText(searchTerm: string): Promise<any[]> {
+    if (!this.openCodeClient) {
+      throw new Error('OpenCode client not initialized')
+    }
+
+    try {
+      console.log(`Core: Searching for text: ${searchTerm}`)
+      const response = await this.openCodeClient.find.text({
+        query: { pattern: searchTerm }
+      })
+
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Core: Found ${response.data.length} text matches for ${searchTerm}`)
+        return response.data
+      } else {
+        console.log(`Core: No text matches found for ${searchTerm}`)
+        return []
+      }
+    } catch (error) {
+      console.error(`Core: Failed to search text ${searchTerm}:`, error)
+      throw new Error(`Failed to search text: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // Method to test file operations - useful for debugging
+  async testFileOperations(): Promise<void> {
+    console.log('Core: Testing file operations...')
+
+    try {
+      // Test finding files
+      const allFiles = await this.findFiles('*')
+      console.log('Core: All files found:', allFiles)
+
+      // Test finding markdown files specifically
+      const mdFiles = await this.findFiles('*.md')
+      console.log('Core: Markdown files found:', mdFiles)
+
+      // If AGENTS.md exists, try to read it
+      if (mdFiles.includes('AGENTS.md')) {
+        const content = await this.readFile('AGENTS.md')
+        console.log('Core: AGENTS.md content:', content)
+      }
+
+      // Test searching for text
+      const clownMatches = await this.searchText('clown')
+      console.log('Core: Text search results for "clown":', clownMatches)
+
+    } catch (error) {
+      console.error('Core: File operations test failed:', error)
     }
   }
 }

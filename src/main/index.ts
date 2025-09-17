@@ -12,7 +12,7 @@ let core: Core | null = null
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 1280,
     height: 900,
     show: false,
     autoHideMenuBar: true,

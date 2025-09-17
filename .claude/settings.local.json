@@ -12,7 +12,9 @@
       "Bash(sed:*)",
       "Bash(git add:*)",
       "Read(//c/Users/donth/OneDrive/Desktop/**)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

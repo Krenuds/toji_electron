@@ -214,10 +214,10 @@ export class OpenCodeService implements Service {
         mkdirSync(workingDirectory, { recursive: true })
       }
 
-      // Change to the configured working directory before starting OpenCode
-      const originalCwd = process.cwd()
-      console.log('OpenCode Service: Changing from', originalCwd, 'to', workingDirectory)
-      process.chdir(workingDirectory)
+      // Set environment variables to tell OpenCode where to operate
+      console.log('OpenCode Service: Setting working directory environment for OpenCode:', workingDirectory)
+      process.env.PWD = workingDirectory
+      process.env.OPENCODE_WORKING_DIR = workingDirectory
 
       // Check if port is already in use
       if (await this.isPortInUse(this.config.port!)) {
@@ -228,6 +228,7 @@ export class OpenCodeService implements Service {
         }
       }
 
+      // Start OpenCode server - it should pick up the working directory from environment
       this.server = await createOpencodeServer({
         hostname: this.config.hostname,
         port: this.config.port,

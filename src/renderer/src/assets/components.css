@@ -1,0 +1,300 @@
+/* Component Styles */
+
+/* Button Components */
+.btn {
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: #33b42f;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(51, 180, 47, 0.3);
+  background: #2a9326;
+}
+
+.btn-secondary {
+  background: rgba(30, 33, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(30, 33, 42, 1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  min-width: 60px;
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.status-dot.running {
+  background-color: #33b42f;
+  box-shadow: 0 0 6px rgba(51, 180, 47, 0.4);
+}
+
+.status-dot.unhealthy {
+  background-color: #ffc107;
+  box-shadow: 0 0 6px rgba(255, 193, 7, 0.4);
+}
+
+.status-dot.stopped {
+  background-color: #dc3545;
+}
+
+/* Card Components */
+.card {
+  background-color: rgba(27, 27, 31, 0.6);
+  border: 1px solid rgba(30, 33, 42, 0.8);
+  border-radius: 6px;
+  padding: 0.75rem;
+  backdrop-filter: blur(10px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(30, 33, 42, 0.6);
+}
+
+.card-title {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Info Rows */
+.info-grid {
+  background-color: rgba(30, 33, 42, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem;
+  border: 1px solid rgba(30, 33, 42, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(30, 33, 42, 0.4);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 80px;
+}
+
+.info-value {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: right;
+  flex: 1;
+  word-break: break-all;
+}
+
+.info-value.success {
+  color: #33b42f;
+  font-weight: 500;
+}
+
+.info-value.error {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.info-value.warning {
+  color: #ffc107;
+  font-weight: 500;
+}
+
+.info-value.code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  background-color: rgba(27, 27, 31, 0.8);
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  color: #33b42f;
+}
+
+/* Form Components */
+.form-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.form-input {
+  flex: 1;
+  padding: 0.5rem;
+  background-color: rgba(30, 33, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #33b42f;
+  box-shadow: 0 0 0 2px rgba(51, 180, 47, 0.2);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Progress Components */
+.progress-section {
+  background-color: rgba(30, 33, 42, 0.4);
+  border-radius: 4px;
+  padding: 0.5rem;
+  border: 1px solid rgba(30, 33, 42, 0.6);
+  margin-top: 0.5rem;
+  backdrop-filter: blur(5px);
+}
+
+.progress-text {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(30, 33, 42, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #33b42f;
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+/* Error Components */
+.error-message {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.error-dismiss {
+  background: none;
+  border: none;
+  color: #dc3545;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.error-dismiss:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Loading Animation */
+.loading-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.loading-dots span {
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  } 40% {
+    transform: scale(1.0);
+  }
+}
+
+/* Custom Scrollbar Styles */
+.opencode-content::-webkit-scrollbar,
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.opencode-content::-webkit-scrollbar-track,
+.messages-container::-webkit-scrollbar-track {
+  background: rgba(30, 33, 42, 0.3);
+  border-radius: 3px;
+}
+
+.opencode-content::-webkit-scrollbar-thumb,
+.messages-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.opencode-content::-webkit-scrollbar-thumb:hover,
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

@@ -174,9 +174,9 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
             className={`status-dot ${
               serverStatus?.running
                 ? serverStatus.healthy
-                  ? 'status-running'
-                  : 'status-unhealthy'
-                : 'status-stopped'
+                  ? 'running'
+                  : 'unhealthy'
+                : 'stopped'
             }`}
           />
           <span className="status-text">
@@ -198,20 +198,21 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
         </div>
       )}
 
-      <div className="opencode-section">
-        <h3>Binary Status</h3>
-        <div className="binary-info">
+      <div className="opencode-content">
+        <div className="opencode-section card">
+        <h3 className="card-title">Binary Status</h3>
+        <div className="binary-info info-grid">
           <div className="info-row">
-            <span className="label">Installed:</span>
-            <span className={`value ${binaryInfo?.installed ? 'installed' : 'not-installed'}`}>
+            <span className="info-label">Installed:</span>
+            <span className={`info-value ${binaryInfo?.installed ? 'success' : 'error'}`}>
               {binaryInfo?.installed ? 'Yes' : 'No'}
             </span>
           </div>
           {binaryInfo?.installed && (
             <>
               <div className="info-row">
-                <span className="label">Path:</span>
-                <span className="value path">{binaryInfo.path}</span>
+                <span className="info-label">Path:</span>
+                <span className="info-value code">{binaryInfo.path}</span>
               </div>
             </>
           )}
@@ -220,7 +221,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
         {!binaryInfo?.installed && (
           <button
             type="button"
-            className="action-button primary"
+            className="btn btn-primary"
             onClick={handleDownloadBinary}
             disabled={isLoading}
           >
@@ -242,12 +243,12 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
         )}
       </div>
 
-      <div className="opencode-section">
-        <div className="section-header">
-          <h3>Server Control</h3>
+      <div className="opencode-section card">
+        <div className="card-header">
+          <h3 className="card-title">Server Control</h3>
           <button
             type="button"
-            className="refresh-button"
+            className="btn btn-small btn-secondary"
             onClick={handleRefreshStatus}
             disabled={isLoading}
             title="Refresh server status"
@@ -255,39 +256,39 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
             🔄
           </button>
         </div>
-        <div className="server-info">
+        <div className="server-info info-grid">
           {serverStatus?.running && serverStatus.url && (
             <div className="info-row">
-              <span className="label">URL:</span>
-              <span className="value url">{serverStatus.url}</span>
+              <span className="info-label">URL:</span>
+              <span className="info-value code">{serverStatus.url}</span>
             </div>
           )}
           {serverStatus?.port && (
             <div className="info-row">
-              <span className="label">Port:</span>
-              <span className="value">{serverStatus.port}</span>
+              <span className="info-label">Port:</span>
+              <span className="info-value">{serverStatus.port}</span>
             </div>
           )}
           {serverStatus?.running && (
             <div className="info-row">
-              <span className="label">Health Status:</span>
-              <span className={`value ${serverStatus.healthy ? 'healthy' : 'unhealthy'}`}>
+              <span className="info-label">Health Status:</span>
+              <span className={`info-value ${serverStatus.healthy ? 'success' : 'warning'}`}>
                 {serverStatus.healthy ? 'Healthy' : 'Unhealthy'}
               </span>
             </div>
           )}
           {serverStatus?.lastHealthCheck && (
             <div className="info-row">
-              <span className="label">Last Health Check:</span>
-              <span className="value">
+              <span className="info-label">Last Health Check:</span>
+              <span className="info-value">
                 {new Date(serverStatus.lastHealthCheck).toLocaleTimeString()}
               </span>
             </div>
           )}
           {serverStatus?.error && (
             <div className="info-row">
-              <span className="label">Error:</span>
-              <span className="value error">{serverStatus.error}</span>
+              <span className="info-label">Error:</span>
+              <span className="info-value error">{serverStatus.error}</span>
             </div>
           )}
         </div>
@@ -296,7 +297,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
           {!serverStatus?.running ? (
             <button
               type="button"
-              className="action-button primary"
+              className="btn btn-primary"
               onClick={handleStartServer}
               disabled={isLoading || !binaryInfo?.installed}
             >
@@ -305,7 +306,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
           ) : (
             <button
               type="button"
-              className="action-button secondary"
+              className="btn btn-secondary"
               onClick={handleStopServer}
               disabled={isLoading}
             >
@@ -313,6 +314,7 @@ export const OpenCodePanel: React.FC<OpenCodePanelProps> = ({ className = '' }) 
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   )
