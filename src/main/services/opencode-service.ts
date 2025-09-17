@@ -4,6 +4,7 @@ import { mkdirSync, existsSync } from 'fs'
 import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
+import { Readable } from 'stream'
 
 export class OpenCodeService {
   private binDir: string
@@ -78,7 +79,7 @@ export class OpenCodeService {
 
     const tempZipPath = join(this.binDir, 'opencode-temp.zip')
     const fileStream = createWriteStream(tempZipPath)
-    await pipeline(response.body as ReadableStream, fileStream)
+    await pipeline(Readable.fromWeb(response.body as any), fileStream)
 
     await this.extractBinary(tempZipPath, binaryPath)
 

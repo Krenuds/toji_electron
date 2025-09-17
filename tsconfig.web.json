@@ -6,13 +6,11 @@
     "src/renderer/src/**/*.tsx",
     "src/preload/*.d.ts"
   ],
-  "exclude": ["**/*.js", "**/*.test.js", "**/*.spec.js"],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "allowJs": false,
-    "checkJs": false,
+    "moduleResolution": "bundler",
     "paths": {
       "@renderer/*": [
         "src/renderer/src/*"
