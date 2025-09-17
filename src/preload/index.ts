@@ -1,48 +1,21 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type {
-  BinaryInfo,
-  BinaryProgress,
-  CoreStatus,
-  ServiceStatus,
-  ServiceStatusChangeEvent,
-  ServiceErrorEvent
-} from './index.d'
+import type { BinaryInfo, BinaryProgress } from './index.d'
 
 // Custom APIs for renderer
 const api = {
-  // Core API - new centralized interface
+  // Core API - OpenCode agent management
   core: {
-    // Service Management
-    getStatus: (): Promise<CoreStatus> => ipcRenderer.invoke('core:get-status'),
-    startService: (serviceName: string): Promise<void> =>
-      ipcRenderer.invoke('core:start-service', serviceName),
-    stopService: (serviceName: string): Promise<void> =>
-      ipcRenderer.invoke('core:stop-service', serviceName),
-    getServiceStatus: (serviceName: string): Promise<ServiceStatus> =>
-      ipcRenderer.invoke('core:get-service-status', serviceName),
+    // Agent Management
+    isRunning: (): Promise<boolean> => ipcRenderer.invoke('core:is-running'),
+    getCurrentDirectory: (): Promise<string | undefined> =>
+      ipcRenderer.invoke('core:get-current-directory'),
+    startOpencode: (directory: string, config?: object): Promise<void> =>
+      ipcRenderer.invoke('core:start-opencode', directory, config),
+    stopOpencode: (): Promise<void> => ipcRenderer.invoke('core:stop-opencode'),
 
-    // Core OpenCode SDK API
-    prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text),
-
-    // Events
-    onServiceStatusChange: (callback: (data: ServiceStatusChangeEvent) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: ServiceStatusChangeEvent): void =>
-        callback(data)
-      ipcRenderer.on('core:service-status-changed', subscription)
-      return (): void => {
-        ipcRenderer.removeListener('core:service-status-changed', subscription)
-      }
-    },
-
-    onServiceError: (callback: (data: ServiceErrorEvent) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, data: ServiceErrorEvent): void =>
-        callback(data)
-      ipcRenderer.on('core:service-error', subscription)
-      return (): void => {
-        ipcRenderer.removeListener('core:service-error', subscription)
-      }
-    }
+    // OpenCode SDK API
+    prompt: (text: string): Promise<string> => ipcRenderer.invoke('core:prompt', text)
   },
 
   // OpenCode API - maintained for backward compatibility
