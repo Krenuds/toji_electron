@@ -27,7 +27,8 @@
       "Bash(grep:*)",
       "Bash(done)",
       "Bash(git restore:*)",
-      "Bash(timeout 15s npm run dev)"
+      "Bash(timeout 15s npm run dev)",
+      "Bash(git rev-parse:*)"
     ],
     "deny": [],
     "ask": []

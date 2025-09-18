@@ -1,50 +1,29 @@
-import React from 'react'
-import { BinaryInstaller, AgentControl, ChatTerminal } from './components/features'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import electronLogo from './assets/toji.png'
-import './assets/opencode.css'
-import './assets/modern-components.css'
-import './assets/chat-terminal.css'
-import './assets/layout.css'
-import './assets/error-boundary.css'
+import React, { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import electronLogo from './assets/electron.svg'
 
 function App(): React.JSX.Element {
+  const [count, setCount] = useState(0)
+
   return (
-    <ErrorBoundary>
-      <div className="app-container">
-        <header className="app-header">
-          <div className="header-content">
-            <img alt="Toji Logo" className="logo" src={electronLogo} />
-            <div className="header-text">
-              <h1>Toji System Agent</h1>
-              <p className="header-subtitle">AI-Powered Development Assistant</p>
-            </div>
-          </div>
-        </header>
-
-        <main className="app-content">
-          <aside className="sidebar">
-            <ErrorBoundary>
-              <section className="sidebar-section">
-                <BinaryInstaller />
-              </section>
-            </ErrorBoundary>
-
-            <ErrorBoundary>
-              <section className="sidebar-section">
-                <AgentControl />
-              </section>
-            </ErrorBoundary>
-          </aside>
-
-          <ErrorBoundary>
-            <section className="main-content">
-              <ChatTerminal />
-            </section>
-          </ErrorBoundary>
-        </main>
+    <>
+      <div>
+        <a href="https://electron-vite.org" target="_blank" rel="noreferrer">
+          <img src={electronLogo} className="logo" alt="Electron logo" />
+        </a>
+        <a href="https://react.dev" target="_blank" rel="noreferrer">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
       </div>
-    </ErrorBoundary>
+      <h1>Electron + Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMRasdf
+        </p>
+      </div>
+      <p className="read-the-docs">Click on the Electron and React logos to learn more</p>
+    </>
   )
 }
 
