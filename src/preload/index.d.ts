@@ -81,6 +81,20 @@ export interface LogsAPI {
   getOpenCodeLogs: () => Promise<string>
 }
 
+export interface DiscordAPI {
+  connect: () => Promise<void>
+  disconnect: () => Promise<void>
+  getStatus: () => Promise<{
+    connected: boolean
+    username?: string
+    botId?: string
+    guilds?: number
+  }>
+  setToken: (token: string) => Promise<{ success: boolean }>
+  hasToken: () => Promise<boolean>
+  clearToken: () => Promise<{ success: boolean }>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -89,6 +103,7 @@ declare global {
       binary: BinaryAPI
       window: WindowAPI
       logs: LogsAPI
+      discord: DiscordAPI
     }
   }
 }

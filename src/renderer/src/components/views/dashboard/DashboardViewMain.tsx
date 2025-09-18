@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, VStack, HStack, Text, Grid, Card, Progress } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Grid, Card, Progress, Switch } from '@chakra-ui/react'
 import {
   LuActivity,
   LuServer,
@@ -13,9 +13,12 @@ import {
 } from 'react-icons/lu'
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
+import { useDiscord } from '../../../hooks/useDiscord'
 
 export function DashboardViewMain(): React.JSX.Element {
   const serverStatus = useServerStatus()
+  const discord = useDiscord()
+
   return (
     <VStack align="stretch" gap={6}>
       {/* Header */}
@@ -62,19 +65,45 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.text" fontSize="sm">
                 Discord Bot
               </Text>
-              <Box color="app.text">
+              <Box color={discord.status.connected ? 'app.accent' : 'app.text'}>
                 <LuMessageSquare size={16} />
               </Box>
             </HStack>
             <HStack justify="space-between" mb={1}>
-              <Text color="app.text" fontSize="lg" fontWeight="bold">
-                Not Configured
+              <Text color="app.light" fontSize="lg" fontWeight="bold">
+                {discord.isConnecting
+                  ? 'Connecting...'
+                  : discord.status.connected
+                    ? discord.status.username || 'Connected'
+                    : discord.hasToken
+                      ? 'Disconnected'
+                      : 'Not Configured'}
               </Text>
-              <StatusBadge status="stub" />
+              {discord.hasToken && (
+                <Switch.Root
+                  colorPalette="green"
+                  checked={discord.status.connected}
+                  disabled={discord.isConnecting}
+                  onCheckedChange={() => discord.toggleConnection()}
+                  size="sm"
+                >
+                  <Switch.HiddenInput />
+                  <Switch.Control />
+                </Switch.Root>
+              )}
             </HStack>
             <Text color="app.text" fontSize="xs">
-              Discord integration coming soon
+              {discord.status.connected
+                ? `${discord.status.guilds || 0} servers connected`
+                : discord.hasToken
+                  ? 'Click toggle to connect'
+                  : 'Token not configured'}
             </Text>
+            {discord.error && (
+              <Text color="app.error" fontSize="xs" mt={1}>
+                {discord.error}
+              </Text>
+            )}
           </Card.Body>
         </Card.Root>
 

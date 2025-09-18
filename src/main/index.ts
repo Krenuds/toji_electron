@@ -4,11 +4,13 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
 import { Toji } from './api/Toji'
 import { OpenCodeService } from './services/opencode-service'
+import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
 
 // Global instances
 let toji: Toji | null = null
 let config: ConfigProvider | null = null
+let discordService: DiscordService | null = null
 
 function createWindow(): void {
   // Create the browser window.
@@ -64,9 +66,14 @@ app.whenReady().then(async () => {
   toji = new Toji(openCodeService, config)
   console.log('Toji API initialized')
 
+  // Initialize Discord service with Toji and config
+  discordService = new DiscordService(toji, config)
+  console.log('Discord service initialized')
+
   // Set up IPC handlers for Core and Binary management
   setupCoreHandlers()
   setupBinaryHandlers(openCodeService)
+  setupDiscordHandlers()
   setupWindowHandlers()
   setupSystemHandlers()
 
@@ -180,6 +187,103 @@ function setupCoreHandlers(): void {
     }
     return await toji.changeWorkspace(directory)
   })
+}
+
+// Setup IPC handlers for Discord service
+function setupDiscordHandlers(): void {
+  if (!discordService || !config) {
+    console.error('setupDiscordHandlers: Discord service or config not initialized')
+    return
+  }
+
+  console.log('setupDiscordHandlers: Setting up Discord IPC handlers')
+
+  try {
+    console.log('setupDiscordHandlers: Registering discord:connect handler...')
+    // Connect Discord bot
+    ipcMain.handle('discord:connect', async () => {
+      console.log('IPC: discord:connect called')
+    if (!discordService) {
+      throw new Error('Discord service not initialized')
+    }
+    try {
+      await discordService.connect()
+      console.log('IPC: discord:connect completed successfully')
+    } catch (error) {
+      console.error('IPC: discord:connect failed:', error)
+      throw error
+    }
+  })
+    console.log('setupDiscordHandlers: discord:connect handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:disconnect handler...')
+    // Disconnect Discord bot
+    ipcMain.handle('discord:disconnect', async () => {
+    if (!discordService) {
+      throw new Error('Discord service not initialized')
+    }
+    return await discordService.disconnect()
+  })
+    console.log('setupDiscordHandlers: discord:disconnect handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:get-status handler...')
+    // Get Discord status
+    ipcMain.handle('discord:get-status', async () => {
+    if (!discordService) {
+      throw new Error('Discord service not initialized')
+    }
+    return discordService.getStatus()
+  })
+    console.log('setupDiscordHandlers: discord:get-status handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:set-token handler...')
+    // Set Discord token
+    ipcMain.handle('discord:set-token', async (_, token: string) => {
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    config.setDiscordToken(token)
+    return { success: true }
+  })
+    console.log('setupDiscordHandlers: discord:set-token handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:has-token handler...')
+    // Check if token exists
+    ipcMain.handle('discord:has-token', async () => {
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    return config.hasDiscordToken()
+  })
+    console.log('setupDiscordHandlers: discord:has-token handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:clear-token handler...')
+    // Clear Discord token
+    ipcMain.handle('discord:clear-token', async () => {
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    config.clearDiscordToken()
+    return { success: true }
+  })
+    console.log('setupDiscordHandlers: discord:clear-token handler registered')
+
+    console.log('setupDiscordHandlers: Registering discord:get-debug-info handler...')
+    // Get debug info
+    ipcMain.handle('discord:get-debug-info', async () => {
+    console.log('IPC: discord:get-debug-info called')
+    if (!discordService) {
+      throw new Error('Discord service not initialized')
+    }
+    return discordService.getDebugInfo()
+  })
+    console.log('setupDiscordHandlers: discord:get-debug-info handler registered')
+
+    console.log('setupDiscordHandlers: ✅ All Discord IPC handlers registered successfully')
+  } catch (error) {
+    console.error('setupDiscordHandlers: ERROR setting up handlers:', error)
+    console.error('setupDiscordHandlers: Stack trace:', (error as Error).stack)
+  }
 }
 
 // Setup IPC handlers for Binary management

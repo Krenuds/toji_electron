@@ -136,6 +136,32 @@ const api = {
 
   logs: {
     getOpenCodeLogs: (): Promise<string> => ipcRenderer.invoke('api:get-opencode-logs')
+  },
+
+  // Discord Service API
+  discord: {
+    connect: (): Promise<void> => ipcRenderer.invoke('discord:connect'),
+    disconnect: (): Promise<void> => ipcRenderer.invoke('discord:disconnect'),
+    getStatus: (): Promise<{
+      connected: boolean
+      username?: string
+      botId?: string
+      guilds?: number
+    }> => ipcRenderer.invoke('discord:get-status'),
+    setToken: (token: string): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('discord:set-token', token),
+    hasToken: (): Promise<boolean> => ipcRenderer.invoke('discord:has-token'),
+    clearToken: (): Promise<{ success: boolean }> => ipcRenderer.invoke('discord:clear-token'),
+    getDebugInfo: (): Promise<{
+      connectionState: string
+      isConnected: boolean
+      hasClient: boolean
+      hasToken: boolean
+      lastError: string | null
+      connectionAttemptTime: number | null
+      clientUser: string | null
+      guildsCount: number
+    }> => ipcRenderer.invoke('discord:get-debug-info')
   }
 }
 

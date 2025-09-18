@@ -4,6 +4,9 @@ interface AppConfig {
   opencode: {
     workingDirectory: string
   }
+  discord?: {
+    token?: string
+  }
 }
 
 export class ConfigProvider {
@@ -16,7 +19,9 @@ export class ConfigProvider {
           // Use the test target directory
           workingDirectory: 'C:\\Users\\donth\\OneDrive\\Desktop\\tojiTest'
         }
-      }
+      },
+      // Enable encryption for sensitive data like Discord token
+      encryptionKey: 'toji3-discord-secure'
     })
   }
 
@@ -26,6 +31,23 @@ export class ConfigProvider {
 
   setOpencodeWorkingDirectory(path: string): void {
     this.store.set('opencode.workingDirectory', path)
+  }
+
+  // Discord token management
+  getDiscordToken(): string | undefined {
+    return this.store.get('discord.token')
+  }
+
+  setDiscordToken(token: string): void {
+    this.store.set('discord.token', token)
+  }
+
+  hasDiscordToken(): boolean {
+    return !!this.store.get('discord.token')
+  }
+
+  clearDiscordToken(): void {
+    this.store.delete('discord.token')
   }
 
   // Get the entire config for debugging
