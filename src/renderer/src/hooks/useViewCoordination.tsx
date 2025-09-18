@@ -5,6 +5,8 @@ import { DashboardViewSidebar } from '../components/views/dashboard/DashboardVie
 import { DashboardViewMain } from '../components/views/dashboard/DashboardViewMain'
 import { ProjectsViewSidebar } from '../components/views/projects/ProjectsViewSidebar'
 import { ProjectsViewMain } from '../components/views/projects/ProjectsViewMain'
+import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
+import { ChatViewMain } from '../components/views/chat/ChatViewMain'
 import { PlaceholderSidebar, PlaceholderMain } from '../components/PlaceholderViews'
 
 interface UseViewCoordinationReturn {
@@ -28,7 +30,7 @@ export function useViewCoordination(): UseViewCoordinationReturn {
       case 'settings':
         return <PlaceholderSidebar viewName="settings" />
       case 'chat':
-        return <PlaceholderSidebar viewName="chat" />
+        return <ChatViewSidebar />
       default:
         return <PlaceholderSidebar viewName="unknown" />
     }
@@ -43,7 +45,7 @@ export function useViewCoordination(): UseViewCoordinationReturn {
       case 'settings':
         return <PlaceholderMain viewName="settings" />
       case 'chat':
-        return <PlaceholderMain viewName="chat" />
+        return <ChatViewMain />
       default:
         return <PlaceholderMain viewName="unknown" />
     }

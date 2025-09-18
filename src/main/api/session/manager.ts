@@ -40,20 +40,47 @@ export class SessionManager {
       path: { id: targetSessionId },
       body: {
         model: {
-          providerID: 'anthropic',
-          modelID: 'claude-3-5-sonnet-20241022'
+          providerID: 'opencode',
+          modelID: 'grok-code'
         },
         parts
       }
     })
 
-    // Extract text from response parts
-    return (
-      response.data?.parts
-        ?.map((part) => (part as { text?: string }).text)
-        .filter(Boolean)
-        .join('') || ''
-    )
+    // console.log('SessionManager: Raw response:', JSON.stringify(response, null, 2))
+
+    // Extract text from response - handle different possible response structures
+    if (response.data) {
+      // Check if response has parts array
+      if (Array.isArray(response.data.parts)) {
+        // Only extract text parts (skip reasoning, step-start, step-finish, etc)
+        const textContent = response.data.parts
+          .filter((part) => part && typeof part === 'object' && part.type === 'text')
+          .map((part) => part.text || '')
+          .filter(Boolean)
+          .join('')
+
+        if (textContent) {
+          // console.log('SessionManager: Extracted text from parts:', textContent)
+          return textContent
+        }
+      }
+
+      // Check if response has direct text property
+      if (typeof response.data === 'string') {
+        console.log('SessionManager: Direct string response:', response.data)
+        return response.data
+      }
+
+      // Check if response.data has a text property
+      if ('text' in response.data && typeof response.data.text === 'string') {
+        console.log('SessionManager: Text property found:', response.data.text)
+        return response.data.text
+      }
+    }
+
+    console.warn('SessionManager: Could not extract text from response:', response)
+    return 'Sorry, I received an empty response.'
   }
 
   /**

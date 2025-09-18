@@ -20,7 +20,12 @@ const api = {
     listProjects: (): Promise<{ data: Project[] }> => ipcRenderer.invoke('core:list-projects'),
     listSessions: (): Promise<{ data: Session[] }> => ipcRenderer.invoke('core:list-sessions'),
     deleteSession: (sessionId: string): Promise<void> =>
-      ipcRenderer.invoke('core:delete-session', sessionId)
+      ipcRenderer.invoke('core:delete-session', sessionId),
+
+    // Chat Operations
+    ensureReadyForChat: (directory?: string): Promise<{ sessionId: string; serverStatus: string }> =>
+      ipcRenderer.invoke('core:ensure-ready-for-chat', directory),
+    chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message)
   },
 
   // Binary Management API - separated from core agent logic

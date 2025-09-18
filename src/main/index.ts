@@ -149,6 +149,21 @@ function setupCoreHandlers(): void {
     }
     return await core.deleteSession(sessionId)
   })
+
+  // Chat operations using Toji API
+  ipcMain.handle('core:ensure-ready-for-chat', async (_, directory?: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.ensureReadyForChat(directory)
+  })
+
+  ipcMain.handle('core:chat', async (_, message: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.chat(message)
+  })
 }
 
 // Setup IPC handlers for Binary management

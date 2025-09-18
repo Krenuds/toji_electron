@@ -46,6 +46,10 @@ export interface CoreAPI {
   listProjects: () => Promise<{ data: Project[] }>
   listSessions: () => Promise<{ data: Session[] }>
   deleteSession: (sessionId: string) => Promise<void>
+
+  // Chat Operations
+  ensureReadyForChat: (directory?: string) => Promise<{ sessionId: string; serverStatus: string }>
+  chat: (message: string) => Promise<string>
 }
 
 export interface BinaryAPI {

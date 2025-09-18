@@ -39,7 +39,7 @@ export class ServerManager {
       port: 4096,
       timeout: 5000,
       config: {
-        model: 'anthropic/claude-3-5-sonnet-20241022'
+        model: 'opencode/grok-code'
       }
     }
 

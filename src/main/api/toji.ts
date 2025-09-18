@@ -142,4 +142,74 @@ export class Toji {
   isReady(): boolean {
     return this.server.isRunning() && this.client.isConnected()
   }
+
+  /**
+   * Ensure the environment is ready for chat operations
+   * This is a compound operation that handles all initialization
+   * Auto-starts server and creates session if needed
+   */
+  async ensureReadyForChat(directory?: string): Promise<{ sessionId: string; serverStatus: string }> {
+    console.log('Toji: Ensuring ready for chat operations')
+
+    const targetDir = directory || process.cwd()
+
+    try {
+      // Check if already ready
+      if (!this.isReady()) {
+        console.log('Toji: Not ready, initializing...')
+        await this.quickStart(targetDir)
+      }
+
+      // Get or create a session
+      let sessionId: string
+      const currentSession = this.session.getCurrentSession()
+
+      if (currentSession) {
+        sessionId = currentSession.id
+        console.log(`Toji: Using existing session ${sessionId}`)
+      } else {
+        console.log('Toji: Creating new chat session')
+        const newSession = await this.session.create('General Chat')
+        sessionId = newSession.id
+        console.log(`Toji: Created session ${sessionId}`)
+      }
+
+      return {
+        sessionId,
+        serverStatus: 'online'
+      }
+    } catch (error) {
+      console.error('Toji: Failed to ensure ready for chat:', error)
+      return {
+        sessionId: '',
+        serverStatus: 'error'
+      }
+    }
+  }
+
+  /**
+   * Send a chat message to the current session
+   * High-level abstraction for all interfaces to use
+   */
+  async chat(message: string): Promise<string> {
+    console.log('Toji: Processing chat message')
+
+    try {
+      // Ensure we're ready (this is idempotent)
+      const { sessionId, serverStatus } = await this.ensureReadyForChat()
+
+      if (serverStatus !== 'online' || !sessionId) {
+        throw new Error('Failed to initialize chat environment')
+      }
+
+      // Send the message through the session manager
+      const response = await this.session.prompt(message, sessionId)
+
+      // console.log('Toji: Chat response received:', response ? `"${response.substring(0, 100)}..."` : 'EMPTY')
+      return response || 'I apologize, but I received an empty response. Please try again.'
+    } catch (error) {
+      console.error('Toji: Chat error:', error)
+      throw new Error(`Chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
 }
