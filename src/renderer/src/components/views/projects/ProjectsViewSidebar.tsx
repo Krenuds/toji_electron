@@ -1,10 +1,12 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/react'
 import { LuPlus, LuFolderOpen, LuActivity, LuGitBranch } from 'react-icons/lu'
+import { SidebarContainer } from '../../SidebarContainer'
 
 export function ProjectsViewSidebar(): React.JSX.Element {
   return (
-    <VStack align="stretch" gap={4}>
+    <SidebarContainer>
+      <VStack align="stretch" gap={4}>
       {/* Header */}
       <Box>
         <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
@@ -128,6 +130,7 @@ export function ProjectsViewSidebar(): React.JSX.Element {
           </HStack>
         </VStack>
       </Box>
-    </VStack>
+      </VStack>
+    </SidebarContainer>
   )
 }

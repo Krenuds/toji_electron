@@ -40,7 +40,7 @@ function AppContent(): React.JSX.Element {
       {/* Main Application Content */}
       <Flex h="calc(100vh - 32px)" w="100%">
         {/* Icon Bar - Left Panel */}
-        <Box w="35px" bg="app.darkest" borderRight="1px" borderColor="app.border">
+        <Box w="35px" bg="app.medium" borderRight="1px" borderColor="app.border">
           <Stack direction="column" gap={1} p={1}>
             <IconButton
               icon={<LuLayoutDashboard />}
@@ -67,7 +67,12 @@ function AppContent(): React.JSX.Element {
         </Box>
 
         {/* Sidebar - Middle Panel */}
-        <Box w="300px" bg="app.dark" borderRight="1px" borderColor="app.border" p={4}>
+        <Box
+          w="300px"
+          bg="app.dark"
+          borderRight="3px"
+          borderColor="app.border"
+        >
           {getSidebarContent()}
         </Box>
 
