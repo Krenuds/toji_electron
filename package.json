@@ -1,10 +1,10 @@
 {
   "name": "toji3",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "AI-Powered Development Desktop Application with OpenCode Integration",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Toji Development Team",
+  "homepage": "https://github.com/yourusername/toji3",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -53,5 +53,26 @@
     "react-dom": "^19.1.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.5"
+  },
+  "build": {
+    "appId": "com.toji.toji3",
+    "productName": "Toji3",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Development"
+    }
   }
 }

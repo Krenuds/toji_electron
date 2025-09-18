@@ -1,243 +1,163 @@
-# Toji3 - Electron-Vite React TypeScript Desktop Application
+# Toji3 - AI-Powered Development Desktop Application
 
-## Project Architecture Overview
+## What is Toji3?
 
-This is an **Electron application** built with **electron-vite**, **React**, and **TypeScript**. The project follows electron-vite's recommended tri-process architecture with strict separation of concerns for security and maintainability.
+Toji3 is a **desktop application** that integrates OpenCode AI agents into a modern, user-friendly interface. Built with Electron, React, and TypeScript, it provides a powerful workspace for AI-assisted development with chat-based interactions, project management, and intelligent code assistance.
 
-## Critical Project Structure
+## Key Features
+
+- **AI Chat Interface**: Conversational interaction with OpenCode AI agents
+- **Project Management**: Workspace organization and session management
+- **Multi-Panel Layout**: Coordinated sidebar and main content areas
+- **Real-time Communication**: Live updates and streaming responses
+- **Secure Architecture**: Sandboxed renderer with secure IPC communication
+
+## Technology Stack
+
+- **Electron 37.2** + **electron-vite 4.0** - Desktop app framework with modern tooling
+- **React 19.1** + **TypeScript 5.8** - Modern frontend with full type safety
+- **Chakra UI 3.27** - Component library with custom theming
+- **OpenCode SDK 0.9.6** - AI agent integration and communication
+- **Vite 7.0** - Fast development server with Hot Module Replacement
+
+## Project Structure
 
 ```
-src/
-├── main/           # Main Electron process (Node.js environment)
-│   └── index.ts    # Application entry point, window management
-├── preload/        # Preload scripts (sandboxed Node.js bridge)
-│   ├── index.ts    # IPC bridge, context isolation
-│   └── index.d.ts  # Type definitions for renderer
-└── renderer/       # React frontend (browser environment)
-    ├── index.html  # Entry HTML
-    └── src/
-        ├── App.tsx        # Main React component
-        ├── main.tsx       # React entry point
-        ├── env.d.ts       # Environment type definitions
-        └── components/    # React components
+toji3/
+├── src/
+│   ├── main/           # Electron main process (Node.js)
+│   │   ├── api/        # OpenCode SDK integration
+│   │   ├── services/   # System services
+│   │   └── CLAUDE.md   # Backend architecture docs
+│   ├── preload/        # IPC bridge (sandboxed Node.js)
+│   │   ├── index.ts    # Context bridge setup
+│   │   └── index.d.ts  # Type definitions
+│   └── renderer/       # React frontend (browser)
+│       ├── src/        # React application
+│       └── CLAUDE.md   # Frontend architecture docs
+├── build/              # Build assets and configuration
+├── out/                # Built application output
+└── CLAUDE.md          # This file - project overview
 ```
 
-## Development Workflow
+## Quick Start
 
-### Key Commands
+### Development Commands
 
-- `npm run dev` - Start development with HMR
-- `npm run build` - Production build with type checking
-- `npm run typecheck` - Run TypeScript validation for both Node and web
-- `npm run typecheck:node` - Check main/preload TypeScript
-- `npm run typecheck:web` - Check renderer TypeScript
+```bash
+# Install dependencies
+npm install
 
-### TypeScript Configuration
+# Start development with hot reload
+npm run dev
 
-- **Composite project setup** with separate tsconfigs:
-  - `tsconfig.node.json` - Main process & preload (Node.js types)
-  - `tsconfig.web.json` - Renderer process (DOM/React types)
-  - Path alias: `@renderer/*` → `src/renderer/src/*`
+# Build for production
+npm run build
 
-### Process-Specific Guidelines
+# Type checking
+npm run typecheck          # Check both main and renderer
+npm run typecheck:node     # Check main/preload only
+npm run typecheck:web      # Check renderer only
 
-#### Main Process (`src/main/`)
-
-- **Node.js environment** - Full system access
-- Handles: Window creation, app lifecycle, system integration
-- Uses: Electron APIs, file system, system notifications
-- **Security**: Never expose Node.js APIs directly to renderer
-
-#### Preload Scripts (`src/preload/`)
-
-- **Sandboxed Node.js** - Bridge between main and renderer
-- **CRITICAL**: Use `contextBridge.exposeInMainWorld()` for safe API exposure
-- Pattern:
-
-  ```typescript
-  import { contextBridge, ipcRenderer } from 'electron'
-
-  contextBridge.exposeInMainWorld('electronAPI', {
-    // Safe API methods only
-  })
-  ```
-
-- Type definitions in `index.d.ts` for renderer consumption
-
-#### Renderer Process (`src/renderer/`)
-
-- **Standard React application** - Browser environment only
-- No direct Node.js/Electron access (security by design)
-- Communicates with main via preload-exposed APIs
-- Uses Vite's development server with HMR
-
-## SST OpenCode Integration Strategy
-
-When integrating SST OpenCode SDK:
-
-1. **Main Process Integration**: Install SDK in main process for system-level operations
-2. **Preload Bridge**: Expose safe SDK methods via contextBridge
-3. **Renderer Interface**: Create React components that call preload-exposed APIs
-4. **System Agent Functionality**: Implement in main process with appropriate permissions
-
-## Security Best Practices
-
-- **Context Isolation**: Always enabled (default in electron-vite)
-- **Node Integration**: Disabled in renderer (security requirement)
-- **Preload Sandboxing**: Only expose necessary APIs via contextBridge
-- **IPC Validation**: Validate all data passed between processes
-
-## Build & Distribution
-
-- Uses **electron-builder** for packaging
-- Platform-specific builds: `build:win`, `build:mac`, `build:linux`
-- Output: `./out/` directory with bundled main/preload/renderer
-
-## Development Notes
-
-- **Hot Module Replacement** enabled for renderer only
-- **Type Safety**: Enforced across all processes with separate TypeScript projects
-- **Linting**: ESLint with React and TypeScript rules
-- **Formatting**: Prettier for consistent code style
-
-## Important Implementation Guidelines
-
-1. **Never bypass security**: Always use contextBridge for main→renderer communication
-2. **Process separation**: Keep business logic properly separated by process type
-3. **Type definitions**: Maintain type safety across process boundaries
-4. **Testing strategy**: Use `npm run typecheck` before builds
-5. **System agent features**: Implement in main process, expose via safe preload APIs
-
-This architecture ensures secure, maintainable, and scalable desktop application development while leveraging modern web technologies within Electron's security model.
-
----
-
-## OpenCode SDK Overview
-
-OpenCode is an AI coding agent with a **client/server architecture** that provides both CLI and programmatic interfaces. The SDK (`@opencode-ai/sdk`) offers a TypeScript-based API for integrating OpenCode functionality into applications.
-
-## Core Architecture Components
-
-### Binary Dependencies
-
-- **Primary Binary**: OpenCode ships as a compiled binary (Go + TypeScript)
-- **Installation Paths**: Multiple binary location strategies:
-  1. `$OPENCODE_INSTALL_DIR` (custom directory)
-  2. XDG Base Directory compliant path
-  3. `$HOME/bin`
-  4. `$HOME/.opencode/bin` (fallback)
-  5. `~/.local/share/opencode/bin` (working directory for operations)
-
-### Server Creation Process (`createOpencodeServer`)
-
-```typescript
-import { createOpencodeServer } from '@opencode-ai/sdk'
-
-const server = await createOpencodeServer({
-  hostname: '127.0.0.1', // Default: 127.0.0.1
-  port: 4096, // Default: 4096
-  signal: abortSignal, // Optional AbortSignal
-  timeout: 5000, // Default: 5000ms
-  config: {
-    // Inline configuration
-    model: 'anthropic/claude-3-5-sonnet-20241022'
-  }
-})
+# Code quality
+npm run lint               # Check code style
+npm run lint:fix           # Auto-fix style issues
+npm run format             # Format with Prettier
 ```
 
-### Binary Execution Model
+### First Time Setup
 
-- **Process Spawning**: Uses Node.js `child_process.spawn()` for binary execution
-- **Working Directory**: Operations expect `~/.local/share/opencode/bin` to exist
-- **Subprocess Management**: Spawns subagents for various operations (fzf, ripgrep, etc.)
-- **Posix Spawn**: Uses `posix_spawn` system calls on Unix-like systems
+1. **Clone and install**: `git clone <repo> && cd toji3 && npm install`
+2. **Start development**: `npm run dev`
+3. **Verify build**: `npm run build`
 
-## Critical System Dependencies
+The application will open automatically in development mode with hot reload enabled.
 
-### Filesystem Requirements
+## Architecture Overview
 
-- **Directory Creation**: SDK requires creation of multiple directories:
-  - `~/.local/share/opencode/bin` (critical for subprocess operations)
-  - `~/.local/share/opencode/data`
-  - `~/.local/share/opencode/config`
-  - `~/.local/share/opencode/state`
-  - `~/.local/share/opencode/log`
+Toji3 follows **electron-vite's tri-process architecture** with strict separation:
 
-### Binary Tool Dependencies
+- **Main Process**: OpenCode SDK integration, system operations, window management
+- **Preload Scripts**: Secure IPC bridge with type-safe API exposure
+- **Renderer Process**: React UI with Chakra components and custom hooks
 
-- **fzf**: Fuzzy finder tool
-- **ripgrep**: Fast text search tool
-- **OpenCode binary**: Main agent executable
-- **Terminal Emulator**: Requires "modern terminal emulator" for full functionality
+### Security Model
 
-### Configuration System
+- **Context isolation** enabled by default
+- **Node integration** disabled in renderer
+- All backend communication through **contextBridge** APIs
+- Type-safe interfaces prevent IPC vulnerabilities
 
-- **Config File**: Reads `opencode.json` for default configuration
-- **Inline Override**: `createOpencodeServer` config parameter overrides defaults
-- **Provider Support**: Multi-provider (Anthropic, OpenAI, Google, local models)
+## Documentation Architecture
 
-## Potential Electron Integration Challenges
+This project uses **distributed documentation** for better organization:
 
-### Security Model Conflicts
+### 📚 **Documentation Discovery**
 
-1. **Binary Execution**: Electron's sandbox may restrict `child_process.spawn()`
-2. **Filesystem Access**: Limited write access to user directories
-3. **PATH Resolution**: Sandboxed processes may not inherit full PATH environment
-4. **Process Isolation**: OpenCode's subprocess model may conflict with Electron's security
+- **`/CLAUDE.md`** _(this file)_ - Project overview, setup, and development workflow
+- **`/src/main/CLAUDE.md`** - OpenCode SDK integration and backend architecture
+- **`/src/renderer/CLAUDE.md`** - React/UI architecture and frontend patterns
 
-### Common Failure Modes
+### When to Reference Each Document
 
-- **ENOENT Errors**: "no such file or directory, posix_spawn" when bin directory missing
-- **Permission Denied**: Sandboxed processes cannot execute binaries
-- **PATH Issues**: Binary not found due to restricted environment variables
-- **Working Directory**: Process spawn fails when expected directories don't exist
+**Use `/CLAUDE.md`** for:
 
-### System-Level Operations
+- Getting started with development
+- Understanding the overall project structure
+- Build and deployment processes
+- High-level technology decisions
 
-- **Binary Installation**: Downloads and installs additional tools (fzf, ripgrep)
-- **Process Management**: Manages long-running subprocess connections
-- **File System Monitoring**: May watch files for changes
-- **Network Operations**: HTTP server on localhost with configurable port
+**Use `/src/main/CLAUDE.md`** for:
 
-## OpenCode Server Lifecycle
+- OpenCode SDK integration details
+- Backend API development
+- IPC bridge implementation
+- System-level operations
 
-1. **Initialization**:
-   - Validates binary availability
-   - Creates required directory structure
-   - Loads configuration from `opencode.json`
+**Use `/src/renderer/CLAUDE.md`** for:
 
-2. **Server Startup**:
-   - Spawns OpenCode binary as subprocess
-   - Establishes HTTP server on specified port
-   - Sets up IPC communication channels
+- React component architecture
+- State management patterns
+- UI/UX implementation guidelines
+- Frontend development workflows
 
-3. **Operation**:
-   - Processes API requests through HTTP
-   - Manages AI provider connections
-   - Handles file system operations
+## Development Philosophy
 
-4. **Cleanup**:
-   - `server.close()` method terminates subprocess
-   - Cleans up network connections
-   - Releases file system locks
+### Start Simple, Scale Smartly
 
-## Integration Implications
+- Begin with **local component state** and elevate to context only when needed
+- Use **custom hooks** to abstract backend communication
+- Follow **Chakra UI patterns** for consistent styling and behavior
+- Implement **TypeScript-first** development for better developer experience
 
-- **Main Process Requirement**: Must run in Electron main process (Node.js environment)
-- **Preload Limitation**: Cannot use directly in preload scripts due to binary dependencies
-- **Security Considerations**: Requires full filesystem and process execution permissions
-- **Development vs Production**: Binary paths may differ between development and packaged apps
+### Code Organization Principles
 
-## WORKFLOW - PLEASE FOLLOW THESE RULES
+- **Type-based structure**: Components, hooks, and contexts in separate directories
+- **Feature coordination**: Multi-panel interface with coordinated state management
+- **Security boundaries**: Clear separation between trusted and untrusted code
+- **Progressive enhancement**: Build core functionality first, add polish iteratively
 
-1. Research online if working with <https://electron-vite.org/> or <https://opencode.ai/> SDKs
-2. Plan
-3. Write code in small, incremental steps
-4. Lint
-5. npm run typecheck:node
-6. Iterate as needed
-7. Commit with conventional commit messages
-8. Push to GitHub
+## Workflow Guidelines
+
+### Before You Code
+
+1. **Research** relevant documentation (electron-vite, Chakra UI v3, OpenCode)
+2. **Plan** your changes and identify affected components
+3. **Check types** with `npm run typecheck` to understand current state
+
+### While You Code
+
+4. **Write incrementally** - small, focused changes
+5. **Lint continuously** with `npm run lint:fix`
+6. **Test locally** with `npm run dev`
+
+### Before You Commit
+
+7. **Final typecheck** with `npm run typecheck`
+8. **Build verification** with `npm run build`
+9. **Commit conventionally** with clear, descriptive messages
+
+This workflow ensures code quality, type safety, and reliable builds throughout development.
 
 **_Finally_**
 

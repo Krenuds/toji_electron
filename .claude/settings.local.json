@@ -37,9 +37,37 @@
       "mcp__playwright__browser_hover",
       "mcp__chakra-ui__list_components",
       "mcp__chakra-ui__installation",
-      "mcp__chakra-ui__get_theme"
+      "mcp__chakra-ui__get_theme",
+      "WebFetch(domain:docs.claude.com)",
+      "mcp__chakra-ui__get_component_example"
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run format && npm run lint:fix",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run typecheck",
+            "timeout": 45
+          }
+        ]
+      }
+    ]
   }
 }

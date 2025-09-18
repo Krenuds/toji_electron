@@ -15,7 +15,10 @@ function createWindow(): void {
     height: 900,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon: icon,
+    titleBarStyle: 'hiddenInset',
+    title: 'Toji3',
+    center: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -60,7 +63,7 @@ app.whenReady().then(async () => {
   setupBinaryHandlers(openCodeService)
 
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.toji.toji3')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
