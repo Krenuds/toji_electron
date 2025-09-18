@@ -11,7 +11,8 @@ const config = defineConfig({
           border: { value: '#404040' }, // Borders and dividers
           text: { value: '#808080' }, // Secondary text
           light: { value: '#ffffff' }, // Primary text and icons
-          accent: { value: '#33b42f' } // Accent color for highlights
+          accent: { value: '#33b42f' }, // Accent color for highlights (Toji green)
+          error: { value: '#ef4444' } // Error/stub indicators only
         },
         green: {
           50: { value: '#e6f7e6' },

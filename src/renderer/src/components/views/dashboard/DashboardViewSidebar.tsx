@@ -17,10 +17,13 @@ import { LuDownload, LuTriangleAlert, LuCheck, LuRefreshCw } from 'react-icons/l
 import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
 import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
 import { SidebarContainer } from '../../SidebarContainer'
+import { StatusBadge } from '../../StatusBadge'
+import { useServerStatus } from '../../../hooks/useServerStatus'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   const { info, loading, error, installing, installProgress, install } = useBinaryStatus()
   const { logs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOpenCodeLogs()
+  const serverStatus = useServerStatus()
 
   const getBinaryStatusAlert = (): React.ReactNode => {
     if (loading) {
@@ -244,12 +247,14 @@ export function DashboardViewSidebar(): React.JSX.Element {
                 <Text color="app.light" fontSize="xs" fontWeight="medium">
                   Core Service
                 </Text>
-                <Badge size="sm" colorScheme="green" variant="subtle">
-                  Running
-                </Badge>
+                <StatusBadge status={serverStatus} />
               </HStack>
               <Text color="app.text" fontSize="2xs" mt={1}>
-                System agent operational
+                {serverStatus === 'running'
+                  ? 'OpenCode server operational'
+                  : serverStatus === 'checking'
+                    ? 'Checking status...'
+                    : 'Server stopped'}
               </Text>
             </Box>
 
@@ -261,15 +266,13 @@ export function DashboardViewSidebar(): React.JSX.Element {
               borderColor="app.border"
             >
               <HStack justify="space-between">
-                <Text color="app.light" fontSize="xs" fontWeight="medium">
+                <Text color="app.text" fontSize="xs" fontWeight="medium">
                   Discord Bot
                 </Text>
-                <Badge size="sm" colorScheme="green" variant="subtle">
-                  Connected
-                </Badge>
+                <StatusBadge status="stub" />
               </HStack>
               <Text color="app.text" fontSize="2xs" mt={1}>
-                3 servers, voice ready
+                Not configured
               </Text>
             </Box>
 
@@ -281,15 +284,13 @@ export function DashboardViewSidebar(): React.JSX.Element {
               borderColor="app.border"
             >
               <HStack justify="space-between">
-                <Text color="app.light" fontSize="xs" fontWeight="medium">
+                <Text color="app.text" fontSize="xs" fontWeight="medium">
                   Voice Services
                 </Text>
-                <Badge size="sm" colorScheme="yellow" variant="subtle">
-                  Partial
-                </Badge>
+                <StatusBadge status="stub" />
               </HStack>
               <Text color="app.text" fontSize="2xs" mt={1}>
-                STT loading, TTS offline
+                Not available
               </Text>
             </Box>
           </VStack>

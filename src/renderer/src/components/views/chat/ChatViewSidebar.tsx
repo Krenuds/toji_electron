@@ -1,31 +1,33 @@
 import React, { useState, useEffect } from 'react'
-import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, Separator } from '@chakra-ui/react'
 import { LuPlus, LuMessageCircle, LuActivity, LuServer } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
+import { StatusBadge } from '../../StatusBadge'
+import { useServerStatus } from '../../../hooks/useServerStatus'
 
 export function ChatViewSidebar(): React.JSX.Element {
-  const [serverStatus, setServerStatus] = useState<'running' | 'stopped' | 'checking'>('checking')
+  const serverStatus = useServerStatus()
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
 
   useEffect(() => {
-    // Check server status immediately and then every 2 seconds
-    const checkStatus = async (): Promise<void> => {
+    // Check working directory when server is running
+    const checkWorkingDirectory = async (): Promise<void> => {
       try {
         const isRunning = await window.api.core.isRunning()
-        setServerStatus(isRunning ? 'running' : 'stopped')
-
         if (isRunning) {
           const dir = await window.api.core.getCurrentDirectory()
           setWorkingDirectory(dir)
+        } else {
+          setWorkingDirectory(undefined)
         }
       } catch (error) {
-        console.error('Failed to check server status:', error)
-        setServerStatus('stopped')
+        console.error('Failed to get working directory:', error)
+        setWorkingDirectory(undefined)
       }
     }
 
-    checkStatus()
-    const interval = setInterval(checkStatus, 2000)
+    checkWorkingDirectory()
+    const interval = setInterval(checkWorkingDirectory, 2000)
 
     return () => clearInterval(interval)
   }, [])
@@ -91,23 +93,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Text color="app.light" fontSize="xs" fontWeight="medium">
                 OpenCode Server
               </Text>
-              <Badge
-                size="sm"
-                colorPalette={
-                  serverStatus === 'running'
-                    ? 'green'
-                    : serverStatus === 'checking'
-                      ? 'yellow'
-                      : 'gray'
-                }
-                variant="subtle"
-              >
-                {serverStatus === 'running'
-                  ? 'Running'
-                  : serverStatus === 'checking'
-                    ? 'Checking...'
-                    : 'Stopped'}
-              </Badge>
+              <StatusBadge status={serverStatus} />
             </HStack>
             <Text color="app.text" fontSize="2xs">
               {workingDirectory
@@ -138,9 +124,7 @@ export function ChatViewSidebar(): React.JSX.Element {
                 <Text color="app.light" fontSize="xs" fontWeight="medium">
                   General Chat
                 </Text>
-                <Badge size="sm" colorScheme="green" variant="subtle">
-                  Active
-                </Badge>
+                <StatusBadge status="running" />
               </HStack>
               <Text color="app.text" fontSize="2xs" mt={1}>
                 Started 2 minutes ago
