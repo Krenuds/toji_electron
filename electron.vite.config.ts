@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['@opencode-ai/sdk', 'electron-store'] })],
+    build: {
+      watch: {}
+    },
     resolve: {
       conditions: ['import', 'module', 'node', 'default'],
       alias: {
@@ -13,7 +16,10 @@ export default defineConfig({
     }
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    build: {
+      watch: {}
+    }
   },
   renderer: {
     resolve: {
