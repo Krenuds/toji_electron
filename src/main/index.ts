@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
@@ -255,6 +255,26 @@ function setupWindowHandlers(): void {
     if (mainWindow) {
       mainWindow.close()
     }
+  })
+
+  // Select directory dialog
+  ipcMain.handle('window:select-directory', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (!mainWindow) {
+      throw new Error('No window available')
+    }
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Workspace Directory',
+      buttonLabel: 'Select Folder'
+    })
+
+    if (result.canceled) {
+      return null
+    }
+
+    return result.filePaths[0]
   })
 }
 

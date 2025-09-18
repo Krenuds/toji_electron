@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-ui/react'
 import { LuSend, LuUser, LuBot } from 'react-icons/lu'
+import { useWorkspace } from '../../../hooks/useWorkspace'
 
 interface ChatMessage {
   id: string
@@ -13,6 +14,7 @@ export function ChatViewMain(): React.JSX.Element {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
+  const { workspaceInfo, isChangingWorkspace } = useWorkspace()
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -21,6 +23,26 @@ export function ChatViewMain(): React.JSX.Element {
       timestamp: new Date()
     }
   ])
+
+  // Reset messages when workspace changes
+  useEffect(() => {
+    if (workspaceInfo) {
+      const workspaceName = workspaceInfo.workspacePath.split(/[\\/]/).pop() || 'this workspace'
+      setMessages([
+        {
+          id: Date.now().toString(),
+          type: 'assistant',
+          content: `Workspace changed to "${workspaceName}". ${
+            workspaceInfo.isNew
+              ? 'This is a new workspace. I&apos;m ready to help you start your project!'
+              : 'I&apos;m ready to help you with this project!'
+          }`,
+          timestamp: new Date()
+        }
+      ])
+      setServerStatus('online')
+    }
+  }, [workspaceInfo])
 
   // Poll server status
   useEffect(() => {
@@ -34,11 +56,13 @@ export function ChatViewMain(): React.JSX.Element {
       }
     }
 
-    checkServerStatus()
-    const interval = setInterval(checkServerStatus, 2000)
-
-    return () => clearInterval(interval)
-  }, [])
+    if (!isChangingWorkspace) {
+      checkServerStatus()
+      const interval = setInterval(checkServerStatus, 2000)
+      return () => clearInterval(interval)
+    }
+    return undefined
+  }, [isChangingWorkspace])
 
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return

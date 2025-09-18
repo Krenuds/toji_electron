@@ -61,7 +61,8 @@ const api = {
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),
     maximize: (): Promise<void> => ipcRenderer.invoke('window:maximize'),
-    close: (): Promise<void> => ipcRenderer.invoke('window:close')
+    close: (): Promise<void> => ipcRenderer.invoke('window:close'),
+    selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('window:select-directory')
   },
 
   // System Service Management API
