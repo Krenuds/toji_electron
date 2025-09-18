@@ -3,17 +3,13 @@ import { Flex, Box, IconButton, Text, HStack } from '@chakra-ui/react'
 import { LuMinus, LuSquare, LuX } from 'react-icons/lu'
 import { TojiLogo } from './TojiLogo'
 
-interface CustomTitlebarProps {
+interface TitleBarProps {
   onMinimize?: () => void
   onMaximize?: () => void
   onClose?: () => void
 }
 
-export function CustomTitlebar({
-  onMinimize,
-  onMaximize,
-  onClose
-}: CustomTitlebarProps): React.JSX.Element {
+export function TitleBar({ onMinimize, onMaximize, onClose }: TitleBarProps): React.JSX.Element {
   return (
     <Flex
       h="32px"

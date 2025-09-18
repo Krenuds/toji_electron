@@ -2,7 +2,7 @@ import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
 import { LuSettings, LuLayoutDashboard, LuFolderGit2 } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
-import { CustomTitlebar } from './components/CustomTitlebar'
+import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
 import { ViewType } from './types/ViewTypes'
 import { useViewCoordination } from './hooks/useViewCoordination'
@@ -31,11 +31,7 @@ function AppContent(): React.JSX.Element {
   return (
     <Box h="100vh">
       {/* Custom Titlebar - Full Width */}
-      <CustomTitlebar
-        onMinimize={handleMinimize}
-        onMaximize={handleMaximize}
-        onClose={handleClose}
-      />
+      <TitleBar onMinimize={handleMinimize} onMaximize={handleMaximize} onClose={handleClose} />
 
       {/* Main Application Content */}
       <Flex h="calc(100vh - 32px)" w="100%">
