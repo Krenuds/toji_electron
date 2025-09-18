@@ -30,7 +30,9 @@ const api = {
     chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message),
 
     // Workspace Management
-    changeWorkspace: (directory: string): Promise<{
+    changeWorkspace: (
+      directory: string
+    ): Promise<{
       isNew: boolean
       hasGit: boolean
       hasOpenCodeConfig: boolean

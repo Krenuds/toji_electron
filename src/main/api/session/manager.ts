@@ -51,19 +51,25 @@ export class SessionManager {
 
     // Extract text from response - handle different possible response structures
     if (response.data) {
-      const responseData = response.data as any // Type assertion since SDK types are incomplete
+      const responseData = response.data as unknown // Type assertion since SDK types are incomplete
 
       // Check if response has parts array
-      if (Array.isArray(responseData.parts)) {
+      if (
+        responseData &&
+        typeof responseData === 'object' &&
+        'parts' in responseData &&
+        Array.isArray((responseData as { parts: unknown[] }).parts)
+      ) {
+        const dataWithParts = responseData as { parts: Array<{ type?: string; text?: string }> }
         // Get ALL text content (reasoning + text)
-        const textContent = responseData.parts
+        const textContent = dataWithParts.parts
           .filter(
-            (part: any) =>
+            (part) =>
               part &&
               typeof part === 'object' &&
               (part.type === 'text' || part.type === 'reasoning')
           )
-          .map((part: any) => part.text || '')
+          .map((part) => part.text || '')
           .filter(Boolean)
           .join('\n')
 
@@ -81,9 +87,10 @@ export class SessionManager {
 
       // Check if response.data has a text property
       if (responseData && typeof responseData === 'object' && 'text' in responseData) {
-        if (typeof responseData.text === 'string') {
-          console.log('SessionManager: Text property found:', responseData.text)
-          return responseData.text
+        const dataWithText = responseData as { text: unknown }
+        if (typeof dataWithText.text === 'string') {
+          console.log('SessionManager: Text property found:', dataWithText.text)
+          return dataWithText.text
         }
       }
     }
