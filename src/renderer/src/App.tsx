@@ -3,8 +3,13 @@ import { Box, Flex, Stack } from '@chakra-ui/react'
 import { LuSettings, LuLayoutDashboard } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { CustomTitlebar } from './components/CustomTitlebar'
+import { AppViewProvider } from './contexts/AppViewContext'
+import { ViewType } from './types/ViewTypes'
+import { useViewCoordination } from './hooks/useViewCoordination'
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
+  const { activeView, setActiveView, getSidebarContent, getMainContent } = useViewCoordination()
+
   const handleMinimize = (): void => {
     window.api.window.minimize()
   }
@@ -15,6 +20,12 @@ function App(): React.JSX.Element {
 
   const handleClose = (): void => {
     window.api.window.close()
+  }
+
+  const handleIconClick = (viewName?: ViewType): void => {
+    if (viewName) {
+      setActiveView(viewName)
+    }
   }
 
   return (
@@ -29,32 +40,44 @@ function App(): React.JSX.Element {
       {/* Main Application Content */}
       <Flex h="calc(100vh - 32px)" w="100%">
         {/* Icon Bar - Left Panel */}
-        <Box w="45px" bg="app.darkest" borderRight="1px" borderColor="app.border">
-          <Stack direction="column" gap={2} p={2}>
-            <IconButton icon={<LuLayoutDashboard />} />
-            <IconButton icon={<LuSettings />} />
+        <Box w="35px" bg="app.darkest" borderRight="1px" borderColor="app.border">
+          <Stack direction="column" gap={1} p={1}>
+            <IconButton
+              icon={<LuLayoutDashboard />}
+              tooltip="Dashboard"
+              viewName="dashboard"
+              isActive={activeView === 'dashboard'}
+              onClick={handleIconClick}
+            />
+            <IconButton
+              icon={<LuSettings />}
+              tooltip="Settings"
+              viewName="settings"
+              isActive={activeView === 'settings'}
+              onClick={handleIconClick}
+            />
           </Stack>
         </Box>
 
         {/* Sidebar - Middle Panel */}
         <Box w="300px" bg="app.dark" borderRight="1px" borderColor="app.border" p={4}>
-          <Box color="app.light" fontSize="sm" fontWeight="bold" mb={4}>
-            Chat Settings
-          </Box>
-          <Box color="app.text" fontSize="xs">
-            Sidebar content goes here...
-          </Box>
+          {getSidebarContent()}
         </Box>
 
         {/* Main Content - Right Panel */}
         <Box flex="1" bg="app.medium" p={6}>
-          <Box color="app.light" fontSize="lg" fontWeight="bold" mb={4}>
-            Main Content Area
-          </Box>
-          <Box color="app.text">This is where your primary content will be displayed.</Box>
+          {getMainContent()}
         </Box>
       </Flex>
     </Box>
+  )
+}
+
+function App(): React.JSX.Element {
+  return (
+    <AppViewProvider>
+      <AppContent />
+    </AppViewProvider>
   )
 }
 

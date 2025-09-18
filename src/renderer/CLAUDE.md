@@ -2,26 +2,23 @@
 
 ## Overview
 
-This document defines the React-based user interface architecture for the Toji3 application. The renderer process operates in a browser environment with modern React patterns, Chakra UI components, and TypeScript for type safety.
+This document defines the React-based user interface architecture for the Toji3 application. The renderer process implements a sophisticated **coordinated multi-panel interface** with view-based navigation, built on React 19, TypeScript 5.8, and Chakra UI v3.
 
 ## Technology Stack
 
 - **React 19.1**: Modern React with concurrent features and latest hooks
 - **TypeScript 5.8**: Full type safety across the application
-- **Chakra UI 3.27**: Component library with v3 token system and semantic colors
+- **Chakra UI 3.27**: Component library with v3 composition patterns and custom theming
 - **React Icons**: Consistent icon library using Lucide icons (react-icons/lu)
 - **Vite 7.0**: Fast development server with Hot Module Replacement
 
-## Multi-Panel Coordination Strategy
+## Views Architecture
 
-The Toji3 application uses a **coordinated multi-panel interface** where the left icon bar controls what content appears in both the sidebar and main content area simultaneously. This creates a cohesive user experience where each icon activates a complete workspace rather than independent panels.
+The core innovation in Toji3's interface is the **Views System** - a coordinated multi-panel interface where navigation icons drive synchronized content across sidebar and main areas.
 
-### Design Philosophy
+### Core Concept: Views over Workspaces
 
-- **Unified Views**: Each icon represents a complete workflow or feature area
-- **Coordinated Content**: Sidebar and main area work together to present related information
-- **Context Preservation**: Switching between icons maintains state within each workspace
-- **Progressive Disclosure**: Complex features are split across panels for better organization
+**IMPORTANT**: We use "Views" terminology to avoid conflicts with OpenCode SDK's "workspace" concept. This ensures clear separation between UI navigation and OpenCode's project management.
 
 ### Layout Structure
 
@@ -29,162 +26,261 @@ The Toji3 application uses a **coordinated multi-panel interface** where the lef
 ┌─────────┬─────────────────┬─────────────────────────────┐
 │ Icon    │ Sidebar         │ Main Content                │
 │ Bar     │ (300px)         │ (flex-1)                    │
-│ (45px)  │                 │                             │
+│ (35px)  │                 │                             │
 │         │                 │                             │
-│ [🏠]    │ Context-aware   │ Primary interaction area    │
-│ [⚙️]    │ navigation and  │ for selected workspace      │
-│         │ controls        │                             │
+│ [📊]    │ View-specific   │ Primary interaction area    │
+│ [⚙️]    │ sidebar content │ for selected view           │
+│ [💬]    │                 │                             │
 └─────────┴─────────────────┴─────────────────────────────┘
 ```
 
-## Chat Interface Design Pattern
+### View Types
 
-The chat functionality exemplifies the coordinated panel approach:
+Each view represents a complete feature area with coordinated sidebar and main content:
 
-### Sidebar Role: Conversation Management
+- **Dashboard**: Project metrics, activity feeds, quick actions
+- **Settings**: Configuration categories, preferences, system settings
+- **Chat**: OpenCode conversations, session management, AI interactions
+- **Projects**: Workspace management, file browsers, project tools
 
-- **Session List**: Previous conversations with timestamps and titles
-- **Session Controls**: New conversation, delete, archive, and search
-- **Status Indicators**: OpenCode agent connection and health status
-- **Quick Actions**: Common prompts and conversation templates
+## State Management Architecture
 
-### Main Content Role: Active Conversation
+### AppViewContext - Central Coordination
 
-- **Message Thread**: Live chat messages with user and AI responses
-- **Rich Content Display**: Code blocks, file attachments, and formatted responses
-- **Message Composition**: Input field with send button and keyboard shortcuts
-- **Conversation Tools**: Export, share, and conversation-specific options
+The `AppViewContext` manages the entire view system:
 
-### Coordination Behavior
+```typescript
+interface AppViewContextType {
+  activeView: ViewType
+  setActiveView: (view: ViewType) => void
+  viewState: Record<ViewType, any>
+  setViewState: (view: ViewType, state: any) => void
+}
+```
 
-The sidebar selection directly influences what conversation appears in the main area, while main area actions (like starting a new conversation) update the sidebar's session list in real-time.
+**Key Features:**
 
-## State Management Philosophy
+- **Active View Tracking**: Maintains which view is currently displayed
+- **State Persistence**: Uses localStorage to preserve view selection across sessions
+- **View-Specific State**: Each view maintains its own isolated state
+- **Type Safety**: Full TypeScript support with `ViewType` enum
 
-The application employs a **hybrid state approach** balancing simplicity with functionality:
+### useViewCoordination Hook
 
-### Local Component State
+The coordination hook abstracts view management complexity:
 
-Used for immediate UI interactions that don't need to persist or be shared:
+```typescript
+const { activeView, setActiveView, getSidebarContent, getMainContent, updateViewState } =
+  useViewCoordination()
+```
 
-- **Input Values**: Form fields, search queries, temporary text
-- **Loading States**: Button loading, component-specific spinners
-- **UI Toggles**: Dropdown open/closed, modal visibility
-- **Transient Feedback**: Hover states, focus indicators
+**Responsibilities:**
 
-### React Context
+- **Content Switching**: Dynamically renders appropriate sidebar/main components
+- **State Management**: Provides view-specific state access
+- **Placeholder Handling**: Shows "Coming soon" for unimplemented views
 
-Manages cross-component application state that needs coordination:
+## Component Architecture
 
-- **Active Workspace**: Which icon is currently selected
-- **Chat State**: Active session, conversation history, message queue
-- **UI Preferences**: Theme settings, panel sizes, user customizations
-- **Connection Status**: Backend connectivity and authentication state
+### View Components Structure
 
-### Backend Integration
+Views are organized in feature-based directories:
 
-Persistent data flows through custom hooks that abstract IPC communication:
+```
+src/components/views/
+├── dashboard/
+│   ├── DashboardViewSidebar.tsx
+│   └── DashboardViewMain.tsx
+├── settings/
+│   ├── SettingsViewSidebar.tsx
+│   └── SettingsViewMain.tsx
+└── chat/
+    ├── ChatViewSidebar.tsx
+    └── ChatViewMain.tsx
+```
 
-- **OpenCode Operations**: Agent management, prompt sending, session handling
-- **File System**: Project management, file operations, directory browsing
-- **Configuration**: Settings persistence, preferences management
-- **Real-time Updates**: Status changes, progress notifications
+### Enhanced IconButton Component
 
-## Component Organization Strategy
+The navigation system uses an enhanced `IconButton` with view integration:
 
-Components are organized by **functional responsibility** rather than feature groupings, promoting reusability and clear separation of concerns:
+```typescript
+interface IconButtonProps {
+  icon: React.ReactNode
+  tooltip: string
+  viewName?: ViewType
+  isActive?: boolean
+  onClick?: (viewName?: ViewType) => void
+}
+```
 
-### Components Directory (`/components`)
+**Features:**
 
-Houses reusable UI building blocks:
+- **Active State Styling**: Visual feedback with accent colors
+- **Tooltip Integration**: Chakra UI v3 compatible tooltips
+- **View Selection**: Handles view switching through click events
+- **Smooth Transitions**: CSS transitions for hover and active states
 
-- **Layout Components**: Panels, containers, grid systems, navigation elements
-- **Input Components**: Forms, buttons, text inputs, file selectors
-- **Display Components**: Message bubbles, status indicators, data tables
-- **Utility Components**: Loading spinners, modals, tooltips, overlays
+### Tooltip System
 
-### Hooks Directory (`/hooks`)
+Custom Tooltip component following Chakra UI v3 composition patterns:
 
-Contains custom hooks for specific responsibilities:
+```typescript
+<Tooltip content="Dashboard" positioning={{ placement: 'right' }} showArrow>
+  <IconButton ... />
+</Tooltip>
+```
 
-- **Backend Communication**: `useOpenCode`, `useProjects`, `useSessions`
-- **State Management**: `useChat`, `useAppState`, `useWorkspace`
-- **UI Behavior**: `useKeyboardShortcuts`, `useWindowResize`, `useLocalStorage`
-- **Data Processing**: `useMessageFormatting`, `useFileProcessing`
+## Dashboard Implementation
 
-### Contexts Directory (`/contexts`)
+### Dashboard Sidebar Features
 
-Provides application-wide state management:
+The `DashboardViewSidebar` provides:
 
-- **ChatContext**: Conversation state, message history, active session
-- **AppContext**: Global application state, active workspace, user preferences
-- **ThemeContext**: UI customization, color schemes, layout preferences
-- **BackendContext**: Connection status, agent availability, error states
+- **Quick Actions**: New Project, Open Project buttons
+- **Recent Projects**: List with status badges and descriptions
+- **Activity Feed**: Recent commits, sessions, and file operations
+- **Status Indicators**: Connection status and project health
 
-## Backend Communication Design
+### Dashboard Main Content
 
-All interaction with the Electron backend follows a **consistent hook-based pattern** that abstracts IPC complexity:
+The `DashboardViewMain` displays:
 
-### Abstraction Layer Principles
+- **Metrics Cards**: Active projects, sessions, commits, hours coded
+- **Project Status**: Progress bars, completion percentages, team info
+- **Activity Timeline**: Real-time feed with timestamps and activity types
+- **Rich Data Visualization**: Charts, progress indicators, status badges
 
-- **No Direct IPC**: Components never directly access `window.api` methods
-- **Hook Encapsulation**: All backend communication wrapped in custom hooks
-- **Type Safety**: Full TypeScript interfaces for all IPC interactions
-- **Error Handling**: Consistent error boundaries and user-friendly messages
+## Backend Integration Strategy
 
-### Data Flow Pattern
+### IPC Abstraction Pattern
 
-1. **User Action**: User interacts with a component (click, type, submit)
-2. **Hook Invocation**: Component calls custom hook function
-3. **IPC Communication**: Hook sends request to main process via preload bridge
-4. **Backend Processing**: Main process handles OpenCode SDK or system operations
-5. **Response Handling**: Hook receives response and updates component state
-6. **Context Updates**: Changes propagate through React Context to other components
+All backend communication follows a consistent pattern:
 
-### Error Handling Strategy
+1. **Component Level**: Never directly access `window.api`
+2. **Hook Encapsulation**: Custom hooks wrap all IPC calls
+3. **Type Safety**: Full TypeScript interfaces for all communications
+4. **Error Boundaries**: Graceful degradation with user-friendly messages
 
-Robust error management at the hook level ensures graceful degradation:
+### Window Controls Integration
 
-- **Network Errors**: Connection issues are caught and display retry options
-- **User-Friendly Messages**: Technical IPC errors are translated to actionable feedback
-- **Retry Mechanisms**: Automatic retry for transient failures with exponential backoff
-- **Fallback States**: Alternative UI when backend services are unavailable
+Seamless integration with custom titlebar:
 
-## Development Patterns
+```typescript
+const handleMinimize = () => window.api.window.minimize()
+const handleMaximize = () => window.api.window.maximize()
+const handleClose = () => window.api.window.close()
+```
 
-### Component Creation Guidelines
+## Chakra UI v3 Implementation
 
-1. **Start Small**: Create focused, single-responsibility components
-2. **Type Everything**: Use TypeScript interfaces for all props and state
-3. **Hook Integration**: Use custom hooks for any backend communication
-4. **Chakra Patterns**: Follow Chakra UI v3 conventions and token system
+### Composition Patterns
 
-### State Management Decisions
+Following Chakra UI v3's composition approach:
 
-- **Local First**: Start with local state, elevate to context only when needed
-- **Context Sparingly**: Only use context for truly global application state
-- **Hook Abstraction**: Always wrap backend calls in custom hooks
-- **Immutable Updates**: Use proper React state update patterns
+```tsx
+// Progress bars
+<Progress.Root value={75} colorPalette="green">
+  <Progress.Track>
+    <Progress.Range />
+  </Progress.Track>
+</Progress.Root>
 
-### Styling Conventions
+// Cards
+<Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
+  <Card.Header>...</Card.Header>
+  <Card.Body>...</Card.Body>
+</Card.Root>
+```
 
-- **Custom Tokens**: Use `app.*` color tokens from theme system
-- **Semantic Colors**: Prefer Chakra's semantic tokens (bg, fg, border) when appropriate
-- **Consistent Icons**: Use react-icons/lu (Lucide) for all interface icons
-- **Responsive Design**: Consider mobile/tablet layouts with Chakra breakpoints
+### Custom Theme Integration
 
-## Testing Strategy
+Leverages the `app.*` color token system:
 
-### Component Testing
+```typescript
+const theme = {
+  tokens: {
+    colors: {
+      app: {
+        darkest: '#09090b', // Icon bar background
+        dark: '#1a1a1a', // Sidebar background
+        medium: '#242424', // Main content background
+        border: '#404040', // Borders and dividers
+        text: '#808080', // Secondary text
+        light: '#ffffff', // Primary text and icons
+        accent: '#33b42f' // Accent color for highlights
+      }
+    }
+  }
+}
+```
 
-- **Isolated Testing**: Test components independently from backend
-- **Mock Hooks**: Use mock implementations of custom hooks
-- **User Interactions**: Test actual user workflows and edge cases
+## Development Workflow
 
-### Integration Testing
+### Component Creation Pattern
 
-- **Hook Testing**: Verify IPC communication flows work correctly
-- **Context Testing**: Ensure state management behaves as expected
-- **End-to-End**: Test complete user workflows from click to result
+1. **Plan the View**: Define sidebar and main content responsibilities
+2. **Create Components**: Build ViewSidebar and ViewMain components
+3. **Update Hook**: Add view cases to `useViewCoordination`
+4. **Add Navigation**: Include view in icon bar with proper `viewName`
+5. **Test Integration**: Verify state persistence and view switching
 
-This architecture creates a scalable foundation that grows naturally as features are added, while maintaining clear separation of concerns and predictable data flow patterns. The focus on custom hooks and React Context provides flexibility without complexity, making the codebase easy to understand and extend.
+### State Management Guidelines
+
+- **Local State First**: Use component state for UI-only interactions
+- **Context for Coordination**: Use `AppViewContext` for cross-panel state
+- **View-Specific State**: Store view data in `viewState` object
+- **Persistence**: Leverage localStorage for session preservation
+
+### Styling Best Practices
+
+- **Consistent Spacing**: Use Chakra's `gap` prop instead of `spacing`
+- **Color Tokens**: Prefer `app.*` tokens over hardcoded colors
+- **Responsive Design**: Consider mobile layouts with Chakra breakpoints
+- **Composition**: Use Chakra v3 composition patterns for complex components
+
+## Performance Optimizations
+
+### Lazy View Loading
+
+Views are loaded on-demand to reduce initial bundle size:
+
+```typescript
+const getSidebarContent = (): React.ReactNode => {
+  switch (activeView) {
+    case 'dashboard':
+      return <DashboardViewSidebar />
+    // Other views loaded as needed
+  }
+}
+```
+
+### State Persistence Strategy
+
+Efficient localStorage integration:
+
+- **Active View**: Persisted on every view change
+- **View State**: Debounced updates to prevent excessive writes
+- **Recovery**: Graceful fallback to default view on invalid data
+
+## Future Extensibility
+
+### Adding New Views
+
+The architecture scales naturally for new views:
+
+1. Create `ViewSidebar` and `ViewMain` components
+2. Add view type to `ViewType` union
+3. Update `useViewCoordination` switch statements
+4. Add icon to navigation bar
+5. Implement view-specific state management
+
+### Integration Points
+
+Ready for future enhancements:
+
+- **Chat Integration**: OpenCode SDK conversations
+- **Project Management**: File browsers and workspace tools
+- **Settings System**: Configuration and preferences
+- **Plugin Architecture**: Third-party view extensions
+
+This architecture provides a robust foundation for Toji3's interface evolution while maintaining clean separation of concerns, type safety, and excellent developer experience.
