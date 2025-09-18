@@ -203,80 +203,80 @@ function setupDiscordHandlers(): void {
     // Connect Discord bot
     ipcMain.handle('discord:connect', async () => {
       console.log('IPC: discord:connect called')
-    if (!discordService) {
-      throw new Error('Discord service not initialized')
-    }
-    try {
-      await discordService.connect()
-      console.log('IPC: discord:connect completed successfully')
-    } catch (error) {
-      console.error('IPC: discord:connect failed:', error)
-      throw error
-    }
-  })
+      if (!discordService) {
+        throw new Error('Discord service not initialized')
+      }
+      try {
+        await discordService.connect()
+        console.log('IPC: discord:connect completed successfully')
+      } catch (error) {
+        console.error('IPC: discord:connect failed:', error)
+        throw error
+      }
+    })
     console.log('setupDiscordHandlers: discord:connect handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:disconnect handler...')
     // Disconnect Discord bot
     ipcMain.handle('discord:disconnect', async () => {
-    if (!discordService) {
-      throw new Error('Discord service not initialized')
-    }
-    return await discordService.disconnect()
-  })
+      if (!discordService) {
+        throw new Error('Discord service not initialized')
+      }
+      return await discordService.disconnect()
+    })
     console.log('setupDiscordHandlers: discord:disconnect handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:get-status handler...')
     // Get Discord status
     ipcMain.handle('discord:get-status', async () => {
-    if (!discordService) {
-      throw new Error('Discord service not initialized')
-    }
-    return discordService.getStatus()
-  })
+      if (!discordService) {
+        throw new Error('Discord service not initialized')
+      }
+      return discordService.getStatus()
+    })
     console.log('setupDiscordHandlers: discord:get-status handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:set-token handler...')
     // Set Discord token
     ipcMain.handle('discord:set-token', async (_, token: string) => {
-    if (!config) {
-      throw new Error('Config not initialized')
-    }
-    config.setDiscordToken(token)
-    return { success: true }
-  })
+      if (!config) {
+        throw new Error('Config not initialized')
+      }
+      config.setDiscordToken(token)
+      return { success: true }
+    })
     console.log('setupDiscordHandlers: discord:set-token handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:has-token handler...')
     // Check if token exists
     ipcMain.handle('discord:has-token', async () => {
-    if (!config) {
-      throw new Error('Config not initialized')
-    }
-    return config.hasDiscordToken()
-  })
+      if (!config) {
+        throw new Error('Config not initialized')
+      }
+      return config.hasDiscordToken()
+    })
     console.log('setupDiscordHandlers: discord:has-token handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:clear-token handler...')
     // Clear Discord token
     ipcMain.handle('discord:clear-token', async () => {
-    if (!config) {
-      throw new Error('Config not initialized')
-    }
-    config.clearDiscordToken()
-    return { success: true }
-  })
+      if (!config) {
+        throw new Error('Config not initialized')
+      }
+      config.clearDiscordToken()
+      return { success: true }
+    })
     console.log('setupDiscordHandlers: discord:clear-token handler registered')
 
     console.log('setupDiscordHandlers: Registering discord:get-debug-info handler...')
     // Get debug info
     ipcMain.handle('discord:get-debug-info', async () => {
-    console.log('IPC: discord:get-debug-info called')
-    if (!discordService) {
-      throw new Error('Discord service not initialized')
-    }
-    return discordService.getDebugInfo()
-  })
+      console.log('IPC: discord:get-debug-info called')
+      if (!discordService) {
+        throw new Error('Discord service not initialized')
+      }
+      return discordService.getDebugInfo()
+    })
     console.log('setupDiscordHandlers: discord:get-debug-info handler registered')
 
     console.log('setupDiscordHandlers: ✅ All Discord IPC handlers registered successfully')

@@ -7,7 +7,18 @@ interface DiscordStatus {
   guilds?: number
 }
 
-export function useDiscord() {
+interface UseDiscordReturn {
+  status: DiscordStatus
+  hasToken: boolean
+  isConnecting: boolean
+  error: string | null
+  connect: () => Promise<void>
+  disconnect: () => Promise<void>
+  toggleConnection: () => Promise<void>
+  refreshStatus: () => Promise<void>
+}
+
+export function useDiscord(): UseDiscordReturn {
   const [status, setStatus] = useState<DiscordStatus>({ connected: false })
   const [isConnecting, setIsConnecting] = useState(false)
   const [hasToken, setHasToken] = useState(false)
@@ -19,7 +30,7 @@ export function useDiscord() {
     refreshStatus()
   }, [])
 
-  const checkToken = async () => {
+  const checkToken = async (): Promise<void> => {
     try {
       const tokenExists = await window.api.discord.hasToken()
       setHasToken(tokenExists)
@@ -29,7 +40,7 @@ export function useDiscord() {
     }
   }
 
-  const refreshStatus = async () => {
+  const refreshStatus = async (): Promise<void> => {
     try {
       const discordStatus = await window.api.discord.getStatus()
       setStatus(discordStatus)
@@ -48,7 +59,7 @@ export function useDiscord() {
     try {
       await window.api.discord.connect()
       // Wait a moment for connection to establish
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
       await refreshStatus()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect to Discord'
@@ -84,6 +95,7 @@ export function useDiscord() {
       const interval = setInterval(refreshStatus, 5000)
       return () => clearInterval(interval)
     }
+    return undefined
   }, [status.connected])
 
   return {

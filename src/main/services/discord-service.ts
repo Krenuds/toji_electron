@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits } from 'discord.js'
+import { Client, Events, GatewayIntentBits, ChannelType } from 'discord.js'
 import type { Message } from 'discord.js'
 import type { Toji } from '../api/Toji'
 import type { ConfigProvider } from '../config/ConfigProvider'
@@ -34,7 +34,10 @@ export class DiscordService {
 
     // Get token from config
     const token = this.config.getDiscordToken()
-    console.log('DiscordService: Token retrieved from config:', token ? `${token.substring(0, 10)}...` : 'NO TOKEN')
+    console.log(
+      'DiscordService: Token retrieved from config:',
+      token ? `${token.substring(0, 10)}...` : 'NO TOKEN'
+    )
 
     if (!token) {
       this.connectionState = 'error'
@@ -86,7 +89,9 @@ export class DiscordService {
       this.connectionState = 'error'
       this.lastError = error as Error
       this.client = null
-      throw new Error(`Failed to connect to Discord: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to connect to Discord: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -147,7 +152,9 @@ export class DiscordService {
 
     // Message create event
     this.client.on(Events.MessageCreate, async (message: Message) => {
-      console.log(`DiscordService: Message received from ${message.author.tag}: "${message.content.substring(0, 50)}..."`)
+      console.log(
+        `DiscordService: Message received from ${message.author.tag}: "${message.content.substring(0, 50)}..."`
+      )
       await this.handleMessage(message)
     })
 
@@ -189,6 +196,29 @@ export class DiscordService {
     // Only respond to messages that mention the bot
     if (!message.mentions.has(message.client.user!.id)) return
 
+    // Check if this is a partial channel (can't send messages)
+    if (message.channel.partial) {
+      console.log('DiscordService: Cannot handle partial channels')
+      return
+    }
+
+    // Check channel type - we can only send to text-based channels
+    const supportedChannels = [
+      ChannelType.GuildText,
+      ChannelType.DM,
+      ChannelType.GuildVoice, // Voice channels can have text
+      ChannelType.GroupDM,
+      ChannelType.GuildAnnouncement,
+      ChannelType.PublicThread,
+      ChannelType.PrivateThread,
+      ChannelType.AnnouncementThread
+    ]
+
+    if (!supportedChannels.includes(message.channel.type)) {
+      console.log(`DiscordService: Unsupported channel type: ${message.channel.type}`)
+      return
+    }
+
     // Extract message content without mentions
     const content = message.content.replace(/<@!?\d+>/g, '').trim()
 
@@ -198,8 +228,10 @@ export class DiscordService {
     }
 
     try {
-      // Show typing indicator
-      await message.channel.sendTyping()
+      // Show typing indicator if it's a proper text channel
+      if (message.channel.type !== ChannelType.GroupDM) {
+        await message.channel.sendTyping()
+      }
 
       // Process message through Toji API (which uses OpenCode)
       console.log(`DiscordService: Processing message: "${content}"`)
@@ -210,7 +242,7 @@ export class DiscordService {
         // Split into multiple messages if needed
         const chunks = this.splitMessage(response, 2000)
         for (const chunk of chunks) {
-          await message.channel.send(chunk)
+          await message.reply(chunk)
         }
       } else {
         await message.reply(response)

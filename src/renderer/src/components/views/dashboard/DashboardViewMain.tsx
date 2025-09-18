@@ -81,7 +81,6 @@ export function DashboardViewMain(): React.JSX.Element {
               </Text>
               {discord.hasToken && (
                 <Switch.Root
-                  colorPalette="green"
                   checked={discord.status.connected}
                   disabled={discord.isConnecting}
                   onCheckedChange={() => discord.toggleConnection()}

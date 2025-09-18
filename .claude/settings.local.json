@@ -45,7 +45,12 @@
       "Bash(set OPENCODE_INSTALL_DIR=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\")",
       "Bash(set XDG_DATA_HOME=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-data\")",
       "Bash(timeout:*)",
-      "Bash(\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\\opencode.exe\" run \"hello world\" --print-logs --log-level DEBUG)"
+      "Bash(\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\\opencode.exe\" run \"hello world\" --print-logs --log-level DEBUG)",
+      "WebFetch(domain:discordjs.guide)",
+      "Bash(tree:*)",
+      "WebFetch(domain:discord.js.org)",
+      "mcp__chakra-ui__customize_theme",
+      "mcp__chakra-ui__v2_to_v3_code_review"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-ui/react'
 import { LuSend, LuUser, LuBot } from 'react-icons/lu'
 import { useWorkspace } from '../../../hooks/useWorkspace'
+import { useChat } from '../../../hooks/useChat'
 
 interface ChatMessage {
   id: string
@@ -12,9 +13,9 @@ interface ChatMessage {
 
 export function ChatViewMain(): React.JSX.Element {
   const [message, setMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
   const { workspaceInfo, isChangingWorkspace } = useWorkspace()
+  const { sendMessage, checkServerStatus, ensureReadyForChat, isLoading } = useChat()
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -46,23 +47,18 @@ export function ChatViewMain(): React.JSX.Element {
 
   // Poll server status
   useEffect(() => {
-    const checkServerStatus = async (): Promise<void> => {
-      try {
-        const isRunning = await window.api.core.isRunning()
-        setServerStatus(isRunning ? 'online' : 'offline')
-      } catch (error) {
-        console.error('Failed to check server status:', error)
-        setServerStatus('offline')
-      }
+    const pollServerStatus = async (): Promise<void> => {
+      const isRunning = await checkServerStatus()
+      setServerStatus(isRunning ? 'online' : 'offline')
     }
 
     if (!isChangingWorkspace) {
-      checkServerStatus()
-      const interval = setInterval(checkServerStatus, 2000)
+      pollServerStatus()
+      const interval = setInterval(pollServerStatus, 2000)
       return () => clearInterval(interval)
     }
     return undefined
-  }, [isChangingWorkspace])
+  }, [isChangingWorkspace, checkServerStatus])
 
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return
@@ -77,42 +73,46 @@ export function ChatViewMain(): React.JSX.Element {
     setMessages((prev) => [...prev, userMessage])
     const currentMessage = message
     setMessage('')
-    setIsLoading(true)
 
-    try {
-      // Ensure server is ready if this is the first message
-      if (serverStatus === 'offline') {
-        setServerStatus('initializing')
-        const readyStatus = await window.api.core.ensureReadyForChat()
-        if (readyStatus.serverStatus === 'online') {
-          setServerStatus('online')
-        } else {
-          throw new Error('Failed to initialize OpenCode server')
+    // Ensure server is ready if this is the first message
+    if (serverStatus === 'offline') {
+      setServerStatus('initializing')
+      const readyStatus = await ensureReadyForChat()
+      if (readyStatus.serverStatus === 'online') {
+        setServerStatus('online')
+      } else {
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: `Error: ${readyStatus.error || 'Failed to initialize OpenCode server'}`,
+          timestamp: new Date()
         }
+        setMessages((prev) => [...prev, errorMessage])
+        setServerStatus('offline')
+        return
       }
+    }
 
-      // Send the actual message
-      const response = await window.api.core.chat(currentMessage)
+    // Send the actual message
+    const response = await sendMessage(currentMessage)
 
+    if (response.success) {
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: response,
+        content: response.message || '',
         timestamp: new Date()
       }
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('Chat error:', error)
+    } else {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
+        content: `Error: ${response.error || 'Failed to send message'}`,
         timestamp: new Date()
       }
       setMessages((prev) => [...prev, errorMessage])
       setServerStatus('offline')
-    } finally {
-      setIsLoading(false)
     }
   }
 

@@ -54,6 +54,7 @@ When adding new features, follow this API-first approach:
    - Use hooks to abstract `window.api` calls
    - Follow existing UI patterns and theme
    - Test in Electron environment (not browser)
+   - Use the correct Chakra UI v3 composition pattern
 
 5. **Testing & Refinement**
    - Test with `npm run dev`

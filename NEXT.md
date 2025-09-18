@@ -1,3 +1,110 @@
+# Discord Bot Integration Session Summary - 2025-09-18
+
+## Session Objective Completed ✅
+Successfully integrated Discord.js as a service layer that consumes the Toji API, enabling Discord users to interact with OpenCode AI through bot mentions.
+
+## Architecture Decisions
+
+### Layer Separation Philosophy
+We established a critical architectural principle: **Discord is an interface, not part of the core API**
+
+```
+INTERFACES (all at same level):
+├── Electron Renderer (UI)
+├── Discord Bot         <-- NEW
+├── Slack Bot
+├── CLI
+└── Voice Interface
+     ↓ all consume
+
+MAIN API:
+Toji API (orchestrator)
+     ↓ uses
+
+CORE SERVICES:
+OpenCode SDK
+```
+
+### Initial Mistake & Correction
+- **Initial approach (incorrect)**: Added Discord to the Toji API class
+- **Problem**: This violated separation of concerns - the API became aware of specific interfaces
+- **Solution**: Removed Discord from Toji API, created Discord as a service that consumes Toji
+- **Learning**: Business logic must remain in the API layer, interfaces are just consumers
+
+## Implementation Details
+
+### 1. Discord Service (`/src/main/services/discord-service.ts`)
+- Created `DiscordService` class that manages Discord bot lifecycle
+- Consumes Toji API through dependency injection
+- Handles Discord events and routes messages to `toji.chat()`
+- Implements message splitting for Discord's 2000 character limit
+- Comprehensive logging for debugging connection issues
+
+### 2. Configuration Management
+Extended `ConfigProvider` with Discord token management:
+```typescript
+- getDiscordToken(): string | undefined
+- setDiscordToken(token: string): void
+- hasDiscordToken(): boolean
+- clearDiscordToken(): void
+```
+- Token stored with electron-store encryption for security
+
+### 3. IPC Bridge
+Added Discord handlers to main process:
+- `discord:connect` - Start bot with stored token
+- `discord:disconnect` - Stop bot
+- `discord:get-status` - Check connection status
+- `discord:set-token` - Save token to config
+- `discord:has-token` - Check token existence
+- `discord:get-debug-info` - Detailed debugging info
+
+### 4. Frontend Integration
+- **Hook**: Created `useDiscord` hook for clean API abstraction
+- **UI Component**: Updated Dashboard with Discord bot card
+- **Chakra UI v3**: Learned correct composition pattern for Switch component
+
+## Technical Challenges Resolved
+
+### 1. Logging & Debugging
+- Added comprehensive logging at every step of connection process
+- Tracked connection states: disconnected, connecting, connected, error
+- Implemented debug info method for troubleshooting
+
+### 2. React Component Errors
+- **Issue**: Switch component import error with Chakra UI v3
+- **Solution**: Used correct composition pattern with nested components:
+```jsx
+<Switch.Root>
+  <Switch.HiddenInput />
+  <Switch.Control />
+</Switch.Root>
+```
+
+### 3. Architecture Alignment
+- **Issue**: Initial implementation polluted the Toji API with Discord-specific code
+- **Solution**: Complete refactor to maintain clean separation
+- **Result**: Discord operates as a pure consumer of the Toji API
+
+## Testing & Verification
+
+### What Works:
+- ✅ Discord token stored securely with encryption
+- ✅ Bot connects/disconnects from Dashboard toggle
+- ✅ Connection status displays in real-time
+- ✅ Bot appears online in Discord server
+- ✅ Bot responds to mentions (routes through Toji -> OpenCode)
+- ✅ Proper error handling and user feedback
+
+## Key Learnings
+
+1. **Services consume APIs, APIs don't know about services**
+2. **Discord, Slack, CLI are peers at the interface layer**
+3. **Chakra UI v3 uses composition patterns**
+4. **Add comprehensive logging for debugging**
+
+---
+
 # NEXT.md - Toji API Implementation Plan
 
 ## What We Built Today

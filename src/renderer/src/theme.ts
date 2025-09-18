@@ -42,6 +42,17 @@ const config = defineConfig({
         'pink.focusRing': { value: 'transparent' }
       }
     }
+  },
+  globalCss: {
+    // Override default switch colors globally
+    '[data-scope="switch"][data-part="control"]': {
+      background: 'var(--chakra-colors-app-border) !important',
+      border: '1px solid var(--chakra-colors-app-border)'
+    },
+    '[data-scope="switch"][data-part="control"][data-state="checked"]': {
+      background: 'var(--chakra-colors-green-200) !important',
+      borderColor: 'var(--chakra-colors-app-accent)'
+    }
   }
 })
 
