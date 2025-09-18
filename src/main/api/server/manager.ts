@@ -126,28 +126,45 @@ export class ServerManager {
    */
   async getLogs(): Promise<string> {
     try {
-      // OpenCode logs are stored in ~/.local/share/opencode/log/
+      // OpenCode logs are stored in ~/.local/share/opencode/log/ by default
+      // Even with custom XDG_DATA_HOME, OpenCode seems to use the default location
+      const homeDir = app.getPath('home')
+      const logDir = join(homeDir, '.local', 'share', 'opencode', 'log')
+
+      // Also try our custom location as fallback
       const userDataPath = app.getPath('userData')
-      const dataDir = join(userDataPath, 'opencode-data')
-      const logDir = join(dataDir, 'log')
+      const customLogDir = join(userDataPath, 'opencode-data', 'log')
 
-      // Try to read the main log file (assuming opencode.log or similar)
-      // We'll check for common log file names
-      const possibleLogFiles = ['opencode.log', 'agent.log', 'server.log']
+      const possibleLogDirs = [logDir, customLogDir]
 
-      for (const logFile of possibleLogFiles) {
+      for (const currentLogDir of possibleLogDirs) {
         try {
-          const logPath = join(logDir, logFile)
-          const logContent = await readFile(logPath, 'utf-8')
-          return logContent
+          // Read directory and find the most recent log file
+          const { readdir } = await import('fs/promises')
+          const files = await readdir(currentLogDir)
+
+          // Filter for .log files and sort by name (timestamp) to get the most recent
+          const logFiles = files
+            .filter(file => file.endsWith('.log'))
+            .sort()
+            .reverse() // Most recent first
+
+          if (logFiles.length > 0) {
+            const mostRecentLog = logFiles[0]
+            const logPath = join(currentLogDir, mostRecentLog)
+            const logContent = await readFile(logPath, 'utf-8')
+
+            // Return the most recent log with a header
+            return `=== OpenCode Logs (${mostRecentLog}) ===\n\n${logContent}`
+          }
         } catch (error) {
-          // Continue to next possible log file
+          // Continue to next directory
           continue
         }
       }
 
-      // If no log files found, return a helpful message
-      return `No OpenCode log files found in ${logDir}\nPossible files checked: ${possibleLogFiles.join(', ')}`
+      // If no log files found in any directory
+      return `No OpenCode log files found.\nSearched directories:\n- ${logDir}\n- ${customLogDir}`
 
     } catch (error) {
       console.error('ServerManager: Failed to read logs:', error)

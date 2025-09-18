@@ -41,7 +41,11 @@
       "WebFetch(domain:docs.claude.com)",
       "mcp__chakra-ui__get_component_example",
       "Bash(timeout 5s node_modules/.bin/electron-vite dev:*)",
-      "mcp__chakra-ui__get_component_props"
+      "mcp__chakra-ui__get_component_props",
+      "Bash(set OPENCODE_INSTALL_DIR=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\")",
+      "Bash(set XDG_DATA_HOME=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-data\")",
+      "Bash(timeout:*)",
+      "Bash(\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\\opencode.exe\" run \"hello world\" --print-logs --log-level DEBUG)"
     ],
     "deny": [],
     "ask": []
