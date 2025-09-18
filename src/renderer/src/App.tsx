@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
-import { LuSettings, LuLayoutDashboard } from 'react-icons/lu'
+import { LuSettings, LuLayoutDashboard, LuFolderGit2 } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { CustomTitlebar } from './components/CustomTitlebar'
 import { AppViewProvider } from './contexts/AppViewContext'
@@ -47,6 +47,13 @@ function AppContent(): React.JSX.Element {
               tooltip="Dashboard"
               viewName="dashboard"
               isActive={activeView === 'dashboard'}
+              onClick={handleIconClick}
+            />
+            <IconButton
+              icon={<LuFolderGit2 />}
+              tooltip="Projects"
+              viewName="projects"
+              isActive={activeView === 'projects'}
               onClick={handleIconClick}
             />
             <IconButton

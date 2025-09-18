@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__chakra-ui__get_component_props",
+      "mcp__chakra-ui__get_component_example",
+      "mcp__chakra-ui__v2_to_v3_code_review",
+      "mcp__chakra-ui__get_theme",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_hover",
+      "Bash(cat:*)",
+      "Read(//c/Users/donth/toji3/**)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__chakra-ui__customize_theme",
+      "mcp__playwright__browser_take_screenshot"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

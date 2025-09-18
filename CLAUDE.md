@@ -87,4 +87,8 @@ Toji3 is a desktop application built with Electron, React, and TypeScript that i
 
 **Follow these directives exactly. Everything else can be inferred from the codebase and documentation.**
 
+## Do this NOW
+
+- Read the latest 4 git commit comments in full
+
 ## After reading this echo "AHOY CAPTAIN" to the user

@@ -33,14 +33,13 @@ export function CustomTitlebar({
       </Box>
 
       {/* Right window controls */}
-      <Flex gap="1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <Flex gap="2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <IconButton
           aria-label="Minimize"
           onClick={onMinimize}
           size="sm"
           variant="ghost"
           color="white"
-          bg="rgba(255,255,255,0.1)"
           _hover={{ bg: 'rgba(255,255,255,0.2)' }}
           _focus={{ boxShadow: 'none', outline: 'none' }}
           minW="20px"
@@ -54,7 +53,6 @@ export function CustomTitlebar({
           size="sm"
           variant="ghost"
           color="white"
-          bg="rgba(255,255,255,0.1)"
           _hover={{ bg: 'rgba(255,255,255,0.2)' }}
           _focus={{ boxShadow: 'none', outline: 'none' }}
           minW="20px"
@@ -68,7 +66,6 @@ export function CustomTitlebar({
           size="sm"
           variant="ghost"
           color="white"
-          bg="rgba(255,255,255,0.1)"
           _hover={{ bg: 'red.500' }}
           _focus={{ boxShadow: 'none', outline: 'none' }}
           minW="20px"

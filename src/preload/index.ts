@@ -44,6 +44,58 @@ const api = {
     minimize: (): Promise<void> => ipcRenderer.invoke('window:minimize'),
     maximize: (): Promise<void> => ipcRenderer.invoke('window:maximize'),
     close: (): Promise<void> => ipcRenderer.invoke('window:close')
+  },
+
+  // System Service Management API
+  system: {
+    // Service Status
+    getServiceStatus: (): Promise<{
+      core: { status: 'running' | 'stopped' | 'error'; uptime?: number }
+      discord: { status: 'connected' | 'disconnected' | 'error'; servers?: number }
+      whisper: { status: 'running' | 'stopped' | 'loading' | 'error'; port?: number }
+      tts: { status: 'running' | 'stopped' | 'error'; port?: number }
+      claudeCli: { status: 'authenticated' | 'unauthenticated' | 'error' }
+    }> => ipcRenderer.invoke('system:get-service-status'),
+
+    // Service Controls
+    startAllServices: (): Promise<void> => ipcRenderer.invoke('system:start-all-services'),
+    stopAllServices: (): Promise<void> => ipcRenderer.invoke('system:stop-all-services'),
+    restartAllServices: (): Promise<void> => ipcRenderer.invoke('system:restart-all-services'),
+
+    // Individual Service Controls
+    startService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:start-service', serviceName),
+    stopService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:stop-service', serviceName),
+    restartService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:restart-service', serviceName),
+
+    // System Resources
+    getSystemResources: (): Promise<{
+      cpu: number
+      memory: { used: number; total: number }
+      disk: { used: number }
+      network: { latency: number }
+    }> => ipcRenderer.invoke('system:get-system-resources'),
+
+    // Interface Connections
+    getInterfaceStatus: (): Promise<{
+      electron: { status: 'active'; description: string }
+      discord: { status: 'connected' | 'disconnected'; description: string }
+      slack: { status: 'connected' | 'disconnected'; description: string }
+      mcp: { status: 'active' | 'inactive'; description: string }
+      voice: { status: 'active' | 'inactive'; description: string }
+    }> => ipcRenderer.invoke('system:get-interface-status'),
+
+    // Dependency Management
+    installDependencies: (): Promise<void> => ipcRenderer.invoke('system:install-dependencies'),
+    testConnections: (): Promise<{ [key: string]: boolean }> => ipcRenderer.invoke('system:test-connections'),
+
+    // Events
+    onServiceStatusUpdate: (callback: (status: any) => void): (() => void) => {
+      const subscription = (_event: IpcRendererEvent, status: any): void => callback(status)
+      ipcRenderer.on('system:service-status-update', subscription)
+      return (): void => {
+        ipcRenderer.removeListener('system:service-status-update', subscription)
+      }
+    }
   }
 }
 

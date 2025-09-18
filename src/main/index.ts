@@ -62,6 +62,7 @@ app.whenReady().then(async () => {
   setupCoreHandlers()
   setupBinaryHandlers(openCodeService)
   setupWindowHandlers()
+  setupSystemHandlers()
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.toji.toji3')
@@ -250,6 +251,92 @@ app.on('before-quit', async (event) => {
     }
   }
 })
+
+// Setup IPC handlers for System Service Management
+function setupSystemHandlers(): void {
+  // Get service status - returns mock data for now
+  ipcMain.handle('system:get-service-status', async () => {
+    return {
+      core: { status: 'running', uptime: Date.now() - (2 * 60 * 60 * 1000) }, // 2 hours ago
+      discord: { status: 'connected', servers: 3 },
+      whisper: { status: 'loading', port: 9000 },
+      tts: { status: 'stopped', port: 9001 },
+      claudeCli: { status: 'authenticated' }
+    }
+  })
+
+  // Service controls - placeholder implementations
+  ipcMain.handle('system:start-all-services', async () => {
+    console.log('Starting all Toji services...')
+    // TODO: Implement actual service startup logic
+  })
+
+  ipcMain.handle('system:stop-all-services', async () => {
+    console.log('Stopping all Toji services...')
+    // TODO: Implement actual service shutdown logic
+  })
+
+  ipcMain.handle('system:restart-all-services', async () => {
+    console.log('Restarting all Toji services...')
+    // TODO: Implement actual service restart logic
+  })
+
+  // Individual service controls
+  ipcMain.handle('system:start-service', async (_, serviceName: string) => {
+    console.log(`Starting service: ${serviceName}`)
+    // TODO: Implement service-specific startup logic
+  })
+
+  ipcMain.handle('system:stop-service', async (_, serviceName: string) => {
+    console.log(`Stopping service: ${serviceName}`)
+    // TODO: Implement service-specific shutdown logic
+  })
+
+  ipcMain.handle('system:restart-service', async (_, serviceName: string) => {
+    console.log(`Restarting service: ${serviceName}`)
+    // TODO: Implement service-specific restart logic
+  })
+
+  // Get system resources - returns mock data for now
+  ipcMain.handle('system:get-system-resources', async () => {
+    return {
+      cpu: 23, // 23% CPU usage
+      memory: { used: 1.2 * 1024 * 1024 * 1024, total: 16 * 1024 * 1024 * 1024 }, // 1.2GB used of 16GB
+      disk: { used: 847 * 1024 * 1024 }, // 847MB used for logs/cache
+      network: { latency: 45 } // 45ms average latency
+    }
+  })
+
+  // Get interface status - returns mock data for now
+  ipcMain.handle('system:get-interface-status', async () => {
+    return {
+      electron: { status: 'active', description: 'This interface - Active' },
+      discord: { status: 'connected', description: '3 servers connected' },
+      slack: { status: 'disconnected', description: 'Not configured' },
+      mcp: { status: 'active', description: 'Claude Code CLI ready' },
+      voice: { status: 'inactive', description: 'No active connections' }
+    }
+  })
+
+  // Install dependencies
+  ipcMain.handle('system:install-dependencies', async () => {
+    console.log('Installing Toji dependencies...')
+    // TODO: Implement dependency installation (Whisper, Piper, etc.)
+  })
+
+  // Test connections
+  ipcMain.handle('system:test-connections', async () => {
+    console.log('Testing all service connections...')
+    // TODO: Implement connection testing
+    return {
+      discord: true,
+      whisper: false,
+      tts: false,
+      claudeCli: true,
+      mcp: true
+    }
+  })
+}
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

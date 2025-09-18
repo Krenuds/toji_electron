@@ -1,6 +1,14 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/react'
-import { LuPlus, LuFolderOpen, LuActivity, LuGitBranch } from 'react-icons/lu'
+import {
+  LuPlay,
+  LuSquare,
+  LuRotateCcw,
+  LuDownload,
+  LuSettings,
+  LuFileText,
+  LuTriangleAlert
+} from 'react-icons/lu'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   return (
@@ -8,19 +16,19 @@ export function DashboardViewSidebar(): React.JSX.Element {
       {/* Header */}
       <Box>
         <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
-          Dashboard
+          System Control
         </Text>
         <Text color="app.text" fontSize="xs">
-          Project overview and quick actions
+          Manage Toji services and dependencies
         </Text>
       </Box>
 
       <Separator borderColor="app.border" />
 
-      {/* Quick Actions */}
+      {/* Service Controls */}
       <Box>
         <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-          Quick Actions
+          Service Management
         </Text>
         <VStack gap={2} align="stretch">
           <Button
@@ -30,8 +38,8 @@ export function DashboardViewSidebar(): React.JSX.Element {
             color="app.text"
             _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
           >
-            <LuPlus size={14} />
-            New Project
+            <LuPlay size={14} />
+            Start All Services
           </Button>
           <Button
             variant="ghost"
@@ -40,18 +48,59 @@ export function DashboardViewSidebar(): React.JSX.Element {
             color="app.text"
             _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
           >
-            <LuFolderOpen size={14} />
-            Open Project
+            <LuSquare size={14} />
+            Stop All Services
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            color="app.text"
+            _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+          >
+            <LuRotateCcw size={14} />
+            Restart Services
           </Button>
         </VStack>
       </Box>
 
       <Separator borderColor="app.border" />
 
-      {/* Recent Projects */}
+      {/* Binary Management */}
       <Box>
         <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-          Recent Projects
+          Dependencies
+        </Text>
+        <VStack gap={2} align="stretch">
+          <Button
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            color="app.text"
+            _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+          >
+            <LuDownload size={14} />
+            Install Dependencies
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            color="app.text"
+            _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+          >
+            <LuSettings size={14} />
+            Configure Services
+          </Button>
+        </VStack>
+      </Box>
+
+      <Separator borderColor="app.border" />
+
+      {/* Service Status Overview */}
+      <Box>
+        <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
+          Quick Status
         </Text>
         <VStack gap={2} align="stretch">
           <Box
@@ -60,19 +109,17 @@ export function DashboardViewSidebar(): React.JSX.Element {
             bg="rgba(255,255,255,0.02)"
             border="1px solid"
             borderColor="app.border"
-            cursor="pointer"
-            _hover={{ bg: 'rgba(255,255,255,0.05)' }}
           >
             <HStack justify="space-between">
               <Text color="app.light" fontSize="xs" fontWeight="medium">
-                toji3
+                Core Service
               </Text>
               <Badge size="sm" colorScheme="green" variant="subtle">
-                Active
+                Running
               </Badge>
             </HStack>
             <Text color="app.text" fontSize="2xs" mt={1}>
-              Desktop AI application
+              System agent operational
             </Text>
           </Box>
 
@@ -82,19 +129,37 @@ export function DashboardViewSidebar(): React.JSX.Element {
             bg="rgba(255,255,255,0.02)"
             border="1px solid"
             borderColor="app.border"
-            cursor="pointer"
-            _hover={{ bg: 'rgba(255,255,255,0.05)' }}
           >
             <HStack justify="space-between">
               <Text color="app.light" fontSize="xs" fontWeight="medium">
-                opencode-demo
+                Discord Bot
               </Text>
-              <Badge size="sm" colorScheme="gray" variant="subtle">
-                Idle
+              <Badge size="sm" colorScheme="green" variant="subtle">
+                Connected
               </Badge>
             </HStack>
             <Text color="app.text" fontSize="2xs" mt={1}>
-              SDK integration example
+              3 servers, voice ready
+            </Text>
+          </Box>
+
+          <Box
+            p={2}
+            borderRadius="md"
+            bg="rgba(255,255,255,0.02)"
+            border="1px solid"
+            borderColor="app.border"
+          >
+            <HStack justify="space-between">
+              <Text color="app.light" fontSize="xs" fontWeight="medium">
+                Voice Services
+              </Text>
+              <Badge size="sm" colorScheme="yellow" variant="subtle">
+                Partial
+              </Badge>
+            </HStack>
+            <Text color="app.text" fontSize="2xs" mt={1}>
+              STT loading, TTS offline
             </Text>
           </Box>
         </VStack>
@@ -102,30 +167,32 @@ export function DashboardViewSidebar(): React.JSX.Element {
 
       <Separator borderColor="app.border" />
 
-      {/* Activity Feed */}
+      {/* Diagnostics */}
       <Box>
         <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-          Recent Activity
+          Diagnostics
         </Text>
         <VStack gap={2} align="stretch">
-          <HStack gap={2}>
-            <LuGitBranch size={12} color="#808080" />
-            <Text color="app.text" fontSize="2xs">
-              Committed to master
-            </Text>
-          </HStack>
-          <HStack gap={2}>
-            <LuActivity size={12} color="#808080" />
-            <Text color="app.text" fontSize="2xs">
-              OpenCode session started
-            </Text>
-          </HStack>
-          <HStack gap={2}>
-            <LuFolderOpen size={12} color="#808080" />
-            <Text color="app.text" fontSize="2xs">
-              Project toji3 opened
-            </Text>
-          </HStack>
+          <Button
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            color="app.text"
+            _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+          >
+            <LuFileText size={14} />
+            View Logs
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            justifyContent="flex-start"
+            color="app.text"
+            _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+          >
+            <LuTriangleAlert size={14} />
+            Test Connections
+          </Button>
         </VStack>
       </Box>
     </VStack>
