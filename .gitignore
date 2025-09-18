@@ -18,3 +18,6 @@ test/**/*.js
 e2e/**/*.js
 **/*.test.js
 **/*.spec.js
+
+# Claude local settings
+.claude/settings.local.json
