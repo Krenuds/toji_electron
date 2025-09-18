@@ -1,5 +1,5 @@
 import React from 'react'
-import { Flex, Box, IconButton } from '@chakra-ui/react'
+import { Flex, Box, IconButton, Text, HStack } from '@chakra-ui/react'
 import { LuMinus, LuSquare, LuX } from 'react-icons/lu'
 import { TojiLogo } from './TojiLogo'
 
@@ -21,16 +21,19 @@ export function CustomTitlebar({
       bg="gray.800"
       align="center"
       justify="space-between"
-      px={4}
+      px={2}
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* Left side - empty for now */}
       <Box />
 
-      {/* Center logo */}
-      <Box style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <TojiLogo size="18px" />
-      </Box>
+      {/* Center logo and title */}
+      <HStack gap={2} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <TojiLogo size="16px" />
+        <Text color="white" fontSize="sm" fontWeight="medium">
+          Toji3
+        </Text>
+      </HStack>
 
       {/* Right window controls */}
       <Flex gap="2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>

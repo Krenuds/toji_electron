@@ -39,7 +39,9 @@
       "mcp__chakra-ui__installation",
       "mcp__chakra-ui__get_theme",
       "WebFetch(domain:docs.claude.com)",
-      "mcp__chakra-ui__get_component_example"
+      "mcp__chakra-ui__get_component_example",
+      "Bash(timeout 5s node_modules/.bin/electron-vite dev:*)",
+      "mcp__chakra-ui__get_component_props"
     ],
     "deny": [],
     "ask": []

@@ -257,7 +257,7 @@ function setupSystemHandlers(): void {
   // Get service status - returns mock data for now
   ipcMain.handle('system:get-service-status', async () => {
     return {
-      core: { status: 'running', uptime: Date.now() - (2 * 60 * 60 * 1000) }, // 2 hours ago
+      core: { status: 'running', uptime: Date.now() - 2 * 60 * 60 * 1000 }, // 2 hours ago
       discord: { status: 'connected', servers: 3 },
       whisper: { status: 'loading', port: 9000 },
       tts: { status: 'stopped', port: 9001 },

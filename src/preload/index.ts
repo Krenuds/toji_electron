@@ -63,9 +63,12 @@ const api = {
     restartAllServices: (): Promise<void> => ipcRenderer.invoke('system:restart-all-services'),
 
     // Individual Service Controls
-    startService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:start-service', serviceName),
-    stopService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:stop-service', serviceName),
-    restartService: (serviceName: string): Promise<void> => ipcRenderer.invoke('system:restart-service', serviceName),
+    startService: (serviceName: string): Promise<void> =>
+      ipcRenderer.invoke('system:start-service', serviceName),
+    stopService: (serviceName: string): Promise<void> =>
+      ipcRenderer.invoke('system:stop-service', serviceName),
+    restartService: (serviceName: string): Promise<void> =>
+      ipcRenderer.invoke('system:restart-service', serviceName),
 
     // System Resources
     getSystemResources: (): Promise<{
@@ -86,7 +89,8 @@ const api = {
 
     // Dependency Management
     installDependencies: (): Promise<void> => ipcRenderer.invoke('system:install-dependencies'),
-    testConnections: (): Promise<{ [key: string]: boolean }> => ipcRenderer.invoke('system:test-connections'),
+    testConnections: (): Promise<{ [key: string]: boolean }> =>
+      ipcRenderer.invoke('system:test-connections'),
 
     // Events
     onServiceStatusUpdate: (callback: (status: any) => void): (() => void) => {
