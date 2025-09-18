@@ -148,7 +148,9 @@ export class Toji {
    * This is a compound operation that handles all initialization
    * Auto-starts server and creates session if needed
    */
-  async ensureReadyForChat(directory?: string): Promise<{ sessionId: string; serverStatus: string }> {
+  async ensureReadyForChat(
+    directory?: string
+  ): Promise<{ sessionId: string; serverStatus: string }> {
     console.log('Toji: Ensuring ready for chat operations')
 
     const targetDir = directory || process.cwd()

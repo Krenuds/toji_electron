@@ -28,6 +28,41 @@ Toji3 is a desktop application built with Electron, React, and TypeScript that i
 - **PERSIST STATE**: Use localStorage for view selection and view-specific state
 - **ABSTRACT IPC**: Never use `window.api` directly in components, wrap in hooks
 
+### Feature Integration Workflow
+
+When adding new features, follow this API-first approach:
+
+1. **API Layer First** (`/src/main/api/`)
+   - Add methods to `Toji` class for compound operations
+   - Update relevant managers (Server, Session, Client, Project, Workspace)
+   - Keep ALL business logic here - this enables reuse across interfaces
+   - Example: `ensureReadyForChat()`, `chat()` methods
+
+2. **IPC Handlers** (`/src/main/index.ts`)
+   - Add thin handlers that call Toji API methods
+   - Just pass through - no business logic here
+   - Handle errors and return sanitized responses
+   - Example: `ipcMain.handle('core:chat', (_, msg) => toji.chat(msg))`
+
+3. **Preload Bridge** (`/src/preload/`)
+   - Update `index.ts` to expose IPC methods
+   - Update `index.d.ts` with TypeScript definitions
+   - Maintain type safety across IPC boundary
+
+4. **UI Components** (`/src/renderer/`)
+   - Create view-specific components (Sidebar + Main pattern)
+   - Use hooks to abstract `window.api` calls
+   - Follow existing UI patterns and theme
+   - Test in Electron environment (not browser)
+
+5. **Testing & Refinement**
+   - Test with `npm run dev`
+   - Check console logs for errors
+   - Refine response parsing/handling
+   - Clean up debug code before commit
+
+**KEY PRINCIPLE**: Business logic MUST live in the API layer. This ensures Discord, Slack, CLI, and other interfaces can all use the same functionality by calling the same Toji API methods.
+
 ### Development Workflow
 
 1. **Read architecture docs** in `/src/main/CLAUDE.md` and `/src/renderer/CLAUDE.md`

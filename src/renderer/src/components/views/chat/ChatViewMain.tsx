@@ -1,14 +1,5 @@
-import React, { useState } from 'react'
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Input,
-  Button,
-  Card,
-  Badge
-} from '@chakra-ui/react'
+import React, { useState, useEffect } from 'react'
+import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-ui/react'
 import { LuSend, LuUser, LuBot } from 'react-icons/lu'
 
 interface ChatMessage {
@@ -31,6 +22,24 @@ export function ChatViewMain(): React.JSX.Element {
     }
   ])
 
+  // Poll server status
+  useEffect(() => {
+    const checkServerStatus = async (): Promise<void> => {
+      try {
+        const isRunning = await window.api.core.isRunning()
+        setServerStatus(isRunning ? 'online' : 'offline')
+      } catch (error) {
+        console.error('Failed to check server status:', error)
+        setServerStatus('offline')
+      }
+    }
+
+    checkServerStatus()
+    const interval = setInterval(checkServerStatus, 2000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return
 
@@ -41,7 +50,7 @@ export function ChatViewMain(): React.JSX.Element {
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages((prev) => [...prev, userMessage])
     const currentMessage = message
     setMessage('')
     setIsLoading(true)
@@ -67,7 +76,7 @@ export function ChatViewMain(): React.JSX.Element {
         content: response,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, assistantMessage])
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error('Chat error:', error)
       const errorMessage: ChatMessage = {
@@ -76,7 +85,7 @@ export function ChatViewMain(): React.JSX.Element {
         content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages((prev) => [...prev, errorMessage])
       setServerStatus('offline')
     } finally {
       setIsLoading(false)
@@ -98,10 +107,21 @@ export function ChatViewMain(): React.JSX.Element {
             Chat with Toji
           </Text>
           <Badge
-            colorScheme={serverStatus === 'online' ? 'green' : serverStatus === 'initializing' ? 'yellow' : 'gray'}
+            size="sm"
+            colorPalette={
+              serverStatus === 'online'
+                ? 'green'
+                : serverStatus === 'initializing'
+                  ? 'yellow'
+                  : 'gray'
+            }
             variant="subtle"
           >
-            {serverStatus === 'online' ? 'Server Online' : serverStatus === 'initializing' ? 'Initializing...' : 'Server Offline'}
+            {serverStatus === 'online'
+              ? 'Server Online'
+              : serverStatus === 'initializing'
+                ? 'Initializing...'
+                : 'Server Offline'}
           </Badge>
         </HStack>
         <Text color="app.text" fontSize="sm">
@@ -126,15 +146,15 @@ export function ChatViewMain(): React.JSX.Element {
             p={4}
             css={{
               '&::-webkit-scrollbar': {
-                width: '6px',
+                width: '6px'
               },
               '&::-webkit-scrollbar-track': {
-                background: 'transparent',
+                background: 'transparent'
               },
               '&::-webkit-scrollbar-thumb': {
                 background: '#404040',
-                borderRadius: '3px',
-              },
+                borderRadius: '3px'
+              }
             }}
           >
             {messages.map((msg) => (
@@ -169,7 +189,9 @@ export function ChatViewMain(): React.JSX.Element {
                     <Box
                       p={3}
                       borderRadius="md"
-                      bg={msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'}
+                      bg={
+                        msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'
+                      }
                       border="1px solid"
                       borderColor={msg.type === 'user' ? 'blue.500' : 'app.border'}
                     >

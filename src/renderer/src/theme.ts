@@ -12,6 +12,18 @@ const config = defineConfig({
           text: { value: '#808080' }, // Secondary text
           light: { value: '#ffffff' }, // Primary text and icons
           accent: { value: '#33b42f' } // Accent color for highlights
+        },
+        green: {
+          50: { value: '#e6f7e6' },
+          100: { value: '#b3e6b3' },
+          200: { value: '#80d580' },
+          300: { value: '#4dc34d' },
+          400: { value: '#33b42f' },
+          500: { value: '#2ca02c' },
+          600: { value: '#248f24' },
+          700: { value: '#1c7d1c' },
+          800: { value: '#155c15' },
+          900: { value: '#0d3a0d' }
         }
       }
     },

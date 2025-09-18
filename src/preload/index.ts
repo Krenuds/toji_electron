@@ -23,7 +23,9 @@ const api = {
       ipcRenderer.invoke('core:delete-session', sessionId),
 
     // Chat Operations
-    ensureReadyForChat: (directory?: string): Promise<{ sessionId: string; serverStatus: string }> =>
+    ensureReadyForChat: (
+      directory?: string
+    ): Promise<{ sessionId: string; serverStatus: string }> =>
       ipcRenderer.invoke('core:ensure-ready-for-chat', directory),
     chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message)
   },
@@ -98,8 +100,21 @@ const api = {
       ipcRenderer.invoke('system:test-connections'),
 
     // Events
-    onServiceStatusUpdate: (callback: (status: any) => void): (() => void) => {
-      const subscription = (_event: IpcRendererEvent, status: any): void => callback(status)
+    onServiceStatusUpdate: (
+      callback: (status: {
+        serviceName: string
+        status: 'running' | 'stopped' | 'error' | 'loading'
+        message?: string
+      }) => void
+    ): (() => void) => {
+      const subscription = (
+        _event: IpcRendererEvent,
+        status: {
+          serviceName: string
+          status: 'running' | 'stopped' | 'error' | 'loading'
+          message?: string
+        }
+      ): void => callback(status)
       ipcRenderer.on('system:service-status-update', subscription)
       return (): void => {
         ipcRenderer.removeListener('system:service-status-update', subscription)

@@ -47,21 +47,26 @@ export class SessionManager {
       }
     })
 
-    // console.log('SessionManager: Raw response:', JSON.stringify(response, null, 2))
+    console.log('SessionManager: Raw response:', JSON.stringify(response, null, 2))
 
     // Extract text from response - handle different possible response structures
     if (response.data) {
       // Check if response has parts array
       if (Array.isArray(response.data.parts)) {
-        // Only extract text parts (skip reasoning, step-start, step-finish, etc)
+        // Get ALL text content (reasoning + text)
         const textContent = response.data.parts
-          .filter((part) => part && typeof part === 'object' && part.type === 'text')
+          .filter(
+            (part) =>
+              part &&
+              typeof part === 'object' &&
+              (part.type === 'text' || part.type === 'reasoning')
+          )
           .map((part) => part.text || '')
           .filter(Boolean)
-          .join('')
+          .join('\n')
 
         if (textContent) {
-          // console.log('SessionManager: Extracted text from parts:', textContent)
+          console.log('SessionManager: Extracted text from parts:', textContent)
           return textContent
         }
       }

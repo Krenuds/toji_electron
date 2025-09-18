@@ -188,7 +188,9 @@ export function DashboardViewSidebar(): React.JSX.Element {
                   {logsLoading ? (
                     <HStack justify="center" py={2}>
                       <Spinner size="xs" />
-                      <Text color="app.text" fontSize="2xs">Loading logs...</Text>
+                      <Text color="app.text" fontSize="2xs">
+                        Loading logs...
+                      </Text>
                     </HStack>
                   ) : logs ? (
                     <Text

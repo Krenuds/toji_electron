@@ -145,7 +145,7 @@ export class ServerManager {
 
           // Filter for .log files and sort by name (timestamp) to get the most recent
           const logFiles = files
-            .filter(file => file.endsWith('.log'))
+            .filter((file) => file.endsWith('.log'))
             .sort()
             .reverse() // Most recent first
 
@@ -157,7 +157,7 @@ export class ServerManager {
             // Return the most recent log with a header
             return `=== OpenCode Logs (${mostRecentLog}) ===\n\n${logContent}`
           }
-        } catch (error) {
+        } catch {
           // Continue to next directory
           continue
         }
@@ -165,7 +165,6 @@ export class ServerManager {
 
       // If no log files found in any directory
       return `No OpenCode log files found.\nSearched directories:\n- ${logDir}\n- ${customLogDir}`
-
     } catch (error) {
       console.error('ServerManager: Failed to read logs:', error)
       return `Error reading OpenCode logs: ${error instanceof Error ? error.message : 'Unknown error'}`

@@ -2,12 +2,10 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { Core } from './api/core'
 import { Toji } from './api/toji'
 import { OpenCodeService } from './services/opencode-service'
 
-// Global instances
-let core: Core | null = null
+// Global instance
 let toji: Toji | null = null
 
 function createWindow(): void {
@@ -56,11 +54,7 @@ app.whenReady().then(async () => {
   const binaryInfo = openCodeService.getBinaryInfo()
   console.log('Binary status on startup:', binaryInfo)
 
-  // Initialize Core API with binary service
-  core = new Core(openCodeService)
-  console.log('Core API initialized')
-
-  // Initialize Toji API
+  // Initialize Toji API with binary service
   toji = new Toji(openCodeService)
   console.log('Toji API initialized')
 
@@ -89,65 +83,73 @@ app.whenReady().then(async () => {
   })
 })
 
-// Setup IPC handlers for Core functionality
+// Setup IPC handlers for Core functionality (now using Toji)
 function setupCoreHandlers(): void {
-  if (!core) return
+  if (!toji) return
 
   // Core API status
   ipcMain.handle('core:is-running', async () => {
-    return core!.isRunning()
+    const isReady = toji!.isReady()
+    return isReady
   })
 
   ipcMain.handle('core:get-current-directory', async () => {
-    return core!.getCurrentDirectory()
+    return toji!.workspace.getCurrentDirectory()
   })
 
   // Main API - Start OpenCode in directory
   ipcMain.handle('core:start-opencode', async (_, directory: string, config?: object) => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.startOpencodeInDirectory(directory, config)
+    return await toji.initialize(directory, config)
   })
 
   // Stop OpenCode
   ipcMain.handle('core:stop-opencode', async () => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.stopOpencode()
+    return await toji.shutdown()
   })
 
   // Send prompt to current agent
   ipcMain.handle('core:prompt', async (_, text: string) => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.prompt(text)
+    // Use the session manager's prompt method
+    const currentSession = toji.session.getCurrentSession()
+    if (!currentSession) {
+      // Create a new session if none exists
+      const newSession = await toji.session.create('Default Session')
+      return await toji.session.prompt(text, newSession.id)
+    }
+    return await toji.session.prompt(text, currentSession.id)
   })
 
   // List projects
   ipcMain.handle('core:list-projects', async () => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.listProjects()
+    return await toji.project.list()
   })
 
   // List sessions
   ipcMain.handle('core:list-sessions', async () => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.listSessions()
+    return await toji.session.list()
   })
 
   // Delete session
   ipcMain.handle('core:delete-session', async (_, sessionId: string) => {
-    if (!core) {
-      throw new Error('Core not initialized')
+    if (!toji) {
+      throw new Error('Toji not initialized')
     }
-    return await core.deleteSession(sessionId)
+    return await toji.session.delete(sessionId)
   })
 
   // Chat operations using Toji API
@@ -249,9 +251,9 @@ app.on('window-all-closed', async () => {
   console.log('All windows closed, cleaning up...')
 
   // Stop any running OpenCode agents
-  if (core) {
+  if (toji) {
     try {
-      await core.stopOpencode()
+      await toji.shutdown()
       console.log('Cleanup completed')
     } catch (error) {
       console.error('Error during cleanup:', error)
@@ -265,17 +267,17 @@ app.on('window-all-closed', async () => {
 
 // Handle application quit events
 app.on('before-quit', async (event) => {
-  if (core) {
+  if (toji) {
     event.preventDefault()
     console.log('App is quitting, cleaning up...')
 
     try {
-      await core.stopOpencode()
+      await toji.shutdown()
       console.log('Cleanup completed, quitting app')
     } catch (error) {
       console.error('Error during cleanup:', error)
     } finally {
-      core = null
+      toji = null
       app.quit()
     }
   }

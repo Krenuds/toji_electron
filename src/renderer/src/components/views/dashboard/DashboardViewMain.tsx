@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Grid, Card, Badge, Progress } from '@chakra-ui/react'
 import {
   LuActivity,
@@ -13,6 +13,24 @@ import {
 } from 'react-icons/lu'
 
 export function DashboardViewMain(): React.JSX.Element {
+  const [serverStatus, setServerStatus] = useState<'running' | 'stopped'>('stopped')
+
+  useEffect(() => {
+    const checkStatus = async (): Promise<void> => {
+      try {
+        const isRunning = await window.api.core.isRunning()
+        setServerStatus(isRunning ? 'running' : 'stopped')
+      } catch (error) {
+        console.error('Failed to check server status:', error)
+        setServerStatus('stopped')
+      }
+    }
+
+    checkStatus()
+    const interval = setInterval(checkStatus, 2000)
+
+    return () => clearInterval(interval)
+  }, [])
   return (
     <VStack align="stretch" gap={6}>
       {/* Header */}
@@ -33,14 +51,17 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.text" fontSize="sm">
                 Toji Core Service
               </Text>
-              <LuServer size={16} color="#33b42f" />
+              <LuServer size={16} color={serverStatus === 'running' ? '#33b42f' : '#808080'} />
             </HStack>
             <HStack justify="space-between" mb={1}>
               <Text color="app.light" fontSize="lg" fontWeight="bold">
-                Running
+                {serverStatus === 'running' ? 'Running' : 'Stopped'}
               </Text>
-              <Badge colorScheme="green" size="sm">
-                Online
+              <Badge
+                colorPalette={serverStatus === 'running' ? 'green' : 'gray'}
+                size="sm"
+              >
+                {serverStatus === 'running' ? 'Online' : 'Offline'}
               </Badge>
             </HStack>
             <Text color="app.text" fontSize="xs">
@@ -61,7 +82,7 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.light" fontSize="lg" fontWeight="bold">
                 Connected
               </Text>
-              <Badge colorScheme="green" size="sm">
+              <Badge colorPalette="green" size="sm">
                 Online
               </Badge>
             </HStack>
@@ -83,7 +104,7 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.light" fontSize="lg" fontWeight="bold">
                 Initializing
               </Text>
-              <Badge colorScheme="yellow" size="sm">
+              <Badge colorPalette="yellow" size="sm">
                 Starting
               </Badge>
             </HStack>
@@ -105,7 +126,7 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.light" fontSize="lg" fontWeight="bold">
                 Stopped
               </Text>
-              <Badge colorScheme="red" size="sm">
+              <Badge colorPalette="red" size="sm">
                 Offline
               </Badge>
             </HStack>
@@ -125,7 +146,7 @@ export function DashboardViewMain(): React.JSX.Element {
               <Text color="app.light" fontSize="lg" fontWeight="semibold">
                 System Resources
               </Text>
-              <Badge colorScheme="blue" variant="subtle">
+              <Badge colorPalette="blue" variant="subtle">
                 Real-time
               </Badge>
             </HStack>
