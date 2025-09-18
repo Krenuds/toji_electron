@@ -57,12 +57,19 @@ export interface BinaryAPI {
   onStatusUpdate: (callback: (progress: BinaryProgress) => void) => () => void
 }
 
+export interface WindowAPI {
+  minimize: () => Promise<void>
+  maximize: () => Promise<void>
+  close: () => Promise<void>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
     api: {
       core: CoreAPI
       binary: BinaryAPI
+      window: WindowAPI
     }
   }
 }

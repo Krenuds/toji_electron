@@ -16,7 +16,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     icon: icon,
-    titleBarStyle: 'hiddenInset',
+    titleBarStyle: 'hidden',
     title: 'Toji3',
     center: true,
     webPreferences: {
@@ -61,6 +61,7 @@ app.whenReady().then(async () => {
   // Set up IPC handlers for Core and Binary management
   setupCoreHandlers()
   setupBinaryHandlers(openCodeService)
+  setupWindowHandlers()
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.toji.toji3')
@@ -176,6 +177,37 @@ function setupBinaryHandlers(openCodeService: OpenCodeService): void {
         })
       }
       throw error
+    }
+  })
+}
+
+// Setup IPC handlers for Window controls
+function setupWindowHandlers(): void {
+  // Minimize window
+  ipcMain.handle('window:minimize', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.minimize()
+    }
+  })
+
+  // Maximize/restore window
+  ipcMain.handle('window:maximize', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.restore()
+      } else {
+        mainWindow.maximize()
+      }
+    }
+  })
+
+  // Close window
+  ipcMain.handle('window:close', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.close()
     }
   })
 }

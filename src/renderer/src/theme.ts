@@ -1,7 +1,6 @@
-import { createSystem, defaultConfig } from '@chakra-ui/react'
+import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react'
 
-const customConfig = {
-  ...defaultConfig,
+const config = defineConfig({
   theme: {
     tokens: {
       colors: {
@@ -15,10 +14,24 @@ const customConfig = {
           accent: { value: '#33b42f' } // Accent color for highlights
         }
       }
+    },
+    semanticTokens: {
+      colors: {
+        'blue.focusRing': { value: 'transparent' },
+        'gray.focusRing': { value: 'transparent' },
+        'red.focusRing': { value: 'transparent' },
+        'green.focusRing': { value: 'transparent' },
+        'purple.focusRing': { value: 'transparent' },
+        'orange.focusRing': { value: 'transparent' },
+        'yellow.focusRing': { value: 'transparent' },
+        'teal.focusRing': { value: 'transparent' },
+        'cyan.focusRing': { value: 'transparent' },
+        'pink.focusRing': { value: 'transparent' }
+      }
     }
   }
-}
+})
 
-const system = createSystem(customConfig)
+const system = createSystem(defaultConfig, config)
 
 export default system
