@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Project, Session } from '../main/api/core'
+import type { Project, Session } from '../main/api'
 
 // OpenCode API Types
 export interface OpenCodeConfig {
@@ -50,6 +50,15 @@ export interface CoreAPI {
   // Chat Operations
   ensureReadyForChat: (directory?: string) => Promise<{ sessionId: string; serverStatus: string }>
   chat: (message: string) => Promise<string>
+
+  // Workspace Management
+  changeWorkspace: (directory: string) => Promise<{
+    isNew: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    sessionId: string
+    workspacePath: string
+  }>
 }
 
 export interface BinaryAPI {

@@ -4,6 +4,7 @@
 
 import type { TojiConfig, TojiStatus } from './types'
 import type { OpenCodeService } from '../services/opencode-service'
+import type { ConfigProvider } from '../config/ConfigProvider'
 import { ServerManager } from './server'
 import { ClientManager } from './client'
 import { WorkspaceManager } from './workspace'
@@ -28,7 +29,9 @@ export class Toji {
 
   constructor(
     // Services are injected - Toji orchestrates, doesn't implement
-    private opencodeService: OpenCodeService
+    private opencodeService: OpenCodeService,
+    // Optional config provider for persistent settings
+    private config?: ConfigProvider
   ) {
     // Initialize all managers with proper dependencies
     this.server = new ServerManager(this.opencodeService)
@@ -153,7 +156,8 @@ export class Toji {
   ): Promise<{ sessionId: string; serverStatus: string }> {
     console.log('Toji: Ensuring ready for chat operations')
 
-    const targetDir = directory || process.cwd()
+    // Use provided directory, or config default, or current working directory
+    const targetDir = directory || this.config?.getOpencodeWorkingDirectory() || process.cwd()
 
     try {
       // Check if already ready
@@ -186,6 +190,71 @@ export class Toji {
         sessionId: '',
         serverStatus: 'error'
       }
+    }
+  }
+
+  /**
+   * Change to a different workspace directory
+   * This will shutdown current server, switch directories, and restart
+   */
+  async changeWorkspace(directory: string): Promise<{
+    isNew: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    sessionId: string
+    workspacePath: string
+  }> {
+    console.log(`Toji: Changing workspace to ${directory}`)
+
+    try {
+      // Inspect the target workspace
+      const workspaceInfo = await this.workspace.inspect(directory)
+      console.log('Toji: Workspace info:', workspaceInfo)
+
+      // If we're running, shutdown cleanly
+      if (this.isReady()) {
+        console.log('Toji: Shutting down current workspace')
+        await this.shutdown()
+      }
+
+      // Switch to new workspace (this handles directory change)
+      console.log('Toji: Switching to new workspace')
+      await this.workspace.switch(directory)
+
+      // Reinitialize in new workspace
+      console.log('Toji: Initializing in new workspace')
+      await this.initialize(directory, {
+        server: {
+          hostname: '127.0.0.1',
+          port: 4096,
+          timeout: 5000
+        }
+      })
+
+      // Update config if provided
+      if (this.config) {
+        console.log('Toji: Updating config with new directory')
+        this.config.setOpencodeWorkingDirectory(directory)
+      }
+
+      // Create a fresh session for the new workspace
+      console.log('Toji: Creating new session')
+      const session = await this.session.create(
+        workspaceInfo.hasGit ? 'Existing Project' : 'New Project'
+      )
+
+      return {
+        isNew: !workspaceInfo.exists || !workspaceInfo.hasGit,
+        hasGit: workspaceInfo.hasGit,
+        hasOpenCodeConfig: workspaceInfo.hasOpenCodeConfig,
+        sessionId: session.id,
+        workspacePath: directory
+      }
+    } catch (error) {
+      console.error('Toji: Failed to change workspace:', error)
+      throw new Error(
+        `Failed to change workspace: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 

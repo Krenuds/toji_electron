@@ -4,7 +4,6 @@ import {
   VStack,
   HStack,
   Text,
-  Badge,
   Button,
   Separator,
   Card,

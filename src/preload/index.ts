@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { BinaryInfo, BinaryProgress } from './index.d'
-import type { Project, Session } from '../main/api/core'
+import type { Project, Session } from '../main/api'
 
 // Custom APIs for renderer
 const api = {
@@ -27,7 +27,16 @@ const api = {
       directory?: string
     ): Promise<{ sessionId: string; serverStatus: string }> =>
       ipcRenderer.invoke('core:ensure-ready-for-chat', directory),
-    chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message)
+    chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message),
+
+    // Workspace Management
+    changeWorkspace: (directory: string): Promise<{
+      isNew: boolean
+      hasGit: boolean
+      hasOpenCodeConfig: boolean
+      sessionId: string
+      workspacePath: string
+    }> => ipcRenderer.invoke('core:change-workspace', directory)
   },
 
   // Binary Management API - separated from core agent logic

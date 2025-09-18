@@ -103,6 +103,79 @@ export class WorkspaceManager {
   }
 
   /**
+   * Inspect a directory without modifying it
+   * Returns information about the workspace state
+   */
+  async inspect(directory: string): Promise<{
+    exists: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    hasGitignore: boolean
+  }> {
+    try {
+      // Check if directory exists
+      let exists = false
+      try {
+        await fs.access(directory)
+        exists = true
+      } catch {
+        exists = false
+      }
+
+      if (!exists) {
+        return {
+          exists: false,
+          hasGit: false,
+          hasOpenCodeConfig: false,
+          hasGitignore: false
+        }
+      }
+
+      // Check for .git directory
+      let hasGit = false
+      try {
+        await fs.access(join(directory, '.git'))
+        hasGit = true
+      } catch {
+        hasGit = false
+      }
+
+      // Check for opencode.json config
+      let hasOpenCodeConfig = false
+      try {
+        await fs.access(join(directory, 'opencode.json'))
+        hasOpenCodeConfig = true
+      } catch {
+        hasOpenCodeConfig = false
+      }
+
+      // Check for .gitignore
+      let hasGitignore = false
+      try {
+        await fs.access(join(directory, '.gitignore'))
+        hasGitignore = true
+      } catch {
+        hasGitignore = false
+      }
+
+      return {
+        exists,
+        hasGit,
+        hasOpenCodeConfig,
+        hasGitignore
+      }
+    } catch (error) {
+      console.error('Error inspecting workspace:', error)
+      return {
+        exists: false,
+        hasGit: false,
+        hasOpenCodeConfig: false,
+        hasGitignore: false
+      }
+    }
+  }
+
+  /**
    * Get workspace status
    */
   getStatus(): { current?: string; original?: string } {

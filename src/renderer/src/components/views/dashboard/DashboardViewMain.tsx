@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, VStack, HStack, Text, Grid, Card, Badge, Progress } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Grid, Card, Progress } from '@chakra-ui/react'
 import {
   LuActivity,
   LuServer,

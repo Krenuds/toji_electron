@@ -28,6 +28,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@opencode-ai/sdk": "^0.9.6",
     "adm-zip": "^0.5.16",
+    "discord.js": "^14.22.1",
     "electron-store": "^10.1.0",
     "react-icons": "^5.5.0"
   },

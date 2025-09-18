@@ -23,7 +23,7 @@ export { ProjectManager } from './project'
 
 // ===== THE TOJI API =====
 // The main orchestrator class
-export { Toji } from './toji'
+export { Toji } from './Toji'
 
 // ===== CONVENIENCE EXPORTS =====
 // TODO: Next session - Create singleton instance and factory functions

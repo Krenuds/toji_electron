@@ -136,3 +136,100 @@ This implementation will complete the vision:
 - **Clean Separation** = API/Services/Interfaces layers
 
 The next session transforms this structure from stubs into a fully functional API platform! 🚀
+
+## Directory Selection and Workspace Management Plan
+
+### Part A: Set Default Working Directory (API Layer)
+
+1. **Wire up ConfigProvider to Toji** (`src/main/api/Toji.ts`)
+   - Accept ConfigProvider in constructor (optional)
+   - Use configured directory as default in `ensureReadyForChat()`
+   - Update config when workspace changes (if config provided)
+
+2. **Update main process initialization** (`src/main/index.ts`)
+   - Import and instantiate ConfigProvider
+   - Pass to Toji constructor
+   - ConfigProvider persists default directory across app restarts
+
+### Part B: Add Workspace Change to Toji API
+
+1. **Add changeWorkspace method to Toji** (`src/main/api/Toji.ts`)
+
+   ```typescript
+   async changeWorkspace(directory: string): Promise<{
+     isNew: boolean,
+     hasGit: boolean,
+     sessionId: string
+   }> {
+     // Check if this is a new or existing workspace
+     const workspaceInfo = await this.workspace.inspect(directory)
+
+     // Stop current server & sessions
+     await this.shutdown()
+
+     // Switch to new workspace
+     await this.workspace.switch(directory)
+
+     // Reinitialize in new workspace
+     await this.initialize(directory)
+
+     // Update config if provided
+     if (this.config) {
+       this.config.setOpencodeWorkingDirectory(directory)
+     }
+
+     // Create or restore session based on workspace state
+     let sessionId: string
+     if (workspaceInfo.hasExistingSessions) {
+       // TODO: Restore previous session?
+       const session = await this.session.create('Resumed Chat')
+       sessionId = session.id
+     } else {
+       const session = await this.session.create('General Chat')
+       sessionId = session.id
+     }
+
+     return {
+       isNew: !workspaceInfo.hasGit,
+       hasGit: workspaceInfo.hasGit,
+       sessionId
+     }
+   }
+   ```
+
+### Part C: Workspace Identification Questions
+
+**Key Questions to Resolve:**
+
+1. **How do we identify an OpenCode workspace?**
+   - Check for `.git` directory? (current approach)
+   - Check for `.opencode` directory?
+   - Check for `opencode.json` config?
+   - Maintain a registry in electron-store?
+
+2. **What workspace state should persist?**
+   - Last active session ID?
+   - Open files/tabs?
+   - Terminal history?
+   - Custom settings per workspace?
+
+3. **Session-Workspace Relationship:**
+   - Are sessions workspace-specific or global?
+   - Can we have multiple sessions per workspace?
+   - Should switching back to a workspace restore its session?
+
+### Part D: UI Integration (Future - After API Complete)
+
+1. **Add folder selection dialog** (`src/main/index.ts`)
+   - `dialog:select-folder` - Opens native folder picker
+   - Returns selected path or null
+
+2. **Wire up UI buttons**
+   - "New Chat" button calls changeWorkspace
+   - "Start OpenCode" uses default or picker
+   - Show loading states during transitions
+
+3. **Update status displays**
+   - Show current workspace path
+   - Show workspace type (new/existing)
+   - Update on workspace changes

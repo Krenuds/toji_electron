@@ -2,11 +2,13 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { Toji } from './api/toji'
+import { Toji } from './api/Toji'
 import { OpenCodeService } from './services/opencode-service'
+import { ConfigProvider } from './config/ConfigProvider'
 
-// Global instance
+// Global instances
 let toji: Toji | null = null
+let config: ConfigProvider | null = null
 
 function createWindow(): void {
   // Create the browser window.
@@ -47,6 +49,10 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
+  // Initialize configuration provider
+  config = new ConfigProvider()
+  console.log('Config initialized with working directory:', config.getOpencodeWorkingDirectory())
+
   // Initialize binary service
   const openCodeService = new OpenCodeService()
 
@@ -54,8 +60,8 @@ app.whenReady().then(async () => {
   const binaryInfo = openCodeService.getBinaryInfo()
   console.log('Binary status on startup:', binaryInfo)
 
-  // Initialize Toji API with binary service
-  toji = new Toji(openCodeService)
+  // Initialize Toji API with binary service and config
+  toji = new Toji(openCodeService, config)
   console.log('Toji API initialized')
 
   // Set up IPC handlers for Core and Binary management
@@ -165,6 +171,14 @@ function setupCoreHandlers(): void {
       throw new Error('Toji not initialized')
     }
     return await toji.chat(message)
+  })
+
+  // Change workspace directory
+  ipcMain.handle('core:change-workspace', async (_, directory: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.changeWorkspace(directory)
   })
 }
 

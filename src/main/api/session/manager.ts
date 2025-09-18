@@ -51,17 +51,19 @@ export class SessionManager {
 
     // Extract text from response - handle different possible response structures
     if (response.data) {
+      const responseData = response.data as any // Type assertion since SDK types are incomplete
+
       // Check if response has parts array
-      if (Array.isArray(response.data.parts)) {
+      if (Array.isArray(responseData.parts)) {
         // Get ALL text content (reasoning + text)
-        const textContent = response.data.parts
+        const textContent = responseData.parts
           .filter(
-            (part) =>
+            (part: any) =>
               part &&
               typeof part === 'object' &&
               (part.type === 'text' || part.type === 'reasoning')
           )
-          .map((part) => part.text || '')
+          .map((part: any) => part.text || '')
           .filter(Boolean)
           .join('\n')
 
@@ -72,15 +74,17 @@ export class SessionManager {
       }
 
       // Check if response has direct text property
-      if (typeof response.data === 'string') {
-        console.log('SessionManager: Direct string response:', response.data)
-        return response.data
+      if (typeof responseData === 'string') {
+        console.log('SessionManager: Direct string response:', responseData)
+        return responseData
       }
 
       // Check if response.data has a text property
-      if ('text' in response.data && typeof response.data.text === 'string') {
-        console.log('SessionManager: Text property found:', response.data.text)
-        return response.data.text
+      if (responseData && typeof responseData === 'object' && 'text' in responseData) {
+        if (typeof responseData.text === 'string') {
+          console.log('SessionManager: Text property found:', responseData.text)
+          return responseData.text
+        }
       }
     }
 

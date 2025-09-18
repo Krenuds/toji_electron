@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator } from '@chakra-ui/react'
-import { LuPlus, LuMessageCircle, LuActivity, LuServer } from 'react-icons/lu'
+import { LuPlus, LuMessageCircle, LuActivity } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
@@ -60,17 +60,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
             >
               <LuPlus size={14} />
-              New Chat
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <LuServer size={14} />
-              Start OpenCode
+              New Chat{' '}
             </Button>
           </VStack>
         </Box>
