@@ -5,6 +5,9 @@
 import { createOpencodeServer } from '@opencode-ai/sdk'
 import type { ServerOptions } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../../services/opencode-service'
+import { readFile } from 'fs/promises'
+import { join } from 'path'
+import { app } from 'electron'
 
 /**
  * Manages OpenCode server lifecycle and configuration.
@@ -116,6 +119,40 @@ export class ServerManager {
    */
   isRunning(): boolean {
     return this.currentServer !== null
+  }
+
+  /**
+   * Get OpenCode server logs
+   */
+  async getLogs(): Promise<string> {
+    try {
+      // OpenCode logs are stored in ~/.local/share/opencode/log/
+      const userDataPath = app.getPath('userData')
+      const dataDir = join(userDataPath, 'opencode-data')
+      const logDir = join(dataDir, 'log')
+
+      // Try to read the main log file (assuming opencode.log or similar)
+      // We'll check for common log file names
+      const possibleLogFiles = ['opencode.log', 'agent.log', 'server.log']
+
+      for (const logFile of possibleLogFiles) {
+        try {
+          const logPath = join(logDir, logFile)
+          const logContent = await readFile(logPath, 'utf-8')
+          return logContent
+        } catch (error) {
+          // Continue to next possible log file
+          continue
+        }
+      }
+
+      // If no log files found, return a helpful message
+      return `No OpenCode log files found in ${logDir}\nPossible files checked: ${possibleLogFiles.join(', ')}`
+
+    } catch (error) {
+      console.error('ServerManager: Failed to read logs:', error)
+      return `Error reading OpenCode logs: ${error instanceof Error ? error.message : 'Unknown error'}`
+    }
   }
 
   private buildServerUrl(): string {

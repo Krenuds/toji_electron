@@ -3,10 +3,12 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
 import { Core } from './api/core'
+import { Toji } from './api/toji'
 import { OpenCodeService } from './services/opencode-service'
 
-// Global Core instance
+// Global instances
 let core: Core | null = null
+let toji: Toji | null = null
 
 function createWindow(): void {
   // Create the browser window.
@@ -57,6 +59,10 @@ app.whenReady().then(async () => {
   // Initialize Core API with binary service
   core = new Core(openCodeService)
   console.log('Core API initialized')
+
+  // Initialize Toji API
+  toji = new Toji(openCodeService)
+  console.log('Toji API initialized')
 
   // Set up IPC handlers for Core and Binary management
   setupCoreHandlers()
@@ -179,6 +185,14 @@ function setupBinaryHandlers(openCodeService: OpenCodeService): void {
       }
       throw error
     }
+  })
+
+  // Get OpenCode logs
+  ipcMain.handle('api:get-opencode-logs', async () => {
+    if (!toji) {
+      throw new Error('Toji API not initialized')
+    }
+    return await toji.server.getLogs()
   })
 }
 

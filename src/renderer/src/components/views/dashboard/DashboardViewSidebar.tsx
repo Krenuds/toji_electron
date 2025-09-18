@@ -13,21 +13,14 @@ import {
   Progress,
   Stat
 } from '@chakra-ui/react'
-import {
-  LuPlay,
-  LuSquare,
-  LuRotateCcw,
-  LuDownload,
-  LuSettings,
-  LuFileText,
-  LuTriangleAlert,
-  LuCheck
-} from 'react-icons/lu'
+import { LuDownload, LuTriangleAlert, LuCheck, LuRefreshCw } from 'react-icons/lu'
 import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
+import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
 import { SidebarContainer } from '../../SidebarContainer'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   const { info, loading, error, installing, installProgress, install } = useBinaryStatus()
+  const { logs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOpenCodeLogs()
 
   const getBinaryStatusAlert = (): React.ReactNode => {
     if (loading) {
@@ -82,59 +75,6 @@ export function DashboardViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
-        {/* Header */}
-        <Box>
-          <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
-            System Control
-          </Text>
-          <Text color="app.text" fontSize="xs">
-            Manage Toji services and dependencies
-          </Text>
-        </Box>
-
-        <Separator borderColor="app.border" />
-
-        {/* Service Controls */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Service Management
-          </Text>
-          <VStack gap={2} align="stretch">
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <LuPlay size={14} />
-              Start All Services
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <LuSquare size={14} />
-              Stop All Services
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <LuRotateCcw size={14} />
-              Restart Services
-            </Button>
-          </VStack>
-        </Box>
-
-        <Separator borderColor="app.border" />
-
         {/* Dependencies Management */}
         <Card.Root
           size="sm"
@@ -144,7 +84,7 @@ export function DashboardViewSidebar(): React.JSX.Element {
         >
           <Card.Header pb={2}>
             <Text color="app.light" fontSize="xs" fontWeight="semibold">
-              Dependencies
+              OpenCode
             </Text>
           </Card.Header>
           <Card.Body pt={0}>
@@ -173,7 +113,7 @@ export function DashboardViewSidebar(): React.JSX.Element {
                 <VStack gap={2} align="stretch">
                   <Stat.Root size="sm">
                     <Stat.Label color="app.text" fontSize="2xs">
-                      Binary Path
+                      Binary Name
                     </Stat.Label>
                     <Stat.ValueText color="app.light" fontSize="2xs" fontFamily="mono">
                       {info.path.split('\\').pop() || info.path}
@@ -205,36 +145,68 @@ export function DashboardViewSidebar(): React.JSX.Element {
                   <LuDownload size={14} />
                   {info?.installed ? 'Reinstall Dependencies' : 'Install Dependencies'}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  justifyContent="flex-start"
-                  color="app.text"
-                  _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-                  disabled={!info?.installed}
-                >
-                  <LuSettings size={14} />
-                  Configure Services
-                </Button>
               </VStack>
 
-              {/* Diagnostic Actions */}
+              {/* Logs Display */}
               <Separator borderColor="app.border" />
               <VStack gap={2} align="stretch">
-                <Text color="app.text" fontSize="2xs" fontWeight="semibold" mb={1}>
-                  Diagnostics
-                </Text>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  justifyContent="flex-start"
-                  color="app.text"
-                  _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-                  disabled={!info?.installed}
+                <HStack justify="space-between" align="center">
+                  <Text color="app.text" fontSize="2xs" fontWeight="semibold">
+                    OpenCode Logs
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    color="app.text"
+                    _hover={{ color: 'app.light' }}
+                    onClick={refreshLogs}
+                    loading={logsLoading}
+                    disabled={!info?.installed}
+                  >
+                    <LuRefreshCw size={12} />
+                  </Button>
+                </HStack>
+
+                {logsError && (
+                  <Alert.Root status="error" size="sm">
+                    <Alert.Indicator>
+                      <LuTriangleAlert />
+                    </Alert.Indicator>
+                    <Alert.Description fontSize="2xs">{logsError}</Alert.Description>
+                  </Alert.Root>
+                )}
+
+                <Box
+                  bg="rgba(0,0,0,0.3)"
+                  border="1px solid"
+                  borderColor="app.border"
+                  borderRadius="md"
+                  p={2}
+                  maxH="120px"
+                  overflowY="auto"
                 >
-                  <LuFileText size={14} />
-                  View Logs
-                </Button>
+                  {logsLoading ? (
+                    <HStack justify="center" py={2}>
+                      <Spinner size="xs" />
+                      <Text color="app.text" fontSize="2xs">Loading logs...</Text>
+                    </HStack>
+                  ) : logs ? (
+                    <Text
+                      color="app.light"
+                      fontSize="2xs"
+                      fontFamily="mono"
+                      whiteSpace="pre-wrap"
+                      lineHeight="1.2"
+                    >
+                      {logs.slice(-1000)} {/* Show last 1000 characters for now */}
+                    </Text>
+                  ) : (
+                    <Text color="app.text" fontSize="2xs" fontStyle="italic">
+                      No logs available
+                    </Text>
+                  )}
+                </Box>
+
                 <Button
                   variant="ghost"
                   size="sm"

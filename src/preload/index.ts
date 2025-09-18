@@ -100,6 +100,10 @@ const api = {
         ipcRenderer.removeListener('system:service-status-update', subscription)
       }
     }
+  },
+
+  logs: {
+    getOpenCodeLogs: (): Promise<string> => ipcRenderer.invoke('api:get-opencode-logs')
   }
 }
 

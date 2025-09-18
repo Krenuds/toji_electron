@@ -63,6 +63,10 @@ export interface WindowAPI {
   close: () => Promise<void>
 }
 
+export interface LogsAPI {
+  getOpenCodeLogs: () => Promise<string>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -70,6 +74,7 @@ declare global {
       core: CoreAPI
       binary: BinaryAPI
       window: WindowAPI
+      logs: LogsAPI
     }
   }
 }
