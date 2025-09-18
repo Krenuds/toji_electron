@@ -25,10 +25,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 h1 {
@@ -71,10 +70,11 @@ button:focus-visible {
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .logo {
@@ -111,4 +111,36 @@ button:focus-visible {
 
 .read-the-docs {
   color: #888;
+}
+
+/* Hide scrollbars completely */
+html {
+  overflow: hidden;
+}
+
+body {
+  overflow: hidden;
+}
+
+#root {
+  overflow: hidden;
+}
+
+/* Hide scrollbars in WebKit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Hide scrollbars in Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* Additional fallback for any scrollable elements */
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }

@@ -1,29 +1,37 @@
-import React, { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import electronLogo from './assets/electron.svg'
+import React from 'react'
+import { Box, Flex, Stack } from '@chakra-ui/react'
+import { LuSettings, LuLayoutDashboard } from 'react-icons/lu'
+import { IconButton } from './components/IconButton'
 
 function App(): React.JSX.Element {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://electron-vite.org" target="_blank" rel="noreferrer">
-          <img src={electronLogo} className="logo" alt="Electron logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Electron + Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMRasdf
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Electron and React logos to learn more</p>
-    </>
+    <Flex h="100vh">
+      {/* Icon Bar - Left Panel */}
+      <Box w="45px" bg="app.darkest" borderRight="1px" borderColor="app.border">
+        <Stack direction="column" gap={2} p={2}>
+          <IconButton icon={<LuLayoutDashboard />} />
+          <IconButton icon={<LuSettings />} />
+        </Stack>
+      </Box>
+
+      {/* Sidebar - Middle Panel */}
+      <Box w="300px" bg="app.dark" borderRight="1px" borderColor="app.border" p={4}>
+        <Box color="app.light" fontSize="sm" fontWeight="bold" mb={4}>
+          Chat Settings
+        </Box>
+        <Box color="app.text" fontSize="xs">
+          Sidebar content goes here...
+        </Box>
+      </Box>
+
+      {/* Main Content - Right Panel */}
+      <Box flex="1" bg="app.medium" p={6}>
+        <Box color="app.light" fontSize="lg" fontWeight="bold" mb={4}>
+          Main Content Area
+        </Box>
+        <Box color="app.text">This is where your primary content will be displayed.</Box>
+      </Box>
+    </Flex>
   )
 }
 
