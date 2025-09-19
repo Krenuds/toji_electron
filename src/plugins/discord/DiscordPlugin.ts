@@ -1,13 +1,15 @@
 import { EventEmitter } from 'events'
-import type { Client, Message } from 'discord.js'
+import type { Client, Message, Interaction } from 'discord.js'
 import type { Toji } from '../../main/api/Toji'
 import type { DiscordChatModule } from './modules/ChatModule'
-import type { DiscordCommandModule } from './modules/CommandModule'
+import type { SlashCommandModule } from './modules/SlashCommandModule'
+import { deployCommands } from './deploy-commands'
 
 export interface DiscordPluginEvents {
   message: [message: Message]
   ready: [client: Client]
   error: [error: Error]
+  interaction: [interaction: Interaction]
 }
 
 export interface DiscordModule {
@@ -22,10 +24,14 @@ export interface DiscordModule {
 export class DiscordPlugin extends EventEmitter {
   private modules: Map<string, DiscordModule> = new Map()
   private chatModule?: DiscordChatModule
-  private commandModule?: DiscordCommandModule
+  private slashCommandModule?: SlashCommandModule
   private initialized = false
+  // private client?: Client // Will be used for future features
 
-  constructor(private toji: Toji) {
+  constructor(
+    private toji: Toji,
+    private config?: { token?: string; clientId?: string; guildId?: string }
+  ) {
     super()
   }
 
@@ -42,13 +48,13 @@ export class DiscordPlugin extends EventEmitter {
 
     // Import and register modules
     const { DiscordChatModule } = await import('./modules/ChatModule')
-    const { DiscordCommandModule } = await import('./modules/CommandModule')
+    const { SlashCommandModule } = await import('./modules/SlashCommandModule')
 
     this.chatModule = new DiscordChatModule(this.toji)
-    this.commandModule = new DiscordCommandModule(this.toji)
+    this.slashCommandModule = new SlashCommandModule(this.toji)
 
     this.registerModule('chat', this.chatModule)
-    this.registerModule('command', this.commandModule)
+    this.registerModule('slashCommand', this.slashCommandModule)
 
     this.initialized = true
     console.log('DiscordPlugin: Initialized successfully')
@@ -69,25 +75,51 @@ export class DiscordPlugin extends EventEmitter {
   async handleMessage(message: Message): Promise<void> {
     console.log(`DiscordPlugin: Handling message from ${message.author.tag}`)
 
-    // Check if message is a command
-    if (message.content.startsWith('/')) {
-      // Route to command module
-      if (this.commandModule) {
-        await this.commandModule.handleCommand(message)
-      }
-    } else {
-      // Route to chat module
-      if (this.chatModule) {
-        await this.chatModule.handleMessage(message)
-      }
+    // All messages go to chat module (slash commands are handled via interactions)
+    if (this.chatModule) {
+      await this.chatModule.handleMessage(message)
+    }
+  }
+
+  /**
+   * Handle interaction events from Discord
+   */
+  async handleInteraction(interaction: Interaction): Promise<void> {
+    console.log(`DiscordPlugin: Handling interaction: ${interaction.type}`)
+
+    // Route to slash command module
+    if (interaction.isChatInputCommand() && this.slashCommandModule) {
+      await this.slashCommandModule.handleCommand(interaction)
     }
   }
 
   /**
    * Handle ready event from DiscordService
    */
-  onReady(client: Client): void {
+  async onReady(client: Client): Promise<void> {
     console.log(`DiscordPlugin: Bot ready as ${client.user?.tag}`)
+    // this.client = client // Store for future use
+
+    // Setup slash command interaction handler
+    if (this.slashCommandModule) {
+      this.slashCommandModule.setupInteractionHandler(client)
+    }
+
+    // Deploy slash commands if we have config
+    if (this.config?.token && this.config?.clientId && client.user) {
+      try {
+        console.log('DiscordPlugin: Deploying slash commands...')
+        await deployCommands(
+          this.config.token,
+          this.config.clientId,
+          this.config.guildId // Optional: guild-specific for faster updates
+        )
+        console.log('DiscordPlugin: Slash commands deployed successfully')
+      } catch (error) {
+        console.error('DiscordPlugin: Failed to deploy commands:', error)
+      }
+    }
+
     this.emit('ready', client)
   }
 

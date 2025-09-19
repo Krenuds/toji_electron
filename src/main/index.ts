@@ -388,6 +388,17 @@ function setupWindowHandlers(): void {
 app.on('window-all-closed', async () => {
   console.log('All windows closed, cleaning up...')
 
+  // Disconnect Discord bot
+  if (discordService) {
+    try {
+      console.log('Disconnecting Discord bot...')
+      await discordService.disconnect()
+      console.log('Discord bot disconnected')
+    } catch (error) {
+      console.error('Error disconnecting Discord:', error)
+    }
+  }
+
   // Stop any running OpenCode agents
   if (toji) {
     try {
@@ -405,17 +416,32 @@ app.on('window-all-closed', async () => {
 
 // Handle application quit events
 app.on('before-quit', async (event) => {
-  if (toji) {
+  if (toji || discordService) {
     event.preventDefault()
     console.log('App is quitting, cleaning up...')
 
     try {
-      await toji.shutdown()
-      console.log('Cleanup completed, quitting app')
+      // Disconnect Discord bot first
+      if (discordService) {
+        console.log('Disconnecting Discord bot...')
+        await discordService.disconnect()
+        discordService = null
+        console.log('Discord bot disconnected')
+      }
+
+      // Then shutdown Toji/OpenCode
+      if (toji) {
+        await toji.shutdown()
+        toji = null
+        console.log('Toji shutdown completed')
+      }
+
+      console.log('All cleanup completed, quitting app')
     } catch (error) {
       console.error('Error during cleanup:', error)
     } finally {
       toji = null
+      discordService = null
       app.quit()
     }
   }

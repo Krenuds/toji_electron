@@ -37,7 +37,7 @@ export class DiscordCommandModule implements DiscordModule {
     this.commands.set('help', {
       name: 'help',
       description: 'Show available commands',
-      usage: '/help',
+      usage: '!help',
       execute: async (message) => {
         const helpText = this.generateHelpText()
         await message.reply(helpText)
@@ -48,7 +48,7 @@ export class DiscordCommandModule implements DiscordModule {
     this.commands.set('workspace', {
       name: 'workspace',
       description: 'Show or change the current workspace',
-      usage: '/workspace [path]',
+      usage: '!workspace [path]',
       execute: async (message, args) => {
         if (args.length === 0) {
           // Show current workspace

@@ -33,7 +33,18 @@ export class DiscordService {
   private async initializePlugin(): Promise<void> {
     try {
       const { DiscordPlugin } = await import('../../plugins/discord/DiscordPlugin')
-      this.plugin = new DiscordPlugin(this.toji)
+
+      // Pass config to plugin for command deployment
+      const token = this.config.getDiscordToken()
+      const clientId = '1399539733880897537' // Your bot's client ID
+      const guildId = process.env.DISCORD_GUILD_ID // Optional: for guild-specific commands
+
+      this.plugin = new DiscordPlugin(this.toji, {
+        token,
+        clientId,
+        guildId
+      })
+
       await this.plugin.initialize()
       console.log('DiscordService: Plugin initialized')
     } catch (error) {
@@ -194,6 +205,16 @@ export class DiscordService {
       // Delegate all message handling to plugin
       if (this.plugin) {
         await this.plugin.handleMessage(message)
+      }
+    })
+
+    // Interaction create event - delegate to plugin for slash commands
+    this.client.on(Events.InteractionCreate, async (interaction) => {
+      console.log(`DiscordService: Interaction received: ${interaction.type}`)
+
+      // Delegate interaction handling to plugin
+      if (this.plugin) {
+        await this.plugin.handleInteraction(interaction)
       }
     })
 
