@@ -1,10 +1,8 @@
-import { Collection, CommandInteraction, Events } from 'discord.js'
+import { Collection, ChatInputCommandInteraction, Events } from 'discord.js'
 import type { Client, Interaction } from 'discord.js'
 import type { Toji } from '../../../main/api/Toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 import type { DiscordChatModule } from './ChatModule'
-import * as fs from 'fs'
-import * as path from 'path'
 
 interface SlashCommand {
   data: {
@@ -12,7 +10,7 @@ interface SlashCommand {
     toJSON: () => unknown
   }
   execute: (
-    interaction: CommandInteraction,
+    interaction: ChatInputCommandInteraction,
     toji: Toji,
     chatModule?: DiscordChatModule
   ) => Promise<void>
@@ -42,38 +40,28 @@ export class SlashCommandModule implements DiscordModule {
    * Load all command files
    */
   private async loadCommands(): Promise<void> {
-    const commandsPath = path.join(__dirname, '..', 'commands')
+    console.log('SlashCommandModule: Loading commands via direct imports')
 
-    // Check if commands directory exists
-    if (!fs.existsSync(commandsPath)) {
-      console.warn('SlashCommandModule: Commands directory not found')
-      return
-    }
+    try {
+      // Import commands directly - this is the only way we load commands
+      const helpCommand = await import('../commands/help')
+      const workspaceCommand = await import('../commands/workspace')
+      const sessionCommand = await import('../commands/session')
+      const statusCommand = await import('../commands/status')
 
-    const commandFiles = fs
-      .readdirSync(commandsPath)
-      .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
+      const commands = [helpCommand, workspaceCommand, sessionCommand, statusCommand]
 
-    for (const file of commandFiles) {
-      const filePath = path.join(commandsPath, file)
-
-      try {
-        // Use dynamic import for command modules
-        const commandModule = await import(filePath)
-        const command = commandModule as SlashCommand
-
+      for (const command of commands) {
         if ('data' in command && 'execute' in command) {
           this.commands.set(command.data.name, command)
           console.log(`SlashCommandModule: Loaded command ${command.data.name}`)
-        } else {
-          console.warn(`SlashCommandModule: Command at ${filePath} missing required properties`)
         }
-      } catch (error) {
-        console.error(`SlashCommandModule: Failed to load command ${file}:`, error)
       }
-    }
 
-    console.log(`SlashCommandModule: Loaded ${this.commands.size} commands`)
+      console.log(`SlashCommandModule: Loaded ${this.commands.size} slash commands`)
+    } catch (error) {
+      console.error('SlashCommandModule: Failed to load commands:', error)
+    }
   }
 
   /**
@@ -92,7 +80,7 @@ export class SlashCommandModule implements DiscordModule {
   /**
    * Handle slash command interactions
    */
-  async handleCommand(interaction: CommandInteraction): Promise<void> {
+  async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     const command = this.commands.get(interaction.commandName)
 
     if (!command) {

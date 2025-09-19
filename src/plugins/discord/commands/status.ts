@@ -1,11 +1,11 @@
-import { SlashCommandBuilder, CommandInteraction } from 'discord.js'
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/api/Toji'
 
 export const data = new SlashCommandBuilder()
   .setName('status')
   .setDescription('Check Toji system status')
 
-export async function execute(interaction: CommandInteraction, toji: Toji): Promise<void> {
+export async function execute(interaction: ChatInputCommandInteraction, toji: Toji): Promise<void> {
   const status = toji.getStatus()
 
   const embed = {

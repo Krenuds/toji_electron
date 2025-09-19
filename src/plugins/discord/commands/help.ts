@@ -1,10 +1,10 @@
-import { SlashCommandBuilder, CommandInteraction } from 'discord.js'
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 
 export const data = new SlashCommandBuilder()
   .setName('help')
   .setDescription('Shows all available commands and how to use them')
 
-export async function execute(interaction: CommandInteraction): Promise<void> {
+export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   const helpEmbed = {
     color: 0x33b42f, // Toji green
     title: '🤖 Toji Bot Help',

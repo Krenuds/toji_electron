@@ -5,8 +5,6 @@
 
 import { REST, Routes } from 'discord.js'
 import type { RESTPostAPIApplicationCommandsJSONBody } from 'discord.js'
-import * as fs from 'fs'
-import * as path from 'path'
 
 // Command deployment function
 export async function deployCommands(
@@ -15,28 +13,20 @@ export async function deployCommands(
   guildId?: string
 ): Promise<void> {
   const commands: RESTPostAPIApplicationCommandsJSONBody[] = []
-  const commandsPath = path.join(__dirname, 'commands')
 
-  // Read all command files
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith('.ts') || file.endsWith('.js'))
+  // Import all commands directly
+  const helpCommand = await import('./commands/help')
+  const workspaceCommand = await import('./commands/workspace')
+  const sessionCommand = await import('./commands/session')
+  const statusCommand = await import('./commands/status')
+
+  const commandModules = [helpCommand, workspaceCommand, sessionCommand, statusCommand]
 
   // Load command data
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file)
-
-    // Use dynamic import for command modules
-    const commandModule = await import(filePath)
-    const command = commandModule
-
+  for (const command of commandModules) {
     if ('data' in command && 'execute' in command) {
       commands.push(command.data.toJSON())
       console.log(`Loaded command: ${command.data.name}`)
-    } else {
-      console.warn(
-        `Warning: Command at ${filePath} is missing required "data" or "execute" property`
-      )
     }
   }
 

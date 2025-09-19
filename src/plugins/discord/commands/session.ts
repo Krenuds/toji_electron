@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, CommandInteraction } from 'discord.js'
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/api/Toji'
 import type { DiscordChatModule } from '../modules/ChatModule'
 
@@ -24,7 +24,7 @@ export const data = new SlashCommandBuilder()
   )
 
 export async function execute(
-  interaction: CommandInteraction,
+  interaction: ChatInputCommandInteraction,
   toji: Toji,
   chatModule?: DiscordChatModule
 ): Promise<void> {
