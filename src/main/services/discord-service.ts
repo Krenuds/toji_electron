@@ -1,13 +1,14 @@
-import { Client, Events, GatewayIntentBits, ChannelType } from 'discord.js'
+import { Client, Events, GatewayIntentBits } from 'discord.js'
 import type { Message } from 'discord.js'
 import type { Toji } from '../api/Toji'
 import type { ConfigProvider } from '../config/ConfigProvider'
+import type { DiscordPlugin } from '../../plugins/discord/DiscordPlugin'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 /**
- * Discord Service - Manages Discord bot lifecycle and integrates with Toji API
- * This service consumes the Toji API to process messages through OpenCode
+ * Discord Service - Manages Discord bot connection lifecycle only
+ * Business logic is handled by the Discord Plugin
  */
 export class DiscordService {
   private client: Client | null = null
@@ -15,6 +16,7 @@ export class DiscordService {
   private connectionState: ConnectionState = 'disconnected'
   private lastError: Error | null = null
   private connectionAttemptTime: number | null = null
+  private plugin?: DiscordPlugin
 
   constructor(
     private toji: Toji,
@@ -22,6 +24,29 @@ export class DiscordService {
   ) {
     console.log('DiscordService: Initialized with Toji and ConfigProvider')
     console.log('DiscordService: Config has token:', this.config.hasDiscordToken())
+    this.initializePlugin()
+  }
+
+  /**
+   * Initialize the Discord plugin
+   */
+  private async initializePlugin(): Promise<void> {
+    try {
+      const { DiscordPlugin } = await import('../../plugins/discord/DiscordPlugin')
+      this.plugin = new DiscordPlugin(this.toji)
+      await this.plugin.initialize()
+      console.log('DiscordService: Plugin initialized')
+    } catch (error) {
+      console.error('DiscordService: Failed to initialize plugin:', error)
+    }
+  }
+
+  /**
+   * Register a Discord plugin (optional external registration)
+   */
+  registerPlugin(plugin: DiscordPlugin): void {
+    this.plugin = plugin
+    console.log('DiscordService: External plugin registered')
   }
 
   /**
@@ -105,6 +130,11 @@ export class DiscordService {
       this.client = null
       this.isConnected = false
     }
+
+    // Cleanup plugin
+    if (this.plugin) {
+      await this.plugin.cleanup()
+    }
   }
 
   /**
@@ -148,14 +178,23 @@ export class DiscordService {
       this.isConnected = true
       this.connectionState = 'connected'
       this.lastError = null
+
+      // Emit to plugin
+      if (this.plugin) {
+        this.plugin.onReady(readyClient)
+      }
     })
 
-    // Message create event
+    // Message create event - delegate to plugin
     this.client.on(Events.MessageCreate, async (message: Message) => {
       console.log(
         `DiscordService: Message received from ${message.author.tag}: "${message.content.substring(0, 50)}..."`
       )
-      await this.handleMessage(message)
+
+      // Delegate all message handling to plugin
+      if (this.plugin) {
+        await this.plugin.handleMessage(message)
+      }
     })
 
     // Error event
@@ -163,6 +202,11 @@ export class DiscordService {
       console.error('DiscordService: Discord client error event:', error)
       this.lastError = error
       this.connectionState = 'error'
+
+      // Emit to plugin
+      if (this.plugin) {
+        this.plugin.onError(error)
+      }
     })
 
     // Disconnect event
@@ -184,114 +228,6 @@ export class DiscordService {
     })
 
     console.log('DiscordService: Event handlers registered')
-  }
-
-  /**
-   * Handle incoming Discord messages
-   */
-  private async handleMessage(message: Message): Promise<void> {
-    // Ignore bot's own messages
-    if (message.author.bot) return
-
-    // Only respond to messages that mention the bot
-    if (!message.mentions.has(message.client.user!.id)) return
-
-    // Check if this is a partial channel (can't send messages)
-    if (message.channel.partial) {
-      console.log('DiscordService: Cannot handle partial channels')
-      return
-    }
-
-    // Check channel type - we can only send to text-based channels
-    const supportedChannels = [
-      ChannelType.GuildText,
-      ChannelType.DM,
-      ChannelType.GuildVoice, // Voice channels can have text
-      ChannelType.GroupDM,
-      ChannelType.GuildAnnouncement,
-      ChannelType.PublicThread,
-      ChannelType.PrivateThread,
-      ChannelType.AnnouncementThread
-    ]
-
-    if (!supportedChannels.includes(message.channel.type)) {
-      console.log(`DiscordService: Unsupported channel type: ${message.channel.type}`)
-      return
-    }
-
-    // Extract message content without mentions
-    const content = message.content.replace(/<@!?\d+>/g, '').trim()
-
-    if (!content) {
-      await message.reply('Please provide a message for me to process.')
-      return
-    }
-
-    try {
-      // Show typing indicator if it's a proper text channel
-      if (message.channel.type !== ChannelType.GroupDM) {
-        await message.channel.sendTyping()
-      }
-
-      // Process message through Toji API (which uses OpenCode)
-      console.log(`DiscordService: Processing message: "${content}"`)
-      const response = await this.toji.chat(content)
-
-      // Discord has a 2000 character limit per message
-      if (response.length > 2000) {
-        // Split into multiple messages if needed
-        const chunks = this.splitMessage(response, 2000)
-        for (const chunk of chunks) {
-          await message.reply(chunk)
-        }
-      } else {
-        await message.reply(response)
-      }
-    } catch (error) {
-      console.error('DiscordService: Error processing message:', error)
-      await message.reply('Sorry, I encountered an error processing your request.')
-    }
-  }
-
-  /**
-   * Split a long message into chunks for Discord's character limit
-   */
-  private splitMessage(message: string, maxLength: number): string[] {
-    const chunks: string[] = []
-    let currentChunk = ''
-
-    const lines = message.split('\n')
-    for (const line of lines) {
-      if (currentChunk.length + line.length + 1 > maxLength) {
-        if (currentChunk) {
-          chunks.push(currentChunk)
-          currentChunk = ''
-        }
-
-        // If a single line is too long, split it
-        if (line.length > maxLength) {
-          const words = line.split(' ')
-          for (const word of words) {
-            if (currentChunk.length + word.length + 1 > maxLength) {
-              chunks.push(currentChunk)
-              currentChunk = word
-            } else {
-              currentChunk += (currentChunk ? ' ' : '') + word
-            }
-          }
-        } else {
-          currentChunk = line
-        }
-      } else {
-        currentChunk += (currentChunk ? '\n' : '') + line
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk)
-    }
-
-    return chunks
   }
 
   /**
