@@ -476,6 +476,89 @@ export class Toji {
   }
 
   /**
+   * Get workspaces derived from sessions
+   * Extracts unique workspace paths from recent sessions
+   * Returns simplified workspace objects with session counts
+   */
+  async getWorkspacesFromSessions(limit = 100): Promise<Array<{
+    path: string
+    name: string
+    sessionCount: number
+    lastActivity: Date | null
+  }>> {
+    console.log(`Toji: Getting workspaces from last ${limit} sessions`)
+
+    try {
+      // Ensure client is ready
+      if (!this.isReady()) {
+        console.log('Toji: Client not ready, returning empty workspace list')
+        return []
+      }
+
+      // Get sessions (up to limit)
+      const sessionsResponse = await this.session.list()
+      const allSessions = sessionsResponse.data || []
+
+      // Take only the most recent sessions (they're usually ordered by last activity)
+      const sessions = allSessions.slice(0, limit)
+
+      // Group sessions by directory
+      const workspaceMap = new Map<string, {
+        sessions: typeof sessions
+        lastActivity: Date | null
+      }>()
+
+      sessions.forEach(session => {
+        if (!session.directory) return
+
+        const existing = workspaceMap.get(session.directory)
+        const sessionTime = session.time?.updated || session.time?.created
+        const sessionDate = sessionTime ? new Date(sessionTime) : null
+
+        if (!existing) {
+          workspaceMap.set(session.directory, {
+            sessions: [session],
+            lastActivity: sessionDate
+          })
+        } else {
+          existing.sessions.push(session)
+          // Update last activity if this session is more recent
+          if (sessionDate && (!existing.lastActivity || sessionDate > existing.lastActivity)) {
+            existing.lastActivity = sessionDate
+          }
+        }
+      })
+
+      // Convert to array of workspace objects
+      const workspaces = Array.from(workspaceMap.entries()).map(([path, data]) => {
+        // Extract folder name from path (cross-platform)
+        const name = path.split(/[\\/]/).pop() || path
+
+        return {
+          path,
+          name,
+          sessionCount: data.sessions.length,
+          lastActivity: data.lastActivity
+        }
+      })
+
+      // Sort by last activity (most recent first)
+      workspaces.sort((a, b) => {
+        if (!a.lastActivity) return 1
+        if (!b.lastActivity) return -1
+        return b.lastActivity.getTime() - a.lastActivity.getTime()
+      })
+
+      console.log(`Toji: Found ${workspaces.length} unique workspaces from ${sessions.length} sessions`)
+      return workspaces
+
+    } catch (error) {
+      console.error('Toji: Error getting workspaces from sessions:', error)
+      return []
+    }
+  }
+
+  /**
    * Get recent workspaces from config
    */
   getRecentWorkspaces(): string[] {

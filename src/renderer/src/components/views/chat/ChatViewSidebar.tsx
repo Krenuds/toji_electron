@@ -4,7 +4,6 @@ import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity } from 'reac
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
-import { QuickActionButton } from '../../shared/QuickActionButton'
 import { StatusBadge } from '../../StatusBadge'
 import { SessionsModal } from '../../shared'
 import { useServerStatus } from '../../../hooks/useServerStatus'

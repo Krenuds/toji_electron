@@ -58,7 +58,9 @@
       "Bash(npx opencode project:*)",
       "Bash(python:*)",
       "Read(//c/**)",
-      "Bash(npx opencode run:*)"
+      "Bash(npx opencode run:*)",
+      "Bash(git fetch:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []

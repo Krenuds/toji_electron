@@ -40,9 +40,9 @@ export function SecureInput({
           borderColor={isInvalid ? 'app.error' : 'app.border'}
           color="app.light"
           _placeholder={{ color: 'app.text' }}
-          _focus={{ 
-            borderColor: isInvalid ? 'app.error' : 'app.accent', 
-            boxShadow: 'none' 
+          _focus={{
+            borderColor: isInvalid ? 'app.error' : 'app.accent',
+            boxShadow: 'none'
           }}
           flex="1"
           spellCheck={false}

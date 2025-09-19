@@ -1,10 +1,18 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Grid, Card, Badge, Button } from '@chakra-ui/react'
-import { LuMessageSquare, LuClock, LuZap, LuRefreshCw, LuFolder, LuTrash2, LuFolderOpen } from 'react-icons/lu'
+import {
+  LuMessageSquare,
+  LuClock,
+  LuZap,
+  LuRefreshCw,
+  LuFolder,
+  LuTrash2,
+  LuFolderOpen
+} from 'react-icons/lu'
 import { useSession } from '../../../hooks/useSession'
 import { useWorkspace } from '../../../hooks/useWorkspace'
 import { useCoreStatus } from '../../../hooks/useCoreStatus'
-import { WorkspaceTracker } from '../../WorkspaceTracker'
+import { WorkspaceTracker } from '../../shared/WorkspaceTracker'
 import { MetricCard } from '../../shared'
 
 export function WorkspacesViewMain(): React.JSX.Element {

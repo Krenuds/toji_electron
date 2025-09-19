@@ -241,6 +241,14 @@ function setupCoreHandlers(): void {
     return await toji.workspace.inspect(directory)
   })
 
+  // Get workspaces from sessions
+  ipcMain.handle('core:get-workspaces-from-sessions', async (_, limit?: number) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getWorkspacesFromSessions(limit)
+  })
+
   // Get recent workspaces
   ipcMain.handle('core:get-recent-workspaces', async () => {
     if (!toji) {
