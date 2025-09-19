@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useContext } from 'react'
+import { AppViewContext } from '../contexts/AppViewContextDef'
 
 interface WorkspaceInfo {
   isNew: boolean
@@ -23,6 +24,9 @@ export function useWorkspace(): UseWorkspaceResult {
   const [workspaceInfo, setWorkspaceInfo] = useState<WorkspaceInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Get the view context to switch to chat after opening workspace
+  const viewContext = useContext(AppViewContext)
+
   const changeWorkspace = useCallback(async (directory: string) => {
     setIsChangingWorkspace(true)
     setError(null)
@@ -32,6 +36,11 @@ export function useWorkspace(): UseWorkspaceResult {
       setWorkspaceInfo(info)
       setCurrentWorkspace(info.workspacePath)
       console.log('Workspace changed successfully:', info)
+
+      // After successfully opening a workspace, switch to the chat view
+      if (viewContext) {
+        viewContext.setActiveView('chat')
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to change workspace'
       setError(errorMessage)
@@ -40,7 +49,7 @@ export function useWorkspace(): UseWorkspaceResult {
     } finally {
       setIsChangingWorkspace(false)
     }
-  }, [])
+  }, [viewContext])
 
   const selectAndChangeWorkspace = useCallback(async () => {
     try {
