@@ -91,7 +91,7 @@ const server = await createOpencodeServer({
 - **File System Monitoring**: May watch files for changes
 - **Network Operations**: HTTP server on localhost with configurable port
 
-## OpenCode Server Lifecycle
+## Toji Agent Lifecycle
 
 1. **Initialization**:
    - Validates binary availability

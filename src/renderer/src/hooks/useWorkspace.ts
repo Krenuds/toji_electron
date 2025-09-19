@@ -5,6 +5,7 @@ interface WorkspaceInfo {
   isNew: boolean
   hasGit: boolean
   hasOpenCodeConfig: boolean
+  hasTojiToken: boolean
   sessionId: string
   workspacePath: string
 }
@@ -14,8 +15,12 @@ interface UseWorkspaceResult {
   currentWorkspace: string | undefined
   workspaceInfo: WorkspaceInfo | null
   error: string | null
+  recentWorkspaces: string[]
   selectAndChangeWorkspace: () => Promise<void>
   changeWorkspace: (directory: string) => Promise<void>
+  fetchRecentWorkspaces: () => Promise<void>
+  removeRecentWorkspace: (path: string) => Promise<void>
+  clearRecentWorkspaces: () => Promise<void>
 }
 
 export function useWorkspace(): UseWorkspaceResult {
@@ -23,6 +28,7 @@ export function useWorkspace(): UseWorkspaceResult {
   const [currentWorkspace, setCurrentWorkspace] = useState<string | undefined>()
   const [workspaceInfo, setWorkspaceInfo] = useState<WorkspaceInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [recentWorkspaces, setRecentWorkspaces] = useState<string[]>([])
 
   // Get the view context to switch to chat after opening workspace
   const viewContext = useContext(AppViewContext)
@@ -70,9 +76,36 @@ export function useWorkspace(): UseWorkspaceResult {
     }
   }, [changeWorkspace])
 
-  // Fetch current workspace directory on mount
+  const fetchRecentWorkspaces = useCallback(async () => {
+    try {
+      const recent = await window.api.core.getRecentWorkspaces()
+      setRecentWorkspaces(recent)
+    } catch (err) {
+      console.error('Failed to fetch recent workspaces:', err)
+    }
+  }, [])
+
+  const removeRecentWorkspace = useCallback(async (path: string) => {
+    try {
+      const updated = await window.api.core.removeRecentWorkspace(path)
+      setRecentWorkspaces(updated)
+    } catch (err) {
+      console.error('Failed to remove recent workspace:', err)
+    }
+  }, [])
+
+  const clearRecentWorkspaces = useCallback(async () => {
+    try {
+      await window.api.core.clearRecentWorkspaces()
+      setRecentWorkspaces([])
+    } catch (err) {
+      console.error('Failed to clear recent workspaces:', err)
+    }
+  }, [])
+
+  // Fetch current workspace directory and recent workspaces on mount
   useEffect(() => {
-    const fetchCurrentWorkspace = async (): Promise<void> => {
+    const fetchInitialData = async (): Promise<void> => {
       try {
         // Check if OpenCode is running and get current directory
         const isRunning = await window.api.core.isRunning()
@@ -88,16 +121,21 @@ export function useWorkspace(): UseWorkspaceResult {
               isNew: false,
               hasGit: true, // These would need proper checking
               hasOpenCodeConfig: true,
+              hasTojiToken: false,
               sessionId: ''
             })
           }
         }
+
+        // Fetch recent workspaces
+        const recent = await window.api.core.getRecentWorkspaces()
+        setRecentWorkspaces(recent)
       } catch (err) {
-        console.error('Failed to fetch current workspace:', err)
+        console.error('Failed to fetch initial workspace data:', err)
       }
     }
 
-    fetchCurrentWorkspace()
+    fetchInitialData()
   }, [])
 
   return {
@@ -105,7 +143,11 @@ export function useWorkspace(): UseWorkspaceResult {
     currentWorkspace,
     workspaceInfo,
     error,
+    recentWorkspaces,
     selectAndChangeWorkspace,
-    changeWorkspace
+    changeWorkspace,
+    fetchRecentWorkspaces,
+    removeRecentWorkspace,
+    clearRecentWorkspaces
   }
 }

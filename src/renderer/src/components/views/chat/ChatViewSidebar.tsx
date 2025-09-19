@@ -120,7 +120,7 @@ export function ChatViewSidebar(): React.JSX.Element {
           >
             <HStack justify="space-between" mb={2}>
               <Text color="app.light" fontSize="xs" fontWeight="medium">
-                OpenCode Server
+                Toji Agent
               </Text>
               <StatusBadge status={isChangingWorkspace ? 'starting' : serverStatus} />
             </HStack>

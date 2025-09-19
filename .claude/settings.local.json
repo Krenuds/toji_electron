@@ -52,7 +52,13 @@
       "mcp__chakra-ui__customize_theme",
       "mcp__chakra-ui__v2_to_v3_code_review",
       "Bash(git mv:*)",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "Bash(dir:*)",
+      "Bash(find:*)",
+      "Bash(npx opencode project:*)",
+      "Bash(python:*)",
+      "Read(//c/**)",
+      "Bash(npx opencode run:*)"
     ],
     "deny": [],
     "ask": []

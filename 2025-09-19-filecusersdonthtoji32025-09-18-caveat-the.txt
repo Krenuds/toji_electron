@@ -1,0 +1,386 @@
+
+
+  The problem:
+  We have 3 distinct concepts that have a lot of overlap, and are getting a bit
+  confused. These concepts are A: Workspaces, B: Projects and C: Sessions. Your
+  job now is to crawl the opencode.ai documentation and tell me the difference
+  between the 3 according to the opencode SDK
+
+● I'll research the OpenCode documentation to clarify the distinctions between
+   Workspaces, Projects, and Sessions according to the OpenCode SDK.
+
+● Fetch(https://opencode.ai/docs)
+  ⎿  Received 81.8KB (200 OK)
+
+● Let me search for more specific documentation about these concepts:
+
+● Web Search("OpenCode SDK workspace project session concepts documentation")
+  ⎿  Did 1 search in 31s
+
+● Let me fetch more specific information from the OpenCode GitHub repository:
+
+● Fetch(https://github.com/opencode-ai/opencode)
+  ⎿  Received 496.7KB (200 OK)
+
+● Let me check the SDK documentation directly:
+
+● Fetch(https://opencode.ai/docs/sdk)
+  ⎿  Received 86.3KB (200 OK)
+
+● Now let me look at the actual SDK implementation in our codebase to see how
+  these are defined:
+
+● Bash(grep -r "interface.*Project" src/main/api --include="*.ts" | head -10)
+  ⎿  src/main/api/types.ts:export interface DiscoveredProject {
+     src/main/api/types.ts:export interface EnrichedProject {
+
+● Read(node_modules\@opencode-ai\sdk\dist\index.d.ts)
+  ⎿  Read 3 lines (ctrl+o to expand)
+
+● Let me check the client types:
+
+● Bash(find node_modules/@opencode-ai/sdk/dist -name "*.d.ts" -exec grep -l
+      "Project\|Session\|Workspace" {} \;)
+  ⎿  node_modules/@opencode-ai/sdk/dist/gen/sdk.gen.d.ts
+     node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts
+
+● Bash(grep -A 5 "export type Project"
+      node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts)
+  ⎿  export type Project = {
+         id: string;
+         worktree: string;
+     … +39 lines (ctrl+o to expand)
+
+● Bash(grep -A 10 "export type Session"
+      node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts | head -30)
+  ⎿  export type Session = {
+         id: string;
+         projectID: string;
+     … +28 lines (ctrl+o to expand)
+
+● Excellent! Now I have the actual OpenCode SDK type definitions. Let me also
+  check for workspace/path definitions:
+
+● Bash(grep -B 2 -A 5 "worktree"
+      node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts | head -20)
+  ⎿  export type Project = {
+         id: string;
+         worktree: string;
+     … +14 lines (ctrl+o to expand)
+
+● Now let me summarize my findings based on the actual OpenCode SDK type
+  definitions:
+
+  OpenCode SDK Concept Clarification
+
+  Based on the actual OpenCode SDK type definitions, here are the three
+  distinct concepts:
+
+  1. Projects (OpenCode Projects)
+
+  type Project = {
+      id: string;
+      worktree: string;  // Git worktree path
+      vcs?: "git";       // Version control system
+      time: {
+          created: number;
+          initialized?: number;
+      };
+  }
+  - What it is: A Git worktree-based entity managed by OpenCode
+  - Key identifier: Has a unique id and is tied to a worktree (Git worktree
+  path)
+  - Scope: Represents a versioned codebase with Git
+  - Persistence: Stored and managed by OpenCode SDK
+
+  2. Sessions (OpenCode Sessions)
+
+  type Session = {
+      id: string;
+      projectID: string;    // Links to a Project
+      directory: string;    // Working directory for this session
+      parentID?: string;    // For branched sessions
+      title: string;
+      version: string;
+      time: {
+          created: number;
+          updated?: number;
+      };
+  }
+  - What it is: An AI conversation/interaction context
+  - Relationship: Each session belongs to a Project (projectID)
+  - Key features:
+    - Has conversation history
+    - Can be shared
+    - Can have parent sessions (branching)
+    - Has a specific working directory
+  - Purpose: Tracks AI interactions, prompts, and responses
+
+  3. Workspaces (Toji3 Concept - NOT OpenCode)
+
+  In our Toji3 application, we've been using "Workspace" to mean:
+  - What it is: A working directory where development happens
+  - Not an OpenCode concept: This is our application's terminology
+  - Actual OpenCode equivalent: The directory field in Sessions or the current
+   working path
+
+  The Hierarchy and Relationships
+
+  Git Repository (with .git)
+      ↓
+  OpenCode Project (worktree-based)
+      ↓
+  Multiple Sessions (conversations within that project)
+      ↓
+  Each Session has a directory (working context)
+
+  The Confusion We Need to Fix
+
+  1. We're calling working directories "Workspaces" - but OpenCode doesn't
+  have this concept
+  2. OpenCode Projects are Git worktree-based - not just any directory
+  3. Sessions are conversation contexts - not work areas
+
+  Recommendations
+
+  1. Rename our "Workspaces" to "Directories" or "Work Folders" to avoid
+  confusion
+  2. Keep "OpenCode Projects" as the proper term for Git worktree entities
+  3. Keep "Sessions" for AI conversation contexts
+  4. Make it clear that:
+    - Opening a folder = Setting working directory
+    - OpenCode Project = Git-based project entity
+    - Session = AI chat conversation with history
+
+  This aligns with the OpenCode SDK's actual data model and prevents confusion
+   between our app concepts and OpenCode's concepts.
+
+> is every project a git worktree? I'm wondering if we can just use projects all
+   around instead of workspaces. but I'm not sure. Are they the same thing? Is a
+   project a directory, with extra git worktree stuff? I don't understand how
+  they work. Our current implementation is using "workspaces" but is that just a
+   project without the git worktree?
+
+● Let me research this more deeply to understand how OpenCode Projects
+  actually work and whether they're just directories or specifically Git
+  worktrees.
+
+● Bash(grep -B 5 -A 10 "worktree" src/main/api/opencode-project/manager.ts)
+  ⎿        console.log('=== Project Information ===')
+           console.log(`Current project: ${current?.id || 'None'}`)
+           console.log(`Total projects: ${projects.data.length}`)
+     … +9 lines (ctrl+o to expand)
+
+● Web Search("git worktree explained what is a git worktree vs regular git
+            repository")
+  ⎿  Did 0 searches in 4s
+
+> The real question that we're trying to answer is "Do we need 3 things?"
+  Projects, workspaces (directories) and sessions?
+
+● Great question! Let me analyze whether we actually need all three concepts
+  by examining what each one does in our current implementation.
+
+● Read(src\main\api\toji.ts)
+  ⎿  Read 50 lines (ctrl+o to expand)
+
+● Bash(grep -A 10 "changeWorkspace" src/main/api/toji.ts)
+  ⎿    async changeWorkspace(directory: string): Promise<{
+         isNew: boolean
+         hasGit: boolean
+     … +8 lines (ctrl+o to expand)
+
+● Let me check what happens when we list projects:
+
+● Bash(grep -B 5 -A 15 "list()" src/main/api/opencode-project/manager.ts)
+  ⎿    constructor(private clientManager: ClientManager) {}
+
+       /**
+     … +64 lines (ctrl+o to expand)
+
+● Now let me understand the relationship better by checking how OpenCode
+  actually works:
+
+● Bash(cd C:/Users/donth/toji3 && npx opencode project list 2>&1 | head -20)
+  ⎿  █▀▀█ █▀▀█ █▀▀ █▀▀▄ █▀▀ █▀▀█ █▀▀▄ █▀▀
+     █░░█ █░░█ █▀▀ █░░█ █░░ █░░█ █░░█ █▀▀
+     ▀▀▀▀ █▀▀▀ ▀▀▀ ▀  ▀ ▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀
+     … +19 lines (ctrl+o to expand)
+
+● Let me check what OpenCode considers as projects in our test directory:
+
+● Bash(cd C:/Users/donth/OneDrive/Desktop/tojiTest && dir)
+  ⎿  AGENTS.md  opencode.json  test.md  test.txt
+
+● Bash(cd C:/Users/donth/OneDrive/Desktop/tojiTest && git status 2>&1)
+  ⎿  On branch master
+     Untracked files:
+       (use "git add <file>..." to include in what will be committed)
+     … +4 lines (ctrl+o to expand)
+
+● Now let me check how many directories we have that are git repos vs non-git:
+
+● Bash(cd C:/Users/donth && find . -maxdepth 3 -type d -name ".git" 2>/dev/null |
+      wc -l)
+  ⎿  4
+
+● Let me check what OpenCode actually stores about projects:
+
+● Bash(dir C:\Users\donth\AppData\Roaming\toji3\opencode-data\opencode\state 2>&1)
+  ⎿  Error: dir: cannot access
+     'C:UsersdonthAppDataRoamingtoji3opencode-dataopencodestate': No such file or
+     directory
+
+● Bash(dir "C:\Users\donth\AppData\Roaming\toji3\opencode-data\opencode\state"
+      2>&1)
+  ⎿  Error: dir: cannot access
+     'C:\Users\donth\AppData\Roaming\toji3\opencode-data\opencode\state': No such
+     file or directory
+
+● Bash(ls -la ~/.local/share/opencode/ 2>&1 | head -10)
+  ⎿  total 13
+     drwxr-xr-x 1 donth 197609   0 Sep 18 15:40 .
+     drwxr-xr-x 1 donth 197609   0 Sep 12 20:16 ..
+     … +5 lines (ctrl+o to expand)
+
+● Bash(ls ~/.local/share/opencode/storage/ 2>&1 | head -10)
+  ⎿  message
+     migration
+     part
+     … +3 lines (ctrl+o to expand)
+
+● Bash(ls ~/.local/share/opencode/storage/project/ 2>&1)
+  ⎿  3461b45ac84e135b799920427ad85eebf05784a3.json
+     82b7e9779572746b1d6ef01ca21c13952cf48bb1.json
+     9ab419811e46bbab1a0fd73dfbf6ceec350dcb2a.json
+     … +5 lines (ctrl+o to expand)
+
+● Bash(cat ~/.local/share/opencode/storage/project/global.json 2>&1 | python -m
+      json.tool | head -30)
+  ⎿  {
+         "id": "global",
+         "worktree": "/",
+     … +4 lines (ctrl+o to expand)
+
+● Bash(cat ~/.local/share/opencode/storage/project/9d7637e47e7c637c857b31e058ea969
+      f7fd30122.json 2>&1 | python -m json.tool | head -30)
+  ⎿  {
+         "id": "9d7637e47e7c637c857b31e058ea969f7fd30122",
+         "worktree": "C:/Users/donth/OneDrive/Documents/GitHub/tojiv3",
+     … +5 lines (ctrl+o to expand)
+
+● Now I understand! Let me check one more thing - can we work in a non-git
+  directory:
+
+● Bash(mkdir -p /tmp/test-non-git && cd /tmp/test-non-git && echo "test" >
+      test.txt && ls -la)
+  ⎿  total 3841
+     drwxr-xr-x 1 donth 197609 0 Sep 19 00:29 .
+     drwxr-xr-x 1 donth 197609 0 Sep 19 00:29 ..
+     -rw-r--r-- 1 donth 197609 5 Sep 19 00:29 test.txt
+
+● Based on my research, here's what I've discovered about OpenCode's
+  architecture and whether we need all three concepts:
+
+  The Reality of OpenCode's Architecture
+
+  1. OpenCode Projects ARE Tied to Git
+
+  - Every project (except "global") has a worktree path and vcs: "git" flag
+  - Projects are stored with SHA-1 hashes as IDs (Git commit-like)
+  - The "global" project is a special case with worktree: "/"
+
+  2. OpenCode CAN Work Without Git
+
+  - OpenCode can start in any directory (git or non-git)
+  - When in a non-git directory, it uses the "global" project
+  - Sessions can be created in any directory
+
+  3. The Three Concepts Serve Different Purposes
+
+  - Directory/Workspace: Where you're currently working (any folder)
+  - Project: OpenCode's way of tracking Git repositories it has seen
+  - Session: Conversation history within a context
+
+  Do We Need All Three?
+
+  Short answer: No, we can simplify to just TWO concepts.
+
+  Here's my analysis:
+
+  Current Confusion:
+
+  - We're calling directories "workspaces"
+  - OpenCode calls git repos "projects"
+  - Users just want to open folders and chat
+
+  The Problem:
+
+  - Not every directory is a git repo
+  - OpenCode creates projects only for git repos
+  - But OpenCode works fine in non-git directories (uses global project)
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────────╮
+     │ Simplification Plan: From 3 Concepts to 2                                 │
+     │                                                                           │
+     │ Current State (Confusing)                                                 │
+     │                                                                           │
+     │ 1. Workspaces (Toji concept) = Working directories                        │
+     │ 2. Projects (OpenCode concept) = Git repositories tracked by OpenCode     │
+     │ 3. Sessions (OpenCode concept) = AI conversation contexts                 │
+     │                                                                           │
+     │ Proposed Simplification                                                   │
+     │                                                                           │
+     │ Merge "Workspaces" and "Projects" into a unified concept:                 │
+     │                                                                           │
+     │ 1. Working Directory (Primary Concept)                                    │
+     │                                                                           │
+     │ - What users actually care about - the folder they're working in          │
+     │ - Can be any directory (git or non-git)                                   │
+     │ - This is what we show in the UI                                          │
+     │ - When user "opens" something, they're opening a directory                │
+     │                                                                           │
+     │ 2. Sessions (Keep As-Is)                                                  │
+     │                                                                           │
+     │ - AI conversation history                                                 │
+     │ - Multiple sessions per directory                                         │
+     │ - Users understand this concept clearly                                   │
+     │                                                                           │
+     │ Implementation Changes                                                    │
+     │                                                                           │
+     │ Phase 1: Terminology Update                                               │
+     │                                                                           │
+     │ 1. Rename "Workspaces" view to "Folders" or "Projects"                    │
+     │ 2. Change "Open Workspace" to "Open Folder"                               │
+     │ 3. Update all UI text to use consistent terminology                       │
+     │                                                                           │
+     │ Phase 2: API Simplification                                               │
+     │                                                                           │
+     │ 1. Keep using changeWorkspace() internally but call it "opening a folder" │
+     │ 2. Don't expose OpenCode's project concept to users                       │
+     │ 3. Show folder path as the primary identifier                             │
+     │                                                                           │
+     │ Phase 3: UI Updates                                                       │
+     │                                                                           │
+     │ - Chat header: "Chatting in {folder_name}"                                │
+     │ - Sidebar: "Current Folder: {path}"                                       │
+     │ - Remove distinction between "workspace" and "project" in UI              │
+     │                                                                           │
+     │ Benefits                                                                  │
+     │                                                                           │
+     │ - User Clarity: Users just open folders and chat                          │
+     │ - Reduced Confusion: No more explaining workspace vs project              │
+     │ - Simpler Mental Model: Folder → Sessions                                 │
+     │ - Works Everywhere: Git and non-git directories treated the same          │
+     │                                                                           │
+     │ Technical Notes                                                           │
+     │                                                                           │
+     │ - Keep OpenCode project management in the backend                         │
+     │ - Use directory path as primary identifier in UI                          │
+     │ - Sessions remain unchanged (already work well)                           │
+     │ - Auto-detect git repos for enhanced features but don't require them      │
+     │                                                                           │
+     │ This simplification aligns with how users actually think about their work │
+     │ while maintaining OpenCode's functionality behind the scenes.             │
+     ╰───────────────────────────────────────────────────────────────────────────╯
+

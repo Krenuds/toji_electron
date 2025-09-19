@@ -1,5 +1,5 @@
 // ============================================
-// Server Manager - OpenCode Server Lifecycle
+// Server Manager - Toji Agent Lifecycle
 // ============================================
 
 import { createOpencodeServer } from '@opencode-ai/sdk'

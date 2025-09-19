@@ -4,13 +4,9 @@
 
 import { promises as fs } from 'fs'
 import { join, basename, sep } from 'path'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import type { DiscoveredProject, WorkspaceCollection, EnrichedProject } from '../types'
 import type { Project, Session } from '@opencode-ai/sdk'
 import type { ClientManager } from '../client'
-
-const execAsync = promisify(exec)
 
 /**
  * Manages workspace operations including directory preparation,
@@ -31,13 +27,13 @@ export class WorkspaceManager {
       // Create directory if it doesn't exist
       await fs.mkdir(directory, { recursive: true })
 
-      // Check if git repository exists
-      const gitDir = join(directory, '.git')
+      // Check if .toji.workspace token exists
+      const tokenPath = join(directory, '.toji.workspace')
       try {
-        await fs.access(gitDir)
+        await fs.access(tokenPath)
       } catch {
-        // Initialize git repository if it doesn't exist
-        await this.initGit(directory)
+        // Create .toji.workspace token if it doesn't exist
+        await this.initTojiWorkspace(directory)
       }
 
       // Set current directory
@@ -83,27 +79,40 @@ export class WorkspaceManager {
   }
 
   /**
-   * Initialize git repository in current workspace
+   * Initialize Toji workspace with token file
    */
-  async initGit(directory: string): Promise<void> {
+  async initTojiWorkspace(directory: string): Promise<void> {
     try {
-      const originalCwd = process.cwd()
-      process.chdir(directory)
-
-      await execAsync('git init')
-
-      // Create initial .gitignore if it doesn't exist
-      const gitignorePath = join(directory, '.gitignore')
-      try {
-        await fs.access(gitignorePath)
-      } catch {
-        await fs.writeFile(gitignorePath, 'node_modules/\n.env\n*.log\n')
+      // Create .toji.workspace token file
+      const tokenPath = join(directory, '.toji.workspace')
+      const tokenData = {
+        version: '1.0.0',
+        createdAt: new Date().toISOString(),
+        workspace: {
+          path: directory,
+          name: basename(directory)
+        }
       }
 
-      process.chdir(originalCwd)
+      await fs.writeFile(tokenPath, JSON.stringify(tokenData, null, 2))
+
+      // Create initial .gitignore if it doesn't exist and directory has git
+      const gitDir = join(directory, '.git')
+      const gitignorePath = join(directory, '.gitignore')
+      try {
+        await fs.access(gitDir)
+        // Git exists, ensure gitignore exists
+        try {
+          await fs.access(gitignorePath)
+        } catch {
+          await fs.writeFile(gitignorePath, 'node_modules/\n.env\n*.log\n')
+        }
+      } catch {
+        // No git, that's fine
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`Failed to initialize git repository: ${message}`)
+      throw new Error(`Failed to initialize Toji workspace: ${message}`)
     }
   }
 
@@ -116,6 +125,7 @@ export class WorkspaceManager {
     hasGit: boolean
     hasOpenCodeConfig: boolean
     hasGitignore: boolean
+    hasTojiToken: boolean
   }> {
     try {
       // Check if directory exists
@@ -132,8 +142,18 @@ export class WorkspaceManager {
           exists: false,
           hasGit: false,
           hasOpenCodeConfig: false,
-          hasGitignore: false
+          hasGitignore: false,
+          hasTojiToken: false
         }
+      }
+
+      // Check for .toji.workspace token
+      let hasTojiToken = false
+      try {
+        await fs.access(join(directory, '.toji.workspace'))
+        hasTojiToken = true
+      } catch {
+        hasTojiToken = false
       }
 
       // Check for .git directory
@@ -167,7 +187,8 @@ export class WorkspaceManager {
         exists,
         hasGit,
         hasOpenCodeConfig,
-        hasGitignore
+        hasGitignore,
+        hasTojiToken
       }
     } catch (error) {
       console.error('Error inspecting workspace:', error)
@@ -175,7 +196,8 @@ export class WorkspaceManager {
         exists: false,
         hasGit: false,
         hasOpenCodeConfig: false,
-        hasGitignore: false
+        hasGitignore: false,
+        hasTojiToken: false
       }
     }
   }

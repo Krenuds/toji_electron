@@ -423,14 +423,14 @@ export class Toji {
   }
 
   /**
-   * Get enriched version of OpenCode projects
+   * Get enriched version of Workspaces
    * Combines OpenCode data with our metadata
    */
   async getEnrichedProjects(): Promise<EnrichedProject[]> {
     console.log('Toji: Getting enriched projects')
 
     try {
-      // Get OpenCode projects
+      // Get Workspaces
       const projectsResponse = await this.project.list()
       const projects = projectsResponse.data || []
 
@@ -467,6 +467,34 @@ export class Toji {
     } catch (error) {
       console.error('Toji: Error getting enriched projects:', error)
       return []
+    }
+  }
+
+  /**
+   * Get recent workspaces from config
+   */
+  getRecentWorkspaces(): string[] {
+    if (!this.config) {
+      return []
+    }
+    return this.config.getRecentWorkspaces()
+  }
+
+  /**
+   * Remove a workspace from recent list
+   */
+  removeRecentWorkspace(path: string): void {
+    if (this.config) {
+      this.config.removeRecentWorkspace(path)
+    }
+  }
+
+  /**
+   * Clear all recent workspaces
+   */
+  clearRecentWorkspaces(): void {
+    if (this.config) {
+      this.config.clearRecentWorkspaces()
     }
   }
 

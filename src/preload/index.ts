@@ -36,6 +36,7 @@ const api = {
       isNew: boolean
       hasGit: boolean
       hasOpenCodeConfig: boolean
+      hasTojiToken: boolean
       sessionId: string
       workspacePath: string
     }> => ipcRenderer.invoke('core:change-workspace', directory),
@@ -54,7 +55,15 @@ const api = {
       hasGit: boolean
       hasOpenCodeConfig: boolean
       hasGitignore: boolean
+      hasTojiToken: boolean
     }> => ipcRenderer.invoke('core:inspect-workspace', directory),
+
+    // Recent Workspaces Management
+    getRecentWorkspaces: (): Promise<string[]> => ipcRenderer.invoke('core:get-recent-workspaces'),
+    removeRecentWorkspace: (path: string): Promise<string[]> =>
+      ipcRenderer.invoke('core:remove-recent-workspace', path),
+    clearRecentWorkspaces: (): Promise<string[]> =>
+      ipcRenderer.invoke('core:clear-recent-workspaces'),
 
     // Auto-start settings
     getAutoStart: (): Promise<boolean> => ipcRenderer.invoke('core:get-auto-start'),

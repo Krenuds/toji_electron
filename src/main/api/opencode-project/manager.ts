@@ -6,7 +6,7 @@ import type { Project } from '@opencode-ai/sdk'
 import type { ClientManager } from '../client'
 
 /**
- * Manages OpenCode projects, providing enhanced project operations
+ * Manages Workspaces, providing enhanced project operations
  * on top of the raw SDK client. This includes project discovery,
  * project templates, and project metadata management.
  */

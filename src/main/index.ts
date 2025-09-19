@@ -241,6 +241,32 @@ function setupCoreHandlers(): void {
     return await toji.workspace.inspect(directory)
   })
 
+  // Get recent workspaces
+  ipcMain.handle('core:get-recent-workspaces', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return toji.getRecentWorkspaces()
+  })
+
+  // Remove workspace from recent list
+  ipcMain.handle('core:remove-recent-workspace', async (_, path: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    toji.removeRecentWorkspace(path)
+    return toji.getRecentWorkspaces()
+  })
+
+  // Clear all recent workspaces
+  ipcMain.handle('core:clear-recent-workspaces', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    toji.clearRecentWorkspaces()
+    return []
+  })
+
   // Get auto-start setting
   ipcMain.handle('core:get-auto-start', () => {
     if (!config) {

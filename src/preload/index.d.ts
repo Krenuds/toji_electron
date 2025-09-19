@@ -56,6 +56,7 @@ export interface CoreAPI {
     isNew: boolean
     hasGit: boolean
     hasOpenCodeConfig: boolean
+    hasTojiToken: boolean
     sessionId: string
     workspacePath: string
   }>
@@ -70,7 +71,13 @@ export interface CoreAPI {
     hasGit: boolean
     hasOpenCodeConfig: boolean
     hasGitignore: boolean
+    hasTojiToken: boolean
   }>
+
+  // Recent Workspaces Management
+  getRecentWorkspaces: () => Promise<string[]>
+  removeRecentWorkspace: (path: string) => Promise<string[]>
+  clearRecentWorkspaces: () => Promise<string[]>
 
   // Auto-start settings
   getAutoStart: () => Promise<boolean>
