@@ -123,7 +123,7 @@ export function ChatViewMain(): React.JSX.Element {
   }
 
   // Get workspace name for display
-  const workspaceName = workspaceInfo?.workspacePath.split(/[\\\/]/).pop() || 'No Workspace'
+  const workspaceName = workspaceInfo?.workspacePath.split(/[\\/]/).pop() || 'No Workspace'
 
   return (
     <VStack align="stretch" gap={6} h="100%">

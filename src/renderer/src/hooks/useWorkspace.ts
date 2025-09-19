@@ -72,7 +72,7 @@ export function useWorkspace(): UseWorkspaceResult {
 
   // Fetch current workspace directory on mount
   useEffect(() => {
-    const fetchCurrentWorkspace = async () => {
+    const fetchCurrentWorkspace = async (): Promise<void> => {
       try {
         // Check if OpenCode is running and get current directory
         const isRunning = await window.api.core.isRunning()
