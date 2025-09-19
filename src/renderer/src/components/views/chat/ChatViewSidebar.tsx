@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Badge } from '@chakra-ui/react'
-import { LuMessageCircle, LuActivity, LuFolder, LuTrash2, LuRefreshCw } from 'react-icons/lu'
+import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { StatusBadge } from '../../StatusBadge'
+import { SessionsModal } from '../../shared'
 import { useServerStatus } from '../../../hooks/useServerStatus'
-import { useWorkspace } from '../../../hooks/useWorkspace'
 import { useCoreStatus } from '../../../hooks/useCoreStatus'
 import { useSession } from '../../../hooks/useSession'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const serverStatus = useServerStatus()
-  const { isChangingWorkspace, currentWorkspace, selectAndChangeWorkspace, workspaceInfo } =
-    useWorkspace()
   const { isRunning, getCurrentDirectory } = useCoreStatus()
   const {
     sessions,
@@ -22,37 +20,31 @@ export function ChatViewSidebar(): React.JSX.Element {
   } = useSession()
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
+  const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
 
   useEffect(() => {
-    // Update working directory from workspace info
-    if (workspaceInfo?.workspacePath) {
-      setWorkingDirectory(workspaceInfo.workspacePath)
-    } else if (currentWorkspace) {
-      setWorkingDirectory(currentWorkspace)
-    } else {
-      // Check working directory when server is running
-      const checkWorkingDirectory = async (): Promise<void> => {
-        try {
-          const running = await isRunning()
-          if (running) {
-            const dir = await getCurrentDirectory()
-            if (dir) {
-              setWorkingDirectory(dir)
-            } else {
-              setWorkingDirectory(undefined)
-            }
+    // Check working directory when server is running
+    const checkWorkingDirectory = async (): Promise<void> => {
+      try {
+        const running = await isRunning()
+        if (running) {
+          const dir = await getCurrentDirectory()
+          if (dir) {
+            setWorkingDirectory(dir)
           } else {
             setWorkingDirectory(undefined)
           }
-        } catch (error) {
-          console.error('Failed to get working directory:', error)
+        } else {
           setWorkingDirectory(undefined)
         }
+      } catch (error) {
+        console.error('Failed to get working directory:', error)
+        setWorkingDirectory(undefined)
       }
-
-      checkWorkingDirectory()
     }
-  }, [workspaceInfo, currentWorkspace, isRunning, getCurrentDirectory])
+
+    checkWorkingDirectory()
+  }, [isRunning, getCurrentDirectory])
 
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     setDeletingSessionId(sessionId)
@@ -79,33 +71,6 @@ export function ChatViewSidebar(): React.JSX.Element {
 
         <Separator borderColor="app.border" />
 
-        {/* Quick Actions */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Quick Actions
-          </Text>
-          <VStack gap={2} align="stretch">
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-              onClick={selectAndChangeWorkspace}
-              disabled={isChangingWorkspace}
-            >
-              <HStack gap={1}>
-                <LuFolder size={14} />
-                <Text>
-                  {isChangingWorkspace ? 'Changing Workspace...' : 'New Chat (Select Folder)'}
-                </Text>
-              </HStack>
-            </Button>
-          </VStack>
-        </Box>
-
-        <Separator borderColor="app.border" />
-
         {/* Server Status */}
         <Box>
           <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
@@ -122,34 +87,13 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Text color="app.light" fontSize="xs" fontWeight="medium">
                 Toji Agent
               </Text>
-              <StatusBadge status={isChangingWorkspace ? 'starting' : serverStatus} />
+              <StatusBadge status={serverStatus} />
             </HStack>
             <Text color="app.text" fontSize="2xs" lineClamp={1}>
-              {isChangingWorkspace
-                ? 'Switching workspace...'
-                : workingDirectory
-                  ? `Directory: ${workingDirectory.split(/[\\/]/).pop() || workingDirectory}`
-                  : 'No directory selected'}
+              {workingDirectory
+                ? `Directory: ${workingDirectory.split(/[\\/]/).pop() || workingDirectory}`
+                : 'No directory selected'}
             </Text>
-            {workspaceInfo && (
-              <HStack mt={1} gap={1}>
-                {workspaceInfo.hasGit && (
-                  <Badge size="xs" colorPalette="green" variant="subtle">
-                    Git
-                  </Badge>
-                )}
-                {workspaceInfo.hasOpenCodeConfig && (
-                  <Badge size="xs" colorPalette="blue" variant="subtle">
-                    Config
-                  </Badge>
-                )}
-                {workspaceInfo.isNew && (
-                  <Badge size="xs" colorPalette="yellow" variant="subtle">
-                    New
-                  </Badge>
-                )}
-              </HStack>
-            )}
           </Box>
         </Box>
 
@@ -161,16 +105,29 @@ export function ChatViewSidebar(): React.JSX.Element {
             <Text color="app.light" fontSize="xs" fontWeight="semibold">
               Sessions
             </Text>
-            <Button
-              size="xs"
-              variant="ghost"
-              color="app.text"
-              _hover={{ color: 'app.light' }}
-              onClick={fetchSessions}
-              disabled={isLoadingSessions}
-            >
-              <LuRefreshCw size={12} />
-            </Button>
+            <HStack gap={1}>
+              <Button
+                size="xs"
+                variant="ghost"
+                color="app.text"
+                _hover={{ color: 'app.light' }}
+                onClick={() => setIsSessionsModalOpen(true)}
+                title="View all sessions"
+              >
+                <LuList size={12} />
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
+                color="app.text"
+                _hover={{ color: 'app.light' }}
+                onClick={fetchSessions}
+                disabled={isLoadingSessions}
+                title="Refresh sessions"
+              >
+                <LuRefreshCw size={12} />
+              </Button>
+            </HStack>
           </HStack>
           <VStack gap={2} align="stretch">
             {isLoadingSessions ? (
@@ -258,6 +215,18 @@ export function ChatViewSidebar(): React.JSX.Element {
           </VStack>
         </Box>
       </VStack>
+
+      {/* Sessions Modal */}
+      <SessionsModal
+        isOpen={isSessionsModalOpen}
+        onClose={() => setIsSessionsModalOpen(false)}
+        sessions={sessions}
+        isLoading={isLoadingSessions}
+        currentSessionId={currentSessionId}
+        onDeleteSession={handleDeleteSession}
+        onRefresh={fetchSessions}
+        deletingSessionId={deletingSessionId}
+      />
     </SidebarContainer>
   )
 }

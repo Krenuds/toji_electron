@@ -21,8 +21,8 @@ import {
   LuChevronRight,
   LuActivity
 } from 'react-icons/lu'
-import { useWorkspaceTracker } from '../hooks/useWorkspaceTracker'
-import { useSession } from '../hooks/useSession'
+import { useWorkspaceTracker } from '../../hooks/useWorkspaceTracker'
+import { useSession } from '../../hooks/useSession'
 
 export function WorkspaceTracker(): React.JSX.Element {
   const {

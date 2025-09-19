@@ -2,3 +2,5 @@
 export { MetricCard } from './MetricCard'
 export { LabelRow } from './LabelRow'
 export { SecureInput } from './SecureInput'
+export { SessionsModal } from './SessionsModal'
+export { WorkspaceTracker } from './WorkspaceTracker'
