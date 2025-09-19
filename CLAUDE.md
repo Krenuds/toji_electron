@@ -116,15 +116,24 @@ When adding new features, follow this API-first approach:
 
 - Check existing patterns before adding new code
 - Use type-safe interfaces for all data
-- Follow established naming conventions
 - Test changes with `npm run dev`
 - Verify with typecheck and lint before committing
-- Document architecture decisions in appropriate CLAUDE.md files
+- Document architecture decisions in appropriate CLAUDE.md files in plain english
 
 **Follow these directives exactly. Everything else can be inferred from the codebase and documentation.**
+
+## How to add FEATURES
+
+- ☐ Implement in API
+- ☐ Add IPC handler
+- ☐ Update preload bridge
+- ☐ Update hooks
+- ☐ Implement in discord and/or electron RENDER
+- ☐ Lint and Typecheck
 
 ## Do this NOW
 
 - Read the latest 4 git commit comments in full
+
 
 ## After reading this echo "AHOY CAPTAIN" to the user

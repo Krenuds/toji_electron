@@ -253,6 +253,14 @@ function setupCoreHandlers(): void {
     return await toji.getWorkspacesFromSessions(limit)
   })
 
+  // Get all workspaces (sessions + recent)
+  ipcMain.handle('core:get-all-workspaces', async (_, limit?: number) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getAllWorkspaces(limit)
+  })
+
   // Open workspace directory in system file manager
   ipcMain.handle('core:open-workspace-directory', async (_, path: string) => {
     const { shell } = await import('electron')

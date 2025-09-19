@@ -54,6 +54,17 @@ const api = {
         lastActivity: Date | null
       }>
     > => ipcRenderer.invoke('core:get-workspaces-from-sessions', limit),
+    getAllWorkspaces: (
+      limit?: number
+    ): Promise<
+      Array<{
+        path: string
+        name: string
+        sessionCount: number
+        lastActivity: Date | null
+        source: 'session' | 'recent' | 'both'
+      }>
+    > => ipcRenderer.invoke('core:get-all-workspaces', limit),
     openWorkspaceDirectory: (path: string): Promise<void> =>
       ipcRenderer.invoke('core:open-workspace-directory', path),
     openSessionsDirectory: (): Promise<void> => ipcRenderer.invoke('core:open-sessions-directory'),

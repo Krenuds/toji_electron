@@ -5,6 +5,7 @@ interface SimpleWorkspace {
   name: string
   sessionCount: number
   lastActivity: Date | null
+  source?: 'session' | 'recent' | 'both'
 }
 
 interface UseWorkspacesReturn {
@@ -24,7 +25,7 @@ export function useWorkspaces(limit = 50): UseWorkspacesReturn {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await window.api.core.getWorkspacesFromSessions(limit)
+      const data = await window.api.core.getAllWorkspaces(limit)
       // Convert date strings back to Date objects
       const workspacesWithDates = data.map((ws) => ({
         ...ws,

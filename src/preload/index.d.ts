@@ -71,6 +71,15 @@ export interface CoreAPI {
       lastActivity: Date | null
     }>
   >
+  getAllWorkspaces: (limit?: number) => Promise<
+    Array<{
+      path: string
+      name: string
+      sessionCount: number
+      lastActivity: Date | null
+      source: 'session' | 'recent' | 'both'
+    }>
+  >
   openWorkspaceDirectory: (path: string) => Promise<void>
   openSessionsDirectory: () => Promise<void>
   getAllProjects: () => Promise<unknown[]>

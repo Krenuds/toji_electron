@@ -572,6 +572,99 @@ export class Toji {
   }
 
   /**
+   * Get all workspaces combining sessions and recent history
+   * Merges session-derived workspaces with recent workspaces from config
+   * Returns unified list with consistent structure for UI consumption
+   */
+  async getAllWorkspaces(limit = 100): Promise<
+    Array<{
+      path: string
+      name: string
+      sessionCount: number
+      lastActivity: Date | null
+      source: 'session' | 'recent' | 'both'
+    }>
+  > {
+    console.log('Toji: Getting all workspaces (sessions + recent)')
+
+    try {
+      // 1. Get session-derived workspaces
+      const sessionWorkspaces = await this.getWorkspacesFromSessions(limit)
+
+      // 2. Get recent workspace paths from config
+      const recentPaths = this.getRecentWorkspaces()
+
+      // 3. Create a Map for deduplication and merging
+      const workspaceMap = new Map<
+        string,
+        {
+          path: string
+          name: string
+          sessionCount: number
+          lastActivity: Date | null
+          source: 'session' | 'recent' | 'both'
+        }
+      >()
+
+      // 4. Add session workspaces first
+      sessionWorkspaces.forEach((ws) => {
+        const isRecent = recentPaths.includes(ws.path)
+        workspaceMap.set(ws.path, {
+          ...ws,
+          source: isRecent ? 'both' : 'session'
+        })
+      })
+
+      // 5. Add recent workspaces not in sessions
+      recentPaths.forEach((path) => {
+        if (!workspaceMap.has(path)) {
+          // Extract folder name from path (cross-platform)
+          const name = path.split(/[\\/]/).pop() || path
+
+          workspaceMap.set(path, {
+            path,
+            name,
+            sessionCount: 0,
+            lastActivity: null,
+            source: 'recent'
+          })
+        }
+      })
+
+      // 6. Convert to array and sort
+      const allWorkspaces = Array.from(workspaceMap.values())
+
+      // Sort with priority:
+      // 1. Recent/active workspaces (source='both' or 'recent') come first
+      // 2. Within each category, sort by last activity
+      allWorkspaces.sort((a, b) => {
+        // Prioritize recent/active workspaces
+        const aIsRecent = a.source === 'both' || a.source === 'recent'
+        const bIsRecent = b.source === 'both' || b.source === 'recent'
+
+        if (aIsRecent && !bIsRecent) return -1
+        if (!aIsRecent && bIsRecent) return 1
+
+        // Within same category, sort by last activity
+        if (!a.lastActivity && !b.lastActivity) return 0
+        if (!a.lastActivity) return 1
+        if (!b.lastActivity) return -1
+        return b.lastActivity.getTime() - a.lastActivity.getTime()
+      })
+
+      console.log(
+        `Toji: Found ${allWorkspaces.length} total workspaces ` +
+          `(${sessionWorkspaces.length} from sessions, ${recentPaths.length} recent)`
+      )
+
+      return allWorkspaces
+    } catch (error) {
+      console.error('Toji: Error getting all workspaces:', error)
+      return []
+    }
+  }
+
+  /**
    * Get recent workspaces from config
    */
   getRecentWorkspaces(): string[] {
