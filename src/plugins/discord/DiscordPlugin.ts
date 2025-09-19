@@ -26,7 +26,6 @@ export class DiscordPlugin extends EventEmitter {
   private chatModule?: DiscordChatModule
   private slashCommandModule?: SlashCommandModule
   private initialized = false
-  // private client?: Client // Will be used for future features
 
   constructor(
     private toji: Toji,
@@ -98,12 +97,6 @@ export class DiscordPlugin extends EventEmitter {
    */
   async onReady(client: Client): Promise<void> {
     console.log(`DiscordPlugin: Bot ready as ${client.user?.tag}`)
-    // this.client = client // Store for future use
-
-    // Setup slash command interaction handler
-    if (this.slashCommandModule) {
-      this.slashCommandModule.setupInteractionHandler(client)
-    }
 
     // Deploy slash commands if we have config
     if (this.config?.token && this.config?.clientId && client.user) {

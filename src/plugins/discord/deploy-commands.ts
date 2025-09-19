@@ -60,25 +60,3 @@ export async function deployCommands(
     throw error
   }
 }
-
-// Standalone deployment script
-if (process.argv[1] === __filename) {
-  const token = process.env.DISCORD_TOKEN
-  const clientId = process.env.DISCORD_CLIENT_ID || '1399539733880897537'
-  const guildId = process.env.DISCORD_GUILD_ID // Optional, for guild-specific deployment
-
-  if (!token) {
-    console.error('DISCORD_TOKEN environment variable is required')
-    process.exit(1)
-  }
-
-  deployCommands(token, clientId, guildId)
-    .then(() => {
-      console.log('Command deployment complete!')
-      process.exit(0)
-    })
-    .catch((error) => {
-      console.error('Deployment failed:', error)
-      process.exit(1)
-    })
-}

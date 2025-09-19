@@ -1,5 +1,4 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
-import type { Client } from 'discord.js'
 import type { Toji } from '../../../main/api/toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 import type { DiscordChatModule } from './ChatModule'
@@ -74,18 +73,6 @@ export class SlashCommandModule implements DiscordModule {
   }
 
   /**
-   * Setup interaction listener on Discord client
-   * Note: This is called but we don't register another handler since
-   * DiscordService already routes interactions through DiscordPlugin
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setupInteractionHandler(_client: Client): void {
-    // Handler registration removed - interactions are routed through
-    // DiscordService -> DiscordPlugin.handleInteraction -> this.handleCommand
-    console.log('SlashCommandModule: Ready to handle commands')
-  }
-
-  /**
    * Handle slash command interactions
    */
   async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -157,13 +144,6 @@ export class SlashCommandModule implements DiscordModule {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const modules = (this.plugin as any)?.modules as Map<string, DiscordModule>
     return modules?.get('chat') as DiscordChatModule | undefined
-  }
-
-  /**
-   * Get loaded commands for deployment
-   */
-  getCommands(): Collection<string, SlashCommand> {
-    return this.commands
   }
 
   /**

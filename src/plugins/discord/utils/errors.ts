@@ -1,20 +1,13 @@
 /**
  * Error handling utilities for Discord commands
- * Provides consistent error formatting and type guards
+ * Provides consistent error formatting
  */
-
-/**
- * Type guard to check if value is an Error
- */
-export function isError(value: unknown): value is Error {
-  return value instanceof Error
-}
 
 /**
  * Get a safe error message from an unknown error value
  */
-export function getErrorMessage(error: unknown): string {
-  if (isError(error)) {
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
     return error.message
   }
   if (typeof error === 'string') {
@@ -24,22 +17,6 @@ export function getErrorMessage(error: unknown): string {
     return String(error.message)
   }
   return 'An unknown error occurred'
-}
-
-/**
- * Format error for Discord reply
- * Truncates to Discord's message limit if needed
- */
-export function formatErrorForDiscord(error: unknown, prefix = 'Error'): string {
-  const message = getErrorMessage(error)
-  const formatted = `❌ ${prefix}: ${message}`
-
-  // Discord has a 2000 character limit for messages
-  if (formatted.length > 1900) {
-    return formatted.slice(0, 1897) + '...'
-  }
-
-  return formatted
 }
 
 /**
@@ -54,22 +31,4 @@ export function formatErrorAsCodeBlock(error: unknown, maxLength = 1900): string
   }
 
   return codeBlock
-}
-
-/**
- * Check if error contains warning indicators
- */
-export function isWarning(error: unknown): boolean {
-  const message = getErrorMessage(error).toLowerCase()
-  return message.includes('warning') && !message.includes('error')
-}
-
-/**
- * Check if error is a known non-critical error
- */
-export function isNonCritical(error: unknown): boolean {
-  const message = getErrorMessage(error).toLowerCase()
-  const nonCriticalPatterns = ['warning', 'deprecated', 'info', 'notice']
-
-  return nonCriticalPatterns.some((pattern) => message.includes(pattern))
 }
