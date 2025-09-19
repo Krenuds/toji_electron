@@ -83,6 +83,9 @@ app.whenReady().then(async () => {
 
       // Start OpenCode server
       await toji.quickStart(workingDirectory)
+
+      // Track this workspace in recent list
+      config.addRecentWorkspace(workingDirectory)
       console.log('OpenCode auto-started successfully')
     } catch (error) {
       console.error('Failed to auto-start OpenCode:', error)

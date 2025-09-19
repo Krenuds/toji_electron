@@ -174,6 +174,10 @@ export class Toji {
       if (!this.isReady()) {
         console.log('Toji: Not ready, initializing...')
         await this.quickStart(targetDir)
+        // Track this workspace when we start in a new one
+        if (this.config) {
+          this.config.addRecentWorkspace(targetDir)
+        }
       }
 
       // Get or create a session
@@ -245,6 +249,9 @@ export class Toji {
       if (this.config) {
         console.log('Toji: Updating config with new directory')
         this.config.setOpencodeWorkingDirectory(directory)
+        // Track this workspace in recent workspaces
+        console.log('Toji: Adding workspace to recent list')
+        this.config.addRecentWorkspace(directory)
       }
 
       // Create a fresh session for the new workspace
