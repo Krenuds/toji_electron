@@ -4,6 +4,7 @@ import { LuGitBranch, LuClock, LuCode, LuZap, LuRefreshCw, LuFolder } from 'reac
 import { useProjects } from '../../../hooks/useProjects'
 import { useSession } from '../../../hooks/useSession'
 import { WorkspaceTracker } from '../../WorkspaceTracker'
+import { MetricCard } from '../../shared'
 
 export function WorkspacesViewMain(): React.JSX.Element {
   const { projects, isLoading: isLoadingProjects, fetchProjects } = useProjects()
@@ -27,79 +28,44 @@ export function WorkspacesViewMain(): React.JSX.Element {
 
       {/* Stats Cards */}
       <Grid templateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap={4}>
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                OpenCode Projects
-              </Text>
-              <LuCode size={16} color="#808080" />
-            </HStack>
-            <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              {activeProjects}
-            </Text>
-            <Text color="app.text" fontSize="xs" mt={1}>
-              Total in workspace
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="OpenCode Projects"
+          value={activeProjects}
+          description="Total in workspace"
+          icon={<LuCode size={16} color="#808080" />}
+          valueSize="xl"
+        />
 
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Active Sessions
-              </Text>
-              <LuZap size={16} color="#808080" />
-            </HStack>
-            <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              {activeSessions}
-            </Text>
-            <Text color="app.text" fontSize="xs" mt={1}>
-              OpenCode sessions
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Active Sessions"
+          value={activeSessions}
+          description="OpenCode sessions"
+          icon={<LuZap size={16} color="#808080" />}
+          valueSize="xl"
+          variant={activeSessions > 0 ? 'accent' : 'default'}
+        />
 
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Recent Sessions
-              </Text>
-              <LuGitBranch size={16} color="#808080" />
-            </HStack>
-            <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              {
-                sessions.filter((s) => {
-                  const lastUpdated = s.time?.updated || s.time?.created || 0
-                  const dayAgo = Date.now() - 24 * 60 * 60 * 1000
-                  return lastUpdated > dayAgo
-                }).length
-              }
-            </Text>
-            <Text color="app.text" fontSize="xs" mt={1}>
-              Last 24 hours
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Recent Sessions"
+          value={
+            sessions.filter((s) => {
+              const lastUpdated = s.time?.updated || s.time?.created || 0
+              const dayAgo = Date.now() - 24 * 60 * 60 * 1000
+              return lastUpdated > dayAgo
+            }).length
+          }
+          description="Last 24 hours"
+          icon={<LuGitBranch size={16} color="#808080" />}
+          valueSize="xl"
+        />
 
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Total Sessions
-              </Text>
-              <LuClock size={16} color="#808080" />
-            </HStack>
-            <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              {sessions.length}
-            </Text>
-            <Text color="app.text" fontSize="xs" mt={1}>
-              All time
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Total Sessions"
+          value={sessions.length}
+          description="All time"
+          icon={<LuClock size={16} color="#808080" />}
+          valueSize="xl"
+        />
       </Grid>
 
       {/* Workspace Content */}

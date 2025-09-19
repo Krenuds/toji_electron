@@ -14,6 +14,7 @@ import {
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useDiscord } from '../../../hooks/useDiscord'
+import { MetricCard, LabelRow } from '../../shared'
 
 export function DashboardViewMain(): React.JSX.Element {
   const serverStatus = useServerStatus()
@@ -33,42 +34,35 @@ export function DashboardViewMain(): React.JSX.Element {
 
       {/* Service Status Cards */}
       <Grid templateColumns="repeat(auto-fit, minmax(220px, 1fr))" gap={4}>
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Toji Core Service
-              </Text>
-              <Box color={serverStatus === 'running' ? 'app.accent' : 'app.text'}>
-                <LuServer size={16} />
-              </Box>
-            </HStack>
-            <HStack justify="space-between" mb={1}>
-              <Text color="app.light" fontSize="lg" fontWeight="bold">
-                {serverStatus === 'running'
-                  ? 'Running'
-                  : serverStatus === 'checking'
-                    ? 'Checking...'
-                    : 'Stopped'}
-              </Text>
-              <StatusBadge status={serverStatus} />
-            </HStack>
-            <Text color="app.text" fontSize="xs">
-              Uptime: 2h 34m
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Toji Core Service"
+          value={
+            serverStatus === 'running'
+              ? 'Running'
+              : serverStatus === 'checking'
+                ? 'Checking...'
+                : 'Stopped'
+          }
+          description="Uptime: 2h 34m"
+          icon={
+            <Box color={serverStatus === 'running' ? 'app.accent' : 'app.text'}>
+              <LuServer size={16} />
+            </Box>
+          }
+          badge={<StatusBadge status={serverStatus} />}
+          variant={serverStatus === 'running' ? 'accent' : 'default'}
+        />
 
         <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
           <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Discord Bot
-              </Text>
-              <Box color={discord.status.connected ? 'app.accent' : 'app.text'}>
-                <LuMessageSquare size={16} />
-              </Box>
-            </HStack>
+            <LabelRow
+              label="Discord Bot"
+              icon={
+                <Box color={discord.status.connected ? 'app.accent' : 'app.text'}>
+                  <LuMessageSquare size={16} />
+                </Box>
+              }
+            />
             <HStack justify="space-between" mb={1}>
               <Text color="app.light" fontSize="lg" fontWeight="bold">
                 {discord.isConnecting
@@ -106,49 +100,29 @@ export function DashboardViewMain(): React.JSX.Element {
           </Card.Body>
         </Card.Root>
 
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Whisper STT
-              </Text>
-              <Box color="app.text">
-                <LuMic size={16} />
-              </Box>
-            </HStack>
-            <HStack justify="space-between" mb={1}>
-              <Text color="app.text" fontSize="lg" fontWeight="bold">
-                Not Available
-              </Text>
-              <StatusBadge status="stub" />
-            </HStack>
-            <Text color="app.text" fontSize="xs">
-              Voice services not implemented
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Whisper STT"
+          value="Not Available"
+          description="Voice services not implemented"
+          icon={
+            <Box color="app.text">
+              <LuMic size={16} />
+            </Box>
+          }
+          badge={<StatusBadge status="stub" />}
+        />
 
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Body p={4}>
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.text" fontSize="sm">
-                Piper TTS
-              </Text>
-              <Box color="app.error">
-                <LuVolumeX size={16} />
-              </Box>
-            </HStack>
-            <HStack justify="space-between" mb={1}>
-              <Text color="app.text" fontSize="lg" fontWeight="bold">
-                Not Available
-              </Text>
-              <StatusBadge status="stub" />
-            </HStack>
-            <Text color="app.text" fontSize="xs">
-              TTS not implemented
-            </Text>
-          </Card.Body>
-        </Card.Root>
+        <MetricCard
+          title="Piper TTS"
+          value="Not Available"
+          description="TTS not implemented"
+          icon={
+            <Box color="app.error">
+              <LuVolumeX size={16} />
+            </Box>
+          }
+          badge={<StatusBadge status="stub" />}
+        />
       </Grid>
 
       {/* System Resources & Interface Status */}
@@ -167,19 +141,18 @@ export function DashboardViewMain(): React.JSX.Element {
             <VStack gap={4} align="stretch">
               {/* CPU Usage */}
               <Box>
-                <HStack justify="space-between" mb={2}>
-                  <HStack>
+                <LabelRow
+                  label="CPU Usage"
+                  value="--%"
+                  icon={
                     <Box color="app.text">
                       <LuCpu size={14} />
                     </Box>
-                    <Text color="app.light" fontSize="sm" fontWeight="medium">
-                      CPU Usage
-                    </Text>
-                  </HStack>
-                  <Text color="app.text" fontSize="sm">
-                    --%
-                  </Text>
-                </HStack>
+                  }
+                  labelColor="app.light"
+                  labelWeight="medium"
+                  valueColor="app.text"
+                />
                 <Progress.Root value={0} size="sm">
                   <Progress.Track bg="app.border">
                     <Progress.Range bg="app.border" />
@@ -189,19 +162,18 @@ export function DashboardViewMain(): React.JSX.Element {
 
               {/* Memory Usage */}
               <Box>
-                <HStack justify="space-between" mb={2}>
-                  <HStack>
+                <LabelRow
+                  label="Memory Usage"
+                  value="-- / --"
+                  icon={
                     <Box color="app.text">
                       <LuMemoryStick size={14} />
                     </Box>
-                    <Text color="app.light" fontSize="sm" fontWeight="medium">
-                      Memory Usage
-                    </Text>
-                  </HStack>
-                  <Text color="app.text" fontSize="sm">
-                    -- / --
-                  </Text>
-                </HStack>
+                  }
+                  labelColor="app.light"
+                  labelWeight="medium"
+                  valueColor="app.text"
+                />
                 <Progress.Root value={0} size="sm">
                   <Progress.Track bg="app.border">
                     <Progress.Range bg="app.border" />
@@ -211,19 +183,18 @@ export function DashboardViewMain(): React.JSX.Element {
 
               {/* Disk Usage */}
               <Box>
-                <HStack justify="space-between" mb={2}>
-                  <HStack>
+                <LabelRow
+                  label="Storage (Logs/Cache)"
+                  value="--"
+                  icon={
                     <Box color="app.text">
                       <LuHardDrive size={14} />
                     </Box>
-                    <Text color="app.light" fontSize="sm" fontWeight="medium">
-                      Storage (Logs/Cache)
-                    </Text>
-                  </HStack>
-                  <Text color="app.text" fontSize="sm">
-                    --
-                  </Text>
-                </HStack>
+                  }
+                  labelColor="app.light"
+                  labelWeight="medium"
+                  valueColor="app.text"
+                />
                 <Progress.Root value={0} size="sm">
                   <Progress.Track bg="app.border">
                     <Progress.Range bg="app.border" />
@@ -233,19 +204,18 @@ export function DashboardViewMain(): React.JSX.Element {
 
               {/* Network Status */}
               <Box>
-                <HStack justify="space-between" mb={2}>
-                  <HStack>
+                <LabelRow
+                  label="Network Latency"
+                  value="--"
+                  icon={
                     <Box color="app.text">
                       <LuWifi size={14} />
                     </Box>
-                    <Text color="app.light" fontSize="sm" fontWeight="medium">
-                      Network Latency
-                    </Text>
-                  </HStack>
-                  <Text color="app.text" fontSize="sm">
-                    --
-                  </Text>
-                </HStack>
+                  }
+                  labelColor="app.light"
+                  labelWeight="medium"
+                  valueColor="app.text"
+                />
                 <Progress.Root value={0} size="sm">
                   <Progress.Track bg="app.border">
                     <Progress.Range bg="app.border" />

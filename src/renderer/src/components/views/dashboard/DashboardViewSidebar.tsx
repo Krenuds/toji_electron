@@ -16,13 +16,10 @@ import { LuDownload, LuTriangleAlert, LuCheck, LuRefreshCw } from 'react-icons/l
 import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
 import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
 import { SidebarContainer } from '../../SidebarContainer'
-import { StatusBadge } from '../../StatusBadge'
-import { useServerStatus } from '../../../hooks/useServerStatus'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   const { info, loading, error, installing, installProgress, install } = useBinaryStatus()
   const { logs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOpenCodeLogs()
-  const serverStatus = useServerStatus()
 
   const getBinaryStatusAlert = (): React.ReactNode => {
     if (loading) {
@@ -226,74 +223,6 @@ export function DashboardViewSidebar(): React.JSX.Element {
             </VStack>
           </Card.Body>
         </Card.Root>
-
-        <Separator borderColor="app.border" />
-
-        {/* Service Status Overview */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Quick Status
-          </Text>
-          <VStack gap={2} align="stretch">
-            <Box
-              p={2}
-              borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
-              border="1px solid"
-              borderColor="app.border"
-            >
-              <HStack justify="space-between">
-                <Text color="app.light" fontSize="xs" fontWeight="medium">
-                  Core Service
-                </Text>
-                <StatusBadge status={serverStatus} />
-              </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                {serverStatus === 'running'
-                  ? 'OpenCode server operational'
-                  : serverStatus === 'checking'
-                    ? 'Checking status...'
-                    : 'Server stopped'}
-              </Text>
-            </Box>
-
-            <Box
-              p={2}
-              borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
-              border="1px solid"
-              borderColor="app.border"
-            >
-              <HStack justify="space-between">
-                <Text color="app.text" fontSize="xs" fontWeight="medium">
-                  Discord Bot
-                </Text>
-                <StatusBadge status="stub" />
-              </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                Not configured
-              </Text>
-            </Box>
-
-            <Box
-              p={2}
-              borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
-              border="1px solid"
-              borderColor="app.border"
-            >
-              <HStack justify="space-between">
-                <Text color="app.text" fontSize="xs" fontWeight="medium">
-                  Voice Services
-                </Text>
-                <StatusBadge status="stub" />
-              </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                Not available
-              </Text>
-            </Box>
-          </VStack>
-        </Box>
       </VStack>
     </SidebarContainer>
   )
