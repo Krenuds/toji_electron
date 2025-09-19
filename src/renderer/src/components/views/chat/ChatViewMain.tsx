@@ -122,13 +122,16 @@ export function ChatViewMain(): React.JSX.Element {
     }
   }
 
+  // Get workspace name for display
+  const workspaceName = workspaceInfo?.workspacePath.split(/[\\\/]/).pop() || 'No Workspace'
+
   return (
     <VStack align="stretch" gap={6} h="100%">
       {/* Header */}
       <Box>
         <HStack justify="space-between" align="center" mb={2}>
           <Text color="app.light" fontSize="2xl" fontWeight="bold">
-            Chat with Toji
+            Chatting with {workspaceName}
           </Text>
           <Badge
             size="sm"
@@ -149,7 +152,9 @@ export function ChatViewMain(): React.JSX.Element {
           </Badge>
         </HStack>
         <Text color="app.text" fontSize="sm">
-          AI-powered coding assistant ready to help with your development tasks.
+          {workspaceInfo
+            ? `Working in: ${workspaceInfo.workspacePath}`
+            : 'Select a workspace to start chatting with your AI coding assistant'}
         </Text>
       </Box>
 
