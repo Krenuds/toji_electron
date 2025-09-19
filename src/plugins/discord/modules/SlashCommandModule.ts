@@ -48,8 +48,15 @@ export class SlashCommandModule implements DiscordModule {
       const workspaceCommand = await import('../commands/workspace')
       const sessionCommand = await import('../commands/session')
       const statusCommand = await import('../commands/status')
+      const projectCommand = await import('../commands/project')
 
-      const commands = [helpCommand, workspaceCommand, sessionCommand, statusCommand]
+      const commands = [
+        helpCommand,
+        workspaceCommand,
+        sessionCommand,
+        statusCommand,
+        projectCommand
+      ]
 
       for (const command of commands) {
         if ('data' in command && 'execute' in command) {

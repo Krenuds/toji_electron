@@ -17,6 +17,14 @@ export const data = new SlashCommandBuilder()
       )
   )
   .addSubcommand((subcommand) =>
+    subcommand
+      .setName('delete')
+      .setDescription('Delete a specific session')
+      .addStringOption((option) =>
+        option.setName('id').setDescription('The session ID to delete').setRequired(true)
+      )
+  )
+  .addSubcommand((subcommand) =>
     subcommand.setName('clear').setDescription('Clear the session for this channel')
   )
   .addSubcommand((subcommand) =>
@@ -65,6 +73,22 @@ export async function execute(
       } catch (error) {
         await interaction.editReply(
           `❌ Error creating session: ${error instanceof Error ? error.message : 'Unknown error'}`
+        )
+      }
+      break
+    }
+
+    case 'delete': {
+      const sessionId = interaction.options.data[0]?.options?.[0]?.value as string
+
+      await interaction.deferReply({ ephemeral: true })
+
+      try {
+        await toji.session.delete(sessionId)
+        await interaction.editReply(`✅ Successfully deleted session: \`${sessionId}\``)
+      } catch (error) {
+        await interaction.editReply(
+          `❌ Failed to delete session: ${error instanceof Error ? error.message : 'Unknown error'}`
         )
       }
       break

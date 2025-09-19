@@ -31,3 +31,53 @@ export interface TojiStatus {
     current?: string
   }
 }
+
+// ============================================
+// Workspace Collection Types
+// ============================================
+
+// Our workspace concept - a collection of related projects
+export interface WorkspaceCollection {
+  id: string
+  name: string
+  baseDirectory: string
+  projects: EnrichedProject[]
+  tags?: string[]
+  createdAt: Date
+  lastAccessed: Date
+}
+
+// Discovered project with metadata
+export interface DiscoveredProject {
+  path: string
+  name: string
+  hasGit: boolean
+  hasOpenCodeConfig: boolean
+  hasPackageJson?: boolean
+  size?: number
+  lastModified?: Date
+  projectType?: 'node' | 'python' | 'go' | 'rust' | 'unknown'
+}
+
+// Enhanced project combining OpenCode + our metadata
+export interface EnrichedProject {
+  // From OpenCode SDK
+  id: string
+  worktree: string
+  vcs?: string
+
+  // From OpenCode sessions
+  projectID?: string
+  sessionCount?: number
+  lastSessionDate?: Date
+
+  // Our enrichments
+  name: string
+  description?: string
+  tags?: string[]
+  language?: string
+  framework?: string
+  lastOpened?: Date
+  favorite?: boolean
+  size?: number
+}

@@ -1,8 +1,25 @@
 import React from 'react'
-import { Box, VStack, HStack, Text, Grid, Card, Badge, Progress } from '@chakra-ui/react'
-import { LuActivity, LuGitBranch, LuClock, LuCode, LuZap } from 'react-icons/lu'
+import { Box, VStack, HStack, Text, Grid, Card, Badge, Button } from '@chakra-ui/react'
+import {
+  LuActivity,
+  LuGitBranch,
+  LuClock,
+  LuCode,
+  LuZap,
+  LuRefreshCw,
+  LuFolder
+} from 'react-icons/lu'
+import { useProjects } from '../../../hooks/useProjects'
+import { useSession } from '../../../hooks/useSession'
 
 export function ProjectsViewMain(): React.JSX.Element {
+  const { projects, isLoading: isLoadingProjects, fetchProjects } = useProjects()
+  const { sessions } = useSession()
+
+  // Calculate real stats
+  const activeProjects = projects.length
+  const activeSessions = sessions.length
+
   return (
     <VStack align="stretch" gap={6}>
       {/* Header */}
@@ -26,10 +43,10 @@ export function ProjectsViewMain(): React.JSX.Element {
               <LuCode size={16} color="#808080" />
             </HStack>
             <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              3
+              {activeProjects}
             </Text>
-            <Text color="app.accent" fontSize="xs" mt={1}>
-              +1 this week
+            <Text color="app.text" fontSize="xs" mt={1}>
+              Total in workspace
             </Text>
           </Card.Body>
         </Card.Root>
@@ -43,10 +60,10 @@ export function ProjectsViewMain(): React.JSX.Element {
               <LuZap size={16} color="#808080" />
             </HStack>
             <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              12
+              {activeSessions}
             </Text>
-            <Text color="app.accent" fontSize="xs" mt={1}>
-              +4 today
+            <Text color="app.text" fontSize="xs" mt={1}>
+              Active sessions
             </Text>
           </Card.Body>
         </Card.Root>
@@ -95,117 +112,69 @@ export function ProjectsViewMain(): React.JSX.Element {
               <Text color="app.light" fontSize="lg" fontWeight="semibold">
                 Active Projects
               </Text>
-              <Badge colorScheme="green" variant="subtle">
-                3 Active
-              </Badge>
+              <HStack gap={2}>
+                <Badge colorPalette="green" variant="subtle">
+                  {activeProjects} Active
+                </Badge>
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  color="app.text"
+                  _hover={{ color: 'app.light' }}
+                  onClick={fetchProjects}
+                  disabled={isLoadingProjects}
+                >
+                  <LuRefreshCw size={12} />
+                </Button>
+              </HStack>
             </HStack>
           </Card.Header>
           <Card.Body>
             <VStack gap={4} align="stretch">
-              <Box
-                p={3}
-                borderRadius="md"
-                bg="rgba(255,255,255,0.02)"
-                border="1px solid"
-                borderColor="app.border"
-              >
-                <HStack justify="space-between" mb={2}>
-                  <Text color="app.light" fontSize="sm" fontWeight="medium">
-                    toji3
-                  </Text>
-                  <Badge colorScheme="green" size="sm">
-                    Active
-                  </Badge>
-                </HStack>
-                <Text color="app.text" fontSize="xs" mb={3}>
-                  Desktop AI application with OpenCode integration
+              {isLoadingProjects ? (
+                <Text color="app.text" fontSize="sm" textAlign="center" py={4}>
+                  Loading projects...
                 </Text>
-                <Box>
-                  <HStack justify="space-between" mb={1}>
-                    <Text color="app.text" fontSize="2xs">
-                      Progress
-                    </Text>
-                    <Text color="app.text" fontSize="2xs">
-                      75%
-                    </Text>
-                  </HStack>
-                  <Progress.Root value={75} size="sm" colorPalette="green">
-                    <Progress.Track>
-                      <Progress.Range />
-                    </Progress.Track>
-                  </Progress.Root>
-                </Box>
-              </Box>
-
-              <Box
-                p={3}
-                borderRadius="md"
-                bg="rgba(255,255,255,0.02)"
-                border="1px solid"
-                borderColor="app.border"
-              >
-                <HStack justify="space-between" mb={2}>
-                  <Text color="app.light" fontSize="sm" fontWeight="medium">
-                    opencode-demo
+              ) : projects.length === 0 ? (
+                <Box textAlign="center" py={8}>
+                  <LuFolder size={32} color="#404040" style={{ margin: '0 auto' }} />
+                  <Text color="app.text" fontSize="sm" mt={3}>
+                    No projects found
                   </Text>
-                  <Badge colorScheme="blue" size="sm">
-                    Development
-                  </Badge>
-                </HStack>
-                <Text color="app.text" fontSize="xs" mb={3}>
-                  SDK integration examples and documentation
-                </Text>
-                <Box>
-                  <HStack justify="space-between" mb={1}>
-                    <Text color="app.text" fontSize="2xs">
-                      Progress
-                    </Text>
-                    <Text color="app.text" fontSize="2xs">
-                      45%
-                    </Text>
-                  </HStack>
-                  <Progress.Root value={45} size="sm" colorPalette="blue">
-                    <Progress.Track>
-                      <Progress.Range />
-                    </Progress.Track>
-                  </Progress.Root>
-                </Box>
-              </Box>
-
-              <Box
-                p={3}
-                borderRadius="md"
-                bg="rgba(255,255,255,0.02)"
-                border="1px solid"
-                borderColor="app.border"
-              >
-                <HStack justify="space-between" mb={2}>
-                  <Text color="app.light" fontSize="sm" fontWeight="medium">
-                    ai-toolchain
+                  <Text color="app.text" fontSize="xs" mt={1}>
+                    Select a folder to start a new project
                   </Text>
-                  <Badge colorScheme="yellow" size="sm">
-                    Planning
-                  </Badge>
-                </HStack>
-                <Text color="app.text" fontSize="xs" mb={3}>
-                  AI development toolchain automation
-                </Text>
-                <Box>
-                  <HStack justify="space-between" mb={1}>
-                    <Text color="app.text" fontSize="2xs">
-                      Progress
-                    </Text>
-                    <Text color="app.text" fontSize="2xs">
-                      15%
-                    </Text>
-                  </HStack>
-                  <Progress.Root value={15} size="sm" colorPalette="yellow">
-                    <Progress.Track>
-                      <Progress.Range />
-                    </Progress.Track>
-                  </Progress.Root>
                 </Box>
-              </Box>
+              ) : (
+                projects.map((project, index) => (
+                  <Box
+                    key={project.id || index}
+                    p={3}
+                    borderRadius="md"
+                    bg="rgba(255,255,255,0.02)"
+                    border="1px solid"
+                    borderColor="app.border"
+                  >
+                    <HStack justify="space-between" mb={2}>
+                      <Text color="app.light" fontSize="sm" fontWeight="medium" lineClamp={1}>
+                        {project.id || `Project ${index + 1}`}
+                      </Text>
+                      <Badge colorPalette="green" size="sm">
+                        Active
+                      </Badge>
+                    </HStack>
+                    <Text color="app.text" fontSize="xs" mb={2} lineClamp={2}>
+                      {project.worktree || 'No path specified'}
+                    </Text>
+                    {project.worktree?.includes('.git') && (
+                      <Badge size="xs" colorPalette="blue" variant="subtle">
+                        <LuGitBranch size={10} style={{ marginRight: 4 }} />
+                        Git
+                      </Badge>
+                    )}
+                  </Box>
+                ))
+              )}
             </VStack>
           </Card.Body>
         </Card.Root>

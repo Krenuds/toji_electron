@@ -104,11 +104,17 @@ export class SessionManager {
    * List all sessions
    */
   async list(): Promise<{ data: Session[] }> {
-    const client = this.clientManager.getClientForManager()
-    const response = await client.session.list()
+    try {
+      const client = this.clientManager.getClientForManager()
+      const response = await client.session.list()
 
-    return {
-      data: response.data || []
+      return {
+        data: response.data || []
+      }
+    } catch (error) {
+      // If client not initialized, return empty list
+      console.log('SessionManager: Client not initialized, returning empty session list')
+      return { data: [] }
     }
   }
 

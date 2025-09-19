@@ -2,7 +2,7 @@
 // Toji - Main API Orchestrator Class
 // ============================================
 
-import type { TojiConfig, TojiStatus } from './types'
+import type { TojiConfig, TojiStatus, WorkspaceCollection, EnrichedProject, DiscoveredProject } from './types'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ServerManager } from './server'
@@ -36,7 +36,7 @@ export class Toji {
     // Initialize all managers with proper dependencies
     this.server = new ServerManager(this.opencodeService)
     this.client = new ClientManager()
-    this.workspace = new WorkspaceManager()
+    this.workspace = new WorkspaceManager(this.client)
     this.session = new SessionManager(this.client)
     this.project = new ProjectManager(this.client)
 
@@ -351,6 +351,109 @@ export class Toji {
     } catch (error) {
       console.error('Toji: Chat error:', error)
       throw new Error(`Chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // ============================================
+  // Workspace Collection Methods
+  // ============================================
+
+  /**
+   * Get all workspace collections from OpenCode data
+   * Groups projects by base directories
+   */
+  async getWorkspaceCollections(): Promise<WorkspaceCollection[]> {
+    console.log('Toji: Getting workspace collections')
+
+    try {
+      // Ensure client is ready
+      if (!this.isReady()) {
+        console.log('Toji: Client not ready, returning empty collections')
+        return []
+      }
+
+      return await this.workspace.getWorkspaceCollections()
+    } catch (error) {
+      console.error('Toji: Error getting workspace collections:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get all enriched projects across all workspaces
+   */
+  async getAllProjects(): Promise<EnrichedProject[]> {
+    console.log('Toji: Getting all projects')
+
+    const collections = await this.getWorkspaceCollections()
+    const allProjects: EnrichedProject[] = []
+
+    collections.forEach(collection => {
+      allProjects.push(...collection.projects)
+    })
+
+    return allProjects
+  }
+
+  /**
+   * Discover new projects in a directory
+   * Finds projects that might not be tracked by OpenCode yet
+   */
+  async discoverProjects(baseDir?: string): Promise<DiscoveredProject[]> {
+    console.log('Toji: Discovering projects')
+
+    const searchDir = baseDir || this.config?.getOpencodeWorkingDirectory() || process.cwd()
+
+    try {
+      return await this.workspace.discoverProjects(searchDir)
+    } catch (error) {
+      console.error('Toji: Error discovering projects:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get enriched version of OpenCode projects
+   * Combines OpenCode data with our metadata
+   */
+  async getEnrichedProjects(): Promise<EnrichedProject[]> {
+    console.log('Toji: Getting enriched projects')
+
+    try {
+      // Get OpenCode projects
+      const projectsResponse = await this.project.list()
+      const projects = projectsResponse.data || []
+
+      // Get all sessions for enrichment
+      const sessionsResponse = await this.session.list()
+      const sessions = sessionsResponse.data || []
+
+      // Enrich each project
+      const enrichedProjects: EnrichedProject[] = []
+
+      for (const project of projects) {
+        // Find sessions for this project
+        const projectSessions = sessions.filter(s => s.projectID === project.id)
+
+        const enriched: EnrichedProject = {
+          id: project.id,
+          worktree: project.worktree,
+          vcs: project.vcs,
+          projectID: project.id,
+          sessionCount: projectSessions.length,
+          name: project.worktree.split(/[\\/]/).pop() || 'Unknown',
+          lastSessionDate: projectSessions.length > 0
+            ? new Date(Math.max(...projectSessions.map(s => s.time?.updated || s.time?.created || 0)))
+            : undefined
+        }
+
+        enrichedProjects.push(enriched)
+      }
+
+      return enrichedProjects
+    } catch (error) {
+      console.error('Toji: Error getting enriched projects:', error)
+      return []
     }
   }
 }

@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Badge } from '@chakra-ui/react'
-import { LuMessageCircle, LuActivity, LuFolder } from 'react-icons/lu'
+import { LuMessageCircle, LuActivity, LuFolder, LuTrash2, LuRefreshCw } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useWorkspace } from '../../../hooks/useWorkspace'
 import { useCoreStatus } from '../../../hooks/useCoreStatus'
+import { useSession } from '../../../hooks/useSession'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const serverStatus = useServerStatus()
   const { isChangingWorkspace, currentWorkspace, selectAndChangeWorkspace, workspaceInfo } =
     useWorkspace()
   const { isRunning, getCurrentDirectory } = useCoreStatus()
+  const {
+    sessions,
+    isLoading: isLoadingSessions,
+    currentSessionId,
+    fetchSessions,
+    deleteSession
+  } = useSession()
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     // Update working directory from workspace info
@@ -44,6 +53,17 @@ export function ChatViewSidebar(): React.JSX.Element {
       checkWorkingDirectory()
     }
   }, [workspaceInfo, currentWorkspace, isRunning, getCurrentDirectory])
+
+  const handleDeleteSession = async (sessionId: string): Promise<void> => {
+    setDeletingSessionId(sessionId)
+    const success = await deleteSession(sessionId)
+    if (success) {
+      // Optionally show success feedback
+      console.log('Session deleted successfully')
+    }
+    setDeletingSessionId(null)
+  }
+
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
@@ -135,35 +155,83 @@ export function ChatViewSidebar(): React.JSX.Element {
 
         <Separator borderColor="app.border" />
 
-        {/* Recent Sessions */}
+        {/* Sessions Management */}
         <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Recent Sessions
-          </Text>
-          <VStack gap={2} align="stretch">
-            <Box
-              p={2}
-              borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
-              border="1px solid"
-              borderColor="app.border"
-              cursor="pointer"
-              _hover={{ bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <HStack justify="space-between">
-                <Text color="app.light" fontSize="xs" fontWeight="medium">
-                  General Chat
-                </Text>
-                <StatusBadge status="running" />
-              </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                Started 2 minutes ago
-              </Text>
-            </Box>
-
-            <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
-              No other sessions yet
+          <HStack justify="space-between" mb={3}>
+            <Text color="app.light" fontSize="xs" fontWeight="semibold">
+              Sessions
             </Text>
+            <Button
+              size="xs"
+              variant="ghost"
+              color="app.text"
+              _hover={{ color: 'app.light' }}
+              onClick={fetchSessions}
+              disabled={isLoadingSessions}
+            >
+              <LuRefreshCw size={12} />
+            </Button>
+          </HStack>
+          <VStack gap={2} align="stretch">
+            {isLoadingSessions ? (
+              <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
+                Loading sessions...
+              </Text>
+            ) : sessions.length === 0 ? (
+              <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
+                No active sessions
+              </Text>
+            ) : (
+              sessions.map((session) => (
+                <Box
+                  key={session.id}
+                  p={2}
+                  borderRadius="md"
+                  bg={
+                    currentSessionId === session.id
+                      ? 'rgba(51, 180, 47, 0.1)'
+                      : 'rgba(255,255,255,0.02)'
+                  }
+                  border="1px solid"
+                  borderColor={currentSessionId === session.id ? 'app.accent' : 'app.border'}
+                  position="relative"
+                >
+                  <HStack justify="space-between">
+                    <VStack align="start" gap={0} flex={1}>
+                      <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1}>
+                        {session.title || `Session ${session.id.slice(0, 8)}`}
+                      </Text>
+                      <Text color="app.text" fontSize="2xs">
+                        ID: {session.id.slice(0, 12)}...
+                      </Text>
+                    </VStack>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      color="app.text"
+                      _hover={{ color: 'red.400', bg: 'rgba(255,0,0,0.1)' }}
+                      onClick={() => handleDeleteSession(session.id)}
+                      disabled={deletingSessionId === session.id}
+                      aria-label="Delete session"
+                    >
+                      <LuTrash2 size={12} />
+                    </Button>
+                  </HStack>
+                  {currentSessionId === session.id && (
+                    <Badge
+                      size="xs"
+                      colorPalette="green"
+                      variant="subtle"
+                      position="absolute"
+                      top={1}
+                      right={1}
+                    >
+                      Active
+                    </Badge>
+                  )}
+                </Box>
+              ))
+            )}
           </VStack>
         </Box>
 
