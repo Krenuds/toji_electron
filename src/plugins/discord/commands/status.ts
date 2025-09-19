@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
-import type { Toji } from '../../../main/api/Toji'
+import type { Toji } from '../../../main/api/toji'
 
 export const data = new SlashCommandBuilder()
   .setName('status')

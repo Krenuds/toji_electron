@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { Toji } from './api/Toji'
+import { Toji } from './api/toji'
 import { OpenCodeService } from './services/opencode-service'
 import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
@@ -180,6 +180,46 @@ function setupCoreHandlers(): void {
       throw new Error('Toji not initialized')
     }
     return await toji.changeWorkspace(directory)
+  })
+
+  // Get workspace collections
+  ipcMain.handle('core:workspace-collections', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getWorkspaceCollections()
+  })
+
+  // Get all enriched projects
+  ipcMain.handle('core:all-projects', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getAllProjects()
+  })
+
+  // Discover projects in directory
+  ipcMain.handle('core:discover-projects', async (_, baseDir?: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.discoverProjects(baseDir)
+  })
+
+  // Get enriched projects
+  ipcMain.handle('core:enriched-projects', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getEnrichedProjects()
+  })
+
+  // Inspect workspace
+  ipcMain.handle('core:inspect-workspace', async (_, directory: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.workspace.inspect(directory)
   })
 }
 

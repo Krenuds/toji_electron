@@ -2,14 +2,20 @@
 // Toji - Main API Orchestrator Class
 // ============================================
 
-import type { TojiConfig, TojiStatus, WorkspaceCollection, EnrichedProject, DiscoveredProject } from './types'
+import type {
+  TojiConfig,
+  TojiStatus,
+  WorkspaceCollection,
+  EnrichedProject,
+  DiscoveredProject
+} from './types'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ServerManager } from './server'
 import { ClientManager } from './client'
 import { WorkspaceManager } from './workspace'
 import { SessionManager } from './session'
-import { ProjectManager } from './project'
+import { ProjectManager } from './opencode-project'
 
 /**
  * Toji - The main API orchestrator class that provides a unified interface
@@ -388,7 +394,7 @@ export class Toji {
     const collections = await this.getWorkspaceCollections()
     const allProjects: EnrichedProject[] = []
 
-    collections.forEach(collection => {
+    collections.forEach((collection) => {
       allProjects.push(...collection.projects)
     })
 
@@ -433,7 +439,7 @@ export class Toji {
 
       for (const project of projects) {
         // Find sessions for this project
-        const projectSessions = sessions.filter(s => s.projectID === project.id)
+        const projectSessions = sessions.filter((s) => s.projectID === project.id)
 
         const enriched: EnrichedProject = {
           id: project.id,
@@ -442,9 +448,12 @@ export class Toji {
           projectID: project.id,
           sessionCount: projectSessions.length,
           name: project.worktree.split(/[\\/]/).pop() || 'Unknown',
-          lastSessionDate: projectSessions.length > 0
-            ? new Date(Math.max(...projectSessions.map(s => s.time?.updated || s.time?.created || 0)))
-            : undefined
+          lastSessionDate:
+            projectSessions.length > 0
+              ? new Date(
+                  Math.max(...projectSessions.map((s) => s.time?.updated || s.time?.created || 0))
+                )
+              : undefined
         }
 
         enrichedProjects.push(enriched)

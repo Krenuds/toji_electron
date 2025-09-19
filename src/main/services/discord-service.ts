@@ -1,6 +1,6 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js'
 import type { Message } from 'discord.js'
-import type { Toji } from '../api/Toji'
+import type { Toji } from '../api/toji'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import type { DiscordPlugin } from '../../plugins/discord/DiscordPlugin'
 

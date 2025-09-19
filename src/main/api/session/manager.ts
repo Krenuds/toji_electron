@@ -111,7 +111,7 @@ export class SessionManager {
       return {
         data: response.data || []
       }
-    } catch (error) {
+    } catch {
       // If client not initialized, return empty list
       console.log('SessionManager: Client not initialized, returning empty session list')
       return { data: [] }

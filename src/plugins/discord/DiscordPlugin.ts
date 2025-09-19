@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import type { Client, Message, Interaction } from 'discord.js'
-import type { Toji } from '../../main/api/Toji'
+import type { Toji } from '../../main/api/toji'
 import type { DiscordChatModule } from './modules/ChatModule'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'

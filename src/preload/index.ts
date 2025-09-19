@@ -38,7 +38,23 @@ const api = {
       hasOpenCodeConfig: boolean
       sessionId: string
       workspacePath: string
-    }> => ipcRenderer.invoke('core:change-workspace', directory)
+    }> => ipcRenderer.invoke('core:change-workspace', directory),
+
+    // Workspace Collections & Projects
+    getWorkspaceCollections: (): Promise<unknown[]> =>
+      ipcRenderer.invoke('core:workspace-collections'),
+    getAllProjects: (): Promise<unknown[]> => ipcRenderer.invoke('core:all-projects'),
+    discoverProjects: (baseDir?: string): Promise<unknown[]> =>
+      ipcRenderer.invoke('core:discover-projects', baseDir),
+    getEnrichedProjects: (): Promise<unknown[]> => ipcRenderer.invoke('core:enriched-projects'),
+    inspectWorkspace: (
+      directory: string
+    ): Promise<{
+      exists: boolean
+      hasGit: boolean
+      hasOpenCodeConfig: boolean
+      hasGitignore: boolean
+    }> => ipcRenderer.invoke('core:inspect-workspace', directory)
   },
 
   // Binary Management API - separated from core agent logic

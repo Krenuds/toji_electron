@@ -1,6 +1,6 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
 import type { Client } from 'discord.js'
-import type { Toji } from '../../../main/api/Toji'
+import type { Toji } from '../../../main/api/toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 import type { DiscordChatModule } from './ChatModule'
 
@@ -49,13 +49,15 @@ export class SlashCommandModule implements DiscordModule {
       const sessionCommand = await import('../commands/session')
       const statusCommand = await import('../commands/status')
       const projectCommand = await import('../commands/project')
+      const devCommand = await import('../commands/dev')
 
       const commands = [
         helpCommand,
         workspaceCommand,
         sessionCommand,
         statusCommand,
-        projectCommand
+        projectCommand,
+        devCommand
       ]
 
       for (const command of commands) {

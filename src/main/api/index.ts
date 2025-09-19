@@ -19,11 +19,11 @@ export { ServerManager } from './server'
 export { ClientManager } from './client'
 export { WorkspaceManager } from './workspace'
 export { SessionManager } from './session'
-export { ProjectManager } from './project'
+export { ProjectManager } from './opencode-project'
 
 // ===== THE TOJI API =====
 // The main orchestrator class
-export { Toji } from './Toji'
+export { Toji } from './toji'
 
 // ===== CONVENIENCE EXPORTS =====
 // TODO: Next session - Create singleton instance and factory functions

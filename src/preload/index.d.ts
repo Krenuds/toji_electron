@@ -59,6 +59,18 @@ export interface CoreAPI {
     sessionId: string
     workspacePath: string
   }>
+
+  // Workspace Collections & Projects
+  getWorkspaceCollections: () => Promise<unknown[]>
+  getAllProjects: () => Promise<unknown[]>
+  discoverProjects: (baseDir?: string) => Promise<unknown[]>
+  getEnrichedProjects: () => Promise<unknown[]>
+  inspectWorkspace: (directory: string) => Promise<{
+    exists: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    hasGitignore: boolean
+  }>
 }
 
 export interface BinaryAPI {

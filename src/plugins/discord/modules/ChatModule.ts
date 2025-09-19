@@ -1,6 +1,6 @@
 import type { Message, ChannelType } from 'discord.js'
 import { ChannelType as ChannelTypeEnum } from 'discord.js'
-import type { Toji } from '../../../main/api/Toji'
+import type { Toji } from '../../../main/api/toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 
 interface ChannelSession {

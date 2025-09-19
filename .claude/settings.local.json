@@ -50,7 +50,9 @@
       "Bash(tree:*)",
       "WebFetch(domain:discord.js.org)",
       "mcp__chakra-ui__customize_theme",
-      "mcp__chakra-ui__v2_to_v3_code_review"
+      "mcp__chakra-ui__v2_to_v3_code_review",
+      "Bash(git mv:*)",
+      "Bash(xargs sed:*)"
     ],
     "deny": [],
     "ask": []

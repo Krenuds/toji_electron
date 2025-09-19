@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
-import type { Toji } from '../../../main/api/Toji'
+import type { Toji } from '../../../main/api/toji'
 import type { DiscordChatModule } from '../modules/ChatModule'
 
 export const data = new SlashCommandBuilder()

@@ -1,16 +1,9 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Grid, Card, Badge, Button } from '@chakra-ui/react'
-import {
-  LuActivity,
-  LuGitBranch,
-  LuClock,
-  LuCode,
-  LuZap,
-  LuRefreshCw,
-  LuFolder
-} from 'react-icons/lu'
+import { LuGitBranch, LuClock, LuCode, LuZap, LuRefreshCw, LuFolder } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
 import { useSession } from '../../../hooks/useSession'
+import { WorkspaceTracker } from '../../WorkspaceTracker'
 
 export function ProjectsViewMain(): React.JSX.Element {
   const { projects, isLoading: isLoadingProjects, fetchProjects } = useProjects()
@@ -179,80 +172,8 @@ export function ProjectsViewMain(): React.JSX.Element {
           </Card.Body>
         </Card.Root>
 
-        {/* Recent Activity */}
-        <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
-          <Card.Header>
-            <HStack>
-              <LuActivity size={16} color="#ffffff" />
-              <Text color="app.light" fontSize="lg" fontWeight="semibold">
-                Recent Activity
-              </Text>
-            </HStack>
-          </Card.Header>
-          <Card.Body>
-            <VStack gap={3} align="stretch">
-              <HStack gap={3}>
-                <Box w={2} h={2} borderRadius="full" bg="app.accent" />
-                <Box flex={1}>
-                  <Text color="app.light" fontSize="xs" fontWeight="medium">
-                    Custom titlebar implemented
-                  </Text>
-                  <Text color="app.text" fontSize="2xs">
-                    2 minutes ago
-                  </Text>
-                </Box>
-              </HStack>
-
-              <HStack gap={3}>
-                <Box w={2} h={2} borderRadius="full" bg="blue.400" />
-                <Box flex={1}>
-                  <Text color="app.light" fontSize="xs" fontWeight="medium">
-                    OpenCode session started
-                  </Text>
-                  <Text color="app.text" fontSize="2xs">
-                    15 minutes ago
-                  </Text>
-                </Box>
-              </HStack>
-
-              <HStack gap={3}>
-                <Box w={2} h={2} borderRadius="full" bg="gray.400" />
-                <Box flex={1}>
-                  <Text color="app.light" fontSize="xs" fontWeight="medium">
-                    Project toji3 opened
-                  </Text>
-                  <Text color="app.text" fontSize="2xs">
-                    1 hour ago
-                  </Text>
-                </Box>
-              </HStack>
-
-              <HStack gap={3}>
-                <Box w={2} h={2} borderRadius="full" bg="green.400" />
-                <Box flex={1}>
-                  <Text color="app.light" fontSize="xs" fontWeight="medium">
-                    Dependencies updated
-                  </Text>
-                  <Text color="app.text" fontSize="2xs">
-                    3 hours ago
-                  </Text>
-                </Box>
-              </HStack>
-
-              <HStack gap={3}>
-                <Box w={2} h={2} borderRadius="full" bg="purple.400" />
-                <Box flex={1}>
-                  <Text color="app.light" fontSize="xs" fontWeight="medium">
-                    Theme system configured
-                  </Text>
-                  <Text color="app.text" fontSize="2xs">
-                    Yesterday
-                  </Text>
-                </Box>
-              </HStack>
-            </VStack>
-          </Card.Body>
-        </Card.Root>
+        {/* Workspace Tracker */}
+        <WorkspaceTracker />
       </Grid>
     </VStack>
   )

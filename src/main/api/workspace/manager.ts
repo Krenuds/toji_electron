@@ -3,7 +3,7 @@
 // ============================================
 
 import { promises as fs } from 'fs'
-import { join, basename } from 'path'
+import { join, basename, sep } from 'path'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import type { DiscoveredProject, WorkspaceCollection, EnrichedProject } from '../types'
@@ -264,7 +264,7 @@ export class WorkspaceManager {
 
       // Get last modified
       if (checks[6].status === 'fulfilled') {
-        lastModified = (checks[6] as PromiseFulfilledResult<any>).value.mtime
+        lastModified = (checks[6] as PromiseFulfilledResult<import('fs').Stats>).value.mtime
       }
     } catch (error) {
       console.error(`Error inspecting project ${directory}:`, error)
@@ -392,7 +392,7 @@ export class WorkspaceManager {
     // Could be smarter about detecting workspace roots
     const parts = fullPath.split(/[\\/]/)
     if (parts.length > 2) {
-      return parts.slice(0, -1).join('\\')
+      return parts.slice(0, -1).join(sep)
     }
     return fullPath
   }
