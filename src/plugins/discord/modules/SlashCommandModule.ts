@@ -69,6 +69,7 @@ export class SlashCommandModule implements DiscordModule {
    * Note: This is called but we don't register another handler since
    * DiscordService already routes interactions through DiscordPlugin
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setupInteractionHandler(_client: Client): void {
     // Handler registration removed - interactions are routed through
     // DiscordService -> DiscordPlugin.handleInteraction -> this.handleCommand

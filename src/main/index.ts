@@ -131,14 +131,8 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    // Use the session manager's prompt method
-    const currentSession = toji.session.getCurrentSession()
-    if (!currentSession) {
-      // Create a new session if none exists
-      const newSession = await toji.session.create('Default Session')
-      return await toji.session.prompt(text, newSession.id)
-    }
-    return await toji.session.prompt(text, currentSession.id)
+    // All business logic now in Toji API - IPC is just a thin passthrough
+    return await toji.promptWithAutoSession(text)
   })
 
   // List projects

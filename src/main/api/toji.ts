@@ -259,6 +259,76 @@ export class Toji {
   }
 
   /**
+   * Get or create a session by identifier
+   * This provides a unified way for all interfaces to manage sessions
+   * @param identifier - Unique identifier for the session (e.g., Discord channel ID, user ID)
+   * @param title - Optional title for the session if creating new
+   * @returns The session (existing or newly created)
+   */
+  async getOrCreateSession(
+    identifier: string,
+    title?: string
+  ): Promise<{
+    session: import('./session').Session
+    isNew: boolean
+  }> {
+    console.log(`Toji: Getting or creating session for identifier: ${identifier}`)
+
+    try {
+      // First, check if a session with this identifier exists
+      const existingSession = await this.session.getByIdentifier(identifier)
+
+      if (existingSession) {
+        console.log(
+          `Toji: Found existing session ${existingSession.id} for identifier ${identifier}`
+        )
+        return {
+          session: existingSession,
+          isNew: false
+        }
+      }
+
+      // Create a new session with the identifier
+      console.log(`Toji: Creating new session for identifier ${identifier}`)
+      const sessionTitle = title || `Session for ${identifier}`
+      const newSession = await this.session.create(sessionTitle)
+
+      // Store the identifier mapping
+      await this.session.setSessionIdentifier(newSession.id, identifier)
+
+      return {
+        session: newSession,
+        isNew: true
+      }
+    } catch (error) {
+      console.error('Toji: Failed to get or create session:', error)
+      throw new Error(
+        `Failed to get or create session: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
+   * Send a prompt with automatic session management
+   * Creates a session if none exists, otherwise uses the current session
+   * This consolidates the IPC handler logic into the API layer
+   */
+  async promptWithAutoSession(text: string): Promise<string> {
+    console.log('Toji: Processing prompt with auto session')
+
+    const currentSession = this.session.getCurrentSession()
+
+    if (!currentSession) {
+      // Create a new session if none exists
+      console.log('Toji: No current session, creating default session')
+      const newSession = await this.session.create('Default Session')
+      return await this.session.prompt(text, newSession.id)
+    }
+
+    return await this.session.prompt(text, currentSession.id)
+  }
+
+  /**
    * Send a chat message to the current session
    * High-level abstraction for all interfaces to use
    */

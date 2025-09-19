@@ -12,6 +12,7 @@ import type { ClientManager } from '../client'
  */
 export class SessionManager {
   private currentSession?: Session
+  private sessionIdentifiers: Map<string, string> = new Map() // Maps identifiers to session IDs
 
   constructor(private clientManager: ClientManager) {}
 
@@ -177,5 +178,90 @@ export class SessionManager {
    */
   setCurrentSession(session: Session): void {
     this.currentSession = session
+  }
+
+  /**
+   * Get a session by its external identifier
+   * @param identifier - External identifier (e.g., Discord channel ID)
+   * @returns The session if found, undefined otherwise
+   */
+  async getByIdentifier(identifier: string): Promise<Session | undefined> {
+    const sessionId = this.sessionIdentifiers.get(identifier)
+    if (!sessionId) {
+      return undefined
+    }
+
+    try {
+      return await this.get(sessionId)
+    } catch {
+      // Session may have been deleted
+      this.sessionIdentifiers.delete(identifier)
+      return undefined
+    }
+  }
+
+  /**
+   * Set or update the identifier mapping for a session
+   * @param sessionId - The OpenCode session ID
+   * @param identifier - External identifier to map
+   */
+  async setSessionIdentifier(sessionId: string, identifier: string): Promise<void> {
+    // First verify the session exists
+    await this.get(sessionId)
+    this.sessionIdentifiers.set(identifier, sessionId)
+  }
+
+  /**
+   * Get or create a session by identifier
+   * @param identifier - External identifier for the session
+   * @param title - Optional title for new sessions
+   * @returns The session (existing or newly created) and whether it was created
+   */
+  async getOrCreateSession(
+    identifier: string,
+    title?: string
+  ): Promise<{
+    session: Session
+    isNew: boolean
+  }> {
+    const existingSession = await this.getByIdentifier(identifier)
+
+    if (existingSession) {
+      return {
+        session: existingSession,
+        isNew: false
+      }
+    }
+
+    const newSession = await this.create(title || `Session ${identifier}`)
+    await this.setSessionIdentifier(newSession.id, identifier)
+
+    return {
+      session: newSession,
+      isNew: true
+    }
+  }
+
+  /**
+   * Get session context (recent messages)
+   * @param sessionId - The session ID
+   * @param limit - Maximum number of messages to return
+   * @returns Array of message parts
+   */
+  async getSessionContext(sessionId: string, limit = 10): Promise<Part[]> {
+    const messages = await this.getMessages(sessionId)
+    return messages.slice(-limit)
+  }
+
+  /**
+   * Cleanup inactive sessions
+   * @param _maxAge - Maximum age in milliseconds (unused until session timestamps are available)
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async cleanupInactiveSessions(_maxAge: number): Promise<void> {
+    // OpenCode SDK sessions don't have a createdAt field by default
+    // For now, we'll skip cleanup until we can track session age properly
+    // This would require extending the session data with metadata
+    console.log('Session cleanup not implemented - sessions lack timestamp metadata')
   }
 }

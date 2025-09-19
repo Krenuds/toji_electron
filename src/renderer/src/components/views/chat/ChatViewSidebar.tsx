@@ -5,11 +5,13 @@ import { SidebarContainer } from '../../SidebarContainer'
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useWorkspace } from '../../../hooks/useWorkspace'
+import { useCoreStatus } from '../../../hooks/useCoreStatus'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const serverStatus = useServerStatus()
   const { isChangingWorkspace, currentWorkspace, selectAndChangeWorkspace, workspaceInfo } =
     useWorkspace()
+  const { isRunning, getCurrentDirectory } = useCoreStatus()
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
 
   useEffect(() => {
@@ -22,10 +24,14 @@ export function ChatViewSidebar(): React.JSX.Element {
       // Check working directory when server is running
       const checkWorkingDirectory = async (): Promise<void> => {
         try {
-          const isRunning = await window.api.core.isRunning()
-          if (isRunning) {
-            const dir = await window.api.core.getCurrentDirectory()
-            setWorkingDirectory(dir)
+          const running = await isRunning()
+          if (running) {
+            const dir = await getCurrentDirectory()
+            if (dir) {
+              setWorkingDirectory(dir)
+            } else {
+              setWorkingDirectory(undefined)
+            }
           } else {
             setWorkingDirectory(undefined)
           }
@@ -37,7 +43,7 @@ export function ChatViewSidebar(): React.JSX.Element {
 
       checkWorkingDirectory()
     }
-  }, [workspaceInfo, currentWorkspace])
+  }, [workspaceInfo, currentWorkspace, isRunning, getCurrentDirectory])
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>

@@ -6,20 +6,22 @@ import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
 import { ViewType } from './types/ViewTypes'
 import { useViewCoordination } from './hooks/useViewCoordination'
+import { useWindowControls } from './hooks/useWindowControls'
 
 function AppContent(): React.JSX.Element {
   const { activeView, setActiveView, getSidebarContent, getMainContent } = useViewCoordination()
+  const { minimize, maximize, close } = useWindowControls()
 
   const handleMinimize = (): void => {
-    window.api.window.minimize()
+    minimize()
   }
 
   const handleMaximize = (): void => {
-    window.api.window.maximize()
+    maximize()
   }
 
   const handleClose = (): void => {
-    window.api.window.close()
+    close()
   }
 
   const handleIconClick = (viewName?: ViewType): void => {
