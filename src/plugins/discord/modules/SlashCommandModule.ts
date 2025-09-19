@@ -1,5 +1,5 @@
-import { Collection, ChatInputCommandInteraction, Events } from 'discord.js'
-import type { Client, Interaction } from 'discord.js'
+import { Collection, ChatInputCommandInteraction } from 'discord.js'
+import type { Client } from 'discord.js'
 import type { Toji } from '../../../main/api/Toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 import type { DiscordChatModule } from './ChatModule'
@@ -66,15 +66,13 @@ export class SlashCommandModule implements DiscordModule {
 
   /**
    * Setup interaction listener on Discord client
+   * Note: This is called but we don't register another handler since
+   * DiscordService already routes interactions through DiscordPlugin
    */
-  setupInteractionHandler(client: Client): void {
-    client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-      if (!interaction.isChatInputCommand()) return
-
-      await this.handleCommand(interaction)
-    })
-
-    console.log('SlashCommandModule: Interaction handler registered')
+  setupInteractionHandler(_client: Client): void {
+    // Handler registration removed - interactions are routed through
+    // DiscordService -> DiscordPlugin.handleInteraction -> this.handleCommand
+    console.log('SlashCommandModule: Ready to handle commands')
   }
 
   /**
@@ -85,10 +83,14 @@ export class SlashCommandModule implements DiscordModule {
 
     if (!command) {
       console.error(`SlashCommandModule: Unknown command ${interaction.commandName}`)
-      await interaction.reply({
-        content: 'I don&apos;t know that command!',
-        ephemeral: true
-      })
+      try {
+        await interaction.reply({
+          content: 'I don&apos;t know that command!',
+          ephemeral: true
+        })
+      } catch (err) {
+        console.error('Failed to send unknown command response:', err)
+      }
       return
     }
 
@@ -97,6 +99,12 @@ export class SlashCommandModule implements DiscordModule {
         `SlashCommandModule: Executing command ${interaction.commandName} ` +
           `by ${interaction.user.tag} in ${interaction.channelId}`
       )
+
+      // Check if interaction is still valid before executing
+      if (interaction.replied) {
+        console.warn('SlashCommandModule: Interaction already replied to, skipping')
+        return
+      }
 
       // Get chat module for session-related commands
       const chatModule = await this.getChatModule()
@@ -113,17 +121,21 @@ export class SlashCommandModule implements DiscordModule {
         error instanceof Error ? error.message : 'Unknown error'
       }`
 
-      // Try to reply or follow up
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: errorMessage,
-          ephemeral: true
-        })
-      } else {
-        await interaction.reply({
-          content: errorMessage,
-          ephemeral: true
-        })
+      // Try to reply or follow up with proper error handling
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({
+            content: errorMessage,
+            ephemeral: true
+          })
+        } else {
+          await interaction.reply({
+            content: errorMessage,
+            ephemeral: true
+          })
+        }
+      } catch (replyError) {
+        console.error('SlashCommandModule: Failed to send error response:', replyError)
       }
     }
   }
