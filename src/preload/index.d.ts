@@ -71,6 +71,10 @@ export interface CoreAPI {
     hasOpenCodeConfig: boolean
     hasGitignore: boolean
   }>
+
+  // Auto-start settings
+  getAutoStart: () => Promise<boolean>
+  setAutoStart: (enabled: boolean) => Promise<boolean>
 }
 
 export interface BinaryAPI {

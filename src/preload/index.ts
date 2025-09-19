@@ -54,7 +54,12 @@ const api = {
       hasGit: boolean
       hasOpenCodeConfig: boolean
       hasGitignore: boolean
-    }> => ipcRenderer.invoke('core:inspect-workspace', directory)
+    }> => ipcRenderer.invoke('core:inspect-workspace', directory),
+
+    // Auto-start settings
+    getAutoStart: (): Promise<boolean> => ipcRenderer.invoke('core:get-auto-start'),
+    setAutoStart: (enabled: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('core:set-auto-start', enabled)
   },
 
   // Binary Management API - separated from core agent logic

@@ -70,6 +70,25 @@ app.whenReady().then(async () => {
   discordService = new DiscordService(toji, config)
   console.log('Discord service initialized')
 
+  // Auto-start OpenCode if enabled
+  if (config.getOpencodeAutoStart()) {
+    try {
+      // First ensure binary is installed
+      await openCodeService.ensureBinary()
+
+      // Get the last used workspace
+      const workingDirectory = config.getOpencodeWorkingDirectory()
+      console.log('Auto-starting OpenCode in:', workingDirectory)
+
+      // Start OpenCode server
+      await toji.quickStart(workingDirectory)
+      console.log('OpenCode auto-started successfully')
+    } catch (error) {
+      console.error('Failed to auto-start OpenCode:', error)
+      // Don't crash the app, just log the error
+    }
+  }
+
   // Set up IPC handlers for Core and Binary management
   setupCoreHandlers()
   setupBinaryHandlers(openCodeService)
@@ -220,6 +239,23 @@ function setupCoreHandlers(): void {
       throw new Error('Toji not initialized')
     }
     return await toji.workspace.inspect(directory)
+  })
+
+  // Get auto-start setting
+  ipcMain.handle('core:get-auto-start', () => {
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    return config.getOpencodeAutoStart()
+  })
+
+  // Set auto-start setting
+  ipcMain.handle('core:set-auto-start', (_, enabled: boolean) => {
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    config.setOpencodeAutoStart(enabled)
+    return enabled
   })
 }
 

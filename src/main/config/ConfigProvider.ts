@@ -3,6 +3,7 @@ import Store from 'electron-store'
 interface AppConfig {
   opencode: {
     workingDirectory: string
+    autoStart: boolean
   }
   discord?: {
     token?: string
@@ -16,8 +17,9 @@ export class ConfigProvider {
     this.store = new Store<AppConfig>({
       defaults: {
         opencode: {
-          // Use the test target directory
-          workingDirectory: 'C:\\Users\\donth\\OneDrive\\Desktop\\tojiTest'
+          // Use the current project directory as default
+          workingDirectory: 'C:\\Users\\donth\\toji3',
+          autoStart: true
         }
       },
       // Enable encryption for sensitive data like Discord token
@@ -48,6 +50,15 @@ export class ConfigProvider {
 
   clearDiscordToken(): void {
     this.store.delete('discord.token')
+  }
+
+  // Auto-start management
+  getOpencodeAutoStart(): boolean {
+    return this.store.get('opencode.autoStart', true)
+  }
+
+  setOpencodeAutoStart(enabled: boolean): void {
+    this.store.set('opencode.autoStart', enabled)
   }
 
   // Get the entire config for debugging
