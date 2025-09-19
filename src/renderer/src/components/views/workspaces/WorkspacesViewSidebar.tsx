@@ -1,7 +1,10 @@
 import React from 'react'
-import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Badge, Separator } from '@chakra-ui/react'
 import { LuFolderOpen, LuMessageSquare, LuPlus, LuClock, LuZap } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
+import { SidebarHeader } from '../../shared/SidebarHeader'
+import { SidebarSection } from '../../shared/SidebarSection'
+import { QuickActionButton } from '../../shared/QuickActionButton'
 import { useWorkspace } from '../../../hooks/useWorkspace'
 import { useSession } from '../../../hooks/useSession'
 
@@ -20,60 +23,25 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
-        {/* Header */}
-        <Box>
-          <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
-            Session Management
-          </Text>
-          <Text color="app.text" fontSize="xs">
-            AI conversations and workspaces
-          </Text>
-        </Box>
+        <SidebarHeader title="Session Management" subtitle="AI conversations and workspaces" />
 
         <Separator borderColor="app.border" />
 
-        {/* Quick Actions */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Quick Actions
-          </Text>
+        <SidebarSection title="Quick Actions">
           <VStack gap={2} align="stretch">
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+            <QuickActionButton
+              icon={<LuFolderOpen size={14} />}
+              label={isChangingWorkspace ? 'Opening...' : 'Open Folder'}
               onClick={selectAndChangeWorkspace}
-              disabled={isChangingWorkspace}
-            >
-              <HStack gap={1}>
-                <LuFolderOpen size={14} />
-                <Text>{isChangingWorkspace ? 'Opening...' : 'Open Folder'}</Text>
-              </HStack>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-            >
-              <HStack gap={1}>
-                <LuPlus size={14} />
-                <Text>New Session</Text>
-              </HStack>
-            </Button>
+              isDisabled={isChangingWorkspace}
+            />
+            <QuickActionButton icon={<LuPlus size={14} />} label="New Session" onClick={() => {}} />
           </VStack>
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Session Stats */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Session Overview
-          </Text>
+        <SidebarSection title="Session Overview">
           <VStack gap={2} align="stretch">
             <Box p={2} borderRadius="md" bg="rgba(255,255,255,0.02)">
               <HStack justify="space-between">
@@ -106,15 +74,11 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
               </HStack>
             </Box>
           </VStack>
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Current Workspace */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Current Workspace
-          </Text>
+        <SidebarSection title="Current Workspace">
           {currentWorkspace ? (
             <Box
               p={2}
@@ -141,15 +105,11 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
               No workspace open
             </Text>
           )}
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Recent Activity */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Recent Activity
-          </Text>
+        <SidebarSection title="Recent Activity">
           <VStack gap={2} align="stretch">
             {sessions.slice(0, 3).map((session) => {
               const folderName = session.directory?.split(/[\\/]/).pop() || 'Unknown'
@@ -173,7 +133,7 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
               )
             })}
           </VStack>
-        </Box>
+        </SidebarSection>
       </VStack>
     </SidebarContainer>
   )

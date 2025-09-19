@@ -130,12 +130,13 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
     }
   }, [])
 
-  // Initialize on mount
+  // Initialize on mount - empty dependency array to run only once
   useEffect(() => {
     fetchCurrentDirectory()
     refreshCollections()
     refreshProjects()
-  }, [fetchCurrentDirectory, refreshCollections, refreshProjects])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Set up polling for updates (every 30 seconds)
   useEffect(() => {

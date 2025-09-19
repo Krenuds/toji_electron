@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Badge } from '@chakra-ui/react'
 import { LuMessageCircle, LuActivity, LuFolder, LuTrash2, LuRefreshCw } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
+import { SidebarHeader } from '../../shared/SidebarHeader'
+import { SidebarSection } from '../../shared/SidebarSection'
+import { QuickActionButton } from '../../shared/QuickActionButton'
 import { StatusBadge } from '../../StatusBadge'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useWorkspace } from '../../../hooks/useWorkspace'
@@ -67,50 +70,24 @@ export function ChatViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
-        {/* Header */}
-        <Box>
-          <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
-            Chat with Toji
-          </Text>
-          <Text color="app.text" fontSize="xs">
-            AI-powered coding assistant
-          </Text>
-        </Box>
+        <SidebarHeader title="Chat with Toji" subtitle="AI-powered coding assistant" />
 
         <Separator borderColor="app.border" />
 
-        {/* Quick Actions */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Quick Actions
-          </Text>
+        <SidebarSection title="Quick Actions">
           <VStack gap={2} align="stretch">
-            <Button
-              variant="ghost"
-              size="sm"
-              justifyContent="flex-start"
-              color="app.text"
-              _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+            <QuickActionButton
+              icon={<LuFolder size={14} />}
+              label={isChangingWorkspace ? 'Changing Workspace...' : 'New Chat (Select Folder)'}
               onClick={selectAndChangeWorkspace}
-              disabled={isChangingWorkspace}
-            >
-              <HStack gap={1}>
-                <LuFolder size={14} />
-                <Text>
-                  {isChangingWorkspace ? 'Changing Workspace...' : 'New Chat (Select Folder)'}
-                </Text>
-              </HStack>
-            </Button>
+              isDisabled={isChangingWorkspace}
+            />
           </VStack>
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Server Status */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Server Status
-          </Text>
+        <SidebarSection title="Server Status">
           <Box
             p={2}
             borderRadius="md"
@@ -151,16 +128,13 @@ export function ChatViewSidebar(): React.JSX.Element {
               </HStack>
             )}
           </Box>
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Sessions Management */}
-        <Box>
-          <HStack justify="space-between" mb={3}>
-            <Text color="app.light" fontSize="xs" fontWeight="semibold">
-              Sessions
-            </Text>
+        <SidebarSection
+          title="Sessions"
+          action={
             <Button
               size="xs"
               variant="ghost"
@@ -171,7 +145,8 @@ export function ChatViewSidebar(): React.JSX.Element {
             >
               <LuRefreshCw size={12} />
             </Button>
-          </HStack>
+          }
+        >
           <VStack gap={2} align="stretch">
             {isLoadingSessions ? (
               <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
@@ -233,15 +208,11 @@ export function ChatViewSidebar(): React.JSX.Element {
               ))
             )}
           </VStack>
-        </Box>
+        </SidebarSection>
 
         <Separator borderColor="app.border" />
 
-        {/* Activity */}
-        <Box>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Recent Activity
-          </Text>
+        <SidebarSection title="Recent Activity">
           <VStack gap={2} align="stretch">
             <HStack gap={2}>
               <LuMessageCircle size={12} color="#808080" />
@@ -256,7 +227,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               </Text>
             </HStack>
           </VStack>
-        </Box>
+        </SidebarSection>
       </VStack>
     </SidebarContainer>
   )

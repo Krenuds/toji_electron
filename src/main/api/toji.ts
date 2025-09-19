@@ -465,7 +465,12 @@ export class Toji {
 
       return enrichedProjects
     } catch (error) {
-      console.error('Toji: Error getting enriched projects:', error)
+      // Check if it's just an uninitialized client (expected when no workspace is open)
+      if (error instanceof Error && error.message.includes('Client not initialized')) {
+        console.log('Toji: Client not initialized, returning empty project list')
+      } else {
+        console.error('Toji: Error getting enriched projects:', error)
+      }
       return []
     }
   }

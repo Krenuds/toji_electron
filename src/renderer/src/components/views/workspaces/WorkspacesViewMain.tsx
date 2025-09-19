@@ -1,14 +1,25 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Grid, Card, Badge, Button } from '@chakra-ui/react'
-import { LuMessageSquare, LuClock, LuZap, LuRefreshCw, LuFolder, LuTrash2 } from 'react-icons/lu'
+import { LuMessageSquare, LuClock, LuZap, LuRefreshCw, LuFolder, LuTrash2, LuFolderOpen } from 'react-icons/lu'
 import { useSession } from '../../../hooks/useSession'
 import { useWorkspace } from '../../../hooks/useWorkspace'
+import { useCoreStatus } from '../../../hooks/useCoreStatus'
 import { WorkspaceTracker } from '../../WorkspaceTracker'
 import { MetricCard } from '../../shared'
 
 export function WorkspacesViewMain(): React.JSX.Element {
   const { sessions, isLoading, fetchSessions, deleteSession, currentSessionId } = useSession()
-  const { changeWorkspace } = useWorkspace()
+  const { changeWorkspace, selectAndChangeWorkspace } = useWorkspace()
+  const { isRunning } = useCoreStatus()
+  const [serverRunning, setServerRunning] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkServer = async (): Promise<void> => {
+      const running = await isRunning()
+      setServerRunning(running)
+    }
+    checkServer()
+  }, [isRunning])
 
   // Calculate session stats
   const totalSessions = sessions.length
@@ -121,16 +132,39 @@ export function WorkspacesViewMain(): React.JSX.Element {
                 </Text>
               ) : sessions.length === 0 ? (
                 <Box textAlign="center" py={8}>
-                  <LuMessageSquare size={32} color="#404040" style={{ margin: '0 auto' }} />
-                  <Text color="app.text" fontSize="sm" mt={3}>
-                    No sessions found
-                  </Text>
-                  <Text color="app.text" fontSize="xs" mt={1}>
-                    Start a new conversation to create a session
-                  </Text>
+                  {!serverRunning ? (
+                    <>
+                      <LuFolderOpen size={32} color="#404040" style={{ margin: '0 auto' }} />
+                      <Text color="app.light" fontSize="sm" mt={3}>
+                        OpenCode Server Not Running
+                      </Text>
+                      <Text color="app.text" fontSize="xs" mt={1} mb={3}>
+                        Open a workspace to start the OpenCode server and view sessions
+                      </Text>
+                      <Button
+                        size="sm"
+                        variant="subtle"
+                        colorPalette="green"
+                        onClick={selectAndChangeWorkspace}
+                      >
+                        <LuFolderOpen size={14} style={{ marginRight: 6 }} />
+                        Open Workspace
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <LuMessageSquare size={32} color="#404040" style={{ margin: '0 auto' }} />
+                      <Text color="app.text" fontSize="sm" mt={3}>
+                        No sessions found
+                      </Text>
+                      <Text color="app.text" fontSize="xs" mt={1}>
+                        Start a new conversation to create a session
+                      </Text>
+                    </>
+                  )}
                 </Box>
               ) : (
-                sessions.slice(0, 10).map((session) => {
+                sessions.slice(0, 15).map((session) => {
                   const folderName = session.directory?.split(/[\\/]/).pop() || 'Unknown'
                   const isActive = session.id === currentSessionId
                   const lastUpdated = session.time?.updated || session.time?.created || 0
