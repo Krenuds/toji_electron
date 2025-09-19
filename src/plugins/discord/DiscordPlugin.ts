@@ -13,7 +13,7 @@ export interface DiscordPluginEvents {
 }
 
 export interface DiscordModule {
-  initialize(plugin: DiscordPlugin): void
+  initialize(plugin: DiscordPlugin): void | Promise<void>
   cleanup(): void
 }
 
@@ -53,8 +53,8 @@ export class DiscordPlugin extends EventEmitter {
     this.chatModule = new DiscordChatModule(this.toji)
     this.slashCommandModule = new SlashCommandModule(this.toji)
 
-    this.registerModule('chat', this.chatModule)
-    this.registerModule('slashCommand', this.slashCommandModule)
+    await this.registerModule('chat', this.chatModule)
+    await this.registerModule('slashCommand', this.slashCommandModule)
 
     this.initialized = true
     console.log('DiscordPlugin: Initialized successfully')
@@ -63,9 +63,9 @@ export class DiscordPlugin extends EventEmitter {
   /**
    * Register a module with the plugin
    */
-  private registerModule(name: string, module: DiscordModule): void {
+  private async registerModule(name: string, module: DiscordModule): Promise<void> {
     console.log(`DiscordPlugin: Registering module: ${name}`)
-    module.initialize(this)
+    await module.initialize(this)
     this.modules.set(name, module)
   }
 

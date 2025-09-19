@@ -26,21 +26,22 @@ export class SlashCommandModule implements DiscordModule {
   private plugin?: DiscordPlugin
 
   constructor(private toji: Toji) {
-    this.loadCommands()
+    // Commands will be loaded during initialization
   }
 
   /**
    * Initialize the module with the parent plugin
    */
-  initialize(plugin: DiscordPlugin): void {
+  async initialize(plugin: DiscordPlugin): Promise<void> {
     this.plugin = plugin
+    await this.loadCommands()
     console.log('SlashCommandModule: Initialized')
   }
 
   /**
    * Load all command files
    */
-  private loadCommands(): void {
+  private async loadCommands(): Promise<void> {
     const commandsPath = path.join(__dirname, '..', 'commands')
 
     // Check if commands directory exists
@@ -57,8 +58,9 @@ export class SlashCommandModule implements DiscordModule {
       const filePath = path.join(commandsPath, file)
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const command = require(filePath) as SlashCommand
+        // Use dynamic import for command modules
+        const commandModule = await import(filePath)
+        const command = commandModule as SlashCommand
 
         if ('data' in command && 'execute' in command) {
           this.commands.set(command.data.name, command)

@@ -26,9 +26,9 @@ export async function deployCommands(
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file)
 
-    // Dynamic import for command modules
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const command = require(filePath)
+    // Use dynamic import for command modules
+    const commandModule = await import(filePath)
+    const command = commandModule
 
     if ('data' in command && 'execute' in command) {
       commands.push(command.data.toJSON())
@@ -63,7 +63,7 @@ export async function deployCommands(
 }
 
 // Standalone deployment script
-if (require.main === module) {
+if (process.argv[1] === __filename) {
   const token = process.env.DISCORD_TOKEN
   const clientId = process.env.DISCORD_CLIENT_ID || '1399539733880897537'
   const guildId = process.env.DISCORD_GUILD_ID // Optional, for guild-specific deployment
