@@ -1,4 +1,4 @@
-import { useState, useCallback, useContext } from 'react'
+import { useState, useCallback, useContext, useEffect } from 'react'
 import { AppViewContext } from '../contexts/AppViewContextDef'
 
 interface WorkspaceInfo {
@@ -27,29 +27,32 @@ export function useWorkspace(): UseWorkspaceResult {
   // Get the view context to switch to chat after opening workspace
   const viewContext = useContext(AppViewContext)
 
-  const changeWorkspace = useCallback(async (directory: string) => {
-    setIsChangingWorkspace(true)
-    setError(null)
+  const changeWorkspace = useCallback(
+    async (directory: string) => {
+      setIsChangingWorkspace(true)
+      setError(null)
 
-    try {
-      const info = await window.api.core.changeWorkspace(directory)
-      setWorkspaceInfo(info)
-      setCurrentWorkspace(info.workspacePath)
-      console.log('Workspace changed successfully:', info)
+      try {
+        const info = await window.api.core.changeWorkspace(directory)
+        setWorkspaceInfo(info)
+        setCurrentWorkspace(info.workspacePath)
+        console.log('Workspace changed successfully:', info)
 
-      // After successfully opening a workspace, switch to the chat view
-      if (viewContext) {
-        viewContext.setActiveView('chat')
+        // After successfully opening a workspace, switch to the chat view
+        if (viewContext) {
+          viewContext.setActiveView('chat')
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to change workspace'
+        setError(errorMessage)
+        console.error('Failed to change workspace:', err)
+        throw err
+      } finally {
+        setIsChangingWorkspace(false)
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to change workspace'
-      setError(errorMessage)
-      console.error('Failed to change workspace:', err)
-      throw err
-    } finally {
-      setIsChangingWorkspace(false)
-    }
-  }, [viewContext])
+    },
+    [viewContext]
+  )
 
   const selectAndChangeWorkspace = useCallback(async () => {
     try {
@@ -66,6 +69,36 @@ export function useWorkspace(): UseWorkspaceResult {
       // Error is already handled in changeWorkspace
     }
   }, [changeWorkspace])
+
+  // Fetch current workspace directory on mount
+  useEffect(() => {
+    const fetchCurrentWorkspace = async () => {
+      try {
+        // Check if OpenCode is running and get current directory
+        const isRunning = await window.api.core.isRunning()
+        if (isRunning) {
+          const directory = await window.api.core.getCurrentDirectory()
+          if (directory) {
+            // Set the workspace info without changing it (just populating state)
+            setCurrentWorkspace(directory)
+            // We need to get the full workspace info, but we don't have a direct API for that
+            // So we'll just set what we know
+            setWorkspaceInfo({
+              workspacePath: directory,
+              isNew: false,
+              hasGit: true, // These would need proper checking
+              hasOpenCodeConfig: true,
+              sessionId: ''
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch current workspace:', err)
+      }
+    }
+
+    fetchCurrentWorkspace()
+  }, [])
 
   return {
     isChangingWorkspace,
