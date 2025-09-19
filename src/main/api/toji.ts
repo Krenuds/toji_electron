@@ -480,12 +480,14 @@ export class Toji {
    * Extracts unique workspace paths from recent sessions
    * Returns simplified workspace objects with session counts
    */
-  async getWorkspacesFromSessions(limit = 100): Promise<Array<{
-    path: string
-    name: string
-    sessionCount: number
-    lastActivity: Date | null
-  }>> {
+  async getWorkspacesFromSessions(limit = 100): Promise<
+    Array<{
+      path: string
+      name: string
+      sessionCount: number
+      lastActivity: Date | null
+    }>
+  > {
     console.log(`Toji: Getting workspaces from last ${limit} sessions`)
 
     try {
@@ -503,12 +505,15 @@ export class Toji {
       const sessions = allSessions.slice(0, limit)
 
       // Group sessions by directory
-      const workspaceMap = new Map<string, {
-        sessions: typeof sessions
-        lastActivity: Date | null
-      }>()
+      const workspaceMap = new Map<
+        string,
+        {
+          sessions: typeof sessions
+          lastActivity: Date | null
+        }
+      >()
 
-      sessions.forEach(session => {
+      sessions.forEach((session) => {
         if (!session.directory) return
 
         const existing = workspaceMap.get(session.directory)
@@ -549,9 +554,10 @@ export class Toji {
         return b.lastActivity.getTime() - a.lastActivity.getTime()
       })
 
-      console.log(`Toji: Found ${workspaces.length} unique workspaces from ${sessions.length} sessions`)
+      console.log(
+        `Toji: Found ${workspaces.length} unique workspaces from ${sessions.length} sessions`
+      )
       return workspaces
-
     } catch (error) {
       console.error('Toji: Error getting workspaces from sessions:', error)
       return []

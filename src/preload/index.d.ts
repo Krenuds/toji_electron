@@ -63,12 +63,16 @@ export interface CoreAPI {
 
   // Workspace Collections & Projects
   getWorkspaceCollections: () => Promise<unknown[]>
-  getWorkspacesFromSessions: (limit?: number) => Promise<Array<{
-    path: string
-    name: string
-    sessionCount: number
-    lastActivity: Date | null
-  }>>
+  getWorkspacesFromSessions: (limit?: number) => Promise<
+    Array<{
+      path: string
+      name: string
+      sessionCount: number
+      lastActivity: Date | null
+    }>
+  >
+  openWorkspaceDirectory: (path: string) => Promise<void>
+  openSessionsDirectory: () => Promise<void>
   getAllProjects: () => Promise<unknown[]>
   discoverProjects: (baseDir?: string) => Promise<unknown[]>
   getEnrichedProjects: () => Promise<unknown[]>

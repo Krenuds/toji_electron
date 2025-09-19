@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
 import { Toji } from './api/toji'
@@ -247,6 +248,32 @@ function setupCoreHandlers(): void {
       throw new Error('Toji not initialized')
     }
     return await toji.getWorkspacesFromSessions(limit)
+  })
+
+  // Open workspace directory in system file manager
+  ipcMain.handle('core:open-workspace-directory', async (_, path: string) => {
+    const { shell } = await import('electron')
+    return shell.showItemInFolder(path)
+  })
+
+  // Open sessions data directory
+  ipcMain.handle('core:open-sessions-directory', async () => {
+    const { shell } = await import('electron')
+    if (!config) {
+      throw new Error('Config not initialized')
+    }
+    // Get the working directory where sessions might be stored
+    const workingDir = config.getOpencodeWorkingDirectory()
+
+    // Try to open the working directory
+    try {
+      await fs.access(workingDir)
+      return shell.openPath(workingDir)
+    } catch {
+      // If directory doesn't exist, create it and open
+      await fs.mkdir(workingDir, { recursive: true })
+      return shell.openPath(workingDir)
+    }
   })
 
   // Get recent workspaces

@@ -44,12 +44,19 @@ const api = {
     // Workspace Collections & Projects
     getWorkspaceCollections: (): Promise<unknown[]> =>
       ipcRenderer.invoke('core:workspace-collections'),
-    getWorkspacesFromSessions: (limit?: number): Promise<Array<{
-      path: string
-      name: string
-      sessionCount: number
-      lastActivity: Date | null
-    }>> => ipcRenderer.invoke('core:get-workspaces-from-sessions', limit),
+    getWorkspacesFromSessions: (
+      limit?: number
+    ): Promise<
+      Array<{
+        path: string
+        name: string
+        sessionCount: number
+        lastActivity: Date | null
+      }>
+    > => ipcRenderer.invoke('core:get-workspaces-from-sessions', limit),
+    openWorkspaceDirectory: (path: string): Promise<void> =>
+      ipcRenderer.invoke('core:open-workspace-directory', path),
+    openSessionsDirectory: (): Promise<void> => ipcRenderer.invoke('core:open-sessions-directory'),
     getAllProjects: (): Promise<unknown[]> => ipcRenderer.invoke('core:all-projects'),
     discoverProjects: (baseDir?: string): Promise<unknown[]> =>
       ipcRenderer.invoke('core:discover-projects', baseDir),
