@@ -1,9 +1,11 @@
 import React from 'react'
 import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/react'
-import { LuPlus, LuFolderOpen, LuActivity, LuGitBranch } from 'react-icons/lu'
+import { LuFolderOpen, LuActivity, LuGitBranch, LuSearch } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
+import { useWorkspace } from '../../../hooks/useWorkspace'
 
 export function WorkspacesViewSidebar(): React.JSX.Element {
+  const { isChangingWorkspace, selectAndChangeWorkspace, workspaceInfo } = useWorkspace()
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
@@ -13,7 +15,7 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
             Workspace Management
           </Text>
           <Text color="app.text" fontSize="xs">
-            Working directories and OpenCode projects
+            Working directories and Workspaces
           </Text>
         </Box>
 
@@ -31,9 +33,13 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
               justifyContent="flex-start"
               color="app.text"
               _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
+              onClick={selectAndChangeWorkspace}
+              disabled={isChangingWorkspace}
             >
-              <LuPlus size={14} />
-              Change Workspace
+              <HStack gap={1}>
+                <LuFolderOpen size={14} />
+                <Text>{isChangingWorkspace ? 'Opening Workspace...' : 'Open Workspace'}</Text>
+              </HStack>
             </Button>
             <Button
               variant="ghost"
@@ -42,18 +48,20 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
               color="app.text"
               _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
             >
-              <LuFolderOpen size={14} />
-              Discover Projects
+              <HStack gap={1}>
+                <LuSearch size={14} />
+                <Text>Discover Projects</Text>
+              </HStack>
             </Button>
           </VStack>
         </Box>
 
         <Separator borderColor="app.border" />
 
-        {/* Recent OpenCode Projects */}
+        {/* Recent Workspaces */}
         <Box>
           <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Recent OpenCode Projects
+            Recent Workspaces
           </Text>
           <VStack gap={2} align="stretch">
             <Box
@@ -69,12 +77,26 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
                   toji3
                 </Text>
                 <Badge colorPalette="green" size="xs">
-                  Active
+                  {workspaceInfo?.workspacePath?.includes('toji3') ? 'Active' : 'Recent'}
                 </Badge>
               </HStack>
               <Text color="app.text" fontSize="xs" lineClamp={1}>
                 C:/Users/donth/toji3
               </Text>
+              {workspaceInfo?.workspacePath?.includes('toji3') && (
+                <HStack mt={1} gap={1}>
+                  {workspaceInfo.hasGit && (
+                    <Badge size="xs" colorPalette="green" variant="subtle">
+                      Git
+                    </Badge>
+                  )}
+                  {workspaceInfo.hasOpenCodeConfig && (
+                    <Badge size="xs" colorPalette="blue" variant="subtle">
+                      Config
+                    </Badge>
+                  )}
+                </HStack>
+              )}
             </Box>
 
             <Box
