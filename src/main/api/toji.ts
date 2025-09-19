@@ -16,6 +16,10 @@ import { ClientManager } from './client'
 import { WorkspaceManager } from './workspace'
 import { SessionManager } from './session'
 import { ProjectManager } from './opencode-project'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+
+const execAsync = promisify(exec)
 
 /**
  * Toji - The main API orchestrator class that provides a unified interface
@@ -463,6 +467,94 @@ export class Toji {
     } catch (error) {
       console.error('Toji: Error getting enriched projects:', error)
       return []
+    }
+  }
+
+  // ===========================================
+  // Development Tools
+  // ===========================================
+
+  /**
+   * Run linting on the codebase
+   * @returns Linting result with success status and output
+   */
+  async runLint(): Promise<{ success: boolean; output: string; hasWarnings: boolean }> {
+    try {
+      const { stdout, stderr } = await execAsync('npm run lint')
+
+      const hasWarnings = stdout.includes('warning')
+      const hasErrors = stdout.includes('error')
+
+      if (stderr && !stderr.includes('warning')) {
+        throw new Error(stderr)
+      }
+
+      return {
+        success: !hasErrors,
+        output: stdout || 'No output',
+        hasWarnings
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return {
+        success: false,
+        output: message,
+        hasWarnings: false
+      }
+    }
+  }
+
+  /**
+   * Run TypeScript type checking
+   * @returns Type check result with success status and output
+   */
+  async runTypeCheck(): Promise<{ success: boolean; output: string; hasErrors: boolean }> {
+    try {
+      const { stdout, stderr } = await execAsync('npm run typecheck')
+
+      const hasErrors = stdout.includes('error')
+
+      if (stderr && !stderr.includes('warning')) {
+        throw new Error(stderr)
+      }
+
+      return {
+        success: !hasErrors,
+        output: stdout || 'No output',
+        hasErrors
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return {
+        success: false,
+        output: message,
+        hasErrors: true
+      }
+    }
+  }
+
+  /**
+   * Build the application
+   * @returns Build result with success status and output
+   */
+  async runBuild(): Promise<{ success: boolean; output: string }> {
+    try {
+      const { stdout, stderr } = await execAsync('npm run build')
+
+      if (stderr && !stderr.includes('warning')) {
+        throw new Error(stderr)
+      }
+
+      return {
+        success: true,
+        output: stdout || 'Build completed'
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return {
+        success: false,
+        output: message
+      }
     }
   }
 }

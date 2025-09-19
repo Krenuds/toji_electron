@@ -3,8 +3,8 @@ import { useAppView } from './useAppView'
 import { ViewType, ViewStateData } from '../types/ViewTypes'
 import { DashboardViewSidebar } from '../components/views/dashboard/DashboardViewSidebar'
 import { DashboardViewMain } from '../components/views/dashboard/DashboardViewMain'
-import { ProjectsViewSidebar } from '../components/views/projects/ProjectsViewSidebar'
-import { ProjectsViewMain } from '../components/views/projects/ProjectsViewMain'
+import { WorkspacesViewSidebar } from '../components/views/workspaces/WorkspacesViewSidebar'
+import { WorkspacesViewMain } from '../components/views/workspaces/WorkspacesViewMain'
 import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
 import { ChatViewMain } from '../components/views/chat/ChatViewMain'
 import { PlaceholderSidebar, PlaceholderMain } from '../components/PlaceholderViews'
@@ -25,8 +25,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
     switch (activeView) {
       case 'dashboard':
         return <DashboardViewSidebar />
-      case 'projects':
-        return <ProjectsViewSidebar />
+      case 'workspaces':
+        return <WorkspacesViewSidebar />
       case 'settings':
         return <PlaceholderSidebar viewName="settings" />
       case 'chat':
@@ -40,8 +40,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
     switch (activeView) {
       case 'dashboard':
         return <DashboardViewMain />
-      case 'projects':
-        return <ProjectsViewMain />
+      case 'workspaces':
+        return <WorkspacesViewMain />
       case 'settings':
         return <PlaceholderMain viewName="settings" />
       case 'chat':

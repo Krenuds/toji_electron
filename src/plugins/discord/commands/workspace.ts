@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js'
 import type { Toji } from '../../../main/api/toji'
+import { DISCORD_COLORS, getStatusColor } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('workspace')
@@ -62,7 +63,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         }
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('📁 Workspace Collections')
           .setDescription(`Found ${collections.length} workspace collection(s)`)
           .setTimestamp()
@@ -121,7 +122,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         const info = await toji.workspace.inspect(path)
 
         const embed = new EmbedBuilder()
-          .setColor(info.exists ? 0x33b42f : 0xff0000)
+          .setColor(getStatusColor(info.exists))
           .setTitle('🔍 Workspace Inspection')
           .setDescription(`Path: \`${path}\``)
           .addFields(
@@ -159,7 +160,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         }
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('🔎 Discovered Projects')
           .setDescription(`Found ${projects.length} project(s) in ${path || 'current directory'}`)
           .setTimestamp()

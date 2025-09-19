@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js'
 import type { Toji } from '../../../main/api/toji'
+import { DISCORD_COLORS } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('project')
@@ -33,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         }
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('📁 Enriched Projects')
           .setDescription(`Found ${enrichedProjects.length} project(s) with metadata`)
           .setTimestamp()
@@ -89,7 +90,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         }
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('📊 Current Project Information')
           .addFields(
             {
@@ -146,7 +147,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         }
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('🕒 Recently Accessed Projects')
           .setDescription('Top 5 most recently accessed projects')
           .setTimestamp()
@@ -193,7 +194,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
           totalProjects > 0 ? (totalSessions / totalProjects).toFixed(1) : '0'
 
         const embed = new EmbedBuilder()
-          .setColor(0x33b42f)
+          .setColor(DISCORD_COLORS.SUCCESS)
           .setTitle('📊 Project Statistics')
           .setDescription('Overview of your development activity')
           .addFields(

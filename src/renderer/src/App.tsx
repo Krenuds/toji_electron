@@ -49,9 +49,9 @@ function AppContent(): React.JSX.Element {
             />
             <IconButton
               icon={<LuFolderGit2 />}
-              tooltip="Projects"
-              viewName="projects"
-              isActive={activeView === 'projects'}
+              tooltip="Workspaces"
+              viewName="workspaces"
+              isActive={activeView === 'workspaces'}
               onClick={handleIconClick}
             />
             <IconButton

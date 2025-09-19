@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
+import { DISCORD_COLORS } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('help')
@@ -6,7 +7,7 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
   const helpEmbed = {
-    color: 0x33b42f, // Toji green
+    color: DISCORD_COLORS.TOJI_BRAND,
     title: '🤖 Toji Bot Help',
     description: 'I&apos;m Toji, your AI coding assistant powered by OpenCode!',
     fields: [

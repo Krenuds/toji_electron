@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/api/toji'
+import { DISCORD_COLORS } from '../constants'
 import type { DiscordChatModule } from '../modules/ChatModule'
 
 export const data = new SlashCommandBuilder()
@@ -123,7 +124,7 @@ export async function execute(
       const session = chatModule.getSessionInfo(interaction.channelId)
       if (session) {
         const embed = {
-          color: 0x33b42f,
+          color: DISCORD_COLORS.SUCCESS,
           title: '📊 Channel Session Info',
           fields: [
             {

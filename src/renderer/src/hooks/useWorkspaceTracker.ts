@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import type { WorkspaceCollection, EnrichedProject, DiscoveredProject } from '../../../main/api'
 
 interface WorkspaceInfo {
   exists: boolean
@@ -14,9 +15,9 @@ interface UseWorkspaceTrackerReturn {
   error: string | null
 
   // Workspace collections
-  collections: any[] // Using any for now since types aren't properly exported
-  enrichedProjects: any[]
-  discoveredProjects: any[]
+  collections: WorkspaceCollection[]
+  enrichedProjects: EnrichedProject[]
+  discoveredProjects: DiscoveredProject[]
 
   // Actions
   changeWorkspace: (directory: string) => Promise<void>
@@ -28,9 +29,9 @@ interface UseWorkspaceTrackerReturn {
 
 export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
   const [currentDirectory, setCurrentDirectory] = useState<string | undefined>(undefined)
-  const [collections, setCollections] = useState<any[]>([])
-  const [enrichedProjects, setEnrichedProjects] = useState<any[]>([])
-  const [discoveredProjects, setDiscoveredProjects] = useState<any[]>([])
+  const [collections, setCollections] = useState<WorkspaceCollection[]>([])
+  const [enrichedProjects, setEnrichedProjects] = useState<EnrichedProject[]>([])
+  const [discoveredProjects, setDiscoveredProjects] = useState<DiscoveredProject[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,7 +52,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
 
     try {
       const result = await window.api.core.getWorkspaceCollections()
-      setCollections(result || [])
+      setCollections((result as WorkspaceCollection[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch collections'
       setError(errorMessage)
@@ -68,7 +69,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
 
     try {
       const result = await window.api.core.getEnrichedProjects()
-      setEnrichedProjects(result || [])
+      setEnrichedProjects((result as EnrichedProject[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
       setError(errorMessage)
@@ -79,25 +80,28 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
   }, [])
 
   // Change workspace
-  const changeWorkspace = useCallback(async (directory: string) => {
-    setIsLoading(true)
-    setError(null)
+  const changeWorkspace = useCallback(
+    async (directory: string) => {
+      setIsLoading(true)
+      setError(null)
 
-    try {
-      await window.api.core.changeWorkspace(directory)
-      setCurrentDirectory(directory)
+      try {
+        await window.api.core.changeWorkspace(directory)
+        setCurrentDirectory(directory)
 
-      // Refresh collections and projects after workspace change
-      await refreshCollections()
-      await refreshProjects()
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to change workspace'
-      setError(errorMessage)
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }, [refreshCollections, refreshProjects])
+        // Refresh collections and projects after workspace change
+        await refreshCollections()
+        await refreshProjects()
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to change workspace'
+        setError(errorMessage)
+        throw error
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [refreshCollections, refreshProjects]
+  )
 
   // Inspect a workspace without changing to it
   const inspectWorkspace = useCallback(async (directory: string): Promise<WorkspaceInfo | null> => {
@@ -116,7 +120,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
 
     try {
       const result = await window.api.core.discoverProjects(baseDir)
-      setDiscoveredProjects(result || [])
+      setDiscoveredProjects((result as DiscoveredProject[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to discover projects'
       setError(errorMessage)

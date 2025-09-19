@@ -5,7 +5,7 @@ import { useProjects } from '../../../hooks/useProjects'
 import { useSession } from '../../../hooks/useSession'
 import { WorkspaceTracker } from '../../WorkspaceTracker'
 
-export function ProjectsViewMain(): React.JSX.Element {
+export function WorkspacesViewMain(): React.JSX.Element {
   const { projects, isLoading: isLoadingProjects, fetchProjects } = useProjects()
   const { sessions } = useSession()
 
@@ -18,10 +18,10 @@ export function ProjectsViewMain(): React.JSX.Element {
       {/* Header */}
       <Box>
         <Text color="app.light" fontSize="2xl" fontWeight="bold" mb={2}>
-          Projects
+          Workspaces
         </Text>
         <Text color="app.text" fontSize="sm">
-          Manage your development projects and track coding progress.
+          Manage your development workspaces and OpenCode projects.
         </Text>
       </Box>
 
@@ -31,7 +31,7 @@ export function ProjectsViewMain(): React.JSX.Element {
           <Card.Body p={4}>
             <HStack justify="space-between" mb={2}>
               <Text color="app.text" fontSize="sm">
-                Active Projects
+                OpenCode Projects
               </Text>
               <LuCode size={16} color="#808080" />
             </HStack>
@@ -48,7 +48,7 @@ export function ProjectsViewMain(): React.JSX.Element {
           <Card.Body p={4}>
             <HStack justify="space-between" mb={2}>
               <Text color="app.text" fontSize="sm">
-                OpenCode Sessions
+                Active Sessions
               </Text>
               <LuZap size={16} color="#808080" />
             </HStack>
@@ -56,7 +56,7 @@ export function ProjectsViewMain(): React.JSX.Element {
               {activeSessions}
             </Text>
             <Text color="app.text" fontSize="xs" mt={1}>
-              Active sessions
+              OpenCode sessions
             </Text>
           </Card.Body>
         </Card.Root>
@@ -65,15 +65,21 @@ export function ProjectsViewMain(): React.JSX.Element {
           <Card.Body p={4}>
             <HStack justify="space-between" mb={2}>
               <Text color="app.text" fontSize="sm">
-                Total Commits
+                Recent Sessions
               </Text>
               <LuGitBranch size={16} color="#808080" />
             </HStack>
             <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              47
+              {
+                sessions.filter((s) => {
+                  const lastUpdated = s.time?.updated || s.time?.created || 0
+                  const dayAgo = Date.now() - 24 * 60 * 60 * 1000
+                  return lastUpdated > dayAgo
+                }).length
+              }
             </Text>
-            <Text color="app.accent" fontSize="xs" mt={1}>
-              +8 this week
+            <Text color="app.text" fontSize="xs" mt={1}>
+              Last 24 hours
             </Text>
           </Card.Body>
         </Card.Root>
@@ -82,32 +88,32 @@ export function ProjectsViewMain(): React.JSX.Element {
           <Card.Body p={4}>
             <HStack justify="space-between" mb={2}>
               <Text color="app.text" fontSize="sm">
-                Hours Coded
+                Total Sessions
               </Text>
               <LuClock size={16} color="#808080" />
             </HStack>
             <Text color="app.light" fontSize="2xl" fontWeight="bold">
-              23.5
+              {sessions.length}
             </Text>
-            <Text color="app.accent" fontSize="xs" mt={1}>
-              +6.2 this week
+            <Text color="app.text" fontSize="xs" mt={1}>
+              All time
             </Text>
           </Card.Body>
         </Card.Root>
       </Grid>
 
-      {/* Project Status */}
+      {/* Workspace Content */}
       <Grid templateColumns="2fr 1fr" gap={6}>
-        {/* Active Projects */}
+        {/* OpenCode Projects List */}
         <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
           <Card.Header>
             <HStack justify="space-between">
               <Text color="app.light" fontSize="lg" fontWeight="semibold">
-                Active Projects
+                OpenCode Projects
               </Text>
               <HStack gap={2}>
                 <Badge colorPalette="green" variant="subtle">
-                  {activeProjects} Active
+                  {activeProjects} Projects
                 </Badge>
                 <Button
                   size="xs"
@@ -126,16 +132,16 @@ export function ProjectsViewMain(): React.JSX.Element {
             <VStack gap={4} align="stretch">
               {isLoadingProjects ? (
                 <Text color="app.text" fontSize="sm" textAlign="center" py={4}>
-                  Loading projects...
+                  Loading OpenCode projects...
                 </Text>
               ) : projects.length === 0 ? (
                 <Box textAlign="center" py={8}>
                   <LuFolder size={32} color="#404040" style={{ margin: '0 auto' }} />
                   <Text color="app.text" fontSize="sm" mt={3}>
-                    No projects found
+                    No OpenCode projects found
                   </Text>
                   <Text color="app.text" fontSize="xs" mt={1}>
-                    Select a folder to start a new project
+                    Initialize OpenCode in a workspace to create projects
                   </Text>
                 </Box>
               ) : (
@@ -157,12 +163,12 @@ export function ProjectsViewMain(): React.JSX.Element {
                       </Badge>
                     </HStack>
                     <Text color="app.text" fontSize="xs" mb={2} lineClamp={2}>
-                      {project.worktree || 'No path specified'}
+                      {project.worktree || 'No worktree path'}
                     </Text>
-                    {project.worktree?.includes('.git') && (
+                    {project.worktree && (
                       <Badge size="xs" colorPalette="blue" variant="subtle">
                         <LuGitBranch size={10} style={{ marginRight: 4 }} />
-                        Git
+                        Git Worktree
                       </Badge>
                     )}
                   </Box>
@@ -172,7 +178,7 @@ export function ProjectsViewMain(): React.JSX.Element {
           </Card.Body>
         </Card.Root>
 
-        {/* Workspace Tracker */}
+        {/* Workspace Tracker - Shows workspace collections */}
         <WorkspaceTracker />
       </Grid>
     </VStack>

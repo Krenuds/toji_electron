@@ -3,17 +3,17 @@ import { Box, VStack, HStack, Text, Badge, Button, Separator } from '@chakra-ui/
 import { LuPlus, LuFolderOpen, LuActivity, LuGitBranch } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 
-export function ProjectsViewSidebar(): React.JSX.Element {
+export function WorkspacesViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
         {/* Header */}
         <Box>
           <Text color="app.light" fontSize="sm" fontWeight="bold" mb={2}>
-            Projects
+            Workspace Management
           </Text>
           <Text color="app.text" fontSize="xs">
-            Manage and monitor development projects
+            Working directories and OpenCode projects
           </Text>
         </Box>
 
@@ -33,7 +33,7 @@ export function ProjectsViewSidebar(): React.JSX.Element {
               _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
             >
               <LuPlus size={14} />
-              New Project
+              Change Workspace
             </Button>
             <Button
               variant="ghost"
@@ -43,60 +43,58 @@ export function ProjectsViewSidebar(): React.JSX.Element {
               _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
             >
               <LuFolderOpen size={14} />
-              Open Project
+              Discover Projects
             </Button>
           </VStack>
         </Box>
 
         <Separator borderColor="app.border" />
 
-        {/* Recent Projects */}
+        {/* Recent OpenCode Projects */}
         <Box>
           <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
-            Recent Projects
+            Recent OpenCode Projects
           </Text>
           <VStack gap={2} align="stretch">
             <Box
               p={2}
               borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
               border="1px solid"
               borderColor="app.border"
+              _hover={{ bg: 'rgba(255,255,255,0.02)' }}
               cursor="pointer"
-              _hover={{ bg: 'rgba(255,255,255,0.05)' }}
             >
-              <HStack justify="space-between">
+              <HStack justify="space-between" mb={1}>
                 <Text color="app.light" fontSize="xs" fontWeight="medium">
                   toji3
                 </Text>
-                <Badge size="sm" colorScheme="green" variant="subtle">
+                <Badge colorPalette="green" size="xs">
                   Active
                 </Badge>
               </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                Desktop AI application
+              <Text color="app.text" fontSize="xs" lineClamp={1}>
+                C:/Users/donth/toji3
               </Text>
             </Box>
 
             <Box
               p={2}
               borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
               border="1px solid"
               borderColor="app.border"
+              _hover={{ bg: 'rgba(255,255,255,0.02)' }}
               cursor="pointer"
-              _hover={{ bg: 'rgba(255,255,255,0.05)' }}
             >
-              <HStack justify="space-between">
+              <HStack justify="space-between" mb={1}>
                 <Text color="app.light" fontSize="xs" fontWeight="medium">
-                  opencode-demo
+                  CNC
                 </Text>
-                <Badge size="sm" colorScheme="gray" variant="subtle">
+                <Badge colorPalette="gray" size="xs">
                   Idle
                 </Badge>
               </HStack>
-              <Text color="app.text" fontSize="2xs" mt={1}>
-                SDK integration example
+              <Text color="app.text" fontSize="xs" lineClamp={1}>
+                C:/Users/donth/Documents/GitHub/CNC
               </Text>
             </Box>
           </VStack>
@@ -110,23 +108,17 @@ export function ProjectsViewSidebar(): React.JSX.Element {
             Recent Activity
           </Text>
           <VStack gap={2} align="stretch">
-            <HStack gap={2}>
+            <HStack gap={2} fontSize="xs">
+              <LuActivity size={12} color="#33b42f" />
+              <Text color="app.text">Session created in toji3</Text>
+            </HStack>
+            <HStack gap={2} fontSize="xs">
               <LuGitBranch size={12} color="#808080" />
-              <Text color="app.text" fontSize="2xs">
-                Committed to master
-              </Text>
+              <Text color="app.text">Workspace changed to Downloads</Text>
             </HStack>
-            <HStack gap={2}>
-              <LuActivity size={12} color="#808080" />
-              <Text color="app.text" fontSize="2xs">
-                OpenCode session started
-              </Text>
-            </HStack>
-            <HStack gap={2}>
-              <LuFolderOpen size={12} color="#808080" />
-              <Text color="app.text" fontSize="2xs">
-                Project toji3 opened
-              </Text>
+            <HStack gap={2} fontSize="xs">
+              <LuActivity size={12} color="#33b42f" />
+              <Text color="app.text">3 projects discovered</Text>
             </HStack>
           </VStack>
         </Box>

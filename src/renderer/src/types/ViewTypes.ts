@@ -1,4 +1,4 @@
-export type ViewType = 'dashboard' | 'settings' | 'chat' | 'projects'
+export type ViewType = 'dashboard' | 'settings' | 'chat' | 'workspaces'
 
 export interface ViewStateData {
   [key: string]: unknown

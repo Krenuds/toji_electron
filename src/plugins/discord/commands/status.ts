@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/api/toji'
+import { getStatusColor } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('status')
@@ -9,7 +10,7 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
   const status = toji.getStatus()
 
   const embed = {
-    color: toji.isReady() ? 0x33b42f : 0xef4444, // Green if ready, red if not
+    color: getStatusColor(toji.isReady()),
     title: '🤖 Toji System Status',
     fields: [
       {
