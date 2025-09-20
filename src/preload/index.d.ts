@@ -33,7 +33,6 @@ export interface BinaryProgress {
   error?: string
 }
 
-
 // Legacy types - can be removed later if not needed
 
 export interface CoreAPI {
@@ -48,6 +47,7 @@ export interface CoreAPI {
   listProjects: () => Promise<{ data: Project[] }>
   listSessions: () => Promise<{ data: Session[] }>
   deleteSession: (sessionId: string) => Promise<void>
+  getSessionsForWorkspace: (workspacePath: string) => Promise<Session[]>
 
   // Chat Operations
   ensureReadyForChat: (directory?: string) => Promise<{ sessionId: string; serverStatus: string }>

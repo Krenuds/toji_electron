@@ -62,7 +62,8 @@
       "Bash(git fetch:*)",
       "Bash(tee:*)",
       "Bash(npx opencode serve:*)",
-      "Bash(npx opencode:*)"
+      "Bash(npx opencode:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

@@ -36,34 +36,34 @@ async changeWorkspace(directory: string) {
 interface WorkspaceSettings {
   // OpenCode Server Config (passed to createOpencodeServer)
   opencodeConfig?: {
-    model?: string;
-    theme?: string;
-    username?: string;
-    agent?: Record<string, any>;
-    provider?: Record<string, any>;
-    instructions?: string[];
+    model?: string
+    theme?: string
+    username?: string
+    agent?: Record<string, any>
+    provider?: Record<string, any>
+    instructions?: string[]
     permission?: {
-      edit?: boolean;
-      bash?: boolean;
-      webFetch?: boolean;
-    };
-  };
+      edit?: boolean
+      bash?: boolean
+      webFetch?: boolean
+    }
+  }
 
   // Toji UI Settings
   ui?: {
-    sidebarWidth?: number;
-    sidebarCollapsed?: boolean;
-    lastActiveView?: string;
-    customLabel?: string;
-    customIcon?: string;
-  };
+    sidebarWidth?: number
+    sidebarCollapsed?: boolean
+    lastActiveView?: string
+    customLabel?: string
+    customIcon?: string
+  }
 
   // Session Management
   session?: {
-    preferredSessionId?: string;
-    autoCreate?: boolean;
-    preserveOnRestart?: boolean;
-  };
+    preferredSessionId?: string
+    autoCreate?: boolean
+    preserveOnRestart?: boolean
+  }
 }
 ```
 
@@ -103,6 +103,7 @@ async updateWorkspaceConfig(path: string, newConfig: Partial<WorkspaceSettings>)
 ### Phase 1: Minimal Stub (For PLAN.md Step 3)
 
 1. **ConfigProvider.ts**
+
    ```typescript
    getWorkspaceSettings(path: string): WorkspaceSettings
    setWorkspaceSettings(path: string, settings: WorkspaceSettings): void
@@ -206,6 +207,7 @@ async updateWorkspaceConfig(path: string, newConfig: Partial<WorkspaceSettings>)
 ## Summary
 
 The server configuration architecture enables true workspace isolation by:
+
 - Creating dedicated server instances per workspace
 - Storing workspace-specific OpenCode configurations
 - Seamlessly restarting servers when configs change

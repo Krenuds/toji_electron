@@ -19,6 +19,7 @@ import { SessionManager } from './session'
 import { ProjectManager } from './opencode-project'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import * as path from 'path'
 
 const execAsync = promisify(exec)
 
@@ -661,6 +662,51 @@ export class Toji {
       return allWorkspaces
     } catch (error) {
       console.error('Toji: Error getting all workspaces:', error)
+      return []
+    }
+  }
+
+  /**
+   * Get sessions for a specific workspace
+   * Filters all sessions by workspace directory (cross-platform)
+   * @param workspacePath - The workspace path to filter by
+   * @returns Array of sessions belonging to this workspace
+   */
+  async getSessionsForWorkspace(
+    workspacePath: string
+  ): Promise<import('@opencode-ai/sdk').Session[]> {
+    console.log(`Toji: Getting sessions for workspace: ${workspacePath}`)
+
+    try {
+      // Ensure client is ready
+      if (!this.isReady()) {
+        console.log('Toji: Client not ready, returning empty session list')
+        return []
+      }
+
+      // Get all sessions
+      const sessionsResponse = await this.session.list()
+      const allSessions = sessionsResponse.data || []
+
+      // Normalize the input path for cross-platform comparison
+      const normalizedWorkspacePath = path.normalize(path.resolve(workspacePath))
+
+      // Filter sessions by normalized directory path
+      const workspaceSessions = allSessions.filter((session) => {
+        if (!session.directory) return false
+
+        // Normalize the session directory for comparison
+        const normalizedSessionDir = path.normalize(path.resolve(session.directory))
+
+        // Compare normalized paths
+        return normalizedSessionDir === normalizedWorkspacePath
+      })
+
+      console.log(`Toji: Found ${workspaceSessions.length} sessions for workspace ${workspacePath}`)
+
+      return workspaceSessions
+    } catch (error) {
+      console.error('Toji: Error getting sessions for workspace:', error)
       return []
     }
   }

@@ -22,6 +22,8 @@ const api = {
     listSessions: (): Promise<{ data: Session[] }> => ipcRenderer.invoke('core:list-sessions'),
     deleteSession: (sessionId: string): Promise<void> =>
       ipcRenderer.invoke('core:delete-session', sessionId),
+    getSessionsForWorkspace: (workspacePath: string): Promise<Session[]> =>
+      ipcRenderer.invoke('core:get-sessions-for-workspace', workspacePath),
 
     // Chat Operations
     ensureReadyForChat: (

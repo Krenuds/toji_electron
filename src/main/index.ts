@@ -183,6 +183,14 @@ function setupCoreHandlers(): void {
     return await toji.session.delete(sessionId)
   })
 
+  // Get sessions for a specific workspace
+  ipcMain.handle('core:get-sessions-for-workspace', async (_, workspacePath: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getSessionsForWorkspace(workspacePath)
+  })
+
   // Chat operations using Toji API
   ipcMain.handle('core:ensure-ready-for-chat', async (_, directory?: string) => {
     if (!toji) {
@@ -271,20 +279,20 @@ function setupCoreHandlers(): void {
   // Open sessions data directory
   ipcMain.handle('core:open-sessions-directory', async () => {
     const { shell } = await import('electron')
-    if (!config) {
-      throw new Error('Config not initialized')
-    }
-    // Get the working directory where sessions might be stored
-    const workingDir = config.getOpencodeWorkingDirectory()
 
-    // Try to open the working directory
+    // Get the actual sessions storage directory
+    // OpenCode stores sessions in userData/opencode-data/opencode/storage/session
+    const userDataPath = app.getPath('userData')
+    const sessionsDir = join(userDataPath, 'opencode-data', 'opencode', 'storage', 'session')
+
+    // Try to open the sessions directory
     try {
-      await fs.access(workingDir)
-      return shell.openPath(workingDir)
+      await fs.access(sessionsDir)
+      return shell.openPath(sessionsDir)
     } catch {
       // If directory doesn't exist, create it and open
-      await fs.mkdir(workingDir, { recursive: true })
-      return shell.openPath(workingDir)
+      await fs.mkdir(sessionsDir, { recursive: true })
+      return shell.openPath(sessionsDir)
     }
   })
 
