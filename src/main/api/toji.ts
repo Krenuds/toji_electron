@@ -10,7 +10,7 @@ import type {
   DiscoveredProject
 } from './types'
 import type { OpenCodeService } from '../services/opencode-service'
-import type { ConfigProvider } from '../config/ConfigProvider'
+import type { ConfigProvider, WorkspaceSettings } from '../config/ConfigProvider'
 import { ServerManager } from './server'
 import { ClientManager } from './client'
 import { WorkspaceManager } from './workspace'
@@ -690,6 +690,52 @@ export class Toji {
     if (this.config) {
       this.config.clearRecentWorkspaces()
     }
+  }
+
+  /**
+   * Get workspace-specific settings
+   */
+  async getWorkspaceSettings(workspacePath: string): Promise<WorkspaceSettings> {
+    if (!this.config) {
+      console.warn('Toji: Config provider not initialized')
+      return {}
+    }
+    return this.config.getWorkspaceSettings(workspacePath)
+  }
+
+  /**
+   * Set workspace-specific settings
+   */
+  async setWorkspaceSettings(workspacePath: string, settings: WorkspaceSettings): Promise<void> {
+    if (!this.config) {
+      console.warn('Toji: Config provider not initialized')
+      return
+    }
+    this.config.setWorkspaceSettings(workspacePath, settings)
+    console.log(`Toji: Updated settings for workspace: ${workspacePath}`)
+  }
+
+  /**
+   * Clear workspace-specific settings
+   */
+  async clearWorkspaceSettings(workspacePath: string): Promise<void> {
+    if (!this.config) {
+      console.warn('Toji: Config provider not initialized')
+      return
+    }
+    this.config.clearWorkspaceSettings(workspacePath)
+    console.log(`Toji: Cleared settings for workspace: ${workspacePath}`)
+  }
+
+  /**
+   * Get all workspace settings (for debugging)
+   */
+  async getAllWorkspaceSettings(): Promise<Record<string, WorkspaceSettings>> {
+    if (!this.config) {
+      console.warn('Toji: Config provider not initialized')
+      return {}
+    }
+    return this.config.getAllWorkspaceSettings()
   }
 
   // ===========================================

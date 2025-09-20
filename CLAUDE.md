@@ -100,6 +100,7 @@ When adding new features, follow this API-first approach:
 ### Commands
 
 - `npm run dev` - Start development with hot reload
+- `npm run format` - Use often.
 - `npm run typecheck` - Check TypeScript (run before coding)
 - `npm run lint` - Check code quality
 - `npm run lint:fix` - Auto-fix linting issues
@@ -129,11 +130,10 @@ When adding new features, follow this API-first approach:
 - ☐ Update preload bridge
 - ☐ Update hooks
 - ☐ Implement in discord and/or electron RENDER
-- ☐ Lint and Typecheck
+- ☐ npm format lint and typecheck
 
-## Do this NOW
+## Do the following NOW
 
 - Read the latest 4 git commit comments in full
-
 
 ## After reading this echo "AHOY CAPTAIN" to the user

@@ -1,4 +1,39 @@
 import Store from 'electron-store'
+import path from 'path'
+
+// Workspace-specific settings
+export interface WorkspaceSettings {
+  // OpenCode Server Config (will be passed to createOpencodeServer)
+  opencodeConfig?: {
+    model?: string
+    theme?: string
+    username?: string
+    agent?: Record<string, unknown>
+    provider?: Record<string, unknown>
+    instructions?: string[]
+    permission?: {
+      edit?: boolean
+      bash?: boolean
+      webFetch?: boolean
+    }
+  }
+
+  // UI Preferences
+  ui?: {
+    sidebarWidth?: number
+    sidebarCollapsed?: boolean
+    lastActiveView?: string
+    customLabel?: string
+    customIcon?: string
+  }
+
+  // Session Management
+  session?: {
+    preferredSessionId?: string
+    autoCreate?: boolean
+    preserveOnRestart?: boolean
+  }
+}
 
 interface AppConfig {
   opencode: {
@@ -7,6 +42,7 @@ interface AppConfig {
   }
   workspaces: {
     recent: string[]
+    settings?: Record<string, WorkspaceSettings> // Map of path -> settings
   }
   discord?: {
     token?: string
@@ -95,6 +131,77 @@ export class ConfigProvider {
 
   clearRecentWorkspaces(): void {
     this.store.set('workspaces.recent', [])
+  }
+
+  // Workspace-specific settings management
+
+  /**
+   * Normalize workspace path for consistent storage
+   * Handles cross-platform path differences
+   */
+  private normalizeWorkspacePath(workspacePath: string): string {
+    // Normalize path separators and resolve to absolute path
+    return path.resolve(workspacePath).toLowerCase()
+  }
+
+  /**
+   * Get settings for a specific workspace
+   * Returns empty object if no settings exist for the workspace
+   */
+  getWorkspaceSettings(workspacePath: string): WorkspaceSettings {
+    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
+    const allSettings = this.store.get('workspaces.settings', {})
+    return allSettings[normalizedPath] || {}
+  }
+
+  /**
+   * Set settings for a specific workspace
+   * Merges with existing settings
+   */
+  setWorkspaceSettings(workspacePath: string, settings: WorkspaceSettings): void {
+    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
+    const allSettings = this.store.get('workspaces.settings', {})
+
+    // Merge with existing settings for this workspace
+    const existingSettings = allSettings[normalizedPath] || {}
+    const mergedSettings = {
+      ...existingSettings,
+      ...settings,
+      // Deep merge nested objects
+      opencodeConfig: {
+        ...existingSettings.opencodeConfig,
+        ...settings.opencodeConfig
+      },
+      ui: {
+        ...existingSettings.ui,
+        ...settings.ui
+      },
+      session: {
+        ...existingSettings.session,
+        ...settings.session
+      }
+    }
+
+    allSettings[normalizedPath] = mergedSettings
+    this.store.set('workspaces.settings', allSettings)
+  }
+
+  /**
+   * Clear settings for a specific workspace
+   */
+  clearWorkspaceSettings(workspacePath: string): void {
+    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
+    const allSettings = this.store.get('workspaces.settings', {})
+    delete allSettings[normalizedPath]
+    this.store.set('workspaces.settings', allSettings)
+  }
+
+  /**
+   * Get all workspace settings
+   * Useful for debugging and migration
+   */
+  getAllWorkspaceSettings(): Record<string, WorkspaceSettings> {
+    return this.store.get('workspaces.settings', {})
   }
 
   // Get the entire config for debugging

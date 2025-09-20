@@ -32,6 +32,40 @@ export interface BinaryProgress {
   error?: string
 }
 
+// Workspace-specific settings
+export interface WorkspaceSettings {
+  // OpenCode Server Config (will be passed to createOpencodeServer)
+  opencodeConfig?: {
+    model?: string
+    theme?: string
+    username?: string
+    agent?: Record<string, unknown>
+    provider?: Record<string, unknown>
+    instructions?: string[]
+    permission?: {
+      edit?: boolean
+      bash?: boolean
+      webFetch?: boolean
+    }
+  }
+
+  // UI Preferences
+  ui?: {
+    sidebarWidth?: number
+    sidebarCollapsed?: boolean
+    lastActiveView?: string
+    customLabel?: string
+    customIcon?: string
+  }
+
+  // Session Management
+  session?: {
+    preferredSessionId?: string
+    autoCreate?: boolean
+    preserveOnRestart?: boolean
+  }
+}
+
 // Legacy types - can be removed later if not needed
 
 export interface CoreAPI {
@@ -97,6 +131,12 @@ export interface CoreAPI {
   getRecentWorkspaces: () => Promise<string[]>
   removeRecentWorkspace: (path: string) => Promise<string[]>
   clearRecentWorkspaces: () => Promise<string[]>
+
+  // Workspace-specific settings
+  getWorkspaceSettings: (workspacePath: string) => Promise<WorkspaceSettings>
+  setWorkspaceSettings: (workspacePath: string, settings: WorkspaceSettings) => Promise<void>
+  clearWorkspaceSettings: (workspacePath: string) => Promise<void>
+  getAllWorkspaceSettings: () => Promise<Record<string, WorkspaceSettings>>
 
   // Auto-start settings
   getAutoStart: () => Promise<boolean>

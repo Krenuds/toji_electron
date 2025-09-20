@@ -60,7 +60,9 @@
       "Read(//c/**)",
       "Bash(npx opencode run:*)",
       "Bash(git fetch:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(npx opencode serve:*)",
+      "Bash(npx opencode:*)"
     ],
     "deny": [],
     "ask": []

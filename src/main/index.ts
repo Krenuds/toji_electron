@@ -313,6 +313,38 @@ function setupCoreHandlers(): void {
     return []
   })
 
+  // Workspace-specific settings handlers
+  ipcMain.handle('core:get-workspace-settings', async (_, workspacePath: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getWorkspaceSettings(workspacePath)
+  })
+
+  ipcMain.handle(
+    'core:set-workspace-settings',
+    async (_, workspacePath: string, settings: unknown) => {
+      if (!toji) {
+        throw new Error('Toji not initialized')
+      }
+      await toji.setWorkspaceSettings(workspacePath, settings as any)
+    }
+  )
+
+  ipcMain.handle('core:clear-workspace-settings', async (_, workspacePath: string) => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    await toji.clearWorkspaceSettings(workspacePath)
+  })
+
+  ipcMain.handle('core:get-all-workspace-settings', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return await toji.getAllWorkspaceSettings()
+  })
+
   // Get auto-start setting
   ipcMain.handle('core:get-auto-start', () => {
     if (!config) {

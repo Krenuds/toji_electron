@@ -89,6 +89,16 @@ const api = {
     clearRecentWorkspaces: (): Promise<string[]> =>
       ipcRenderer.invoke('core:clear-recent-workspaces'),
 
+    // Workspace-specific settings
+    getWorkspaceSettings: (workspacePath: string): Promise<unknown> =>
+      ipcRenderer.invoke('core:get-workspace-settings', workspacePath),
+    setWorkspaceSettings: (workspacePath: string, settings: unknown): Promise<void> =>
+      ipcRenderer.invoke('core:set-workspace-settings', workspacePath, settings),
+    clearWorkspaceSettings: (workspacePath: string): Promise<void> =>
+      ipcRenderer.invoke('core:clear-workspace-settings', workspacePath),
+    getAllWorkspaceSettings: (): Promise<Record<string, unknown>> =>
+      ipcRenderer.invoke('core:get-all-workspace-settings'),
+
     // Auto-start settings
     getAutoStart: (): Promise<boolean> => ipcRenderer.invoke('core:get-auto-start'),
     setAutoStart: (enabled: boolean): Promise<boolean> =>

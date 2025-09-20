@@ -1,0 +1,10 @@
+{
+  "name": "opencode-config-test",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Test OpenCode config behavior",
+  "main": "testConfig.mjs",
+  "scripts": {
+    "test": "node testConfig.mjs"
+  }
+}
