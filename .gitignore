@@ -21,3 +21,4 @@ e2e/**/*.js
 
 # Claude local settings
 .claude/settings.local.json
+.toji.workspace
