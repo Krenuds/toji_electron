@@ -3,11 +3,10 @@ import { join } from 'path'
 import { promises as fs } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/toji.png?asset'
-import { Toji } from './api/toji'
+import { Toji } from './toji'
 import { OpenCodeService } from './services/opencode-service'
 import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
-import type { WorkspaceSettings } from './api/types'
 
 // Global instances
 let toji: Toji | null = null
@@ -83,7 +82,8 @@ app.whenReady().then(async () => {
       console.log('Auto-starting OpenCode in:', workingDirectory)
 
       // Start OpenCode server
-      await toji.quickStart(workingDirectory)
+      // TODO: Re-implement quickStart
+      // await toji.quickStart(workingDirectory)
 
       // Track this workspace in recent list
       config.addRecentWorkspace(workingDirectory)
@@ -130,16 +130,19 @@ function setupCoreHandlers(): void {
     return isReady
   })
 
-  ipcMain.handle('core:get-current-directory', async () => {
-    return toji!.workspace.getCurrentDirectory()
-  })
+  // TODO: Re-implement
+  // ipcMain.handle('core:get-current-directory', async () => {
+  //   return toji!.workspace.getCurrentDirectory()
+  // })
 
   // Main API - Start OpenCode in directory
   ipcMain.handle('core:start-opencode', async (_, directory: string, config?: object) => {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.initialize(directory, config)
+    // TODO: Re-implement initialize
+    // return await toji.initialize(directory, config)
+    return
   })
 
   // Stop OpenCode
@@ -156,7 +159,9 @@ function setupCoreHandlers(): void {
       throw new Error('Toji not initialized')
     }
     // All business logic now in Toji API - IPC is just a thin passthrough
-    return await toji.promptWithAutoSession(text)
+    // TODO: Re-implement promptWithAutoSession
+    // return await toji.promptWithAutoSession(text)
+    return 'Not implemented yet'
   })
 
   // List projects
@@ -164,7 +169,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.project.list()
+    // TODO: Re-implement project.list
+    // return await toji.project.list()
+    return { data: [] }
   })
 
   // List sessions
@@ -172,7 +179,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.session.list()
+    // TODO: Re-implement session.list
+    // return await toji.session.list()
+    return { data: [] }
   })
 
   // Delete session
@@ -180,7 +189,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.session.delete(sessionId)
+    // TODO: Re-implement session.delete
+    // return await toji.session.delete(sessionId)
+    return
   })
 
   // Get sessions for a specific workspace
@@ -188,7 +199,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getSessionsForWorkspace(workspacePath)
+    // TODO: Re-implement getSessionsForWorkspace
+    // return await toji.getSessionsForWorkspace(workspacePath)
+    return []
   })
 
   // Chat operations using Toji API
@@ -196,14 +209,18 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.ensureReadyForChat(directory)
+    // TODO: Re-implement ensureReadyForChat
+    // return await toji.ensureReadyForChat(directory)
+    return { sessionId: '', serverStatus: 'offline' }
   })
 
   ipcMain.handle('core:chat', async (_, message: string) => {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.chat(message)
+    // TODO: Re-implement chat
+    // return await toji.chat(message)
+    return 'Not implemented yet'
   })
 
   // Change workspace directory
@@ -211,7 +228,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.changeWorkspace(directory)
+    // TODO: Re-implement changeWorkspace
+    // return await toji.changeWorkspace(directory)
+    return { isNew: true, hasGit: false, hasOpenCodeConfig: false, sessionId: '', workspacePath: directory }
   })
 
   // Get workspace collections
@@ -219,7 +238,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getWorkspaceCollections()
+    // TODO: Re-implement getWorkspaceCollections
+    // return await toji.getWorkspaceCollections()
+    return []
   })
 
   // Get all enriched projects
@@ -227,7 +248,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getAllProjects()
+    // TODO: Re-implement getAllProjects
+    // return await toji.getAllProjects()
+    return []
   })
 
   // Discover projects in directory
@@ -235,7 +258,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.discoverProjects(baseDir)
+    // TODO: Re-implement discoverProjects
+    // return await toji.discoverProjects(baseDir)
+    return []
   })
 
   // Get enriched projects
@@ -243,7 +268,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getEnrichedProjects()
+    // TODO: Re-implement getEnrichedProjects
+    // return await toji.getEnrichedProjects()
+    return []
   })
 
   // Inspect workspace
@@ -251,7 +278,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.workspace.inspect(directory)
+    // TODO: Re-implement workspace.inspect
+    // return await toji.workspace.inspect(directory)
+    return { exists: false, hasGit: false, hasOpenCodeConfig: false, hasNodeModules: false }
   })
 
   // Get workspaces from sessions
@@ -259,7 +288,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getWorkspacesFromSessions(limit)
+    // TODO: Re-implement getWorkspacesFromSessions
+    // return await toji.getWorkspacesFromSessions(limit)
+    return []
   })
 
   // Get all workspaces (sessions + recent)
@@ -267,7 +298,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getAllWorkspaces(limit)
+    // TODO: Re-implement getAllWorkspaces
+    // return await toji.getAllWorkspaces(limit)
+    return []
   })
 
   // Open workspace directory in system file manager
@@ -301,7 +334,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return toji.getRecentWorkspaces()
+    // TODO: Re-implement getRecentWorkspaces
+    // return toji.getRecentWorkspaces()
+    return []
   })
 
   // Remove workspace from recent list
@@ -309,8 +344,11 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    toji.removeRecentWorkspace(path)
-    return toji.getRecentWorkspaces()
+    // TODO: Re-implement removeRecentWorkspace
+    // toji.removeRecentWorkspace(path)
+    // TODO: Re-implement getRecentWorkspaces
+    // return toji.getRecentWorkspaces()
+    return []
   })
 
   // Clear all recent workspaces
@@ -318,7 +356,8 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    toji.clearRecentWorkspaces()
+    // TODO: Re-implement clearRecentWorkspaces
+    // toji.clearRecentWorkspaces()
     return []
   })
 
@@ -327,7 +366,9 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getWorkspaceSettings(workspacePath)
+    // TODO: Re-implement getWorkspaceSettings
+    // return await toji.getWorkspaceSettings(workspacePath)
+    return {}
   })
 
   ipcMain.handle(
@@ -336,7 +377,8 @@ function setupCoreHandlers(): void {
       if (!toji) {
         throw new Error('Toji not initialized')
       }
-      await toji.setWorkspaceSettings(workspacePath, settings as WorkspaceSettings)
+      // TODO: Re-implement setWorkspaceSettings
+      // await toji.setWorkspaceSettings(workspacePath, settings)
     }
   )
 
@@ -344,14 +386,17 @@ function setupCoreHandlers(): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    await toji.clearWorkspaceSettings(workspacePath)
+    // TODO: Re-implement clearWorkspaceSettings
+    // await toji.clearWorkspaceSettings(workspacePath)
   })
 
   ipcMain.handle('core:get-all-workspace-settings', async () => {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return await toji.getAllWorkspaceSettings()
+    // TODO: Re-implement getAllWorkspaceSettings
+    // return await toji.getAllWorkspaceSettings()
+    return {}
   })
 
   // Get auto-start setting
@@ -510,7 +555,9 @@ function setupBinaryHandlers(openCodeService: OpenCodeService): void {
     if (!toji) {
       throw new Error('Toji API not initialized')
     }
-    return await toji.server.getLogs()
+    // TODO: Re-implement getLogs
+    // return await toji.server.getLogs()
+    return 'Logs not available yet'
   })
 }
 

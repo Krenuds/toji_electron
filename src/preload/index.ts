@@ -1,8 +1,27 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { BinaryInfo, BinaryProgress } from './index.d'
-import type { Project, Session } from '../main/api'
-import type { WorkspaceSettings } from '../main/api'
+// TODO: Import these from OpenCode SDK when needed
+// import type { Project, Session } from '@opencode-ai/sdk'
+import type { WorkspaceSettings } from '../main/toji/types'
+
+// Temporary type definitions
+interface Project {
+  id: string
+  worktree: string
+  vcs?: any
+}
+
+interface Session {
+  id: string
+  title?: string
+  directory?: string
+  projectID?: string
+  time?: {
+    created?: number
+    updated?: number
+  }
+}
 
 // Custom APIs for renderer
 const api = {

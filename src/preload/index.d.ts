@@ -1,6 +1,25 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Project, Session } from '../main/api'
-import type { WorkspaceSettings } from '../main/api'
+// TODO: Import these from OpenCode SDK when needed
+// import type { Project, Session } from '@opencode-ai/sdk'
+import type { WorkspaceSettings } from '../main/toji/types'
+
+// Temporary type definitions until we properly import from SDK
+interface Project {
+  id: string
+  worktree: string
+  vcs?: any
+}
+
+interface Session {
+  id: string
+  title?: string
+  directory?: string
+  projectID?: string
+  time?: {
+    created?: number
+    updated?: number
+  }
+}
 
 // OpenCode API Types
 export interface OpenCodeConfig {

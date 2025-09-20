@@ -1,5 +1,5 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
-import type { Toji } from '../../../main/api/toji'
+import type { Toji } from '../../../main/toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
 import type { DiscordChatModule } from './ChatModule'
 

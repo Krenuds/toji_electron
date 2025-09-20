@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js'
-import type { Toji } from '../../../main/api/toji'
+import type { Toji } from '../../../main/toji'
 import { DISCORD_COLORS } from '../constants'
 import { formatErrorAsCodeBlock } from '../utils/errors'
 

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
-import type { Toji } from '../../../main/api/toji'
+import type { Toji } from '../../../main/toji'
 import { DISCORD_COLORS } from '../constants'
 import type { DiscordChatModule } from '../modules/ChatModule'
 

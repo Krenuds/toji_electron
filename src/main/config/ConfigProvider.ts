@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import path from 'path'
 
-import type { WorkspaceSettings } from '../api/types'
+import type { WorkspaceSettings } from '../toji/types'
 
 interface AppConfig {
   opencode: {
