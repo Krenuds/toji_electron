@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { BinaryInfo, BinaryProgress } from './index.d'
 import type { Project, Session } from '../main/api'
+import type { WorkspaceSettings } from '../main/api'
 
 // Custom APIs for renderer
 const api = {
@@ -90,13 +91,13 @@ const api = {
       ipcRenderer.invoke('core:clear-recent-workspaces'),
 
     // Workspace-specific settings
-    getWorkspaceSettings: (workspacePath: string): Promise<unknown> =>
+    getWorkspaceSettings: (workspacePath: string): Promise<WorkspaceSettings> =>
       ipcRenderer.invoke('core:get-workspace-settings', workspacePath),
-    setWorkspaceSettings: (workspacePath: string, settings: unknown): Promise<void> =>
+    setWorkspaceSettings: (workspacePath: string, settings: WorkspaceSettings): Promise<void> =>
       ipcRenderer.invoke('core:set-workspace-settings', workspacePath, settings),
     clearWorkspaceSettings: (workspacePath: string): Promise<void> =>
       ipcRenderer.invoke('core:clear-workspace-settings', workspacePath),
-    getAllWorkspaceSettings: (): Promise<Record<string, unknown>> =>
+    getAllWorkspaceSettings: (): Promise<Record<string, WorkspaceSettings>> =>
       ipcRenderer.invoke('core:get-all-workspace-settings'),
 
     // Auto-start settings

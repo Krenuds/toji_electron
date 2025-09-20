@@ -7,10 +7,11 @@ import type {
   TojiStatus,
   WorkspaceCollection,
   EnrichedProject,
-  DiscoveredProject
+  DiscoveredProject,
+  WorkspaceSettings
 } from './types'
 import type { OpenCodeService } from '../services/opencode-service'
-import type { ConfigProvider, WorkspaceSettings } from '../config/ConfigProvider'
+import type { ConfigProvider } from '../config/ConfigProvider'
 import { ServerManager } from './server'
 import { ClientManager } from './client'
 import { WorkspaceManager } from './workspace'

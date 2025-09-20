@@ -7,6 +7,7 @@ import { Toji } from './api/toji'
 import { OpenCodeService } from './services/opencode-service'
 import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
+import type { WorkspaceSettings } from './api/types'
 
 // Global instances
 let toji: Toji | null = null
@@ -327,7 +328,7 @@ function setupCoreHandlers(): void {
       if (!toji) {
         throw new Error('Toji not initialized')
       }
-      await toji.setWorkspaceSettings(workspacePath, settings as any)
+      await toji.setWorkspaceSettings(workspacePath, settings as WorkspaceSettings)
     }
   )
 

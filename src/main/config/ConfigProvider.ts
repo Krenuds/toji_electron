@@ -1,39 +1,7 @@
 import Store from 'electron-store'
 import path from 'path'
 
-// Workspace-specific settings
-export interface WorkspaceSettings {
-  // OpenCode Server Config (will be passed to createOpencodeServer)
-  opencodeConfig?: {
-    model?: string
-    theme?: string
-    username?: string
-    agent?: Record<string, unknown>
-    provider?: Record<string, unknown>
-    instructions?: string[]
-    permission?: {
-      edit?: boolean
-      bash?: boolean
-      webFetch?: boolean
-    }
-  }
-
-  // UI Preferences
-  ui?: {
-    sidebarWidth?: number
-    sidebarCollapsed?: boolean
-    lastActiveView?: string
-    customLabel?: string
-    customIcon?: string
-  }
-
-  // Session Management
-  session?: {
-    preferredSessionId?: string
-    autoCreate?: boolean
-    preserveOnRestart?: boolean
-  }
-}
+import type { WorkspaceSettings } from '../api/types'
 
 interface AppConfig {
   opencode: {

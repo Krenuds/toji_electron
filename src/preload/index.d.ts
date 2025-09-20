@@ -1,5 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type { Project, Session } from '../main/api'
+import type { WorkspaceSettings } from '../main/api'
 
 // OpenCode API Types
 export interface OpenCodeConfig {
@@ -32,39 +33,6 @@ export interface BinaryProgress {
   error?: string
 }
 
-// Workspace-specific settings
-export interface WorkspaceSettings {
-  // OpenCode Server Config (will be passed to createOpencodeServer)
-  opencodeConfig?: {
-    model?: string
-    theme?: string
-    username?: string
-    agent?: Record<string, unknown>
-    provider?: Record<string, unknown>
-    instructions?: string[]
-    permission?: {
-      edit?: boolean
-      bash?: boolean
-      webFetch?: boolean
-    }
-  }
-
-  // UI Preferences
-  ui?: {
-    sidebarWidth?: number
-    sidebarCollapsed?: boolean
-    lastActiveView?: string
-    customLabel?: string
-    customIcon?: string
-  }
-
-  // Session Management
-  session?: {
-    preferredSessionId?: string
-    autoCreate?: boolean
-    preserveOnRestart?: boolean
-  }
-}
 
 // Legacy types - can be removed later if not needed
 
