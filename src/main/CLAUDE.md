@@ -1,174 +1,517 @@
-# OpenCode Integration Architecture
+# Backend Architecture - Main Process
 
 ## Overview
 
-This document covers the OpenCode SDK integration within the Electron main process. The main process handles all system-level operations, OpenCode SDK communication, and provides secure IPC bridges to the renderer process.
+The Electron main process serves as the **central authority** for all business logic and OpenCode SDK integration. This document details the backend architecture, API design, and service management patterns.
 
-## OpenCode SDK Overview
+## Core Philosophy
 
-OpenCode is an AI coding agent with a **client/server architecture** that provides both CLI and programmatic interfaces. The SDK (`@opencode-ai/sdk`) offers a TypeScript-based API for integrating OpenCode functionality into applications.
+**"Business Logic Lives Here"** - The main process is the single source of truth for all operations. Plugin interfaces (including the renderer) are thin wrappers that call main process APIs.
 
-## Core Architecture Components
+## Code Quality Standards - MANDATORY
 
-### Binary Dependencies
+**WE RUN A TIGHT SHIP** - Every line of code must meet these standards:
 
-- **Primary Binary**: OpenCode ships as a compiled binary (Go + TypeScript)
-- **Installation Paths**: Multiple binary location strategies:
-  1. `$OPENCODE_INSTALL_DIR` (custom directory)
-  2. XDG Base Directory compliant path
-  3. `$HOME/bin`
-  4. `$HOME/.opencode/bin` (fallback)
-  5. `~/.local/share/opencode/bin` (working directory for operations)
+### The Sacred Workflow
+```bash
+# BEFORE writing ANY code
+npm run format
+npm run typecheck
 
-### Server Creation Process (`createOpencodeServer`)
+# AFTER every change
+npm run format
+npm run lint:fix
+npm run lint         # MUST show 0 errors
+npm run typecheck    # MUST pass completely
+
+# BEFORE committing
+npm run format && npm run lint && npm run typecheck
+```
+
+### TypeScript Requirements
+- **NO `any` TYPES**: Use proper interfaces or generics
+- **EXPLICIT RETURN TYPES**: Every function needs one
+- **NO UNUSED VARIABLES**: Remove or prefix with `_`
+- **STRICT NULL CHECKS**: Handle null/undefined properly
+- **EXHAUSTIVE SWITCHES**: Cover all cases
+
+## Architecture Layers
+
+### 1. Toji Core API (`/src/main/toji/`)
+
+The `Toji` class is the primary interface for all OpenCode operations:
 
 ```typescript
-import { createOpencodeServer } from '@opencode-ai/sdk'
+class Toji {
+  private server?: OpencodeServer
+  private currentSession?: Session
+  private currentWorkspace?: string
 
-const server = await createOpencodeServer({
-  hostname: '127.0.0.1', // Default: 127.0.0.1
-  port: 4096, // Default: 4096
-  signal: abortSignal, // Optional AbortSignal
-  timeout: 5000, // Default: 5000ms
-  config: {
-    // Inline configuration
-    model: 'anthropic/claude-3-5-sonnet-20241022'
+  // Core lifecycle methods
+  async initialize(config?: TojiConfig): Promise<void>
+  async shutdown(): Promise<void>
+
+  // Workspace management
+  async changeWorkspace(directory: string): Promise<WorkspaceInfo>
+  async inspectWorkspace(directory: string): Promise<WorkspaceStatus>
+
+  // Chat operations
+  async ensureReadyForChat(directory?: string): Promise<ChatReadyStatus>
+  async chat(message: string): Promise<string>
+
+  // Session management
+  async listSessions(): Promise<Session[]>
+  async createSession(options?: SessionOptions): Promise<Session>
+  async deleteSession(sessionId: string): Promise<void>
+}
+```
+
+### 2. Service Layer (`/src/main/services/`)
+
+Supporting services handle specific responsibilities:
+
+#### OpenCodeService
+- Binary installation and verification
+- Process lifecycle management
+- Health monitoring
+
+#### ConfigProvider
+- Settings persistence with electron-store
+- Environment variable management
+- Default configuration values
+
+#### DiscordService
+- Bot lifecycle management
+- Command registration
+- Event handling
+
+### 3. IPC Handler Layer (`/src/main/index.ts`)
+
+Thin handlers that expose Toji API to renderer:
+
+```typescript
+// Pattern: Direct pass-through with error handling
+ipcMain.handle('core:chat', async (_, message: string) => {
+  try {
+    return await toji.chat(message)
+  } catch (error) {
+    console.error('Chat error:', error)
+    throw error
   }
 })
 ```
 
-### Binary Execution Model
+## OpenCode SDK Integration
 
-- **Process Spawning**: Uses Node.js `child_process.spawn()` for binary execution
-- **Working Directory**: Operations expect `~/.local/share/opencode/bin` to exist
-- **Subprocess Management**: Spawns subagents for various operations (fzf, ripgrep, etc.)
-- **Posix Spawn**: Uses `posix_spawn` system calls on Unix-like systems
+### Binary Management
 
-## Critical System Dependencies
+The OpenCode SDK requires careful binary management:
 
-### Filesystem Requirements
+1. **Installation Path Resolution**:
+   ```typescript
+   const paths = [
+     process.env.OPENCODE_INSTALL_DIR,
+     path.join(os.homedir(), '.local', 'share', 'opencode', 'bin'),
+     path.join(os.homedir(), '.opencode', 'bin'),
+     path.join(os.homedir(), 'bin')
+   ]
+   ```
 
-- **Directory Creation**: SDK requires creation of multiple directories:
-  - `~/.local/share/opencode/bin` (critical for subprocess operations)
-  - `~/.local/share/opencode/data`
-  - `~/.local/share/opencode/config`
-  - `~/.local/share/opencode/state`
-  - `~/.local/share/opencode/log`
+2. **Directory Creation**:
+   ```typescript
+   // Required directories for OpenCode operation
+   const requiredDirs = [
+     '~/.local/share/opencode/bin',
+     '~/.local/share/opencode/data',
+     '~/.local/share/opencode/config',
+     '~/.local/share/opencode/state',
+     '~/.local/share/opencode/log'
+   ]
+   ```
 
-### Binary Tool Dependencies
+3. **Process Spawning**:
+   ```typescript
+   const server = await createOpencodeServer({
+     hostname: '127.0.0.1',
+     port: 4096,
+     timeout: 5000,
+     signal: abortController.signal
+   })
+   ```
 
-- **fzf**: Fuzzy finder tool
-- **ripgrep**: Fast text search tool
-- **OpenCode binary**: Main agent executable
-- **Terminal Emulator**: Requires "modern terminal emulator" for full functionality
+### Error Handling Patterns
 
-### Configuration System
+```typescript
+// Graceful degradation pattern
+async ensureServerRunning(): Promise<boolean> {
+  if (this.server?.isRunning()) return true
 
-- **Config File**: Reads `opencode.json` for default configuration
-- **Inline Override**: `createOpencodeServer` config parameter overrides defaults
-- **Provider Support**: Multi-provider (Anthropic, OpenAI, Google, local models)
+  try {
+    await this.startServer()
+    return true
+  } catch (error) {
+    console.error('Failed to start server:', error)
+    // Emit status event for UI feedback
+    this.emit('server:error', error.message)
+    return false
+  }
+}
+```
 
-## Potential Electron Integration Challenges
+## Plugin Interface Design
 
-### Security Model Conflicts
+### Discord Plugin Integration
 
-1. **Binary Execution**: Electron's sandbox may restrict `child_process.spawn()`
-2. **Filesystem Access**: Limited write access to user directories
-3. **PATH Resolution**: Sandboxed processes may not inherit full PATH environment
-4. **Process Isolation**: OpenCode's subprocess model may conflict with Electron's security
+The Discord plugin demonstrates the plugin pattern:
 
-### Common Failure Modes
+```typescript
+class DiscordPlugin {
+  constructor(private toji: Toji) {}
 
-- **ENOENT Errors**: "no such file or directory, posix_spawn" when bin directory missing
-- **Permission Denied**: Sandboxed processes cannot execute binaries
-- **PATH Issues**: Binary not found due to restricted environment variables
-- **Working Directory**: Process spawn fails when expected directories don't exist
+  async handleChat(message: string, context: DiscordContext) {
+    // Thin wrapper around Toji API
+    const response = await this.toji.chat(message)
+    return this.formatForDiscord(response)
+  }
+}
+```
 
-### System-Level Operations
+### IPC Plugin Pattern (Renderer)
 
-- **Binary Installation**: Downloads and installs additional tools (fzf, ripgrep)
-- **Process Management**: Manages long-running subprocess connections
-- **File System Monitoring**: May watch files for changes
-- **Network Operations**: HTTP server on localhost with configurable port
+The renderer acts as another plugin through IPC:
 
-## Toji Agent Lifecycle
+```typescript
+// Main process exposes API
+ipcMain.handle('core:chat', (_, msg) => toji.chat(msg))
 
-1. **Initialization**:
-   - Validates binary availability
-   - Creates required directory structure
-   - Loads configuration from `opencode.json`
+// Renderer consumes through preload bridge
+window.api.core.chat(message)
+```
 
-2. **Server Startup**:
-   - Spawns OpenCode binary as subprocess
-   - Establishes HTTP server on specified port
-   - Sets up IPC communication channels
+## State Management
 
-3. **Operation**:
-   - Processes API requests through HTTP
-   - Manages AI provider connections
-   - Handles file system operations
+### Workspace State
 
-4. **Cleanup**:
-   - `server.close()` method terminates subprocess
-   - Cleans up network connections
-   - Releases file system locks
+```typescript
+interface WorkspaceState {
+  path: string
+  hasGit: boolean
+  hasOpenCodeConfig: boolean
+  sessions: Session[]
+  lastActivity: Date
+}
+```
 
-## Integration Implications
+### Session State
 
-- **Main Process Requirement**: Must run in Electron main process (Node.js environment)
-- **Preload Limitation**: Cannot use directly in preload scripts due to binary dependencies
-- **Security Considerations**: Requires full filesystem and process execution permissions
-- **Development vs Production**: Binary paths may differ between development and packaged apps
+```typescript
+interface SessionState {
+  id: string
+  workspacePath: string
+  title?: string
+  created: Date
+  updated: Date
+}
+```
 
-## Main Process Implementation Guidelines
+### Persistence Strategy
 
-### Core API Layer (`src/main/api/core.ts`)
+- **Workspace Settings**: electron-store for persistence
+- **Recent Workspaces**: Stored in user preferences
+- **Session Data**: Managed by OpenCode SDK
+- **Runtime State**: In-memory with event emissions
 
-The Core class provides the primary interface for OpenCode operations:
+## Event System
 
-- **Directory Management**: Handles workspace setup and Git initialization
-- **Agent Lifecycle**: Manages OpenCode server startup and shutdown
-- **Session Management**: Creates and manages conversation sessions
-- **Prompt Processing**: Handles AI interactions and response formatting
+### Internal Events
 
-### Service Layer (`src/main/services/`)
+```typescript
+// Server lifecycle events
+toji.on('server:started', () => {})
+toji.on('server:stopped', () => {})
+toji.on('server:error', (error) => {})
 
-Supporting services handle specific responsibilities:
+// Session events
+toji.on('session:created', (session) => {})
+toji.on('session:deleted', (sessionId) => {})
 
-- **OpenCodeService**: Binary installation and management
-- **ConfigurationService**: Settings and preferences management
-- **FileSystemService**: Safe file operations and monitoring
+// Workspace events
+toji.on('workspace:changed', (path) => {})
+```
 
-### IPC Bridge (`src/preload/index.ts`)
+### IPC Event Broadcasting
 
-The preload script exposes safe APIs to the renderer:
+```typescript
+// Broadcast to all renderer windows
+BrowserWindow.getAllWindows().forEach(window => {
+  window.webContents.send('server:status', status)
+})
+```
 
-- **Type-Safe Interfaces**: All IPC methods have corresponding TypeScript definitions
-- **Error Handling**: Main process errors are sanitized before reaching renderer
-- **Event Streaming**: Real-time updates for long-running operations
-- **Security Validation**: All inputs are validated before reaching main process
+## Security Considerations
 
-## Development Best Practices
+### Process Isolation
 
-### Error Handling
+- OpenCode runs in controlled subprocess
+- Limited filesystem access through path validation
+- Sandboxed execution environment
 
-- **Graceful Degradation**: Application continues to function when OpenCode is unavailable
-- **User-Friendly Messages**: Technical errors are converted to actionable user feedback
-- **Retry Logic**: Automatic retry for transient failures
-- **Logging**: Comprehensive logging for debugging and monitoring
+### Input Validation
 
-### Resource Management
+```typescript
+async changeWorkspace(directory: string) {
+  // Validate path exists and is accessible
+  if (!fs.existsSync(directory)) {
+    throw new Error('Directory does not exist')
+  }
 
-- **Process Cleanup**: Ensure OpenCode processes are properly terminated
-- **Memory Management**: Monitor and limit resource usage
-- **Connection Pooling**: Reuse connections when possible
-- **Timeout Handling**: Prevent hanging operations
+  // Ensure absolute path
+  const absolutePath = path.resolve(directory)
 
-### Security Considerations
+  // Check permissions
+  try {
+    await fs.promises.access(absolutePath, fs.constants.R_OK)
+  } catch {
+    throw new Error('No read access to directory')
+  }
 
-- **Input Validation**: Sanitize all user inputs before processing
-- **Path Restrictions**: Limit file system access to authorized directories
-- **Process Isolation**: Run OpenCode operations in controlled environment
-- **API Exposure**: Only expose necessary functionality through IPC bridge
+  return this.setWorkspace(absolutePath)
+}
+```
 
-This architecture ensures secure, reliable integration of OpenCode capabilities while maintaining Electron's security model and providing a robust foundation for AI-powered development tools.
+### IPC Security
+
+- Context isolation enabled
+- Preload script validates all inputs
+- No direct exposure of Node.js APIs
+
+## Resource Management
+
+### Process Lifecycle
+
+```typescript
+class ProcessManager {
+  private processes: Map<string, ChildProcess> = new Map()
+
+  async spawn(name: string, command: string) {
+    const process = spawn(command)
+    this.processes.set(name, process)
+
+    process.on('exit', () => {
+      this.processes.delete(name)
+    })
+  }
+
+  async cleanup() {
+    for (const [name, process] of this.processes) {
+      process.kill('SIGTERM')
+    }
+  }
+}
+```
+
+### Memory Management
+
+- Stream large responses instead of buffering
+- Implement connection pooling
+- Regular garbage collection hints
+
+## Error Recovery
+
+### Retry Strategies
+
+```typescript
+async withRetry<T>(
+  operation: () => Promise<T>,
+  maxAttempts = 3,
+  delay = 1000
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      if (attempt === maxAttempts) throw error
+      await new Promise(resolve => setTimeout(resolve, delay * attempt))
+    }
+  }
+}
+```
+
+### Graceful Degradation
+
+- Application continues without OpenCode
+- Cached data for offline operation
+- Queue operations for later execution
+
+## Development Patterns
+
+### Adding New Features
+
+1. **Define in Toji class** - Business logic
+2. **Add IPC handler** - Expose to renderer
+3. **Update preload** - Type-safe bridge
+4. **Emit events** - Status updates
+5. **Handle errors** - User feedback
+
+### Testing Strategies
+
+- Unit tests for Toji methods
+- Integration tests for IPC communication
+- E2E tests with Playwright
+- Manual testing with `npm run dev`
+
+## Performance Optimization
+
+### Lazy Loading
+
+```typescript
+private _server?: OpencodeServer
+
+get server(): OpencodeServer {
+  if (!this._server) {
+    throw new Error('Server not initialized')
+  }
+  return this._server
+}
+```
+
+### Caching
+
+```typescript
+private workspaceCache = new Map<string, WorkspaceInfo>()
+
+async getWorkspaceInfo(path: string) {
+  if (this.workspaceCache.has(path)) {
+    return this.workspaceCache.get(path)
+  }
+
+  const info = await this.inspectWorkspace(path)
+  this.workspaceCache.set(path, info)
+  return info
+}
+```
+
+## Monitoring & Logging
+
+### Debug Logging
+
+```typescript
+const debug = require('debug')('toji:main')
+
+debug('Starting server with config:', config)
+```
+
+### Performance Monitoring
+
+```typescript
+const startTime = performance.now()
+const result = await operation()
+const duration = performance.now() - startTime
+
+if (duration > 1000) {
+  console.warn(`Slow operation: ${duration}ms`)
+}
+```
+
+## Common Patterns
+
+### Singleton Pattern
+
+```typescript
+class Toji {
+  private static instance: Toji
+
+  static getInstance(): Toji {
+    if (!this.instance) {
+      this.instance = new Toji()
+    }
+    return this.instance
+  }
+}
+```
+
+### Factory Pattern
+
+```typescript
+function createService(type: ServiceType) {
+  switch (type) {
+    case 'opencode':
+      return new OpenCodeService()
+    case 'discord':
+      return new DiscordService()
+  }
+}
+```
+
+### Observer Pattern
+
+```typescript
+class EventBus extends EventEmitter {
+  emit(event: string, ...args: any[]) {
+    debug(`Event: ${event}`, args)
+    return super.emit(event, ...args)
+  }
+}
+```
+
+## Best Practices - ENFORCED
+
+### Development Workflow (NEVER SKIP)
+```bash
+# Step 1: Format and check BEFORE coding
+npm run format
+npm run typecheck
+
+# Step 2: Write your code
+
+# Step 3: Format and fix IMMEDIATELY
+npm run format
+npm run lint:fix
+
+# Step 4: Verify quality
+npm run lint         # MUST be 0 errors
+npm run typecheck    # MUST pass
+
+# Step 5: Test thoroughly
+npm run dev
+```
+
+### Non-Negotiable Rules
+
+1. **FORMAT FIRST**: Always run `npm run format` before changes
+2. **TYPE EVERYTHING**: No `any` types, explicit returns required
+3. **VALIDATE INPUTS**: Check all inputs before processing
+4. **HANDLE ERRORS**: Every async operation needs try/catch
+5. **EMIT EVENTS**: Status changes must emit events
+6. **LOG CONTEXT**: Include relevant data in error logs
+7. **CLEAN UP**: Resources must be released on shutdown
+8. **LINT CONSTANTLY**: Zero tolerance for lint errors
+9. **TEST PATHS**: Error cases need explicit testing
+10. **DOCUMENT COMPLEXITY**: Add comments for non-obvious logic
+
+### TypeScript Strict Mode
+```typescript
+// tsconfig.node.json must have:
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true
+  }
+}
+```
+
+### Before EVERY Commit
+```bash
+# The holy trinity - ALL must pass
+npm run format && npm run lint && npm run typecheck
+```
+
+**REMEMBER**: Code quality is not optional. Every commit must pass all checks.
+
+This architecture ensures reliable, secure, and maintainable backend operations while providing a clean API for all plugin interfaces.
