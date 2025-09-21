@@ -7,6 +7,8 @@ import { WorkspacesViewSidebar } from '../components/views/workspaces/Workspaces
 import { WorkspacesViewMain } from '../components/views/workspaces/WorkspacesViewMain'
 import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
 import { ChatViewMain } from '../components/views/chat/ChatViewMain'
+import { ProjectsViewSidebar } from '../components/views/projects/ProjectsViewSidebar'
+import { ProjectsViewMain } from '../components/views/projects/ProjectsViewMain'
 import { PlaceholderSidebar, PlaceholderMain } from '../components/PlaceholderViews'
 
 interface UseViewCoordinationReturn {
@@ -27,6 +29,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
         return <DashboardViewSidebar />
       case 'workspaces':
         return <WorkspacesViewSidebar />
+      case 'projects':
+        return <ProjectsViewSidebar />
       case 'settings':
         return <PlaceholderSidebar viewName="settings" />
       case 'chat':
@@ -42,6 +46,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
         return <DashboardViewMain />
       case 'workspaces':
         return <WorkspacesViewMain />
+      case 'projects':
+        return <ProjectsViewMain />
       case 'settings':
         return <PlaceholderMain viewName="settings" />
       case 'chat':

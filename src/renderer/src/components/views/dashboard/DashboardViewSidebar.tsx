@@ -78,7 +78,7 @@ export function DashboardViewSidebar(): React.JSX.Element {
         <Card.Root
           size="sm"
           bg="rgba(255,255,255,0.02)"
-          border="1px solid"
+          border="2px solid"
           borderColor="app.border"
         >
           <Card.Header pb={2}>

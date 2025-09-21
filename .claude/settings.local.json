@@ -63,7 +63,10 @@
       "Bash(tee:*)",
       "Bash(npx opencode serve:*)",
       "Bash(npx opencode:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(git checkout:*)",
+      "Bash(git stash push:*)"
     ],
     "deny": [],
     "ask": []
