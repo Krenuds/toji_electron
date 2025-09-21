@@ -7,10 +7,7 @@ export function ProjectsViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
-        <SidebarHeader
-          title="Projects"
-          subtitle="Manage your OpenCode projects"
-        />
+        <SidebarHeader title="Projects" subtitle="Manage your OpenCode projects" />
 
         {/* Placeholder content */}
         <Box borderTop="1px solid" borderColor="app.border" pt={4}>

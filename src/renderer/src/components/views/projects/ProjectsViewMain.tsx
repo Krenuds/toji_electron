@@ -23,8 +23,8 @@ export function ProjectsViewMain(): React.JSX.Element {
             Projects View
           </Text>
           <Text color="app.text" fontSize="sm" textAlign="center" maxW="400px">
-            This is where your OpenCode projects will be displayed.
-            Features for project management coming soon.
+            This is where your OpenCode projects will be displayed. Features for project management
+            coming soon.
           </Text>
         </VStack>
       </Center>

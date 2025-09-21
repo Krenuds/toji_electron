@@ -11,7 +11,7 @@ export class Toji {
 
   constructor(
     private opencodeService: OpenCodeService,
-    private config?: ConfigProvider  // Will be used for workspace settings later
+    private config?: ConfigProvider // Will be used for workspace settings later
   ) {}
 
   // Start the OpenCode server

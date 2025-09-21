@@ -230,7 +230,13 @@ function setupCoreHandlers(): void {
     }
     // TODO: Re-implement changeWorkspace
     // return await toji.changeWorkspace(directory)
-    return { isNew: true, hasGit: false, hasOpenCodeConfig: false, sessionId: '', workspacePath: directory }
+    return {
+      isNew: true,
+      hasGit: false,
+      hasOpenCodeConfig: false,
+      sessionId: '',
+      workspacePath: directory
+    }
   })
 
   // Get workspace collections

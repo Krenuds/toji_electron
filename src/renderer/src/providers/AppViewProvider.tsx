@@ -19,7 +19,10 @@ export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.E
   // Load persisted view from localStorage on mount
   useEffect(() => {
     const savedView = localStorage.getItem('toji-active-view')
-    if (savedView && ['dashboard', 'settings', 'chat', 'workspaces', 'projects'].includes(savedView)) {
+    if (
+      savedView &&
+      ['dashboard', 'settings', 'chat', 'workspaces', 'projects'].includes(savedView)
+    ) {
       setActiveViewState(savedView as ViewType)
     }
 
