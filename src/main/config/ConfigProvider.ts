@@ -38,7 +38,9 @@ export class ConfigProvider {
   }
 
   getOpencodeWorkingDirectory(): string {
-    return this.store.get('opencode.workingDirectory')
+    // Always use the project directory as default for now
+    // TODO: Allow user to change this via settings UI
+    return 'C:\\Users\\donth\\toji3'
   }
 
   setOpencodeWorkingDirectory(path: string): void {

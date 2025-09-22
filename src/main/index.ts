@@ -90,8 +90,7 @@ app.whenReady().then(async () => {
       console.log('Auto-starting OpenCode in:', workingDirectory)
 
       // Start OpenCode server
-      // TODO: Re-implement quickStart
-      // await toji.quickStart(workingDirectory)
+      await toji.startServer()
 
       // Track this workspace in recent list
       config.addRecentWorkspace(workingDirectory)
