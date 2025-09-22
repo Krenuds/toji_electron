@@ -1,7 +1,15 @@
 import React from 'react'
 import { Box, Text } from '@chakra-ui/react'
 
-type ServiceStatus = 'running' | 'stopped' | 'starting' | 'stopping' | 'checking' | 'stub'
+type ServiceStatus =
+  | 'running'
+  | 'stopped'
+  | 'starting'
+  | 'stopping'
+  | 'checking'
+  | 'stub'
+  | 'installed'
+  | 'not-installed'
 
 interface StatusBadgeProps {
   status: ServiceStatus
@@ -38,6 +46,16 @@ const statusConfig = {
     bg: 'app.error',
     color: 'app.light',
     label: 'STUB'
+  },
+  installed: {
+    bg: 'app.accent',
+    color: 'app.dark',
+    label: 'Installed'
+  },
+  'not-installed': {
+    bg: 'app.border',
+    color: 'app.light',
+    label: 'Not Installed'
   }
 } as const
 

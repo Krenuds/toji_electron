@@ -15,7 +15,6 @@ import {
 import {
   LuDownload,
   LuTriangleAlert,
-  LuCheck,
   LuRefreshCw,
   LuPlay,
   LuSquare,
@@ -25,6 +24,7 @@ import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
 import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { SidebarContainer } from '../../SidebarContainer'
+import { StatusBadge } from '../../StatusBadge'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   const { info, loading, error, installing, installProgress, install } = useBinaryStatus()
@@ -37,54 +37,15 @@ export function DashboardViewSidebar(): React.JSX.Element {
     stopServer
   } = useServerStatus()
 
-  const getBinaryStatusAlert = (): React.ReactNode => {
-    if (loading) {
-      return (
-        <Alert.Root status="info" size="sm">
-          <Alert.Indicator>
-            <Spinner size="sm" />
-          </Alert.Indicator>
-          <Alert.Title>Checking binary status...</Alert.Title>
-        </Alert.Root>
-      )
-    }
-
-    if (error) {
-      return (
-        <Alert.Root status="error" size="sm">
-          <Alert.Indicator>
-            <LuTriangleAlert />
-          </Alert.Indicator>
-          <Alert.Content>
-            <Alert.Title>Binary Error</Alert.Title>
-            <Alert.Description>{error}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
-      )
-    }
-
-    if (info?.installed) {
-      return (
-        <Alert.Root status="success" size="sm">
-          <Alert.Indicator>
-            <LuCheck />
-          </Alert.Indicator>
-          <Alert.Title>OpenCode binary installed</Alert.Title>
-        </Alert.Root>
-      )
-    }
-
-    return (
-      <Alert.Root status="warning" size="sm">
-        <Alert.Indicator>
-          <LuTriangleAlert />
-        </Alert.Indicator>
-        <Alert.Content>
-          <Alert.Title>Binary not installed</Alert.Title>
-          <Alert.Description>OpenCode binary needs to be installed</Alert.Description>
-        </Alert.Content>
-      </Alert.Root>
-    )
+  const getBinaryStatus = (): {
+    status: 'checking' | 'installed' | 'not-installed'
+    description: string
+  } => {
+    if (loading) return { status: 'checking' as const, description: 'Checking binary status...' }
+    if (error) return { status: 'not-installed' as const, description: error }
+    if (info?.installed)
+      return { status: 'installed' as const, description: 'OpenCode binary ready' }
+    return { status: 'not-installed' as const, description: 'Binary needs to be installed' }
   }
 
   return (
@@ -98,14 +59,31 @@ export function DashboardViewSidebar(): React.JSX.Element {
           borderColor="app.border"
         >
           <Card.Header pb={2}>
-            <Text color="app.light" fontSize="xs" fontWeight="semibold">
-              OpenCode
-            </Text>
+            <HStack justify="space-between" align="center">
+              <Text color="app.light" fontSize="xs" fontWeight="semibold">
+                OpenCode Binary
+              </Text>
+              <StatusBadge status={getBinaryStatus().status} size="sm" />
+            </HStack>
           </Card.Header>
           <Card.Body pt={0}>
             <VStack gap={3} align="stretch">
-              {/* Binary Status Alert */}
-              {getBinaryStatusAlert()}
+              {/* Binary Status Description */}
+              <Text color="app.text" fontSize="2xs">
+                {getBinaryStatus().description}
+              </Text>
+
+              {/* Error Alert (only for actual errors) */}
+              {error && (
+                <Alert.Root status="error" size="sm">
+                  <Alert.Indicator>
+                    <LuTriangleAlert />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    <Alert.Description fontSize="2xs">{error}</Alert.Description>
+                  </Alert.Content>
+                </Alert.Root>
+              )}
 
               {/* Installation Progress */}
               {installing && installProgress && (
