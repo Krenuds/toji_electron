@@ -14,27 +14,10 @@ export class Toji {
   public readonly project: ProjectManager
   public readonly server: ServerManager
 
-  constructor(
-    opencodeService: OpenCodeService,
-    config?: ConfigProvider
-  ) {
+  constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     // Initialize modules
     this.server = new ServerManager(opencodeService, config)
     this.project = new ProjectManager(() => this.client)
-  }
-
-  // Delegate server methods for backwards compatibility
-  async startServer(): Promise<void> {
-    await this.server.start()
-    // After server starts, connect the client
-    await this.connectClient()
-  }
-
-  async stopServer(): Promise<void> {
-    // Disconnect client first
-    this.client = undefined
-    // Then stop server
-    await this.server.stop()
   }
 
   async getServerStatus(): Promise<ServerStatus> {
@@ -51,11 +34,6 @@ export class Toji {
     this.client = createOpencodeClient({
       baseUrl: serverUrl
     })
-  }
-
-  // Stop everything
-  async shutdown(): Promise<void> {
-    await this.stopServer()
   }
 
   // Check if ready

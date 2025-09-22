@@ -291,7 +291,7 @@ chore: maintenance tasks
 
 ## Do This IMMEDIATELY When Starting
 
-1. Read latest 4 commit messages: `git log --oneline -4`
+1. Read latest 4 commit messages in full: `git log -4`
 2. Check OpenCode docs for any API you'll use
 3. Review the Feature Implementation Workflow above
 4. Create a TODO list for your tasks

@@ -90,7 +90,8 @@ app.whenReady().then(async () => {
       console.log('Auto-starting OpenCode in:', workingDirectory)
 
       // Start OpenCode server
-      await toji.startServer()
+      await toji.server.start()
+      await toji.connectClient()
 
       // Track this workspace in recent list
       config.addRecentWorkspace(workingDirectory)
@@ -147,7 +148,7 @@ app.on('window-all-closed', async () => {
   // Stop any running OpenCode agents
   if (toji) {
     try {
-      await toji.shutdown()
+      await toji.server.stop()
       console.log('Cleanup completed')
     } catch (error) {
       console.error('Error during cleanup:', error)
@@ -176,7 +177,7 @@ app.on('before-quit', async (event) => {
 
       // Then shutdown Toji/OpenCode
       if (toji) {
-        await toji.shutdown()
+        await toji.server.stop()
         toji = null
         console.log('Toji shutdown completed')
       }

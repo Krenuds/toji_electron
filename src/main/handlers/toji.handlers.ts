@@ -24,14 +24,15 @@ export function registerTojiHandlers(toji: Toji | null): void {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return toji.startServer()
+    await toji.server.start()
+    return toji.connectClient()
   })
 
   ipcMain.handle('toji:stop-server', async () => {
     if (!toji) {
       throw new Error('Toji not initialized')
     }
-    return toji.stopServer()
+    return toji.server.stop()
   })
 
   ipcMain.handle('toji:get-server-status', async () => {
