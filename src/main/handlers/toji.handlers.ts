@@ -15,7 +15,7 @@ export function registerTojiHandlers(toji: Toji | null): void {
     }
     return {
       ready: toji.isReady(),
-      hasClient: Boolean(toji.getClient())
+      hasClient: toji.isReady() // isReady() already checks for both server and client
     }
   })
 

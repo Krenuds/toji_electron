@@ -1,11 +1,25 @@
 import React from 'react'
-import { Image, ImageProps } from '@chakra-ui/react'
-import tojiLogo from '../assets/toji-logo.png'
+import { Box } from '@chakra-ui/react'
 
-interface TojiLogoProps extends Omit<ImageProps, 'src' | 'alt'> {
-  size?: string | number
+interface TojiLogoProps {
+  size?: string
 }
 
-export function TojiLogo({ size = '32px', ...props }: TojiLogoProps): React.JSX.Element {
-  return <Image src={tojiLogo} alt="Toji" width={size} height={size} {...props} />
+export function TojiLogo({ size = '16px' }: TojiLogoProps): React.JSX.Element {
+  return (
+    <Box
+      width={size}
+      height={size}
+      bg="app.accent"
+      borderRadius="sm"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      fontSize="xs"
+      fontWeight="bold"
+      color="white"
+    >
+      T3
+    </Box>
+  )
 }

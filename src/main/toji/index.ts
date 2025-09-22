@@ -40,11 +40,6 @@ export class Toji {
   isReady(): boolean {
     return Boolean(this.server.isRunning() && this.client)
   }
-
-  // Get the client for direct SDK usage
-  getClient(): OpencodeClient | undefined {
-    return this.client
-  }
 }
 
 export default Toji
