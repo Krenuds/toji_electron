@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import windowStateKeeper from 'electron-window-state'
 import icon from '../../resources/toji.png?asset'
 import { Toji } from './toji'
 import { OpenCodeService } from './services/opencode-service'
@@ -22,21 +23,31 @@ let config: ConfigProvider | null = null
 let discordService: DiscordService | null = null
 
 function createWindow(): void {
+  // Load window state (position, size, maximized, etc.)
+  const mainWindowState = windowStateKeeper({
+    defaultWidth: 1280,
+    defaultHeight: 900
+  })
+
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 900,
+    x: mainWindowState.x,
+    y: mainWindowState.y,
+    width: mainWindowState.width,
+    height: mainWindowState.height,
     show: false,
     autoHideMenuBar: true,
     icon: icon,
     titleBarStyle: 'hidden',
     title: 'Toji3',
-    center: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
+
+  // Let windowStateKeeper manage the window
+  mainWindowState.manage(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

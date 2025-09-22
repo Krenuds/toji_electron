@@ -67,7 +67,9 @@
       "Bash(mkdir:*)",
       "Bash(git checkout:*)",
       "Bash(git stash push:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(echo:*)",
+      "Bash(set)"
     ],
     "deny": [],
     "ask": []
