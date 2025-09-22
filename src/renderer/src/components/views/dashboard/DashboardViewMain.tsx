@@ -17,7 +17,7 @@ import { useDiscord } from '../../../hooks/useDiscord'
 import { MetricCard, LabelRow } from '../../shared'
 
 export function DashboardViewMain(): React.JSX.Element {
-  const serverStatus = useServerStatus()
+  const { status: serverStatus } = useServerStatus()
   const discord = useDiscord()
 
   return (
@@ -36,21 +36,19 @@ export function DashboardViewMain(): React.JSX.Element {
       <Grid templateColumns="repeat(auto-fit, minmax(220px, 1fr))" gap={4}>
         <MetricCard
           title="Toji Core Service"
-          value={
-            serverStatus === 'running'
-              ? 'Running'
-              : serverStatus === 'checking'
-                ? 'Checking...'
-                : 'Stopped'
+          value={serverStatus.isRunning ? 'Running' : 'Stopped'}
+          description={
+            serverStatus.isRunning && serverStatus.uptime
+              ? `Uptime: ${Math.floor(serverStatus.uptime / 1000 / 60)} minutes`
+              : 'Service not running'
           }
-          description="Uptime: 2h 34m"
           icon={
-            <Box color={serverStatus === 'running' ? 'app.accent' : 'app.text'}>
+            <Box color={serverStatus.isRunning ? 'app.accent' : 'app.text'}>
               <LuServer size={16} />
             </Box>
           }
-          badge={<StatusBadge status={serverStatus} />}
-          variant={serverStatus === 'running' ? 'accent' : 'default'}
+          badge={<StatusBadge status={serverStatus.isRunning ? 'running' : 'stopped'} />}
+          variant={serverStatus.isRunning ? 'accent' : 'default'}
         />
 
         <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">

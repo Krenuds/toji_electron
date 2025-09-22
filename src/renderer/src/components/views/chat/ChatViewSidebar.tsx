@@ -11,7 +11,7 @@ import { useCoreStatus } from '../../../hooks/useCoreStatus'
 import { useSession } from '../../../hooks/useSession'
 
 export function ChatViewSidebar(): React.JSX.Element {
-  const serverStatus = useServerStatus()
+  const { status: serverStatus } = useServerStatus()
   const { isRunning, getCurrentDirectory } = useCoreStatus()
   const {
     sessions,
@@ -78,7 +78,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Text color="app.light" fontSize="xs" fontWeight="medium">
                 Toji Agent
               </Text>
-              <StatusBadge status={serverStatus} />
+              <StatusBadge status={serverStatus.isRunning ? 'running' : 'stopped'} />
             </HStack>
             <Text color="app.text" fontSize="2xs" lineClamp={1}>
               {workingDirectory

@@ -28,5 +28,6 @@ export type {
   WorkspaceSettings,
   WorkspaceCollection,
   EnrichedProject,
-  DiscoveredProject
+  DiscoveredProject,
+  ServerStatus
 } from '../main/toji/types'

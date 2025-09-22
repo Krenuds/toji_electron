@@ -1,26 +1,80 @@
 import { useState, useEffect } from 'react'
 
-type ServerStatus = 'running' | 'stopped' | 'checking'
+interface ServerStatus {
+  isRunning: boolean
+  port?: number
+  pid?: number
+  startTime?: Date
+  uptime?: number
+  isHealthy?: boolean
+  lastHealthCheck?: Date
+}
 
-export function useServerStatus(): ServerStatus {
-  const [serverStatus, setServerStatus] = useState<ServerStatus>('checking')
+interface UseServerStatusReturn {
+  status: ServerStatus
+  loading: boolean
+  error: string | null
+  startServer: () => Promise<void>
+  stopServer: () => Promise<void>
+}
+
+export function useServerStatus(): UseServerStatusReturn {
+  const [status, setStatus] = useState<ServerStatus>({
+    isRunning: false
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchStatus = async (): Promise<void> => {
+    try {
+      const serverStatus = await window.api.toji.getServerStatus()
+      setStatus(serverStatus)
+    } catch (err) {
+      console.error('Failed to fetch server status:', err)
+    }
+  }
+
+  const startServer = async (): Promise<void> => {
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.toji.startServer()
+      await fetchStatus()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start server'
+      setError(message)
+      console.error('Failed to start server:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const stopServer = async (): Promise<void> => {
+    setLoading(true)
+    setError(null)
+    try {
+      await window.api.toji.stopServer()
+      await fetchStatus()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to stop server'
+      setError(message)
+      console.error('Failed to stop server:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const checkStatus = async (): Promise<void> => {
-      try {
-        const isRunning = await window.api.toji.isRunning()
-        setServerStatus(isRunning ? 'running' : 'stopped')
-      } catch (error) {
-        console.error('Failed to check server status:', error)
-        setServerStatus('stopped')
-      }
-    }
-
-    checkStatus()
-    const interval = setInterval(checkStatus, 2000)
-
+    fetchStatus()
+    const interval = setInterval(fetchStatus, 2000) // Poll every 2 seconds
     return () => clearInterval(interval)
   }, [])
 
-  return serverStatus
+  return {
+    status,
+    loading,
+    error,
+    startServer,
+    stopServer
+  }
 }

@@ -18,4 +18,34 @@ export function registerTojiHandlers(toji: Toji | null): void {
       hasClient: Boolean(toji.getClient())
     }
   })
+
+  // Server lifecycle handlers
+  ipcMain.handle('toji:start-server', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return toji.startServer()
+  })
+
+  ipcMain.handle('toji:stop-server', async () => {
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+    return toji.stopServer()
+  })
+
+  ipcMain.handle('toji:get-server-status', async () => {
+    if (!toji) {
+      return {
+        isRunning: false,
+        port: undefined,
+        pid: undefined,
+        startTime: undefined,
+        uptime: undefined,
+        isHealthy: undefined,
+        lastHealthCheck: undefined
+      }
+    }
+    return toji.getServerStatus()
+  })
 }

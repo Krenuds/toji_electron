@@ -59,3 +59,13 @@ export interface DiscoveredProject {
   type?: string
   name?: string
 }
+
+export interface ServerStatus {
+  isRunning: boolean
+  port?: number
+  pid?: number
+  startTime?: Date
+  uptime?: number
+  isHealthy?: boolean
+  lastHealthCheck?: Date
+}

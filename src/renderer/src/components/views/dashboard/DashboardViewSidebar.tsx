@@ -12,14 +12,30 @@ import {
   Progress,
   Stat
 } from '@chakra-ui/react'
-import { LuDownload, LuTriangleAlert, LuCheck, LuRefreshCw } from 'react-icons/lu'
+import {
+  LuDownload,
+  LuTriangleAlert,
+  LuCheck,
+  LuRefreshCw,
+  LuPlay,
+  LuSquare,
+  LuServer
+} from 'react-icons/lu'
 import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
 import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
+import { useServerStatus } from '../../../hooks/useServerStatus'
 import { SidebarContainer } from '../../SidebarContainer'
 
 export function DashboardViewSidebar(): React.JSX.Element {
   const { info, loading, error, installing, installProgress, install } = useBinaryStatus()
   const { logs, loading: logsLoading, error: logsError, refresh: refreshLogs } = useOpenCodeLogs()
+  const {
+    status: serverStatus,
+    loading: serverLoading,
+    error: serverError,
+    startServer,
+    stopServer
+  } = useServerStatus()
 
   const getBinaryStatusAlert = (): React.ReactNode => {
     if (loading) {
@@ -220,6 +236,137 @@ export function DashboardViewSidebar(): React.JSX.Element {
                   Test Connections
                 </Button>
               </VStack>
+            </VStack>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Server Control */}
+        <Card.Root
+          size="sm"
+          bg="rgba(255,255,255,0.02)"
+          border="2px solid"
+          borderColor="app.border"
+        >
+          <Card.Header pb={2}>
+            <HStack justify="space-between">
+              <HStack gap={2}>
+                <LuServer size={14} />
+                <Text color="app.light" fontSize="xs" fontWeight="semibold">
+                  Server Control
+                </Text>
+              </HStack>
+              <Box
+                w={2}
+                h={2}
+                borderRadius="full"
+                bg={serverStatus.isRunning ? 'green.500' : 'red.500'}
+                animation={
+                  serverStatus.isRunning
+                    ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    : undefined
+                }
+              />
+            </HStack>
+          </Card.Header>
+          <Card.Body pt={0}>
+            <VStack gap={3} align="stretch">
+              {/* Server Error Alert */}
+              {serverError && (
+                <Alert.Root status="error" size="sm">
+                  <Alert.Indicator>
+                    <LuTriangleAlert />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    <Alert.Description fontSize="2xs">{serverError}</Alert.Description>
+                  </Alert.Content>
+                </Alert.Root>
+              )}
+
+              {/* Start/Stop Button */}
+              <Button
+                size="sm"
+                variant="solid"
+                colorPalette={serverStatus.isRunning ? 'red' : 'green'}
+                onClick={serverStatus.isRunning ? stopServer : startServer}
+                disabled={serverLoading || !info?.installed}
+                loading={serverLoading}
+              >
+                {serverStatus.isRunning ? (
+                  <>
+                    <LuSquare size={14} />
+                    Stop Server
+                  </>
+                ) : (
+                  <>
+                    <LuPlay size={14} />
+                    Start Server
+                  </>
+                )}
+              </Button>
+
+              {/* Server Info */}
+              {serverStatus.isRunning && (
+                <VStack gap={2} align="stretch">
+                  <Stat.Root size="sm">
+                    <Stat.Label color="app.text" fontSize="2xs">
+                      Port
+                    </Stat.Label>
+                    <Stat.ValueText color="app.light" fontSize="xs" fontFamily="mono">
+                      {serverStatus.port || '4096'}
+                    </Stat.ValueText>
+                  </Stat.Root>
+
+                  {serverStatus.isHealthy !== undefined && (
+                    <Stat.Root size="sm">
+                      <Stat.Label color="app.text" fontSize="2xs">
+                        Health Status
+                      </Stat.Label>
+                      <Stat.ValueText
+                        color={serverStatus.isHealthy ? 'green.400' : 'red.400'}
+                        fontSize="xs"
+                      >
+                        {serverStatus.isHealthy ? 'Healthy' : 'Unhealthy'}
+                      </Stat.ValueText>
+                    </Stat.Root>
+                  )}
+
+                  {serverStatus.lastHealthCheck && (
+                    <Stat.Root size="sm">
+                      <Stat.Label color="app.text" fontSize="2xs">
+                        Last Health Check
+                      </Stat.Label>
+                      <Stat.ValueText color="app.light" fontSize="2xs">
+                        {new Date(serverStatus.lastHealthCheck).toLocaleTimeString()}
+                      </Stat.ValueText>
+                    </Stat.Root>
+                  )}
+
+                  {serverStatus.uptime && (
+                    <Stat.Root size="sm">
+                      <Stat.Label color="app.text" fontSize="2xs">
+                        Uptime
+                      </Stat.Label>
+                      <Stat.ValueText color="app.light" fontSize="2xs">
+                        {Math.floor(serverStatus.uptime / 1000 / 60)} minutes
+                      </Stat.ValueText>
+                    </Stat.Root>
+                  )}
+                </VStack>
+              )}
+
+              {/* Server not installed warning */}
+              {!info?.installed && (
+                <Alert.Root status="warning" size="sm">
+                  <Alert.Indicator>
+                    <LuTriangleAlert />
+                  </Alert.Indicator>
+                  <Alert.Content>
+                    <Alert.Description fontSize="2xs">
+                      Install OpenCode binary first
+                    </Alert.Description>
+                  </Alert.Content>
+                </Alert.Root>
+              )}
             </VStack>
           </Card.Body>
         </Card.Root>

@@ -5,7 +5,8 @@ import type {
   WorkspaceInfo,
   WorkspaceCollection,
   EnrichedProject,
-  DiscoveredProject
+  DiscoveredProject,
+  ServerStatus
 } from '../../main/toji/types'
 
 export const tojiAPI = {
@@ -19,8 +20,12 @@ export const tojiAPI = {
     message?: string
   }> => ipcRenderer.invoke('toji:status'),
 
-  // Server status - stubbed
-  isRunning: (): Promise<boolean> => Promise.resolve(false),
+  // Server lifecycle operations
+  isRunning: (): Promise<boolean> =>
+    ipcRenderer.invoke('toji:get-server-status').then((status) => status.isRunning),
+  startServer: (): Promise<void> => ipcRenderer.invoke('toji:start-server'),
+  stopServer: (): Promise<void> => ipcRenderer.invoke('toji:stop-server'),
+  getServerStatus: (): Promise<ServerStatus> => ipcRenderer.invoke('toji:get-server-status'),
 
   // Chat operations - stubbed
   ensureReadyForChat: (directory?: string): Promise<void> => {
