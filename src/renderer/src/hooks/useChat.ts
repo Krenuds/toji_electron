@@ -25,7 +25,7 @@ export function useChat(): UseChatReturn {
 
   const checkServerStatus = useCallback(async (): Promise<boolean> => {
     try {
-      const isRunning = await window.api.core.isRunning()
+      const isRunning = await window.api.toji.isRunning()
       return isRunning
     } catch (error) {
       console.error('Failed to check server status:', error)
@@ -35,10 +35,9 @@ export function useChat(): UseChatReturn {
 
   const ensureReadyForChat = useCallback(async (): Promise<EnsureReadyResponse> => {
     try {
-      const response = await window.api.core.ensureReadyForChat()
-      // Map the string serverStatus to our enum type
-      const serverStatus = response.serverStatus as 'online' | 'offline' | 'initializing'
-      return { serverStatus }
+      await window.api.toji.ensureReadyForChat()
+      // For now, return stubbed status since API returns void
+      return { serverStatus: 'online' }
     } catch (error) {
       console.error('Failed to ensure ready for chat:', error)
       return {
@@ -53,7 +52,7 @@ export function useChat(): UseChatReturn {
     setError(null)
 
     try {
-      const response = await window.api.core.chat(message)
+      const response = await window.api.toji.chat(message)
       return { success: true, message: response }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message'

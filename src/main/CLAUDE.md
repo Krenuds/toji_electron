@@ -13,6 +13,7 @@ The Electron main process serves as the **central authority** for all business l
 **WE RUN A TIGHT SHIP** - Every line of code must meet these standards:
 
 ### The Sacred Workflow
+
 ```bash
 # BEFORE writing ANY code
 npm run format
@@ -29,6 +30,7 @@ npm run format && npm run lint && npm run typecheck
 ```
 
 ### TypeScript Requirements
+
 - **NO `any` TYPES**: Use proper interfaces or generics
 - **EXPLICIT RETURN TYPES**: Every function needs one
 - **NO UNUSED VARIABLES**: Remove or prefix with `_`
@@ -71,16 +73,19 @@ class Toji {
 Supporting services handle specific responsibilities:
 
 #### OpenCodeService
+
 - Binary installation and verification
 - Process lifecycle management
 - Health monitoring
 
 #### ConfigProvider
+
 - Settings persistence with electron-store
 - Environment variable management
 - Default configuration values
 
 #### DiscordService
+
 - Bot lifecycle management
 - Command registration
 - Event handling
@@ -108,6 +113,7 @@ ipcMain.handle('core:chat', async (_, message: string) => {
 The OpenCode SDK requires careful binary management:
 
 1. **Installation Path Resolution**:
+
    ```typescript
    const paths = [
      process.env.OPENCODE_INSTALL_DIR,
@@ -118,6 +124,7 @@ The OpenCode SDK requires careful binary management:
    ```
 
 2. **Directory Creation**:
+
    ```typescript
    // Required directories for OpenCode operation
    const requiredDirs = [
@@ -243,7 +250,7 @@ toji.on('workspace:changed', (path) => {})
 
 ```typescript
 // Broadcast to all renderer windows
-BrowserWindow.getAllWindows().forEach(window => {
+BrowserWindow.getAllWindows().forEach((window) => {
   window.webContents.send('server:status', status)
 })
 ```
@@ -457,6 +464,7 @@ class EventBus extends EventEmitter {
 ## Best Practices - ENFORCED
 
 ### Development Workflow (NEVER SKIP)
+
 ```bash
 # Step 1: Format and check BEFORE coding
 npm run format
@@ -490,6 +498,7 @@ npm run dev
 10. **DOCUMENT COMPLEXITY**: Add comments for non-obvious logic
 
 ### TypeScript Strict Mode
+
 ```typescript
 // tsconfig.node.json must have:
 {
@@ -507,6 +516,7 @@ npm run dev
 ```
 
 ### Before EVERY Commit
+
 ```bash
 # The holy trinity - ALL must pass
 npm run format && npm run lint && npm run typecheck

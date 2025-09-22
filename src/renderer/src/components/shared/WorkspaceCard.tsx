@@ -24,7 +24,7 @@ import {
 import { useAppView } from '../../hooks/useAppView'
 import { useWorkspace } from '../../hooks/useWorkspace'
 import { useWorkspaceSettings } from '../../hooks/useWorkspaceSettings'
-import type { Session } from '../../../../main/api'
+import type { Session } from '../../../../preload/index.d'
 
 interface WorkspaceCardProps {
   path: string
@@ -60,7 +60,7 @@ export function WorkspaceCard({
       // Fetch sessions when expanding for the first time
       setIsLoadingSessions(true)
       try {
-        const workspaceSessions = await window.api.core.getSessionsForWorkspace(path)
+        const workspaceSessions = await window.api.toji.getSessionsForWorkspace(path)
         setSessions(workspaceSessions)
       } catch (error) {
         console.error('Failed to fetch sessions:', error)

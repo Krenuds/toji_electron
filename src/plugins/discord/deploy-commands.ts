@@ -16,20 +16,8 @@ export async function deployCommands(
 
   // Import all commands directly
   const helpCommand = await import('./commands/help')
-  const workspaceCommand = await import('./commands/workspace')
-  const sessionCommand = await import('./commands/session')
-  const statusCommand = await import('./commands/status')
-  const projectCommand = await import('./commands/project')
-  const devCommand = await import('./commands/dev')
 
-  const commandModules = [
-    helpCommand,
-    workspaceCommand,
-    sessionCommand,
-    statusCommand,
-    projectCommand,
-    devCommand
-  ]
+  const commandModules = [helpCommand]
 
   // Load command data
   for (const command of commandModules) {

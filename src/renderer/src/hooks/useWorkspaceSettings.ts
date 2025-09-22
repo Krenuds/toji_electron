@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { WorkspaceSettings } from '../../../main/api'
+import type { WorkspaceSettings } from '../../../preload/index.d'
 
 interface UseWorkspaceSettingsReturn {
   settings: WorkspaceSettings | null
@@ -25,7 +25,7 @@ export function useWorkspaceSettings(workspacePath: string): UseWorkspaceSetting
     setError(null)
     try {
       // TODO: In the future, this will call the actual API
-      // const workspaceSettings = await window.api.core.getWorkspaceSettings(workspacePath)
+      // const workspaceSettings = await window.api.toji.getWorkspaceSettings(workspacePath)
       // setSettings(workspaceSettings)
 
       // For now, just log and return empty settings
@@ -56,7 +56,7 @@ export function useWorkspaceSettings(workspacePath: string): UseWorkspaceSetting
       setError(null)
       try {
         // TODO: In the future, this will call the actual API
-        // await window.api.core.setWorkspaceSettings(workspacePath, { ...settings, ...newSettings })
+        // await window.api.toji.setWorkspaceSettings(workspacePath, { ...settings, ...newSettings })
 
         // For now, just log the settings that would be saved
         console.log('[useWorkspaceSettings] Would update settings for:', workspacePath)

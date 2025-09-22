@@ -1,0 +1,52 @@
+// Window control IPC handlers
+import { ipcMain, BrowserWindow, dialog } from 'electron'
+
+export function registerWindowHandlers(): void {
+  // Minimize window
+  ipcMain.handle('window:minimize', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.minimize()
+    }
+  })
+
+  // Maximize/restore window
+  ipcMain.handle('window:maximize', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.restore()
+      } else {
+        mainWindow.maximize()
+      }
+    }
+  })
+
+  // Close window
+  ipcMain.handle('window:close', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.close()
+    }
+  })
+
+  // Select directory dialog
+  ipcMain.handle('window:select-directory', async () => {
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (!mainWindow) {
+      throw new Error('No window available')
+    }
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Workspace Directory',
+      buttonLabel: 'Select Folder'
+    })
+
+    if (result.canceled) {
+      return null
+    }
+
+    return result.filePaths[0]
+  })
+}

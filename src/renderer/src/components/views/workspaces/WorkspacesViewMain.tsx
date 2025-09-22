@@ -7,7 +7,7 @@ import { WorkspaceCard } from '../../shared/WorkspaceCard'
 
 export function WorkspacesViewMain(): React.JSX.Element {
   const { workspaces, isLoading, error, refreshWorkspaces, openWorkspaceDirectory } =
-    useWorkspaces(50)
+    useWorkspaces()
   const { currentWorkspace, selectAndChangeWorkspace } = useWorkspace()
 
   return (

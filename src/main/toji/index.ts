@@ -3,19 +3,27 @@ import { createOpencodeServer, createOpencodeClient } from '@opencode-ai/sdk'
 import type { OpencodeClient, ServerOptions } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
+import { ProjectManager } from './project'
 
 export class Toji {
   private server?: { close: () => void }
   private client?: OpencodeClient
   private serverUrl?: string
 
+  // Public modules
+  public readonly project: ProjectManager
+
   constructor(
     private opencodeService: OpenCodeService,
-    private config?: ConfigProvider // Will be used for workspace settings later
-  ) {}
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _config?: ConfigProvider // Will be used for workspace settings later
+  ) {
+    // Initialize modules with getter for client
+    this.project = new ProjectManager(() => this.client)
+  }
 
   // Start the OpenCode server
-  async startServer(directory: string, options: ServerOptions = {}): Promise<void> {
+  async startServer(_directory: string, options: ServerOptions = {}): Promise<void> {
     // Stop any existing server
     if (this.server) {
       this.server.close()

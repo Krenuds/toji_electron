@@ -184,14 +184,14 @@ export function WorkspaceTracker(): React.JSX.Element {
                         {collection.name}
                       </Text>
                       <Badge size="sm" colorPalette="green">
-                        {collection.projects.length}
+                        {collection.projects?.length || 0}
                       </Badge>
                     </HStack>
 
                     <Collapsible.Root open={expandedCollections.has(collection.id)}>
                       <Collapsible.Content>
                         <VStack align="stretch" p={2} pt={0} gap={1}>
-                          {collection.projects.map((project) => (
+                          {collection.projects?.map((project) => (
                             <HStack
                               key={project.id}
                               p={2}

@@ -15,6 +15,7 @@ The application follows a **plugin-based architecture** where the Electron main 
 ## Technology Stack
 
 ### Core Dependencies
+
 - **Electron 37.2** + **electron-vite 4.0**: Desktop framework with modern build tools
 - **React 19.1** + **TypeScript 5.8**: Frontend with strict typing
 - **Chakra UI 3.27**: Component library using v3 composition patterns
@@ -27,6 +28,7 @@ The application follows a **plugin-based architecture** where the Electron main 
 ### 🔴 ALWAYS START WITH DOCUMENTATION
 
 Before ANY coding session:
+
 1. **Read OpenCode Docs**: https://opencode.ai/docs/sdk/
 2. **Read Electron-Vite Guide**: https://electron-vite.org/guide/
 3. **Read Chakra UI Vite Guide**: https://chakra-ui.com/docs/get-started/frameworks/vite
@@ -42,12 +44,14 @@ Before ANY coding session:
 4. **TYPECHECK CONSTANTLY**: `npm run typecheck` - Must pass before ANY commit
 
 #### Strict TypeScript Rules
+
 - **NO `any` TYPES**: Every variable must be typed
 - **EXPLICIT RETURN TYPES**: All functions need return type declarations
 - **NO UNUSED VARIABLES**: Remove or prefix with `_`
 - **STRICT MODE**: Full TypeScript strict mode enabled
 
 #### Chakra UI v3 - EXCLUSIVE STYLING
+
 - **NO INLINE STYLES**: Use Chakra UI exclusively
 - **NO CSS FILES**: All styling through Chakra tokens
 - **NO TAILWIND**: Chakra UI v3 only
@@ -55,6 +59,7 @@ Before ANY coding session:
 - **COMPOSITION PATTERNS**: Follow v3 patterns exactly
 
 #### Code Standards
+
 - **NO HARDCODED VALUES**: Use config files and environment variables
 - **ESCAPE JSX TEXT**: Use `&apos;` not `'` in JSX strings
 - **ONE COMPONENT PER FILE**: Maintain separation of concerns
@@ -72,6 +77,7 @@ Before ANY coding session:
 When adding ANY new feature, follow this exact order:
 
 ### 1. API Layer (`/src/main/toji/`)
+
 ```typescript
 // Add methods to Toji class for compound operations
 class Toji {
@@ -82,6 +88,7 @@ class Toji {
 ```
 
 ### 2. IPC Handlers (`/src/main/index.ts`)
+
 ```typescript
 // Thin handlers that call Toji API
 ipcMain.handle('core:chat', async (_, message) => {
@@ -90,15 +97,16 @@ ipcMain.handle('core:chat', async (_, message) => {
 ```
 
 ### 3. Preload Bridge (`/src/preload/`)
+
 ```typescript
 // Update index.ts to expose IPC methods
-chat: (message: string): Promise<string> =>
-  ipcRenderer.invoke('core:chat', message)
+chat: (message: string): Promise<string> => ipcRenderer.invoke('core:chat', message)
 
 // Update index.d.ts with TypeScript definitions
 ```
 
 ### 4. UI Components (`/src/renderer/`)
+
 ```typescript
 // Create hooks to abstract window.api calls
 const useChat = () => {
@@ -112,6 +120,7 @@ const useChat = () => {
 ### 5. Testing & Refinement
 
 **MANDATORY CODE QUALITY WORKFLOW:**
+
 ```bash
 # Step 1: Format FIRST (always)
 npm run format
@@ -198,6 +207,7 @@ Critical understanding:
 ## Development Commands
 
 ### Daily Development Workflow
+
 ```bash
 # BEFORE writing any code
 npm run format       # Format existing code
@@ -224,6 +234,7 @@ npm run build:linux  # Linux build
 ```
 
 ### Code Quality Commands (USE CONSTANTLY)
+
 - `npm run format` - **RUN FIRST, ALWAYS**
 - `npm run lint:fix` - **RUN SECOND**
 - `npm run lint` - **MUST PASS**
@@ -260,6 +271,7 @@ npm run build:linux  # Linux build
 ## Commit Message Convention
 
 Use conventional commits:
+
 ```
 feat: add new feature
 fix: resolve bug

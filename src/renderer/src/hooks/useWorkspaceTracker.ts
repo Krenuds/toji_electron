@@ -1,11 +1,14 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { WorkspaceCollection, EnrichedProject, DiscoveredProject } from '../../../main/api'
+import type {
+  WorkspaceCollection,
+  EnrichedProject,
+  DiscoveredProject,
+  WorkspaceInfo as BaseWorkspaceInfo
+} from '../../../preload/index.d'
 
-interface WorkspaceInfo {
-  exists: boolean
-  hasGit: boolean
-  hasOpenCodeConfig: boolean
-  hasGitignore: boolean
+interface WorkspaceInfo extends BaseWorkspaceInfo {
+  exists?: boolean
+  hasGitignore?: boolean
 }
 
 interface UseWorkspaceTrackerReturn {
@@ -38,8 +41,8 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
   // Get current workspace directory
   const fetchCurrentDirectory = useCallback(async () => {
     try {
-      const dir = await window.api.core.getCurrentDirectory()
-      setCurrentDirectory(dir)
+      const dir = await window.api.toji.getCurrentDirectory()
+      setCurrentDirectory(dir || undefined)
     } catch (error) {
       console.error('Failed to get current directory:', error)
     }
@@ -51,7 +54,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
     setError(null)
 
     try {
-      const result = await window.api.core.getWorkspaceCollections()
+      const result = await window.api.toji.getWorkspaceCollections()
       setCollections((result as WorkspaceCollection[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch collections'
@@ -68,7 +71,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
     setError(null)
 
     try {
-      const result = await window.api.core.getEnrichedProjects()
+      const result = await window.api.toji.getEnrichedProjects()
       setEnrichedProjects((result as EnrichedProject[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
@@ -86,7 +89,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
       setError(null)
 
       try {
-        await window.api.core.changeWorkspace(directory)
+        await window.api.toji.changeWorkspace(directory)
         setCurrentDirectory(directory)
 
         // Refresh collections and projects after workspace change
@@ -106,7 +109,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
   // Inspect a workspace without changing to it
   const inspectWorkspace = useCallback(async (directory: string): Promise<WorkspaceInfo | null> => {
     try {
-      return await window.api.core.inspectWorkspace(directory)
+      return await window.api.toji.inspectWorkspace(directory)
     } catch (error) {
       console.error('Failed to inspect workspace:', error)
       return null
@@ -119,7 +122,7 @@ export function useWorkspaceTracker(): UseWorkspaceTrackerReturn {
     setError(null)
 
     try {
-      const result = await window.api.core.discoverProjects(baseDir)
+      const result = await window.api.toji.discoverProjects(baseDir || '')
       setDiscoveredProjects((result as DiscoveredProject[]) || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to discover projects'

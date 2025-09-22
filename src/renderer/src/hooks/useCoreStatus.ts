@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 
 /**
  * Hook for core OpenCode status operations
- * Abstracts window.api.core status calls
+ * Abstracts window.api.toji status calls
  */
 
 interface CoreStatus {
@@ -17,8 +17,8 @@ export const useCoreStatus = (): CoreStatus => {
   const [error, setError] = useState<string | null>(null)
 
   const isRunning = useCallback(async (): Promise<boolean> => {
-    if (!window.api?.core) {
-      setError('Core API not available')
+    if (!window.api?.toji) {
+      setError('Toji API not available')
       return false
     }
 
@@ -26,7 +26,7 @@ export const useCoreStatus = (): CoreStatus => {
     setError(null)
 
     try {
-      const running = await window.api.core.isRunning()
+      const running = await window.api.toji.isRunning()
       return running
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to check running status'
@@ -39,8 +39,8 @@ export const useCoreStatus = (): CoreStatus => {
   }, [])
 
   const getCurrentDirectory = useCallback(async (): Promise<string | undefined> => {
-    if (!window.api?.core) {
-      setError('Core API not available')
+    if (!window.api?.toji) {
+      setError('Toji API not available')
       return undefined
     }
 
@@ -48,8 +48,8 @@ export const useCoreStatus = (): CoreStatus => {
     setError(null)
 
     try {
-      const directory = await window.api.core.getCurrentDirectory()
-      return directory
+      const directory = await window.api.toji.getCurrentDirectory()
+      return directory || undefined
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get current directory'
       setError(errorMessage)

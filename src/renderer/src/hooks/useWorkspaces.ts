@@ -16,7 +16,7 @@ interface UseWorkspacesReturn {
   openWorkspaceDirectory: (path: string) => Promise<void>
 }
 
-export function useWorkspaces(limit = 50): UseWorkspacesReturn {
+export function useWorkspaces(): UseWorkspacesReturn {
   const [workspaces, setWorkspaces] = useState<SimpleWorkspace[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -25,11 +25,13 @@ export function useWorkspaces(limit = 50): UseWorkspacesReturn {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await window.api.core.getAllWorkspaces(limit)
-      // Convert date strings back to Date objects
+      const data = await window.api.toji.getAllWorkspaces()
+      // Transform to SimpleWorkspace format
       const workspacesWithDates = data.map((ws) => ({
-        ...ws,
-        lastActivity: ws.lastActivity ? new Date(ws.lastActivity) : null
+        path: ws.path,
+        name: ws.path.split(/[/\\]/).pop() || ws.path,
+        sessionCount: ws.sessions?.length || 0,
+        lastActivity: null
       }))
       setWorkspaces(workspacesWithDates)
     } catch (err) {
@@ -38,11 +40,11 @@ export function useWorkspaces(limit = 50): UseWorkspacesReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [limit])
+  }, [])
 
-  const openWorkspaceDirectory = useCallback(async (path: string) => {
+  const openWorkspaceDirectory = useCallback(async () => {
     try {
-      await window.api.core.openWorkspaceDirectory(path)
+      await window.api.toji.openWorkspaceDirectory()
     } catch (err) {
       console.error('Error opening workspace directory:', err)
     }

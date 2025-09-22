@@ -17,7 +17,7 @@ import {
   DialogBackdrop
 } from '@chakra-ui/react'
 import { LuTrash2, LuRefreshCw, LuMessageCircle } from 'react-icons/lu'
-import type { Session } from '../../../../main/api'
+import type { Session } from '../../../../preload/index.d'
 
 interface SessionsModalProps {
   isOpen: boolean
@@ -40,10 +40,6 @@ export function SessionsModal({
   onRefresh,
   deletingSessionId
 }: SessionsModalProps): React.JSX.Element {
-  const formatDate = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString()
-  }
-
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
       <DialogBackdrop bg="rgba(0, 0, 0, 0.8)" />
@@ -184,7 +180,7 @@ export function SessionsModal({
                                   Created:
                                 </Text>
                                 <Text color="app.text" fontSize="xs">
-                                  {formatDate(session.time.created)}
+                                  {session.time.created || 'N/A'}
                                 </Text>
                               </HStack>
                               {session.time.updated &&
@@ -194,7 +190,7 @@ export function SessionsModal({
                                       Updated:
                                     </Text>
                                     <Text color="app.text" fontSize="xs">
-                                      {formatDate(session.time.updated)}
+                                      {session.time.updated}
                                     </Text>
                                   </HStack>
                                 )}

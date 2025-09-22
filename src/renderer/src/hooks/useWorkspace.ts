@@ -39,9 +39,18 @@ export function useWorkspace(): UseWorkspaceResult {
       setError(null)
 
       try {
-        const info = await window.api.core.changeWorkspace(directory)
+        await window.api.toji.changeWorkspace(directory)
+        // For now, create a stub workspace info
+        const info: WorkspaceInfo = {
+          isNew: false,
+          hasGit: false,
+          hasOpenCodeConfig: false,
+          hasTojiToken: false,
+          sessionId: '',
+          workspacePath: directory
+        }
         setWorkspaceInfo(info)
-        setCurrentWorkspace(info.workspacePath)
+        setCurrentWorkspace(directory)
         console.log('Workspace changed successfully:', info)
 
         // After successfully opening a workspace, switch to the chat view
@@ -78,7 +87,7 @@ export function useWorkspace(): UseWorkspaceResult {
 
   const fetchRecentWorkspaces = useCallback(async () => {
     try {
-      const recent = await window.api.core.getRecentWorkspaces()
+      const recent = await window.api.toji.getRecentWorkspaces()
       setRecentWorkspaces(recent)
     } catch (err) {
       console.error('Failed to fetch recent workspaces:', err)
@@ -87,7 +96,9 @@ export function useWorkspace(): UseWorkspaceResult {
 
   const removeRecentWorkspace = useCallback(async (path: string) => {
     try {
-      const updated = await window.api.core.removeRecentWorkspace(path)
+      await window.api.toji.removeRecentWorkspace(path)
+      // Refresh the list
+      const updated = await window.api.toji.getRecentWorkspaces()
       setRecentWorkspaces(updated)
     } catch (err) {
       console.error('Failed to remove recent workspace:', err)
@@ -96,7 +107,7 @@ export function useWorkspace(): UseWorkspaceResult {
 
   const clearRecentWorkspaces = useCallback(async () => {
     try {
-      await window.api.core.clearRecentWorkspaces()
+      await window.api.toji.clearRecentWorkspaces()
       setRecentWorkspaces([])
     } catch (err) {
       console.error('Failed to clear recent workspaces:', err)
@@ -108,9 +119,9 @@ export function useWorkspace(): UseWorkspaceResult {
     const fetchInitialData = async (): Promise<void> => {
       try {
         // Check if OpenCode is running and get current directory
-        const isRunning = await window.api.core.isRunning()
+        const isRunning = await window.api.toji.isRunning()
         if (isRunning) {
-          const directory = await window.api.core.getCurrentDirectory()
+          const directory = await window.api.toji.getCurrentDirectory()
           if (directory) {
             // Set the workspace info without changing it (just populating state)
             setCurrentWorkspace(directory)
@@ -128,7 +139,7 @@ export function useWorkspace(): UseWorkspaceResult {
         }
 
         // Fetch recent workspaces
-        const recent = await window.api.core.getRecentWorkspaces()
+        const recent = await window.api.toji.getRecentWorkspaces()
         setRecentWorkspaces(recent)
       } catch (err) {
         console.error('Failed to fetch initial workspace data:', err)

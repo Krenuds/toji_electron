@@ -11,7 +11,7 @@ import { useWorkspaces } from '../../../hooks/useWorkspaces'
 export function WorkspacesViewSidebar(): React.JSX.Element {
   const { isChangingWorkspace, selectAndChangeWorkspace, currentWorkspace, changeWorkspace } =
     useWorkspace()
-  const { workspaces, isLoading, refreshWorkspaces } = useWorkspaces(10)
+  const { workspaces, isLoading, refreshWorkspaces } = useWorkspaces()
 
   // Stats
   const activeWorkspaces = workspaces.filter((ws) => ws.sessionCount > 0).length
@@ -25,7 +25,7 @@ export function WorkspacesViewSidebar(): React.JSX.Element {
 
   const handleOpenSessionsFolder = async (): Promise<void> => {
     try {
-      await window.api.core.openSessionsDirectory()
+      await window.api.toji.openSessionsDirectory()
     } catch (err) {
       console.error('Failed to open sessions directory:', err)
     }

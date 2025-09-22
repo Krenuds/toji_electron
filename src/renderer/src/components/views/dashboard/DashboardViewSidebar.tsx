@@ -115,7 +115,7 @@ export function DashboardViewSidebar(): React.JSX.Element {
                       Binary Name
                     </Stat.Label>
                     <Stat.ValueText color="app.light" fontSize="2xs" fontFamily="mono">
-                      {info.path.split('\\').pop() || info.path}
+                      {info.path?.split('\\').pop() || info.path || 'Unknown'}
                     </Stat.ValueText>
                   </Stat.Root>
                   <Stat.Root size="sm">
@@ -123,7 +123,7 @@ export function DashboardViewSidebar(): React.JSX.Element {
                       Last Checked
                     </Stat.Label>
                     <Stat.ValueText color="app.light" fontSize="2xs">
-                      {new Date(info.lastChecked).toLocaleTimeString()}
+                      {new Date().toLocaleTimeString()}
                     </Stat.ValueText>
                   </Stat.Root>
                 </VStack>

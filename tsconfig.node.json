@@ -6,7 +6,7 @@
     "src/plugins/**/*",
     "src/preload/**/*.ts"
   ],
-  "exclude": ["src/preload/**/*.d.ts", "src/preload/*.d.ts"],
+  "exclude": ["src/preload/**/*.d.ts", "src/preload/*.d.ts", "src/plugins/discord/commands.old/**/*"],
   "compilerOptions": {
     "composite": true,
     "types": ["electron-vite/node"],

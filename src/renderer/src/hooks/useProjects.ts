@@ -1,11 +1,18 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { Project } from '../../../main/api'
+
+// Project interface (temporary until we import from SDK)
+interface Project {
+  id: string
+  worktree: string
+  vcs?: unknown
+}
 
 interface UseProjectsReturn {
   projects: Project[]
   isLoading: boolean
   error: string | null
   fetchProjects: () => Promise<void>
+  openProjectsFolder: () => Promise<void>
 }
 
 export function useProjects(): UseProjectsReturn {
@@ -18,14 +25,22 @@ export function useProjects(): UseProjectsReturn {
     setError(null)
 
     try {
-      const response = await window.api.core.listProjects()
-      setProjects(response.data || [])
+      const projectList = await window.api.project.list()
+      setProjects(projectList || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
       setError(errorMessage)
       setProjects([])
     } finally {
       setIsLoading(false)
+    }
+  }, [])
+
+  const openProjectsFolder = useCallback(async (): Promise<void> => {
+    try {
+      await window.api.project.openFolder()
+    } catch (error) {
+      console.error('Failed to open projects folder:', error)
     }
   }, [])
 
@@ -38,6 +53,7 @@ export function useProjects(): UseProjectsReturn {
     projects,
     isLoading,
     error,
-    fetchProjects
+    fetchProjects,
+    openProjectsFolder
   }
 }

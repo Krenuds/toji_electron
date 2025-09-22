@@ -11,12 +11,14 @@ The renderer process implements a **plugin interface** for the Toji3 application
 ## Technology Foundation
 
 ### React 19.1
+
 - Latest concurrent features
 - Automatic batching
 - Suspense for data fetching
 - Server Components ready
 
 ### TypeScript 5.8 - STRICT MODE
+
 - **NO `any` TYPES EVER**
 - **EXPLICIT RETURN TYPES REQUIRED**
 - **NO UNUSED VARIABLES**
@@ -27,6 +29,7 @@ The renderer process implements a **plugin interface** for the Toji3 application
 **CRITICAL**: Chakra UI v3 is the ONLY styling solution allowed in this project.
 
 #### What This Means:
+
 - **NO INLINE STYLES**: Never use `style={{}}`
 - **NO CSS FILES**: No `.css` or `.scss` files
 - **NO TAILWIND**: Chakra UI only
@@ -35,16 +38,18 @@ The renderer process implements a **plugin interface** for the Toji3 application
 - **NO MATERIAL-UI**: Chakra UI exclusively
 
 #### Required Reading:
+
 - **Setup Guide**: https://chakra-ui.com/docs/get-started/frameworks/vite
 - **Component Docs**: https://chakra-ui.com/docs/components
 - **Styling Guide**: https://chakra-ui.com/docs/styling/style-props
 
 #### Use Chakra MCP Tools:
+
 ```typescript
 // ALWAYS verify component syntax with MCP tools
-mcp__chakra-ui__get_component_props
-mcp__chakra-ui__get_component_example
-mcp__chakra-ui__v2_to_v3_code_review
+mcp__chakra - ui__get_component_props
+mcp__chakra - ui__get_component_example
+mcp__chakra - ui__v2_to_v3_code_review
 ```
 
 ## Views Architecture
@@ -129,10 +134,7 @@ interface WorkspaceCardProps {
   onSelect: (path: string) => void
 }
 
-export function WorkspaceCard({
-  workspace,
-  onSelect
-}: WorkspaceCardProps): React.JSX.Element {
+export function WorkspaceCard({ workspace, onSelect }: WorkspaceCardProps): React.JSX.Element {
   // Reusable workspace display component
 }
 ```
@@ -151,6 +153,7 @@ interface AppViewContextType {
 ```
 
 **Features:**
+
 - Tracks active view
 - Persists to localStorage
 - Isolated view states
@@ -193,6 +196,7 @@ export function useViewCoordination() {
 ### Never Direct Access
 
 **WRONG:**
+
 ```typescript
 // ❌ Never do this in components
 const handleClick = async () => {
@@ -201,6 +205,7 @@ const handleClick = async () => {
 ```
 
 **RIGHT:**
+
 ```typescript
 // ✅ Always use hooks
 const { chat } = useChat()
@@ -241,6 +246,7 @@ export function useWorkspaces() {
 ### Composition Patterns
 
 **Progress Components:**
+
 ```tsx
 <Progress.Root value={progress} colorPalette="green">
   <Progress.Track>
@@ -250,6 +256,7 @@ export function useWorkspaces() {
 ```
 
 **Card Components:**
+
 ```tsx
 <Card.Root bg="app.dark" borderColor="app.border">
   <Card.Header>
@@ -260,6 +267,7 @@ export function useWorkspaces() {
 ```
 
 **Dialog Components:**
+
 ```tsx
 <Dialog.Root open={open} onOpenChange={setOpen}>
   <Dialog.Trigger asChild>
@@ -285,13 +293,13 @@ export const theme = {
   tokens: {
     colors: {
       app: {
-        darkest: { value: '#09090b' },   // Icon bar
-        dark: { value: '#1a1a1a' },      // Sidebar
-        medium: { value: '#242424' },    // Main content
-        border: { value: '#404040' },    // Borders
-        text: { value: '#808080' },      // Secondary text
-        light: { value: '#ffffff' },     // Primary text
-        accent: { value: '#33b42f' }     // Highlights
+        darkest: { value: '#09090b' }, // Icon bar
+        dark: { value: '#1a1a1a' }, // Sidebar
+        medium: { value: '#242424' }, // Main content
+        border: { value: '#404040' }, // Borders
+        text: { value: '#808080' }, // Secondary text
+        light: { value: '#ffffff' }, // Primary text
+        accent: { value: '#33b42f' } // Highlights
       }
     }
   }
@@ -299,6 +307,7 @@ export const theme = {
 ```
 
 **Usage:**
+
 ```tsx
 <Box bg="app.dark" borderColor="app.border" color="app.light">
   {/* Never hardcode colors! */}
@@ -471,6 +480,7 @@ test('loads workspaces', async () => {
 ### Adding New Views
 
 1. **Create View Components**:
+
    ```
    src/components/views/newview/
    ├── NewViewSidebar.tsx
@@ -478,23 +488,22 @@ test('loads workspaces', async () => {
    ```
 
 2. **Add to ViewType**:
+
    ```typescript
    type ViewType = 'dashboard' | 'chat' | 'newview'
    ```
 
 3. **Update useViewCoordination**:
+
    ```typescript
    case 'newview':
      return <NewViewSidebar />
    ```
 
 4. **Add Navigation Icon**:
+
    ```tsx
-   <IconButton
-     icon={<LuNewIcon size={20} />}
-     tooltip="New View"
-     viewName="newview"
-   />
+   <IconButton icon={<LuNewIcon size={20} />} tooltip="New View" viewName="newview" />
    ```
 
 5. **Create IPC Hook**:
@@ -507,6 +516,7 @@ test('loads workspaces', async () => {
 ### Style Guidelines - MANDATORY
 
 #### Chakra UI v3 Rules:
+
 - **TOKENS ONLY**: Use `app.*` color tokens, NEVER hardcode colors
 - **COMPOSITION PATTERN**: Use v3 syntax (Card.Root, Dialog.Body, etc.)
 - **SPACING VIA PROPS**: Use `gap`, `p`, `m` props only
@@ -514,6 +524,7 @@ test('loads workspaces', async () => {
 - **NO CUSTOM CSS**: Everything through Chakra
 
 #### Code Quality Requirements:
+
 ```bash
 # Before EVERY component edit:
 npm run format
@@ -527,6 +538,7 @@ npm run typecheck   # Must pass
 ```
 
 #### TypeScript Requirements:
+
 - **NO `any` TYPES**: Use proper interfaces
 - **EXPLICIT RETURNS**: Every function needs return type
 - **PROP INTERFACES**: Define for every component
@@ -585,6 +597,7 @@ useEffect(() => {
 ## Best Practices - ENFORCED
 
 ### Code Quality Workflow (MANDATORY)
+
 ```bash
 # The Sacred Sequence - NEVER SKIP STEPS
 1. npm run format      # Format first
@@ -595,6 +608,7 @@ useEffect(() => {
 ```
 
 ### Development Rules
+
 1. **CHAKRA UI ONLY**: No other styling methods allowed
 2. **STRICT TYPESCRIPT**: No `any`, explicit returns required
 3. **COMPONENT SEPARATION**: One component per file
@@ -605,6 +619,7 @@ useEffect(() => {
 8. **TEST THOROUGHLY**: Manual and automated tests
 
 ### Styling Rules (Chakra UI v3)
+
 - **Read Vite Guide**: https://chakra-ui.com/docs/get-started/frameworks/vite
 - **Use MCP Tools**: Verify all component syntax
 - **Token System**: Use `app.*` tokens exclusively

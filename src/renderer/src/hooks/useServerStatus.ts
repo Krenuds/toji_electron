@@ -8,7 +8,7 @@ export function useServerStatus(): ServerStatus {
   useEffect(() => {
     const checkStatus = async (): Promise<void> => {
       try {
-        const isRunning = await window.api.core.isRunning()
+        const isRunning = await window.api.toji.isRunning()
         setServerStatus(isRunning ? 'running' : 'stopped')
       } catch (error) {
         console.error('Failed to check server status:', error)

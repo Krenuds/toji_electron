@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { Session } from '../../../main/api'
+import type { Session } from '../../../preload/index.d'
 
 interface UseSessionReturn {
   sessions: Session[]
@@ -22,14 +22,14 @@ export function useSession(): UseSessionReturn {
     setError(null)
 
     try {
-      const response = await window.api.core.listSessions()
-      setSessions(response.data || [])
+      const response = await window.api.toji.listSessions()
+      setSessions(response || [])
 
       // Try to determine current session from the list
-      if (response.data && response.data.length > 0) {
+      if (response && response.length > 0) {
         // For now, assume the first session is current
         // In future, we might need a getCurrentSession API method
-        setCurrentSessionId(response.data[0].id)
+        setCurrentSessionId(response[0].id)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sessions'
@@ -45,7 +45,7 @@ export function useSession(): UseSessionReturn {
       setError(null)
 
       try {
-        await window.api.core.deleteSession(sessionId)
+        await window.api.toji.deleteSession(sessionId)
 
         // Remove from local state
         setSessions((prev) => prev.filter((s) => s.id !== sessionId))

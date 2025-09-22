@@ -137,16 +137,16 @@ export class ConfigProvider {
       ...settings,
       // Deep merge nested objects
       opencodeConfig: {
-        ...existingSettings.opencodeConfig,
-        ...settings.opencodeConfig
+        ...(existingSettings.opencodeConfig || {}),
+        ...(settings.opencodeConfig || {})
       },
       ui: {
-        ...existingSettings.ui,
-        ...settings.ui
+        ...(existingSettings.ui || {}),
+        ...(settings.ui || {})
       },
       session: {
-        ...existingSettings.session,
-        ...settings.session
+        ...(existingSettings.session || {}),
+        ...(settings.session || {})
       }
     }
 
