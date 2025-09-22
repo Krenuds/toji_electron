@@ -1,7 +1,7 @@
 import React from 'react'
 import { Flex, Box, IconButton, Text, HStack } from '@chakra-ui/react'
 import { LuMinus, LuSquare, LuX } from 'react-icons/lu'
-import { TojiLogo } from './TojiLogo'
+import tojiIcon from '../../../resources/toji_title.png?asset'
 
 interface TitleBarProps {
   onMinimize?: () => void
@@ -25,7 +25,7 @@ export function TitleBar({ onMinimize, onMaximize, onClose }: TitleBarProps): Re
 
       {/* Center logo and title */}
       <HStack gap={2} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        <TojiLogo size="16px" />
+        <img src={tojiIcon} alt="Toji3" width="16" height="16" />
         <Text color="white" fontSize="sm" fontWeight="medium">
           Toji3
         </Text>
