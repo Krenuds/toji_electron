@@ -10,9 +10,7 @@ export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.E
   const [activeView, setActiveViewState] = useState<ViewType>('dashboard')
   const [viewState, setViewStateData] = useState<Record<ViewType, ViewStateData>>({
     dashboard: {},
-    settings: {},
     chat: {},
-    workspaces: {},
     projects: {}
   })
 
@@ -21,7 +19,7 @@ export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.E
     const savedView = localStorage.getItem('toji-active-view')
     if (
       savedView &&
-      ['dashboard', 'settings', 'chat', 'workspaces', 'projects'].includes(savedView)
+      ['dashboard', 'chat', 'projects'].includes(savedView)
     ) {
       setActiveViewState(savedView as ViewType)
     }

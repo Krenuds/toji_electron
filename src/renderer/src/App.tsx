@@ -1,12 +1,6 @@
 import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
-import {
-  LuSettings,
-  LuLayoutDashboard,
-  LuFolderGit2,
-  LuMessageCircle,
-  LuFolderTree
-} from 'react-icons/lu'
+import { LuLayoutDashboard, LuMessageCircle, LuFolderTree } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
@@ -54,13 +48,6 @@ function AppContent(): React.JSX.Element {
               onClick={handleIconClick}
             />
             <IconButton
-              icon={<LuFolderGit2 />}
-              tooltip="Workspaces"
-              viewName="workspaces"
-              isActive={activeView === 'workspaces'}
-              onClick={handleIconClick}
-            />
-            <IconButton
               icon={<LuFolderTree />}
               tooltip="Projects"
               viewName="projects"
@@ -72,13 +59,6 @@ function AppContent(): React.JSX.Element {
               tooltip="Chat"
               viewName="chat"
               isActive={activeView === 'chat'}
-              onClick={handleIconClick}
-            />
-            <IconButton
-              icon={<LuSettings />}
-              tooltip="Settings"
-              viewName="settings"
-              isActive={activeView === 'settings'}
               onClick={handleIconClick}
             />
           </Stack>
