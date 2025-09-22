@@ -1,7 +1,7 @@
 import React from 'react'
 import { Flex, Box, IconButton, Text, HStack } from '@chakra-ui/react'
 import { LuMinus, LuSquare, LuX } from 'react-icons/lu'
-import tojiIcon from '../../../resources/toji_title.png?asset'
+import tojiIcon from '../../../../resources/toji_title.png?asset'
 
 interface TitleBarProps {
   onMinimize?: () => void
