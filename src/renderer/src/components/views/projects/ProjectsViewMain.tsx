@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { VStack, Box, Text, Center, Button, Spinner, HStack } from '@chakra-ui/react'
-import { LuFolderTree, LuRefreshCw } from 'react-icons/lu'
+import { LuFolderTree, LuRefreshCw, LuFolderOpen } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
 
 export function ProjectsViewMain(): React.JSX.Element {
-  const { projects, isLoading, error, fetchProjects } = useProjects()
+  const { projects, isLoading, error, fetchProjects, openProjectsFolder } = useProjects()
   const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function ProjectsViewMain(): React.JSX.Element {
         </Text>
       </Box>
 
-      {/* Refresh Button */}
+      {/* Action Buttons */}
       <HStack>
         <Button
           size="sm"
@@ -36,6 +36,10 @@ export function ProjectsViewMain(): React.JSX.Element {
         >
           <LuRefreshCw size={16} />
           <Text ml={2}>Refresh Projects</Text>
+        </Button>
+        <Button size="sm" variant="ghost" colorPalette="blue" onClick={openProjectsFolder}>
+          <LuFolderOpen size={16} />
+          <Text ml={2}>Open Projects Folder</Text>
         </Button>
       </HStack>
 

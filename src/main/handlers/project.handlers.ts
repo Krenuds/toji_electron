@@ -1,6 +1,5 @@
 // Project-related IPC handlers
-import { ipcMain, shell, app } from 'electron'
-import { join } from 'path'
+import { ipcMain, shell } from 'electron'
 import type { Toji } from '../toji'
 
 export function registerProjectHandlers(toji: Toji | null): void {
@@ -34,8 +33,11 @@ export function registerProjectHandlers(toji: Toji | null): void {
 
   // Open projects data folder
   ipcMain.handle('toji:project:open-folder', async () => {
-    const userData = app.getPath('userData')
-    const projectsPath = join(userData, 'opencode-data', 'projects')
+    if (!toji) {
+      throw new Error('Toji not initialized')
+    }
+
+    const projectsPath = toji.project.getDataPath()
 
     try {
       await shell.openPath(projectsPath)

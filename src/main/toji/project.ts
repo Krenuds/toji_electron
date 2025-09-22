@@ -40,9 +40,11 @@ export class ProjectManager {
 
   /**
    * Get the path to the projects data folder
+   * Uses XDG_DATA_HOME set by OpenCodeService for cross-platform compatibility
    */
   getDataPath(): string {
-    const userData = app.getPath('userData')
-    return join(userData, 'opencode-data', 'projects')
+    // Use XDG_DATA_HOME set by OpenCodeService, fallback to userData
+    const dataHome = process.env.XDG_DATA_HOME || join(app.getPath('userData'), 'opencode-data')
+    return join(dataHome, 'opencode', 'storage', 'project')
   }
 }
