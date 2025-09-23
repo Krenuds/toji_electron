@@ -67,7 +67,7 @@ export function createFileDebugLogger(namespace: string): debug.Debugger {
   const logger = debug(namespace)
 
   // Create a custom logger function that wraps the debug logger
-  const customLogger = (...args: unknown[]) => {
+  const customLogger = (...args: unknown[]): void => {
     // Call original debug logging (console output)
     logger(...(args as [unknown, ...unknown[]]))
 

@@ -1,4 +1,5 @@
 // Utility for converting OpenCode SDK message format to UI ChatMessage format
+import type { Message, Part } from '@opencode-ai/sdk'
 
 export interface ChatMessage {
   id: string
@@ -7,25 +8,10 @@ export interface ChatMessage {
   timestamp: Date
 }
 
-// OpenCode SDK message types (simplified)
-interface SDKMessage {
-  id: string
-  role: 'user' | 'assistant'
-  time: {
-    created: number
-    completed?: number
-  }
-}
-
-interface SDKPart {
-  type: string
-  text?: string
-  [key: string]: any
-}
-
+// OpenCode SDK message structure
 interface SDKMessageItem {
-  info: SDKMessage
-  parts: SDKPart[]
+  info: Message
+  parts: Part[]
 }
 
 /**
@@ -48,8 +34,10 @@ export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessag
         }
 
         // Extract text content from parts
-        const textParts = parts.filter((part) => part.type === 'text' && part.text)
-        const content = textParts.map((part) => part.text).join('')
+        const textParts = parts.filter(
+          (part) => part.type === 'text' && (part as { text?: string }).text
+        )
+        const content = textParts.map((part) => (part as { text: string }).text).join('')
 
         // Skip messages with no text content
         if (!content.trim()) {

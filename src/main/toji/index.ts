@@ -1,6 +1,6 @@
 // Minimal Toji implementation with direct OpenCode SDK usage
 import { createOpencodeClient } from '@opencode-ai/sdk'
-import type { OpencodeClient } from '@opencode-ai/sdk'
+import type { OpencodeClient, Part, Message } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -143,8 +143,8 @@ export class Toji {
 
       // Extract text from response parts
       const responseText = response.data.parts
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
+        .filter((part: Part) => part.type === 'text')
+        .map((part: Part) => (part as { text: string }).text)
         .join('')
 
       logChat('Chat response received: %d characters', responseText.length)
@@ -166,7 +166,7 @@ export class Toji {
   }
 
   // Get message history for a session
-  async getSessionMessages(sessionId?: string): Promise<Array<{ info: any; parts: any[] }>> {
+  async getSessionMessages(sessionId?: string): Promise<Array<{ info: Message; parts: Part[] }>> {
     const activeSessionId = sessionId || this.currentSessionId
     if (!activeSessionId) {
       logChat('No session ID provided or current session available')

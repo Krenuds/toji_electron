@@ -1,5 +1,6 @@
 // Core Toji API for preload
 import { ipcRenderer } from 'electron'
+import type { Message, Part } from '@opencode-ai/sdk'
 import type { Session, ServerStatus } from '../../main/toji/types'
 
 export const tojiAPI = {
@@ -30,7 +31,7 @@ export const tojiAPI = {
   clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
   // Message history operations
-  getSessionMessages: (sessionId?: string): Promise<Array<{ info: any; parts: any[] }>> =>
+  getSessionMessages: (sessionId?: string): Promise<Array<{ info: Message; parts: Part[] }>> =>
     ipcRenderer.invoke('toji:get-session-messages', sessionId),
   getCurrentSessionId: (): Promise<string | undefined> =>
     ipcRenderer.invoke('toji:get-current-session-id'),
