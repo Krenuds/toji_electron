@@ -92,10 +92,24 @@ export class ProjectManager {
     log('Project config: %o', config)
 
     try {
-      // Start server for this project
-      log('Starting server for project...')
-      const port = await this.server.start(directory, config)
-      log('Server started successfully on port %d', port)
+      // Check if server already exists and is healthy
+      const existingServer = this.server.getServer(directory)
+      let port: number
+
+      if (existingServer && existingServer.isHealthy) {
+        // Server already running and healthy - just reconnect client
+        log(
+          'Server already running and healthy for %s on port %d, reconnecting client',
+          directory,
+          existingServer.port
+        )
+        port = existingServer.port
+      } else {
+        // Start server for this project (will stop existing unhealthy server if needed)
+        log('Starting server for project...')
+        port = await this.server.start(directory, config)
+        log('Server started successfully on port %d', port)
+      }
 
       // Connect client to this project's server
       log('Connecting client to project server...')

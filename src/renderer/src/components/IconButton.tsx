@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box } from '@chakra-ui/react'
-import { Tooltip } from './Tooltip'
+import { Tooltip } from './shared/Tooltip'
 import { ViewType } from '../types/ViewTypes'
 
 interface IconButtonProps {

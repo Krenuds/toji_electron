@@ -8,7 +8,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npm run lint:*)",
-      "WebFetch(domain:opencode.ai)"
+      "WebFetch(domain:opencode.ai)",
+      "Bash(npm run dev:*)",
+      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)"
     ],
     "deny": [],
     "ask": []

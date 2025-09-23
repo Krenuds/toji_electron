@@ -1,11 +1,23 @@
 import React, { useEffect, useState } from 'react'
-import { VStack, Box, Text, Center, Button, Spinner, HStack } from '@chakra-ui/react'
-import { LuFolderTree, LuRefreshCw, LuFolderOpen } from 'react-icons/lu'
+import { VStack, Box, Text, Center, Button, Spinner, HStack, Grid } from '@chakra-ui/react'
+import { LuFolderTree, LuRefreshCw, LuFolderOpen, LuPlus } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
+import { ProjectCard } from './ProjectCard'
 
 export function ProjectsViewMain(): React.JSX.Element {
-  const { projects, isLoading, error, fetchProjects, openProjectsFolder } = useProjects()
+  const {
+    projects,
+    isLoading,
+    error,
+    fetchProjects,
+    openProjectsFolder,
+    changeProject,
+    isChangingProject,
+    currentProject,
+    selectAndChangeProject
+  } = useProjects()
   const [hasLoaded, setHasLoaded] = useState(false)
+  const [openingProject, setOpeningProject] = useState<string | null>(null)
 
   useEffect(() => {
     if (!hasLoaded) {
@@ -13,6 +25,17 @@ export function ProjectsViewMain(): React.JSX.Element {
       setHasLoaded(true)
     }
   }, [hasLoaded, fetchProjects])
+
+  const handleOpenProject = async (projectPath: string): Promise<void> => {
+    setOpeningProject(projectPath)
+    try {
+      await changeProject(projectPath)
+    } catch (error) {
+      console.error('Failed to open project:', error)
+    } finally {
+      setOpeningProject(null)
+    }
+  }
   return (
     <VStack align="stretch" gap={6}>
       {/* Header */}
@@ -29,17 +52,27 @@ export function ProjectsViewMain(): React.JSX.Element {
       <HStack>
         <Button
           size="sm"
+          variant="solid"
+          colorPalette="green"
+          onClick={selectAndChangeProject}
+          disabled={isChangingProject}
+        >
+          <LuPlus size={16} />
+          <Text ml={2}>{isChangingProject ? 'Opening...' : 'Open Project'}</Text>
+        </Button>
+        <Button
+          size="sm"
           variant="ghost"
           colorPalette="green"
           onClick={fetchProjects}
           disabled={isLoading}
         >
           <LuRefreshCw size={16} />
-          <Text ml={2}>Refresh Projects</Text>
+          <Text ml={2}>Refresh</Text>
         </Button>
-        <Button size="sm" variant="ghost" colorPalette="blue" onClick={openProjectsFolder}>
+        <Button size="sm" variant="ghost" colorPalette="gray" onClick={openProjectsFolder}>
           <LuFolderOpen size={16} />
-          <Text ml={2}>Open Projects Folder</Text>
+          <Text ml={2}>Show Folder</Text>
         </Button>
       </HStack>
 
@@ -64,38 +97,45 @@ export function ProjectsViewMain(): React.JSX.Element {
           </VStack>
         </Center>
       ) : projects.length > 0 ? (
-        <VStack align="stretch" gap={2}>
+        <VStack align="stretch" gap={4}>
           <Text color="app.text" fontSize="sm">
-            Found {projects.length} project(s):
+            {projects.length === 1 ? '1 project found:' : `${projects.length} projects found:`}
           </Text>
-          {projects.map((project, index) => (
-            <Box
-              key={index}
-              p={4}
-              bg="app.dark"
-              borderRadius="md"
-              borderWidth={1}
-              borderColor="app.border"
-            >
-              <Text color="app.light" fontWeight="semibold">
-                Project {index + 1}
-              </Text>
-              <Text color="app.text" fontSize="xs" fontFamily="mono">
-                {JSON.stringify(project, null, 2)}
-              </Text>
-            </Box>
-          ))}
+          <VStack align="stretch" gap={3}>
+            {projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                isActive={currentProject === project.worktree}
+                isLoading={openingProject === project.worktree}
+                onOpen={handleOpenProject}
+              />
+            ))}
+          </VStack>
         </VStack>
       ) : (
         <Center py={20}>
-          <VStack gap={4}>
+          <VStack gap={6}>
             <LuFolderTree size={48} color="#404040" />
-            <Text color="app.light" fontSize="lg">
-              No Projects Found
-            </Text>
-            <Text color="app.text" fontSize="sm" textAlign="center" maxW="400px">
-              No OpenCode projects detected. Create a new project to get started.
-            </Text>
+            <VStack gap={2}>
+              <Text color="app.light" fontSize="lg" fontWeight="semibold">
+                No Projects Yet
+              </Text>
+              <Text color="app.text" fontSize="sm" textAlign="center" maxW="400px">
+                Start by opening a folder with your documents, code, or any files you&apos;d like to
+                chat about with AI.
+              </Text>
+            </VStack>
+            <Button
+              size="md"
+              variant="solid"
+              colorPalette="green"
+              onClick={selectAndChangeProject}
+              disabled={isChangingProject}
+            >
+              <LuPlus size={16} />
+              <Text ml={2}>{isChangingProject ? 'Opening...' : 'Open Your First Project'}</Text>
+            </Button>
           </VStack>
         </Center>
       )}
