@@ -43,4 +43,27 @@ export function registerTojiHandlers(toji: Toji): void {
   ipcMain.handle('toji:clear-session', () => {
     toji.clearSession()
   })
+
+  // Message history handlers
+  ipcMain.handle('toji:get-session-messages', async (_, sessionId?: string) => {
+    try {
+      return await toji.getSessionMessages(sessionId)
+    } catch (error) {
+      console.error('Get session messages error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:get-current-session-id', () => {
+    return toji.getCurrentSessionId()
+  })
+
+  ipcMain.handle('toji:get-current-session', async () => {
+    try {
+      return await toji.getCurrentSession()
+    } catch (error) {
+      console.error('Get current session error:', error)
+      throw error
+    }
+  })
 }

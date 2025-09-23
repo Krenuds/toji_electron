@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { formatMessagesFromSDK, type ChatMessage } from '../utils/messageFormatter'
 
 interface ChatResponse {
   success: boolean
@@ -15,6 +16,9 @@ interface UseChatReturn {
   sendMessage: (message: string) => Promise<ChatResponse>
   checkServerStatus: () => Promise<boolean>
   ensureReadyForChat: () => Promise<EnsureReadyResponse>
+  getSessionMessages: (sessionId?: string) => Promise<ChatMessage[]>
+  getCurrentSessionId: () => Promise<string | undefined>
+  getCurrentSession: () => Promise<{ id: string; directory?: string } | null>
   isLoading: boolean
   error: string | null
 }
@@ -63,10 +67,45 @@ export function useChat(): UseChatReturn {
     }
   }, [])
 
+  const getSessionMessages = useCallback(async (sessionId?: string): Promise<ChatMessage[]> => {
+    try {
+      const sdkMessages = await window.api.toji.getSessionMessages(sessionId)
+      return formatMessagesFromSDK(sdkMessages)
+    } catch (error) {
+      console.error('Failed to get session messages:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load message history')
+      return []
+    }
+  }, [])
+
+  const getCurrentSessionId = useCallback(async (): Promise<string | undefined> => {
+    try {
+      return await window.api.toji.getCurrentSessionId()
+    } catch (error) {
+      console.error('Failed to get current session ID:', error)
+      return undefined
+    }
+  }, [])
+
+  const getCurrentSession = useCallback(async (): Promise<{
+    id: string
+    directory?: string
+  } | null> => {
+    try {
+      return await window.api.toji.getCurrentSession()
+    } catch (error) {
+      console.error('Failed to get current session:', error)
+      return null
+    }
+  }, [])
+
   return {
     sendMessage,
     checkServerStatus,
     ensureReadyForChat,
+    getSessionMessages,
+    getCurrentSessionId,
+    getCurrentSession,
     isLoading,
     error
   }

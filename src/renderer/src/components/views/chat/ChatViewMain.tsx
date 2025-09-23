@@ -3,40 +3,61 @@ import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-u
 import { LuSend, LuUser, LuBot } from 'react-icons/lu'
 import { useWorkspace } from '../../../hooks/useWorkspace'
 import { useChat } from '../../../hooks/useChat'
-
-interface ChatMessage {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  timestamp: Date
-}
+import {
+  createChatMessage,
+  replaceMessages,
+  type ChatMessage
+} from '../../../utils/messageFormatter'
 
 export function ChatViewMain(): React.JSX.Element {
   const [message, setMessage] = useState('')
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
   const { workspaceInfo, isChangingWorkspace } = useWorkspace()
-  const { sendMessage, checkServerStatus, ensureReadyForChat, isLoading } = useChat()
+  const {
+    sendMessage,
+    checkServerStatus,
+    ensureReadyForChat,
+    getSessionMessages,
+    getCurrentSession,
+    isLoading
+  } = useChat()
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [syncLoading, setSyncLoading] = useState(false)
 
-  // Reset messages when workspace changes
-  useEffect(() => {
-    if (workspaceInfo) {
-      const workspaceName = workspaceInfo.workspacePath.split(/[\\/]/).pop() || 'this workspace'
-      setMessages([
-        {
-          id: Date.now().toString(),
-          type: 'assistant',
-          content: `Workspace changed to "${workspaceName}". ${
-            workspaceInfo.isNew
-              ? 'This is a new workspace. I&apos;m ready to help you start your project!'
-              : 'I&apos;m ready to help you with this project!'
-          }`,
-          timestamp: new Date()
-        }
-      ])
-      setServerStatus('online')
+  // Sync messages with backend session history
+  const syncMessages = async (): Promise<void> => {
+    setSyncLoading(true)
+    try {
+      // Check if we have a current session
+      const sessionInfo = await getCurrentSession()
+      if (!sessionInfo) {
+        // No session yet, clear messages
+        setMessages([])
+        return
+      }
+
+      // Load message history from backend
+      const history = await getSessionMessages(sessionInfo.id)
+      setMessages(replaceMessages(history))
+    } catch (error) {
+      console.error('Failed to sync messages:', error)
+      // Don't clear messages on error, keep what we have
+    } finally {
+      setSyncLoading(false)
     }
-  }, [workspaceInfo])
+  }
+
+  // Sync messages when workspace changes
+  useEffect(() => {
+    if (workspaceInfo && !isChangingWorkspace) {
+      syncMessages()
+    }
+  }, [workspaceInfo, isChangingWorkspace])
+
+  // Sync messages when component mounts (view navigation)
+  useEffect(() => {
+    syncMessages()
+  }, [])
 
   // Poll server status
   useEffect(() => {
@@ -56,13 +77,8 @@ export function ChatViewMain(): React.JSX.Element {
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return
 
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: message,
-      timestamp: new Date()
-    }
-
+    // Create user message and add it immediately for responsive UI
+    const userMessage = createChatMessage('user', message)
     setMessages((prev) => [...prev, userMessage])
     const currentMessage = message
     setMessage('')
@@ -74,12 +90,10 @@ export function ChatViewMain(): React.JSX.Element {
       if (readyStatus.serverStatus === 'online') {
         setServerStatus('online')
       } else {
-        const errorMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          type: 'assistant',
-          content: `Error: ${readyStatus.error || 'Failed to initialize OpenCode server'}`,
-          timestamp: new Date()
-        }
+        const errorMessage = createChatMessage(
+          'assistant',
+          `Error: ${readyStatus.error || 'Failed to initialize OpenCode server'}`
+        )
         setMessages((prev) => [...prev, errorMessage])
         setServerStatus('offline')
         return
@@ -90,20 +104,14 @@ export function ChatViewMain(): React.JSX.Element {
     const response = await sendMessage(currentMessage)
 
     if (response.success) {
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: response.message || '',
-        timestamp: new Date()
-      }
-      setMessages((prev) => [...prev, assistantMessage])
+      // Sync messages from backend to get the complete conversation
+      // This ensures we have the real assistant response with proper IDs
+      await syncMessages()
     } else {
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: `Error: ${response.error || 'Failed to send message'}`,
-        timestamp: new Date()
-      }
+      const errorMessage = createChatMessage(
+        'assistant',
+        `Error: ${response.error || 'Failed to send message'}`
+      )
       setMessages((prev) => [...prev, errorMessage])
       setServerStatus('offline')
     }
@@ -257,7 +265,11 @@ export function ChatViewMain(): React.JSX.Element {
             </Button>
           </HStack>
           <Text color="app.text" fontSize="xs" mt={2}>
-            {isLoading ? 'Toji is thinking...' : 'Press Enter to send • OpenCode powered'}
+            {isLoading
+              ? 'Toji is thinking...'
+              : syncLoading
+                ? 'Syncing messages...'
+                : 'Press Enter to send • OpenCode powered'}
           </Text>
         </Card.Body>
       </Card.Root>

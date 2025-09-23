@@ -164,6 +164,82 @@ export class Toji {
     )
     this.currentSessionId = undefined
   }
+
+  // Get message history for a session
+  async getSessionMessages(sessionId?: string): Promise<Array<{ info: any; parts: any[] }>> {
+    const activeSessionId = sessionId || this.currentSessionId
+    if (!activeSessionId) {
+      logChat('No session ID provided or current session available')
+      return []
+    }
+
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    try {
+      logChat(
+        'Fetching message history for session: %s in project: %s',
+        activeSessionId,
+        this.currentProjectDirectory || 'unknown'
+      )
+
+      const response = await this.client.session.messages({
+        path: { id: activeSessionId },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
+      })
+
+      if (response.error || !response.data) {
+        throw new Error(`Failed to get session messages: ${response.error || 'No response data'}`)
+      }
+
+      logChat('Retrieved %d messages from session: %s', response.data.length, activeSessionId)
+      return response.data
+    } catch (error) {
+      logChat('ERROR: Failed to get session messages: %o', error)
+      throw error
+    }
+  }
+
+  // Get current session ID
+  getCurrentSessionId(): string | undefined {
+    return this.currentSessionId
+  }
+
+  // Get current session info
+  async getCurrentSession(): Promise<{ id: string; directory?: string } | null> {
+    if (!this.currentSessionId) {
+      return null
+    }
+
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    try {
+      const response = await this.client.session.get({
+        path: { id: this.currentSessionId },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
+      })
+
+      if (response.error || !response.data) {
+        logChat('Session %s not found or error: %s', this.currentSessionId, response.error)
+        return null
+      }
+
+      return {
+        id: this.currentSessionId,
+        directory: this.currentProjectDirectory
+      }
+    } catch (error) {
+      logChat('ERROR: Failed to get current session: %o', error)
+      return null
+    }
+  }
 }
 
 export default Toji

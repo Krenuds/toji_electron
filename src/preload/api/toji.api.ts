@@ -36,6 +36,14 @@ export const tojiAPI = {
     ipcRenderer.invoke('toji:chat', message, sessionId),
   clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
+  // Message history operations
+  getSessionMessages: (sessionId?: string): Promise<Array<{ info: any; parts: any[] }>> =>
+    ipcRenderer.invoke('toji:get-session-messages', sessionId),
+  getCurrentSessionId: (): Promise<string | undefined> =>
+    ipcRenderer.invoke('toji:get-current-session-id'),
+  getCurrentSession: (): Promise<{ id: string; directory?: string } | null> =>
+    ipcRenderer.invoke('toji:get-current-session'),
+
   // Session operations - stubbed
   listSessions: (): Promise<Session[]> => Promise.resolve([]),
   deleteSession: (sessionId: string): Promise<void> => {
