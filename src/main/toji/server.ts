@@ -1,26 +1,52 @@
 import { createOpencodeServer } from '@opencode-ai/sdk'
-import type { ServerOptions } from '@opencode-ai/sdk'
+import type { ServerOptions, Config } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import type { ServerStatus } from './types'
 
+interface ServerInstance {
+  server: { close: () => void; url: string }
+  port: number
+  workingDir: string
+  startTime: Date
+  isHealthy: boolean
+  lastHealthCheck?: Date
+  healthCheckInterval?: NodeJS.Timeout
+}
+
 export class ServerManager {
-  private server?: { close: () => void; url?: string }
-  private serverUrl?: string
-  private healthCheckInterval?: NodeJS.Timeout
-  private serverStartTime?: Date
-  private isHealthy: boolean = false
-  private lastHealthCheck?: Date
+  private servers: Map<string, ServerInstance> = new Map() // workingDir -> ServerInstance
+  private basePort = 4096
 
   constructor(
     private opencodeService: OpenCodeService,
-    private config?: ConfigProvider
+    private _config?: ConfigProvider
   ) {}
 
-  async start(): Promise<void> {
-    // Stop any existing server
-    if (this.server) {
-      await this.stop()
+  /**
+   * Find the next available port starting from basePort
+   */
+  private async findAvailablePort(): Promise<number> {
+    let port = this.basePort
+    const usedPorts = [...this.servers.values()].map((s) => s.port)
+
+    while (usedPorts.includes(port)) {
+      port++
+    }
+
+    return port
+  }
+
+  /**
+   * Start server for a specific project (doesn't stop others)
+   */
+  async start(workingDir?: string, config?: Config): Promise<number> {
+    // For backward compatibility, use configured working directory if not provided
+    const dir = workingDir || this._config?.getOpencodeWorkingDirectory() || process.cwd()
+
+    // Stop any existing server for this project
+    if (this.servers.has(dir)) {
+      await this.stop(dir)
     }
 
     // Ensure binary is available
@@ -29,95 +55,157 @@ export class ServerManager {
       throw new Error('OpenCode binary not installed')
     }
 
-    // Get the configured working directory
-    const workingDir = this.config?.getOpencodeWorkingDirectory() || process.cwd()
-    console.log('Starting OpenCode server (intended directory:', workingDir, ')')
+    console.log('Starting OpenCode server for project:', dir)
+
+    // Find available port
+    const port = await this.findAvailablePort()
 
     const serverOptions: ServerOptions = {
       hostname: '127.0.0.1',
-      port: 4096,
-      timeout: 5000
+      port,
+      timeout: 5000,
+      config
     }
 
-    this.server = await createOpencodeServer(serverOptions)
-    this.serverUrl = `http://${serverOptions.hostname}:${serverOptions.port}`
-    this.serverStartTime = new Date()
-    this.isHealthy = true // Assume healthy on start
+    const server = await createOpencodeServer(serverOptions)
 
-    // Start health monitoring
-    this.startHealthMonitoring()
+    const instance: ServerInstance = {
+      server,
+      port,
+      workingDir: dir,
+      startTime: new Date(),
+      isHealthy: true // Assume healthy on start
+    }
+
+    this.servers.set(dir, instance)
+
+    // Start health monitoring for this instance
+    this.startHealthMonitoring(instance)
+
+    return port
   }
 
-  async stop(): Promise<void> {
+  /**
+   * Stop server for specific project, or all servers if no directory specified (backward compatibility)
+   */
+  async stop(workingDir?: string): Promise<void> {
+    if (!workingDir) {
+      // Legacy behavior - stop all servers
+      return this.stopAll()
+    }
+    const instance = this.servers.get(workingDir)
+    if (!instance) {
+      return // Already stopped or never started
+    }
+
     // Stop health monitoring
-    this.stopHealthMonitoring()
+    this.stopHealthMonitoring(instance)
 
     // Close the server
-    if (this.server) {
-      this.server.close()
-      this.server = undefined
-    }
+    instance.server.close()
 
-    // Clear state
-    this.serverUrl = undefined
-    this.serverStartTime = undefined
-    this.isHealthy = false
-    this.lastHealthCheck = undefined
+    // Remove from tracking
+    this.servers.delete(workingDir)
   }
 
+  /**
+   * Stop all servers
+   */
+  async stopAll(): Promise<void> {
+    const workingDirs = [...this.servers.keys()]
+    for (const workingDir of workingDirs) {
+      await this.stop(workingDir)
+    }
+  }
+
+  /**
+   * Get all running servers
+   */
+  getRunningServers(): Map<string, ServerInstance> {
+    return this.servers
+  }
+
+  /**
+   * Get server instance for specific project
+   */
+  getServer(workingDir: string): ServerInstance | undefined {
+    return this.servers.get(workingDir)
+  }
+
+  /**
+   * Get status for specific project (legacy method - keeping for compatibility)
+   */
   async getStatus(): Promise<ServerStatus> {
-    const isRunning = Boolean(this.server && this.serverUrl)
+    // For legacy compatibility, return status of any running server
+    const firstServer = [...this.servers.values()][0]
+
+    if (!firstServer) {
+      return {
+        isRunning: false,
+        port: undefined,
+        pid: undefined,
+        startTime: undefined,
+        uptime: undefined,
+        isHealthy: undefined,
+        lastHealthCheck: undefined
+      }
+    }
 
     return {
-      isRunning,
-      port: isRunning ? 4096 : undefined,
+      isRunning: true,
+      port: firstServer.port,
       pid: undefined, // TODO: Get actual PID if needed
-      startTime: this.serverStartTime,
-      uptime: this.serverStartTime ? Date.now() - this.serverStartTime.getTime() : undefined,
-      isHealthy: isRunning ? this.isHealthy : undefined,
-      lastHealthCheck: this.lastHealthCheck
+      startTime: firstServer.startTime,
+      uptime: Date.now() - firstServer.startTime.getTime(),
+      isHealthy: firstServer.isHealthy,
+      lastHealthCheck: firstServer.lastHealthCheck
     }
   }
 
+  /**
+   * Check if any server is running (legacy method)
+   */
   isRunning(): boolean {
-    return Boolean(this.server && this.serverUrl)
+    return this.servers.size > 0
   }
 
+  /**
+   * Get URL for first running server (legacy method)
+   */
   getUrl(): string | undefined {
-    return this.serverUrl
+    const firstServer = [...this.servers.values()][0]
+    return firstServer ? firstServer.server.url : undefined
   }
 
-  private startHealthMonitoring(): void {
-    // Clear any existing interval
-    this.stopHealthMonitoring()
+  private startHealthMonitoring(instance: ServerInstance): void {
+    // Clear any existing interval for this instance
+    this.stopHealthMonitoring(instance)
 
     // Single function to perform health check
     const performHealthCheck = async (): Promise<void> => {
-      this.isHealthy = await this.checkHealth()
-      this.lastHealthCheck = new Date()
+      instance.isHealthy = await this.checkHealth(instance)
+      instance.lastHealthCheck = new Date()
     }
 
     // Check immediately
     performHealthCheck()
 
     // Then check every 10 seconds
-    this.healthCheckInterval = setInterval(performHealthCheck, 10000)
+    instance.healthCheckInterval = setInterval(performHealthCheck, 10000)
   }
 
-  private stopHealthMonitoring(): void {
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval)
-      this.healthCheckInterval = undefined
+  private stopHealthMonitoring(instance: ServerInstance): void {
+    if (instance.healthCheckInterval) {
+      clearInterval(instance.healthCheckInterval)
+      instance.healthCheckInterval = undefined
     }
   }
 
-  private async checkHealth(): Promise<boolean> {
-    if (!this.serverUrl) return false
-
+  private async checkHealth(instance: ServerInstance): Promise<boolean> {
     try {
       // Just ping the server - any response means it's alive
       // Even a 404 means the server is running (connection refused would throw)
-      await fetch(this.serverUrl)
+      await fetch(instance.server.url)
       return true
     } catch {
       // Server not responding (connection refused, timeout, etc)

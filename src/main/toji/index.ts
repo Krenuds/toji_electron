@@ -17,7 +17,7 @@ export class Toji {
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     // Initialize modules
     this.server = new ServerManager(opencodeService, config)
-    this.project = new ProjectManager(() => this.client)
+    this.project = new ProjectManager(() => this.client, this.server, config)
   }
 
   async getServerStatus(): Promise<ServerStatus> {

@@ -2,6 +2,7 @@ import Store from 'electron-store'
 import path from 'path'
 
 import type { WorkspaceSettings } from '../toji/types'
+import type { Config } from '@opencode-ai/sdk'
 
 interface AppConfig {
   opencode: {
@@ -11,6 +12,20 @@ interface AppConfig {
   workspaces: {
     recent: string[]
     settings?: Record<string, WorkspaceSettings> // Map of path -> settings
+  }
+  projects: {
+    recent: string[] // Recently used project paths
+    configs: Record<string, Partial<Config>> // Saved OpenCode configs per project
+    states: Record<
+      string,
+      {
+        // Project runtime states
+        isOpen: boolean
+        port?: number
+        lastOpened?: string
+      }
+    >
+    current?: string // Currently active project
   }
   discord?: {
     token?: string
@@ -30,6 +45,11 @@ export class ConfigProvider {
         },
         workspaces: {
           recent: []
+        },
+        projects: {
+          recent: [],
+          configs: {},
+          states: {}
         }
       },
       // Enable encryption for sensitive data like Discord token
@@ -177,5 +197,91 @@ export class ConfigProvider {
   // Get the entire config for debugging
   getConfig(): AppConfig {
     return this.store.store
+  }
+
+  // Project Management Methods
+
+  /**
+   * Get project configuration
+   */
+  getProjectConfig(projectPath: string): Partial<Config> {
+    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const allConfigs = this.store.get('projects.configs', {})
+    return allConfigs[normalizedPath] || {}
+  }
+
+  /**
+   * Set project configuration
+   */
+  setProjectConfig(projectPath: string, config: Partial<Config>): void {
+    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const allConfigs = this.store.get('projects.configs', {})
+    allConfigs[normalizedPath] = config
+    this.store.set('projects.configs', allConfigs)
+  }
+
+  /**
+   * Get recent projects list
+   */
+  getRecentProjects(): string[] {
+    return this.store.get('projects.recent', [])
+  }
+
+  /**
+   * Add project to recent list
+   */
+  addRecentProject(projectPath: string): void {
+    const recent = this.store.get('projects.recent', [])
+    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+
+    // Remove if already exists (to move to front)
+    const filtered = recent.filter((p) => this.normalizeWorkspacePath(p) !== normalizedPath)
+
+    // Add to front
+    const updated = [projectPath, ...filtered]
+
+    // Keep only 10 most recent
+    const limited = updated.slice(0, 10)
+
+    this.store.set('projects.recent', limited)
+  }
+
+  /**
+   * Set project open state
+   */
+  setProjectOpen(projectPath: string, isOpen: boolean, port?: number): void {
+    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const allStates = this.store.get('projects.states', {})
+
+    allStates[normalizedPath] = {
+      isOpen,
+      port,
+      lastOpened: isOpen ? new Date().toISOString() : allStates[normalizedPath]?.lastOpened
+    }
+
+    this.store.set('projects.states', allStates)
+  }
+
+  /**
+   * Get current active project path
+   */
+  getCurrentProjectPath(): string | undefined {
+    return this.store.get('projects.current')
+  }
+
+  /**
+   * Set current active project path
+   */
+  setCurrentProjectPath(projectPath: string): void {
+    this.store.set('projects.current', projectPath)
+  }
+
+  /**
+   * Get default project configuration
+   */
+  getDefaultProjectConfig(): Partial<Config> {
+    return {
+      model: 'anthropic/claude-3-5-sonnet-20241022'
+    }
   }
 }
