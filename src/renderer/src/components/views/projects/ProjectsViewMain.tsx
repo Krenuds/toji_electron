@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { VStack, Box, Text, Center, Button, Spinner, HStack, Grid } from '@chakra-ui/react'
+import { VStack, Box, Text, Center, Button, Spinner, HStack } from '@chakra-ui/react'
 import { LuFolderTree, LuRefreshCw, LuFolderOpen, LuPlus } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
 import { ProjectCard } from './ProjectCard'

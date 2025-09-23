@@ -9,6 +9,7 @@ interface UseSessionReturn {
   fetchSessions: () => Promise<void>
   deleteSession: (sessionId: string) => Promise<boolean>
   createSession: (name?: string) => Promise<Session | null>
+  switchSession: (sessionId: string) => Promise<boolean>
 }
 
 export function useSession(): UseSessionReturn {
@@ -69,18 +70,31 @@ export function useSession(): UseSessionReturn {
     setError(null)
 
     try {
-      // We don't have a direct create session API exposed through IPC
-      // This would need to be added to the preload bridge
-      // For now, return null
-      console.warn('Create session not yet implemented in IPC bridge')
-      if (name) {
-        // Placeholder - would need IPC method
-      }
-      return null
+      const newSession = await window.api.toji.createSession(name)
+
+      // Add to local state
+      setSessions((prev) => [...prev, newSession])
+      setCurrentSessionId(newSession.id)
+
+      return newSession
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create session'
       setError(errorMessage)
       return null
+    }
+  }, [])
+
+  const switchSession = useCallback(async (sessionId: string): Promise<boolean> => {
+    setError(null)
+
+    try {
+      await window.api.toji.switchSession(sessionId)
+      setCurrentSessionId(sessionId)
+      return true
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to switch session'
+      setError(errorMessage)
+      return false
     }
   }, [])
 
@@ -96,6 +110,7 @@ export function useSession(): UseSessionReturn {
     currentSessionId,
     fetchSessions,
     deleteSession,
-    createSession
+    createSession,
+    switchSession
   }
 }

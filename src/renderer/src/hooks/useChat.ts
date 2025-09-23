@@ -16,7 +16,7 @@ interface UseChatReturn {
   sendMessage: (message: string) => Promise<ChatResponse>
   checkServerStatus: () => Promise<boolean>
   ensureReadyForChat: () => Promise<EnsureReadyResponse>
-  getSessionMessages: (sessionId?: string) => Promise<ChatMessage[]>
+  getSessionMessages: (sessionId?: string, useCache?: boolean) => Promise<ChatMessage[]>
   getCurrentSessionId: () => Promise<string | undefined>
   getCurrentSession: () => Promise<{ id: string; directory?: string } | null>
   isLoading: boolean
@@ -67,16 +67,19 @@ export function useChat(): UseChatReturn {
     }
   }, [])
 
-  const getSessionMessages = useCallback(async (sessionId?: string): Promise<ChatMessage[]> => {
-    try {
-      const sdkMessages = await window.api.toji.getSessionMessages(sessionId)
-      return formatMessagesFromSDK(sdkMessages)
-    } catch (error) {
-      console.error('Failed to get session messages:', error)
-      setError(error instanceof Error ? error.message : 'Failed to load message history')
-      return []
-    }
-  }, [])
+  const getSessionMessages = useCallback(
+    async (sessionId?: string, useCache = true): Promise<ChatMessage[]> => {
+      try {
+        const sdkMessages = await window.api.toji.getSessionMessages(sessionId, useCache)
+        return formatMessagesFromSDK(sdkMessages)
+      } catch (error) {
+        console.error('Failed to get session messages:', error)
+        setError(error instanceof Error ? error.message : 'Failed to load message history')
+        return []
+      }
+    },
+    []
+  )
 
   const getCurrentSessionId = useCallback(async (): Promise<string | undefined> => {
     try {

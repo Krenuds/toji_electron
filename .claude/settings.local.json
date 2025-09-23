@@ -10,7 +10,8 @@
       "Bash(npm run lint:*)",
       "WebFetch(domain:opencode.ai)",
       "Bash(npm run dev:*)",
-      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)"
+      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

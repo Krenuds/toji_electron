@@ -5,6 +5,7 @@ import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
 import { ServerManager } from './server'
+import { SessionManager } from './sessions'
 import type { ServerStatus } from './types'
 import { createFileDebugLogger } from '../utils/logger'
 
@@ -14,17 +15,18 @@ const logChat = createFileDebugLogger('toji:chat')
 
 export class Toji {
   private client?: OpencodeClient
-  private currentSessionId?: string
   private currentProjectDirectory?: string
 
   // Public modules
   public readonly project: ProjectManager
   public readonly server: ServerManager
+  public readonly sessions: SessionManager
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     log('Initializing Toji with OpenCode service and config')
     // Initialize modules
     this.server = new ServerManager(opencodeService, config)
+    this.sessions = new SessionManager()
     this.project = new ProjectManager(() => this.client, this.server, config, this)
     log('Toji initialized successfully')
   }
@@ -66,15 +68,15 @@ export class Toji {
       throw error
     }
 
-    // Clear session when changing projects
+    // Handle session state when changing projects
     if (this.currentProjectDirectory !== directory) {
       logClient(
-        'Project changed from %s to %s, clearing session',
+        'Project changed from %s to %s, managing session state',
         this.currentProjectDirectory || 'none',
         directory
       )
-      this.currentSessionId = undefined
       this.currentProjectDirectory = directory
+      // SessionManager will handle session restoration for this project
     }
 
     logClient('Connecting to project server URL: %s', serverUrl)
@@ -100,20 +102,23 @@ export class Toji {
     }
 
     try {
-      // Get or create session
-      let activeSessionId = sessionId || this.currentSessionId
+      // Get or create session using SessionManager
+      let activeSessionId = sessionId
+      if (!activeSessionId && this.currentProjectDirectory) {
+        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+      }
+
       if (!activeSessionId) {
         logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
-        const sessionResponse = await this.client.session.create({
-          query: this.currentProjectDirectory
-            ? { directory: this.currentProjectDirectory }
-            : undefined
-        })
-        if (sessionResponse.error) {
-          throw new Error(`Failed to create session: ${sessionResponse.error}`)
+        const sessionInfo = await this.sessions.createSession(
+          this.client,
+          undefined, // title
+          this.currentProjectDirectory
+        )
+        activeSessionId = sessionInfo.id
+        if (this.currentProjectDirectory) {
+          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
         }
-        activeSessionId = sessionResponse.data.id
-        this.currentSessionId = activeSessionId
         logChat(
           'Created session: %s for project: %s',
           activeSessionId,
@@ -157,17 +162,31 @@ export class Toji {
 
   // Clear current session (start fresh conversation)
   clearSession(): void {
-    logChat(
-      'Clearing current session: %s for project: %s',
-      this.currentSessionId || 'none',
-      this.currentProjectDirectory || 'unknown'
-    )
-    this.currentSessionId = undefined
+    if (this.currentProjectDirectory) {
+      const activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+      logChat(
+        'Clearing current session: %s for project: %s',
+        activeSessionId || 'none',
+        this.currentProjectDirectory
+      )
+      if (activeSessionId) {
+        this.sessions.invalidateMessageCache(activeSessionId)
+      }
+      // Remove the active session reference (user will get a new session on next message)
+      this.sessions.setActiveSession('', this.currentProjectDirectory)
+    }
   }
 
   // Get message history for a session
-  async getSessionMessages(sessionId?: string): Promise<Array<{ info: Message; parts: Part[] }>> {
-    const activeSessionId = sessionId || this.currentSessionId
+  async getSessionMessages(
+    sessionId?: string,
+    useCache = true
+  ): Promise<Array<{ info: Message; parts: Part[] }>> {
+    let activeSessionId = sessionId
+    if (!activeSessionId && this.currentProjectDirectory) {
+      activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+    }
+
     if (!activeSessionId) {
       logChat('No session ID provided or current session available')
       return []
@@ -178,25 +197,12 @@ export class Toji {
     }
 
     try {
-      logChat(
-        'Fetching message history for session: %s in project: %s',
+      return await this.sessions.getSessionMessages(
+        this.client,
         activeSessionId,
-        this.currentProjectDirectory || 'unknown'
+        this.currentProjectDirectory,
+        useCache
       )
-
-      const response = await this.client.session.messages({
-        path: { id: activeSessionId },
-        query: this.currentProjectDirectory
-          ? { directory: this.currentProjectDirectory }
-          : undefined
-      })
-
-      if (response.error || !response.data) {
-        throw new Error(`Failed to get session messages: ${response.error || 'No response data'}`)
-      }
-
-      logChat('Retrieved %d messages from session: %s', response.data.length, activeSessionId)
-      return response.data
     } catch (error) {
       logChat('ERROR: Failed to get session messages: %o', error)
       throw error
@@ -205,12 +211,20 @@ export class Toji {
 
   // Get current session ID
   getCurrentSessionId(): string | undefined {
-    return this.currentSessionId
+    if (!this.currentProjectDirectory) {
+      return undefined
+    }
+    return this.sessions.getActiveSession(this.currentProjectDirectory)
   }
 
   // Get current session info
   async getCurrentSession(): Promise<{ id: string; directory?: string } | null> {
-    if (!this.currentSessionId) {
+    if (!this.currentProjectDirectory) {
+      return null
+    }
+
+    const activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+    if (!activeSessionId) {
       return null
     }
 
@@ -220,25 +234,88 @@ export class Toji {
 
     try {
       const response = await this.client.session.get({
-        path: { id: this.currentSessionId },
+        path: { id: activeSessionId },
         query: this.currentProjectDirectory
           ? { directory: this.currentProjectDirectory }
           : undefined
       })
 
       if (response.error || !response.data) {
-        logChat('Session %s not found or error: %s', this.currentSessionId, response.error)
+        logChat('Session %s not found or error: %s', activeSessionId, response.error)
         return null
       }
 
       return {
-        id: this.currentSessionId,
+        id: activeSessionId,
         directory: this.currentProjectDirectory
       }
     } catch (error) {
       logChat('ERROR: Failed to get current session: %o', error)
       return null
     }
+  }
+
+  // Session management methods for IPC
+  async listSessions(): Promise<Array<{ id: string; title?: string; projectPath?: string }>> {
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    const sessions = await this.sessions.listSessions(this.client, this.currentProjectDirectory)
+    return sessions
+  }
+
+  async createSession(
+    title?: string
+  ): Promise<{ id: string; title?: string; projectPath?: string }> {
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    const sessionInfo = await this.sessions.createSession(
+      this.client,
+      title,
+      this.currentProjectDirectory
+    )
+
+    // Set as active session
+    if (this.currentProjectDirectory) {
+      this.sessions.setActiveSession(sessionInfo.id, this.currentProjectDirectory)
+    }
+
+    return sessionInfo
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    await this.sessions.deleteSession(this.client, sessionId, this.currentProjectDirectory)
+  }
+
+  async switchSession(sessionId: string): Promise<void> {
+    if (!this.currentProjectDirectory) {
+      throw new Error('No current project directory')
+    }
+
+    // Verify session exists by trying to get it
+    if (!this.client) {
+      throw new Error('Client not connected to any server')
+    }
+
+    const response = await this.client.session.get({
+      path: { id: sessionId },
+      query: { directory: this.currentProjectDirectory }
+    })
+
+    if (response.error) {
+      throw new Error(`Session ${sessionId} not found: ${response.error}`)
+    }
+
+    // Set as active session
+    this.sessions.setActiveSession(sessionId, this.currentProjectDirectory)
+    logChat('Switched to session: %s for project: %s', sessionId, this.currentProjectDirectory)
   }
 }
 

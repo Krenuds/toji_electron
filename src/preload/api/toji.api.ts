@@ -31,23 +31,24 @@ export const tojiAPI = {
   clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
   // Message history operations
-  getSessionMessages: (sessionId?: string): Promise<Array<{ info: Message; parts: Part[] }>> =>
-    ipcRenderer.invoke('toji:get-session-messages', sessionId),
+  getSessionMessages: (
+    sessionId?: string,
+    useCache = true
+  ): Promise<Array<{ info: Message; parts: Part[] }>> =>
+    ipcRenderer.invoke('toji:get-session-messages', sessionId, useCache),
   getCurrentSessionId: (): Promise<string | undefined> =>
     ipcRenderer.invoke('toji:get-current-session-id'),
   getCurrentSession: (): Promise<{ id: string; directory?: string } | null> =>
     ipcRenderer.invoke('toji:get-current-session'),
 
-  // Session operations - stubbed
-  listSessions: (): Promise<Session[]> => Promise.resolve([]),
-  deleteSession: (sessionId: string): Promise<void> => {
-    void sessionId // Use parameter to satisfy TypeScript
-    return Promise.resolve()
-  },
-  getSessionsForProject: (path: string): Promise<Session[]> => {
-    void path // Use parameter to satisfy TypeScript
-    return Promise.resolve([])
-  }
+  // Session management operations
+  listSessions: (): Promise<Session[]> => ipcRenderer.invoke('toji:list-sessions'),
+  createSession: (title?: string): Promise<Session> =>
+    ipcRenderer.invoke('toji:create-session', title),
+  deleteSession: (sessionId: string): Promise<void> =>
+    ipcRenderer.invoke('toji:delete-session', sessionId),
+  switchSession: (sessionId: string): Promise<void> =>
+    ipcRenderer.invoke('toji:switch-session', sessionId)
 
   // Legacy operations - removed (replaced by projects system)
 }

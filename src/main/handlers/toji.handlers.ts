@@ -45,9 +45,9 @@ export function registerTojiHandlers(toji: Toji): void {
   })
 
   // Message history handlers
-  ipcMain.handle('toji:get-session-messages', async (_, sessionId?: string) => {
+  ipcMain.handle('toji:get-session-messages', async (_, sessionId?: string, useCache = true) => {
     try {
-      return await toji.getSessionMessages(sessionId)
+      return await toji.getSessionMessages(sessionId, useCache)
     } catch (error) {
       console.error('Get session messages error:', error)
       throw error
@@ -63,6 +63,43 @@ export function registerTojiHandlers(toji: Toji): void {
       return await toji.getCurrentSession()
     } catch (error) {
       console.error('Get current session error:', error)
+      throw error
+    }
+  })
+
+  // Session management handlers
+  ipcMain.handle('toji:list-sessions', async () => {
+    try {
+      return await toji.listSessions()
+    } catch (error) {
+      console.error('List sessions error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:create-session', async (_, title?: string) => {
+    try {
+      return await toji.createSession(title)
+    } catch (error) {
+      console.error('Create session error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:delete-session', async (_, sessionId: string) => {
+    try {
+      return await toji.deleteSession(sessionId)
+    } catch (error) {
+      console.error('Delete session error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:switch-session', async (_, sessionId: string) => {
+    try {
+      return await toji.switchSession(sessionId)
+    } catch (error) {
+      console.error('Switch session error:', error)
       throw error
     }
   })

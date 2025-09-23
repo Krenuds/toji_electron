@@ -25,27 +25,30 @@ export function ChatViewMain(): React.JSX.Element {
   const [syncLoading, setSyncLoading] = useState(false)
 
   // Sync messages with backend session history
-  const syncMessages = useCallback(async (): Promise<void> => {
-    setSyncLoading(true)
-    try {
-      // Check if we have a current session
-      const sessionInfo = await getCurrentSession()
-      if (!sessionInfo) {
-        // No session yet, clear messages
-        setMessages([])
-        return
-      }
+  const syncMessages = useCallback(
+    async (forceRefresh = false): Promise<void> => {
+      setSyncLoading(true)
+      try {
+        // Check if we have a current session
+        const sessionInfo = await getCurrentSession()
+        if (!sessionInfo) {
+          // No session yet, clear messages
+          setMessages([])
+          return
+        }
 
-      // Load message history from backend
-      const history = await getSessionMessages(sessionInfo.id)
-      setMessages(replaceMessages(history))
-    } catch (error) {
-      console.error('Failed to sync messages:', error)
-      // Don't clear messages on error, keep what we have
-    } finally {
-      setSyncLoading(false)
-    }
-  }, [getCurrentSession, getSessionMessages])
+        // Load message history from backend
+        const history = await getSessionMessages(sessionInfo.id, !forceRefresh)
+        setMessages(replaceMessages(history))
+      } catch (error) {
+        console.error('Failed to sync messages:', error)
+        // Don't clear messages on error, keep what we have
+      } finally {
+        setSyncLoading(false)
+      }
+    },
+    [getCurrentSession, getSessionMessages]
+  )
 
   // Sync messages when project changes
   useEffect(() => {
@@ -105,8 +108,8 @@ export function ChatViewMain(): React.JSX.Element {
 
     if (response.success) {
       // Sync messages from backend to get the complete conversation
-      // This ensures we have the real assistant response with proper IDs
-      await syncMessages()
+      // Force refresh to bypass cache and get the latest response
+      await syncMessages(true)
     } else {
       const errorMessage = createChatMessage(
         'assistant',
