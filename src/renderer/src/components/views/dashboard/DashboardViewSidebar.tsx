@@ -221,14 +221,14 @@ export function DashboardViewSidebar(): React.JSX.Element {
         {/* Server Control */}
         <Card.Root
           size="sm"
-          bg="rgba(255,255,255,0.02)"
+          bg="rgba(248, 248, 250, 0.02)"
           border="2px solid"
           borderColor="app.border"
         >
           <Card.Header pb={2}>
             <HStack justify="space-between">
               <HStack gap={2}>
-                <LuServer size={14} />
+                <LuServer size={15} />
                 <Text color="app.light" fontSize="xs" fontWeight="semibold">
                   Server Control
                 </Text>
