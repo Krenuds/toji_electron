@@ -1,77 +1,87 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:electron-vite.org)",
-      "WebFetch(domain:opencode.ai)",
-      "WebSearch",
-      "WebFetch(domain:github.com)",
-      "Bash(node:*)",
-      "Bash(npm:*)",
-      "Bash(cat:*)",
-      "Bash(rm:*)",
-      "Bash(sed:*)",
-      "Bash(git add:*)",
-      "Read(//c/Users/donth/OneDrive/Desktop/**)",
-      "Bash(git commit:*)",
-      "Bash(git log:*)",
-      "Bash(curl:*)",
-      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)",
-      "Bash(opencode:*)",
-      "Read(//c/Users/donth/**)",
-      "Bash(git pull:*)",
-      "Bash(ELECTRON_DISABLE_SANDBOX=1 npm run dev)",
-      "Bash(git show:*)",
-      "Bash(timeout 10s npm run dev)",
-      "Bash(for ns in project event config tool path session command find file app tui auth)",
-      "Bash(do echo \"=== $ns namespace ===\")",
-      "Bash(grep:*)",
-      "Bash(done)",
-      "Bash(git restore:*)",
-      "Bash(timeout 15s npm run dev)",
-      "Bash(git rev-parse:*)",
-      "Bash(timeout 5s npm run dev)",
-      "Bash(git rm:*)",
-      "Bash(git push:*)",
-      "WebFetch(domain:chakra-ui.com)",
-      "mcp__playwright__browser_navigate",
-      "mcp__playwright__browser_hover",
-      "mcp__chakra-ui__list_components",
-      "mcp__chakra-ui__installation",
-      "mcp__chakra-ui__get_theme",
-      "WebFetch(domain:docs.claude.com)",
-      "mcp__chakra-ui__get_component_example",
-      "Bash(timeout 5s node_modules/.bin/electron-vite dev:*)",
-      "mcp__chakra-ui__get_component_props",
-      "Bash(set OPENCODE_INSTALL_DIR=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\")",
-      "Bash(set XDG_DATA_HOME=\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-data\")",
-      "Bash(timeout:*)",
-      "Bash(\"C:\\Users\\donth\\AppData\\Roaming\\toji3\\opencode-bin\\opencode.exe\" run \"hello world\" --print-logs --log-level DEBUG)",
-      "WebFetch(domain:discordjs.guide)",
-      "Bash(tree:*)",
-      "WebFetch(domain:discord.js.org)",
-      "mcp__chakra-ui__customize_theme",
-      "mcp__chakra-ui__v2_to_v3_code_review",
-      "Bash(git mv:*)",
-      "Bash(xargs sed:*)",
-      "Bash(dir:*)",
-      "Bash(find:*)",
-      "Bash(npx opencode project:*)",
-      "Bash(python:*)",
-      "Read(//c/**)",
-      "Bash(npx opencode run:*)",
-      "Bash(git fetch:*)",
-      "Bash(tee:*)",
-      "Bash(npx opencode serve:*)",
-      "Bash(npx opencode:*)",
-      "Bash(ls:*)",
-      "Bash(mkdir:*)",
-      "Bash(git checkout:*)",
-      "Bash(git stash push:*)",
-      "Bash(npx eslint:*)",
-      "Bash(echo:*)",
-      "Bash(set)"
+      "Bash(npm run format:*)",
+      "Read(//c/Users/donth/AppData/Roaming/toji3/logs/**)",
+      "Bash(npm run typecheck:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 🚀 TOJI3 SESSION STARTED && echo 📁 Project: Toji3 && echo 🕒 Time: %date% %time% && echo. && echo 📚 MANDATORY PRE-WORK CHECKLIST: && echo ✅ Read recent commits: git log --oneline -4 && echo ✅ Check OpenCode docs: https://opencode.ai/docs/sdk/ && echo ✅ Review Electron-Vite: https://electron-vite.org/guide/ && echo ✅ Check Chakra UI v3: https://chakra-ui.com/docs/get-started/frameworks/vite && echo."
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 🔧 TOJI3 CONTEXT INJECTION: && echo. && echo 🎯 PROJECT: Electron + React + TypeScript + Chakra UI v3 + OpenCode SDK && echo 📦 STACK: Electron 37.2, React 19.1, TypeScript 5.8, Chakra UI 3.27 && echo ⚡ ARCHITECTURE: Plugin-based (Main process = business logic, Renderer = UI plugin) && echo. && echo 🔴 CRITICAL WORKFLOW ENFORCEMENT: && echo 1️⃣ FORMAT FIRST: npm run format (ALWAYS run before coding) && echo 2️⃣ LINT ALWAYS: npm run lint:fix then npm run lint && echo 3️⃣ TYPECHECK: npm run typecheck (MUST pass before commits) && echo 4️⃣ NO any TYPES: Everything must be strictly typed && echo 5️⃣ CHAKRA UI v3 ONLY: No inline styles, no CSS files, use MCP tools && echo. && echo 🏗️ FEATURE WORKFLOW (MANDATORY ORDER): && echo → 1. API Layer (/src/main/toji/) && echo → 2. IPC Handlers (/src/main/index.ts) && echo → 3. Preload Bridge (/src/preload/) && echo → 4. UI Components (/src/renderer/) && echo → 5. Test & Quality Check"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 📝 ABOUT TO MODIFY FILES: %CLAUDE_FILE_PATHS% && echo ⚠️ REMINDER: Follow TypeScript strict mode, NO any types, Chakra UI v3 only"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 🔧 Bash command detected - Remember: format → lint:fix → lint → typecheck workflow"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo ✅ CODE FILES MODIFIED: %CLAUDE_FILE_PATHS% && echo 🔥 MANDATORY NEXT STEPS: && echo 1. npm run format && echo 2. npm run lint:fix && echo 3. npm run lint (must show 0 errors) && echo 4. npm run typecheck (must pass) && echo. && echo 💡 TIP: Run these NOW before continuing!"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo ✅ Bash command completed"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 🏁 SESSION COMPLETE && echo. && echo 📋 FINAL QUALITY CHECKLIST: && echo □ npm run format (code formatting) && echo □ npm run lint (0 errors required) && echo □ npm run typecheck (must pass) && echo □ npm run dev (test functionality) && echo □ Clear commit message planned && echo. && echo 🎯 Architecture reminder: Main process = business logic, UI = thin plugin && echo 💾 Don't forget: Follow feature workflow order for any new functionality"
+          }
+        ]
+      }
+    ]
   }
 }
