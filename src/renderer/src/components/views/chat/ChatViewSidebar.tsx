@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Box, VStack, HStack, Text, Button, Separator, Badge } from '@chakra-ui/react'
-import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity } from 'react-icons/lu'
+import { Box, VStack, HStack, Text, Button, Separator, Badge, Alert } from '@chakra-ui/react'
+import {
+  LuTrash2,
+  LuRefreshCw,
+  LuList,
+  LuMessageCircle,
+  LuActivity,
+  LuFolderOpen
+} from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
@@ -9,6 +16,7 @@ import { SessionsModal } from '../../shared'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useCoreStatus } from '../../../hooks/useCoreStatus'
 import { useSession } from '../../../hooks/useSession'
+import { useOpenProject } from '../../../hooks/useOpenProject'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const { status: serverStatus } = useServerStatus()
@@ -20,6 +28,12 @@ export function ChatViewSidebar(): React.JSX.Element {
     fetchSessions,
     deleteSession
   } = useSession()
+  const {
+    openProject,
+    loading: projectLoading,
+    error: projectError,
+    currentProject
+  } = useOpenProject()
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
@@ -67,25 +81,51 @@ export function ChatViewSidebar(): React.JSX.Element {
 
         {/* Server Status */}
         <SidebarSection title="Server Status">
-          <Box
-            p={2}
-            borderRadius="md"
-            bg="rgba(255,255,255,0.02)"
-            border="1px solid"
-            borderColor="app.border"
-          >
-            <HStack justify="space-between" mb={2}>
-              <Text color="app.light" fontSize="xs" fontWeight="medium">
-                Toji Agent
+          <VStack align="stretch" gap={3}>
+            <Box
+              p={2}
+              borderRadius="md"
+              bg="rgba(255,255,255,0.02)"
+              border="1px solid"
+              borderColor="app.border"
+            >
+              <HStack justify="space-between" mb={2}>
+                <Text color="app.light" fontSize="xs" fontWeight="medium">
+                  Active Project
+                </Text>
+                <StatusBadge status={serverStatus.isRunning ? 'running' : 'stopped'} />
+              </HStack>
+              <Text color="app.text" fontSize="2xs" lineClamp={1}>
+                {currentProject || workingDirectory
+                  ? `${(currentProject || workingDirectory)?.split(/[\\/]/).pop() || currentProject || workingDirectory}`
+                  : 'No project open'}
               </Text>
-              <StatusBadge status={serverStatus.isRunning ? 'running' : 'stopped'} />
-            </HStack>
-            <Text color="app.text" fontSize="2xs" lineClamp={1}>
-              {workingDirectory
-                ? `Directory: ${workingDirectory.split(/[\\/]/).pop() || workingDirectory}`
-                : 'No directory selected'}
-            </Text>
-          </Box>
+            </Box>
+
+            {/* Project Error Alert */}
+            {projectError && (
+              <Alert.Root status="error" size="sm">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description fontSize="2xs">{projectError}</Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
+
+            {/* Open Project Button */}
+            <Button
+              size="sm"
+              variant="solid"
+              colorPalette="green"
+              onClick={openProject}
+              disabled={projectLoading}
+              loading={projectLoading}
+              justifyContent="flex-start"
+            >
+              <LuFolderOpen size={14} />
+              Open Project
+            </Button>
+          </VStack>
         </SidebarSection>
 
         <Separator borderColor="app.border" />
