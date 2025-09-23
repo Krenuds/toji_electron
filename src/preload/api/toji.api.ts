@@ -27,15 +27,14 @@ export const tojiAPI = {
   stopServer: (): Promise<void> => ipcRenderer.invoke('toji:stop-server'),
   getServerStatus: (): Promise<ServerStatus> => ipcRenderer.invoke('toji:get-server-status'),
 
-  // Chat operations - stubbed
+  // Chat operations
   ensureReadyForChat: (directory?: string): Promise<void> => {
     void directory // Use parameter to satisfy TypeScript
     return Promise.resolve()
   },
-  chat: (message: string): Promise<string> => {
-    void message // Use parameter to satisfy TypeScript
-    return Promise.resolve('Chat not implemented')
-  },
+  chat: (message: string, sessionId?: string): Promise<string> =>
+    ipcRenderer.invoke('toji:chat', message, sessionId),
+  clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
   // Session operations - stubbed
   listSessions: (): Promise<Session[]> => Promise.resolve([]),

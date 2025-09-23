@@ -16,14 +16,7 @@ export function ChatViewMain(): React.JSX.Element {
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
   const { workspaceInfo, isChangingWorkspace } = useWorkspace()
   const { sendMessage, checkServerStatus, ensureReadyForChat, isLoading } = useChat()
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: 'Hello! I&apos;m Toji, your AI coding assistant. How can I help you today?',
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
 
   // Reset messages when workspace changes
   useEffect(() => {

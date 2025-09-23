@@ -29,4 +29,18 @@ export function registerTojiHandlers(toji: Toji): void {
   ipcMain.handle('toji:get-server-status', async () => {
     return toji.getServerStatus()
   })
+
+  // Chat handlers
+  ipcMain.handle('toji:chat', async (_, message: string, sessionId?: string) => {
+    try {
+      return await toji.chat(message, sessionId)
+    } catch (error) {
+      console.error('Chat error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:clear-session', () => {
+    toji.clearSession()
+  })
 }

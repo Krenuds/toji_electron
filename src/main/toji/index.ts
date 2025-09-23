@@ -10,9 +10,12 @@ import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
+const logChat = createFileDebugLogger('toji:chat')
 
 export class Toji {
   private client?: OpencodeClient
+  private currentSessionId?: string
+  private currentProjectDirectory?: string
 
   // Public modules
   public readonly project: ProjectManager
@@ -40,6 +43,12 @@ export class Toji {
       throw error
     }
 
+    // Set default project directory to cwd if not already set
+    if (!this.currentProjectDirectory) {
+      this.currentProjectDirectory = process.cwd()
+      logClient('Setting initial project directory to cwd: %s', this.currentProjectDirectory)
+    }
+
     logClient('Connecting to server URL: %s', serverUrl)
     this.client = createOpencodeClient({
       baseUrl: serverUrl
@@ -57,6 +66,17 @@ export class Toji {
       throw error
     }
 
+    // Clear session when changing projects
+    if (this.currentProjectDirectory !== directory) {
+      logClient(
+        'Project changed from %s to %s, clearing session',
+        this.currentProjectDirectory || 'none',
+        directory
+      )
+      this.currentSessionId = undefined
+      this.currentProjectDirectory = directory
+    }
+
     logClient('Connecting to project server URL: %s', serverUrl)
     this.client = createOpencodeClient({
       baseUrl: serverUrl
@@ -67,6 +87,82 @@ export class Toji {
   // Check if ready
   isReady(): boolean {
     return Boolean(this.server.isRunning() && this.client)
+  }
+
+  // Chat with the AI using session management
+  async chat(message: string, sessionId?: string): Promise<string> {
+    logChat('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+
+    if (!this.client) {
+      const error = new Error('Client not connected to any server')
+      logChat('ERROR: %s', error.message)
+      throw error
+    }
+
+    try {
+      // Get or create session
+      let activeSessionId = sessionId || this.currentSessionId
+      if (!activeSessionId) {
+        logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
+        const sessionResponse = await this.client.session.create({
+          query: this.currentProjectDirectory
+            ? { directory: this.currentProjectDirectory }
+            : undefined
+        })
+        if (sessionResponse.error) {
+          throw new Error(`Failed to create session: ${sessionResponse.error}`)
+        }
+        activeSessionId = sessionResponse.data.id
+        this.currentSessionId = activeSessionId
+        logChat(
+          'Created session: %s for project: %s',
+          activeSessionId,
+          this.currentProjectDirectory || 'unknown'
+        )
+      }
+
+      // Send message to session
+      logChat(
+        'Sending message to session %s in project: %s',
+        activeSessionId,
+        this.currentProjectDirectory || 'unknown'
+      )
+      const response = await this.client.session.prompt({
+        path: { id: activeSessionId },
+        body: {
+          parts: [{ type: 'text', text: message }]
+        },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
+      })
+
+      if (response.error || !response.data) {
+        throw new Error(`Failed to send message: ${response.error || 'No response data'}`)
+      }
+
+      // Extract text from response parts
+      const responseText = response.data.parts
+        .filter((part: any) => part.type === 'text')
+        .map((part: any) => part.text)
+        .join('')
+
+      logChat('Chat response received: %d characters', responseText.length)
+      return responseText
+    } catch (error) {
+      logChat('ERROR: Chat failed: %o', error)
+      throw error
+    }
+  }
+
+  // Clear current session (start fresh conversation)
+  clearSession(): void {
+    logChat(
+      'Clearing current session: %s for project: %s',
+      this.currentSessionId || 'none',
+      this.currentProjectDirectory || 'unknown'
+    )
+    this.currentSessionId = undefined
   }
 }
 
