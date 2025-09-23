@@ -114,7 +114,7 @@ app.whenReady().then(async () => {
       await openCodeService.ensureBinary()
       logStartup('Binary ensured')
 
-      // Get the last used workspace
+      // Get the last used project directory
       const workingDirectory = config.getOpencodeWorkingDirectory()
       logStartup('Auto-starting OpenCode in: %s', workingDirectory)
 
@@ -125,8 +125,8 @@ app.whenReady().then(async () => {
       await toji.connectClient()
       logStartup('Client connected')
 
-      // Track this workspace in recent list
-      config.addRecentWorkspace(workingDirectory)
+      // Track this project in recent list
+      config.addRecentProject(workingDirectory)
       logStartup('OpenCode auto-started successfully')
     } catch (error) {
       logStartup('ERROR: Failed to auto-start OpenCode: %o', error)

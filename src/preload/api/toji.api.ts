@@ -44,11 +44,10 @@ export const tojiAPI = {
     void sessionId // Use parameter to satisfy TypeScript
     return Promise.resolve()
   },
-  getSessionsForWorkspace: (path: string): Promise<Session[]> => {
+  getSessionsForProject: (path: string): Promise<Session[]> => {
     void path // Use parameter to satisfy TypeScript
     return Promise.resolve([])
   }
 
   // Legacy operations - removed (replaced by projects system)
-  // Note: These workspace operations have been replaced by the projects system
 }

@@ -1,16 +1,12 @@
 // Minimal types for Toji
 
-export interface WorkspaceSettings {
-  [key: string]: unknown
-}
-
 export interface TojiConfig {
   server?: {
     hostname?: string
     port?: number
     timeout?: number
   }
-  workspace?: {
+  project?: {
     autoInit?: boolean
     gitInit?: boolean
   }
@@ -31,18 +27,17 @@ export interface Session {
   }
 }
 
-export interface WorkspaceInfo {
+export interface ProjectInfo {
   path: string
   hasGit?: boolean
   hasOpenCodeConfig?: boolean
   sessions?: Session[]
 }
 
-export interface WorkspaceCollection {
+export interface ProjectCollection {
   id: string
   name: string
-  workspaces: WorkspaceInfo[]
-  projects?: EnrichedProject[]
+  projects: ProjectInfo[]
 }
 
 export interface EnrichedProject {

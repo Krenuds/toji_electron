@@ -22,9 +22,8 @@ export type { Project } from './api/project.api'
 // Export stub types from main
 export type {
   Session,
-  WorkspaceInfo,
-  WorkspaceSettings,
-  WorkspaceCollection,
+  ProjectInfo,
+  ProjectCollection,
   EnrichedProject,
   DiscoveredProject,
   ServerStatus

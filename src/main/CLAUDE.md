@@ -47,15 +47,15 @@ The `Toji` class is the primary interface for all OpenCode operations:
 class Toji {
   private server?: OpencodeServer
   private currentSession?: Session
-  private currentWorkspace?: string
+  private currentProject?: string
 
   // Core lifecycle methods
   async initialize(config?: TojiConfig): Promise<void>
   async shutdown(): Promise<void>
 
-  // Workspace management
-  async changeWorkspace(directory: string): Promise<WorkspaceInfo>
-  async inspectWorkspace(directory: string): Promise<WorkspaceStatus>
+  // Project management
+  async changeProject(directory: string): Promise<ProjectInfo>
+  async inspectProject(directory: string): Promise<ProjectStatus>
 
   // Chat operations
   async ensureReadyForChat(directory?: string): Promise<ChatReadyStatus>
@@ -197,10 +197,10 @@ window.api.core.chat(message)
 
 ## State Management
 
-### Workspace State
+### Project State
 
 ```typescript
-interface WorkspaceState {
+interface ProjectState {
   path: string
   hasGit: boolean
   hasOpenCodeConfig: boolean
@@ -214,7 +214,7 @@ interface WorkspaceState {
 ```typescript
 interface SessionState {
   id: string
-  workspacePath: string
+  projectPath: string
   title?: string
   created: Date
   updated: Date
@@ -223,8 +223,8 @@ interface SessionState {
 
 ### Persistence Strategy
 
-- **Workspace Settings**: electron-store for persistence
-- **Recent Workspaces**: Stored in user preferences
+- **Project Settings**: electron-store for persistence
+- **Recent Projects**: Stored in user preferences
 - **Session Data**: Managed by OpenCode SDK
 - **Runtime State**: In-memory with event emissions
 
@@ -242,8 +242,8 @@ toji.on('server:error', (error) => {})
 toji.on('session:created', (session) => {})
 toji.on('session:deleted', (sessionId) => {})
 
-// Workspace events
-toji.on('workspace:changed', (path) => {})
+// Project events
+toji.on('project:changed', (path) => {})
 ```
 
 ### IPC Event Broadcasting
@@ -266,7 +266,7 @@ BrowserWindow.getAllWindows().forEach((window) => {
 ### Input Validation
 
 ```typescript
-async changeWorkspace(directory: string) {
+async changeProject(directory: string) {
   // Validate path exists and is accessible
   if (!fs.existsSync(directory)) {
     throw new Error('Directory does not exist')
@@ -282,7 +282,7 @@ async changeWorkspace(directory: string) {
     throw new Error('No read access to directory')
   }
 
-  return this.setWorkspace(absolutePath)
+  return this.setProject(absolutePath)
 }
 ```
 
@@ -385,15 +385,15 @@ get server(): OpencodeServer {
 ### Caching
 
 ```typescript
-private workspaceCache = new Map<string, WorkspaceInfo>()
+private projectCache = new Map<string, ProjectInfo>()
 
-async getWorkspaceInfo(path: string) {
-  if (this.workspaceCache.has(path)) {
-    return this.workspaceCache.get(path)
+async getProjectInfo(path: string) {
+  if (this.projectCache.has(path)) {
+    return this.projectCache.get(path)
   }
 
-  const info = await this.inspectWorkspace(path)
-  this.workspaceCache.set(path, info)
+  const info = await this.inspectProject(path)
+  this.projectCache.set(path, info)
   return info
 }
 ```

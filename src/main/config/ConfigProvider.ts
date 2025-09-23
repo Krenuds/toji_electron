@@ -1,21 +1,22 @@
 import Store from 'electron-store'
 import path from 'path'
 
-import type { WorkspaceSettings } from '../toji/types'
 import type { Config } from '@opencode-ai/sdk'
+
+// Project-specific settings
+interface ProjectSettings {
+  [key: string]: unknown
+}
 
 interface AppConfig {
   opencode: {
     workingDirectory: string
     autoStart: boolean
   }
-  workspaces: {
-    recent: string[]
-    settings?: Record<string, WorkspaceSettings> // Map of path -> settings
-  }
   projects: {
     recent: string[] // Recently used project paths
     configs: Record<string, Partial<Config>> // Saved OpenCode configs per project
+    settings: Record<string, ProjectSettings> // Project-specific settings
     states: Record<
       string,
       {
@@ -43,12 +44,10 @@ export class ConfigProvider {
           workingDirectory: 'C:\\Users\\donth\\toji3',
           autoStart: true
         },
-        workspaces: {
-          recent: []
-        },
         projects: {
           recent: [],
           configs: {},
+          settings: {},
           states: {}
         }
       },
@@ -93,105 +92,62 @@ export class ConfigProvider {
     this.store.set('opencode.autoStart', enabled)
   }
 
-  // Recent workspaces management
-  getRecentWorkspaces(): string[] {
-    return this.store.get('workspaces.recent', [])
-  }
-
-  addRecentWorkspace(path: string): void {
-    const recent = this.store.get('workspaces.recent', [])
-
-    // Remove if already exists (to move to front)
-    const filtered = recent.filter((p) => p !== path)
-
-    // Add to front
-    const updated = [path, ...filtered]
-
-    // Keep only 10 most recent
-    const limited = updated.slice(0, 10)
-
-    this.store.set('workspaces.recent', limited)
-  }
-
-  removeRecentWorkspace(path: string): void {
-    const recent = this.store.get('workspaces.recent', [])
-    const filtered = recent.filter((p) => p !== path)
-    this.store.set('workspaces.recent', filtered)
-  }
-
-  clearRecentWorkspaces(): void {
-    this.store.set('workspaces.recent', [])
-  }
-
-  // Workspace-specific settings management
+  // Project-specific settings management
 
   /**
-   * Normalize workspace path for consistent storage
+   * Normalize project path for consistent storage
    * Handles cross-platform path differences
    */
-  private normalizeWorkspacePath(workspacePath: string): string {
+  private normalizeProjectPath(projectPath: string): string {
     // Normalize path separators and resolve to absolute path
-    return path.resolve(workspacePath).toLowerCase()
+    return path.resolve(projectPath).toLowerCase()
   }
 
   /**
-   * Get settings for a specific workspace
-   * Returns empty object if no settings exist for the workspace
+   * Get settings for a specific project
+   * Returns empty object if no settings exist for the project
    */
-  getWorkspaceSettings(workspacePath: string): WorkspaceSettings {
-    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
-    const allSettings = this.store.get('workspaces.settings', {})
+  getProjectSettings(projectPath: string): ProjectSettings {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const allSettings = this.store.get('projects.settings', {})
     return allSettings[normalizedPath] || {}
   }
 
   /**
-   * Set settings for a specific workspace
+   * Set settings for a specific project
    * Merges with existing settings
    */
-  setWorkspaceSettings(workspacePath: string, settings: WorkspaceSettings): void {
-    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
-    const allSettings = this.store.get('workspaces.settings', {})
+  setProjectSettings(projectPath: string, settings: ProjectSettings): void {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const allSettings = this.store.get('projects.settings', {})
 
-    // Merge with existing settings for this workspace
+    // Merge with existing settings for this project
     const existingSettings = allSettings[normalizedPath] || {}
     const mergedSettings = {
       ...existingSettings,
-      ...settings,
-      // Deep merge nested objects
-      opencodeConfig: {
-        ...(existingSettings.opencodeConfig || {}),
-        ...(settings.opencodeConfig || {})
-      },
-      ui: {
-        ...(existingSettings.ui || {}),
-        ...(settings.ui || {})
-      },
-      session: {
-        ...(existingSettings.session || {}),
-        ...(settings.session || {})
-      }
+      ...settings
     }
 
     allSettings[normalizedPath] = mergedSettings
-    this.store.set('workspaces.settings', allSettings)
+    this.store.set('projects.settings', allSettings)
   }
 
   /**
-   * Clear settings for a specific workspace
+   * Clear settings for a specific project
    */
-  clearWorkspaceSettings(workspacePath: string): void {
-    const normalizedPath = this.normalizeWorkspacePath(workspacePath)
-    const allSettings = this.store.get('workspaces.settings', {})
+  clearProjectSettings(projectPath: string): void {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const allSettings = this.store.get('projects.settings', {})
     delete allSettings[normalizedPath]
-    this.store.set('workspaces.settings', allSettings)
+    this.store.set('projects.settings', allSettings)
   }
 
   /**
-   * Get all workspace settings
+   * Get all project settings
    * Useful for debugging and migration
    */
-  getAllWorkspaceSettings(): Record<string, WorkspaceSettings> {
-    return this.store.get('workspaces.settings', {})
+  getAllProjectSettings(): Record<string, ProjectSettings> {
+    return this.store.get('projects.settings', {})
   }
 
   // Get the entire config for debugging
@@ -205,7 +161,7 @@ export class ConfigProvider {
    * Get project configuration
    */
   getProjectConfig(projectPath: string): Partial<Config> {
-    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const normalizedPath = this.normalizeProjectPath(projectPath)
     const allConfigs = this.store.get('projects.configs', {})
     return allConfigs[normalizedPath] || {}
   }
@@ -214,7 +170,7 @@ export class ConfigProvider {
    * Set project configuration
    */
   setProjectConfig(projectPath: string, config: Partial<Config>): void {
-    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const normalizedPath = this.normalizeProjectPath(projectPath)
     const allConfigs = this.store.get('projects.configs', {})
     allConfigs[normalizedPath] = config
     this.store.set('projects.configs', allConfigs)
@@ -232,10 +188,10 @@ export class ConfigProvider {
    */
   addRecentProject(projectPath: string): void {
     const recent = this.store.get('projects.recent', [])
-    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const normalizedPath = this.normalizeProjectPath(projectPath)
 
     // Remove if already exists (to move to front)
-    const filtered = recent.filter((p) => this.normalizeWorkspacePath(p) !== normalizedPath)
+    const filtered = recent.filter((p) => this.normalizeProjectPath(p) !== normalizedPath)
 
     // Add to front
     const updated = [projectPath, ...filtered]
@@ -247,10 +203,27 @@ export class ConfigProvider {
   }
 
   /**
+   * Remove project from recent list
+   */
+  removeRecentProject(projectPath: string): void {
+    const recent = this.store.get('projects.recent', [])
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const filtered = recent.filter((p) => this.normalizeProjectPath(p) !== normalizedPath)
+    this.store.set('projects.recent', filtered)
+  }
+
+  /**
+   * Clear all recent projects
+   */
+  clearRecentProjects(): void {
+    this.store.set('projects.recent', [])
+  }
+
+  /**
    * Set project open state
    */
   setProjectOpen(projectPath: string, isOpen: boolean, port?: number): void {
-    const normalizedPath = this.normalizeWorkspacePath(projectPath)
+    const normalizedPath = this.normalizeProjectPath(projectPath)
     const allStates = this.store.get('projects.states', {})
 
     allStates[normalizedPath] = {

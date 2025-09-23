@@ -69,9 +69,9 @@ mcp__chakra - ui__v2_to_v3_code_review
 └────────┴──────────────────┴───────────────────────────┘
 ```
 
-### Why "Views" not "Workspaces"?
+### Why "Views" not "Projects"?
 
-**CRITICAL**: We use "Views" to avoid naming conflicts with OpenCode SDK's workspace concept. This ensures clear separation between UI navigation and project management.
+**CRITICAL**: We use "Views" to avoid naming conflicts with OpenCode SDK's project concept. This ensures clear separation between UI navigation and project management.
 
 ## Component Architecture
 
@@ -128,14 +128,14 @@ export function DashboardViewMain(): React.JSX.Element {
 Reusable across views:
 
 ```typescript
-// WorkspaceCard.tsx
-interface WorkspaceCardProps {
-  workspace: WorkspaceInfo
+// ProjectCard.tsx
+interface ProjectCardProps {
+  project: ProjectInfo
   onSelect: (path: string) => void
 }
 
-export function WorkspaceCard({ workspace, onSelect }: WorkspaceCardProps): React.JSX.Element {
-  // Reusable workspace display component
+export function ProjectCard({ project, onSelect }: ProjectCardProps): React.JSX.Element {
+  // Reusable project display component
 }
 ```
 
@@ -218,18 +218,18 @@ const handleClick = async () => {
 ### Custom Hooks for IPC
 
 ```typescript
-// hooks/useWorkspaces.ts
-export function useWorkspaces() {
-  const [workspaces, setWorkspaces] = useState<WorkspaceInfo[]>([])
+// hooks/useProjects.ts
+export function useProjects() {
+  const [projects, setProjects] = useState<ProjectInfo[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadWorkspaces = async () => {
+  const loadProjects = async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await window.api.core.getAllWorkspaces()
-      setWorkspaces(data)
+      const data = await window.api.core.getAllProjects()
+      setProjects(data)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -237,7 +237,7 @@ export function useWorkspaces() {
     }
   }
 
-  return { workspaces, loading, error, loadWorkspaces }
+  return { projects, loading, error, loadProjects }
 }
 ```
 
@@ -464,14 +464,14 @@ test('renders dashboard view', () => {
 ```typescript
 import { renderHook, act } from '@testing-library/react-hooks'
 
-test('loads workspaces', async () => {
-  const { result } = renderHook(() => useWorkspaces())
+test('loads projects', async () => {
+  const { result } = renderHook(() => useProjects())
 
   await act(async () => {
-    await result.current.loadWorkspaces()
+    await result.current.loadProjects()
   })
 
-  expect(result.current.workspaces).toHaveLength(3)
+  expect(result.current.projects).toHaveLength(3)
 })
 ```
 

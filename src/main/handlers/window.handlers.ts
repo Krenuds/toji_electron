@@ -39,7 +39,7 @@ export function registerWindowHandlers(): void {
 
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory'],
-      title: 'Select Workspace Directory',
+      title: 'Select Project Directory',
       buttonLabel: 'Select Folder'
     })
 

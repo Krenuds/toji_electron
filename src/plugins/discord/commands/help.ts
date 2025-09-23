@@ -17,18 +17,13 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         inline: false
       },
       {
-        name: '📁 /workspace',
-        value: 'View or change the current workspace directory',
+        name: '📁 /project',
+        value: 'View or change the current project directory',
         inline: false
       },
       {
         name: '💼 /session',
         value: 'Manage chat sessions (list, create, clear, info)',
-        inline: false
-      },
-      {
-        name: '📂 /project',
-        value: 'View project information (list, current)',
         inline: false
       },
       {
