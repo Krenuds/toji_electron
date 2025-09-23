@@ -25,23 +25,21 @@ Toji3 is an Electron desktop application that exposes the OpenCode AI SDK throug
 
 ## Project Structure
 
-```
 toji3/
 ├── src/
-│   ├── main/               # Electron main process
-│   │   ├── toji/          # Core OpenCode integration
-│   │   ├── services/      # Supporting services
-│   │   ├── config/        # Configuration management
-│   │   └── index.ts       # IPC handlers
-│   ├── preload/           # IPC bridge
-│   ├── renderer/          # React UI (plugin interface)
-│   │   └── src/
-│   │       ├── components/views/  # View-based UI
-│   │       ├── hooks/     # Custom React hooks
-│   │       └── contexts/  # React Context providers
-│   └── plugins/           # Plugin interfaces
-│       └── discord/       # Discord bot
-```
+│ ├── main/ # Electron main process
+│ │ ├── toji/ # Core OpenCode integration
+│ │ ├── services/ # Supporting services
+│ │ ├── config/ # Configuration management
+│ │ └── index.ts # IPC handlers
+│ ├── preload/ # IPC bridge
+│ ├── renderer/ # React UI (plugin interface)
+│ │ └── src/
+│ │ ├── components/views/ # View-based UI
+│ │ ├── hooks/ # Custom React hooks
+│ │ └── contexts/ # React Context providers
+│ └── plugins/ # Plugin interfaces
+│ └── discord/ # Discord bot
 
 ## Feature Implementation Order
 
@@ -64,9 +62,9 @@ npm run build       # Production build
 
 ## Documentation References
 
-- **OpenCode SDK**: https://opencode.ai/docs/sdk/
-- **Electron-Vite**: https://electron-vite.org/guide/
-- **Chakra UI v3**: https://chakra-ui.com/docs/get-started/frameworks/vite
+- **OpenCode SDK**: <https://opencode.ai/docs/sdk/>
+- **Electron-Vite**: <https://electron-vite.org/guide/>
+- **Chakra UI v3**: <https://chakra-ui.com/docs/get-started/frameworks/vite>
 - **Project Backend**: `/src/main/CLAUDE.md`
 - **Project Frontend**: `/src/renderer/CLAUDE.md`
 

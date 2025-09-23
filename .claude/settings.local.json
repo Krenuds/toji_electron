@@ -4,7 +4,10 @@
       "Bash(npm run format:*)",
       "Read(//c/Users/donth/AppData/Roaming/toji3/logs/**)",
       "Bash(npm run typecheck:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

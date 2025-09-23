@@ -20,7 +20,7 @@ import { useOpenProject } from '../../../hooks/useOpenProject'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const { status: serverStatus } = useServerStatus()
-  const { isRunning, getCurrentDirectory } = useCoreStatus()
+  const { isRunning, getCurrentProject } = useCoreStatus()
   const {
     sessions,
     isLoading: isLoadingSessions,
@@ -44,7 +44,7 @@ export function ChatViewSidebar(): React.JSX.Element {
       try {
         const running = await isRunning()
         if (running) {
-          const dir = await getCurrentDirectory()
+          const dir = await getCurrentProject()
           if (dir) {
             setWorkingDirectory(dir)
           } else {
@@ -60,7 +60,7 @@ export function ChatViewSidebar(): React.JSX.Element {
     }
 
     checkWorkingDirectory()
-  }, [isRunning, getCurrentDirectory])
+  }, [isRunning, getCurrentProject])
 
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     setDeletingSessionId(sessionId)

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-ui/react'
 import { LuSend, LuUser, LuBot } from 'react-icons/lu'
-import { useWorkspace } from '../../../hooks/useWorkspace'
+import { useProjects } from '../../../hooks/useProjects'
 import { useChat } from '../../../hooks/useChat'
 import {
   createChatMessage,
@@ -12,7 +12,7 @@ import {
 export function ChatViewMain(): React.JSX.Element {
   const [message, setMessage] = useState('')
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
-  const { workspaceInfo, isChangingWorkspace } = useWorkspace()
+  const { projectInfo, isChangingProject } = useProjects()
   const {
     sendMessage,
     checkServerStatus,
@@ -25,7 +25,7 @@ export function ChatViewMain(): React.JSX.Element {
   const [syncLoading, setSyncLoading] = useState(false)
 
   // Sync messages with backend session history
-  const syncMessages = async (): Promise<void> => {
+  const syncMessages = useCallback(async (): Promise<void> => {
     setSyncLoading(true)
     try {
       // Check if we have a current session
@@ -45,19 +45,19 @@ export function ChatViewMain(): React.JSX.Element {
     } finally {
       setSyncLoading(false)
     }
-  }
+  }, [getCurrentSession, getSessionMessages])
 
-  // Sync messages when workspace changes
+  // Sync messages when project changes
   useEffect(() => {
-    if (workspaceInfo && !isChangingWorkspace) {
+    if (projectInfo && !isChangingProject) {
       syncMessages()
     }
-  }, [workspaceInfo, isChangingWorkspace])
+  }, [projectInfo, isChangingProject, syncMessages])
 
   // Sync messages when component mounts (view navigation)
   useEffect(() => {
     syncMessages()
-  }, [])
+  }, [syncMessages])
 
   // Poll server status
   useEffect(() => {
@@ -66,13 +66,13 @@ export function ChatViewMain(): React.JSX.Element {
       setServerStatus(isRunning ? 'online' : 'offline')
     }
 
-    if (!isChangingWorkspace) {
+    if (!isChangingProject) {
       pollServerStatus()
       const interval = setInterval(pollServerStatus, 2000)
       return () => clearInterval(interval)
     }
     return undefined
-  }, [isChangingWorkspace, checkServerStatus])
+  }, [isChangingProject, checkServerStatus])
 
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return
@@ -123,8 +123,8 @@ export function ChatViewMain(): React.JSX.Element {
     }
   }
 
-  // Get workspace name for display
-  const workspaceName = workspaceInfo?.workspacePath.split(/[\\/]/).pop() || 'No Workspace'
+  // Get project name for display
+  const projectName = projectInfo?.name || 'No Project'
 
   return (
     <VStack align="stretch" gap={6} h="100%">
@@ -132,7 +132,7 @@ export function ChatViewMain(): React.JSX.Element {
       <Box>
         <HStack justify="space-between" align="center" mb={2}>
           <Text color="app.light" fontSize="2xl" fontWeight="bold">
-            Chatting with {workspaceName}
+            Chatting with {projectName}
           </Text>
           <Badge
             size="sm"
@@ -153,9 +153,9 @@ export function ChatViewMain(): React.JSX.Element {
           </Badge>
         </HStack>
         <Text color="app.text" fontSize="sm">
-          {workspaceInfo
-            ? `Working in: ${workspaceInfo.workspacePath}`
-            : 'Select a workspace to start chatting with your AI coding assistant'}
+          {projectInfo
+            ? `Working in: ${projectInfo.path}`
+            : 'Select a project to start chatting with your AI coding assistant'}
         </Text>
       </Box>
 

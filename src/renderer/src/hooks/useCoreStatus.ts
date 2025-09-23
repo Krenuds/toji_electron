@@ -7,7 +7,7 @@ import { useState, useCallback } from 'react'
 
 interface CoreStatus {
   isRunning: () => Promise<boolean>
-  getCurrentDirectory: () => Promise<string | undefined>
+  getCurrentProject: () => Promise<string | undefined>
   isLoading: boolean
   error: string | null
 }
@@ -38,7 +38,7 @@ export const useCoreStatus = (): CoreStatus => {
     }
   }, [])
 
-  const getCurrentDirectory = useCallback(async (): Promise<string | undefined> => {
+  const getCurrentProject = useCallback(async (): Promise<string | undefined> => {
     if (!window.api?.toji) {
       setError('Toji API not available')
       return undefined
@@ -48,12 +48,12 @@ export const useCoreStatus = (): CoreStatus => {
     setError(null)
 
     try {
-      const directory = await window.api.toji.getCurrentDirectory()
-      return directory || undefined
+      const session = await window.api.toji.getCurrentSession()
+      return session?.directory || undefined
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get current directory'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get current project'
       setError(errorMessage)
-      console.error('Failed to get current directory:', err)
+      console.error('Failed to get current project:', err)
       return undefined
     } finally {
       setIsLoading(false)
@@ -62,7 +62,7 @@ export const useCoreStatus = (): CoreStatus => {
 
   return {
     isRunning,
-    getCurrentDirectory,
+    getCurrentProject,
     isLoading,
     error
   }
