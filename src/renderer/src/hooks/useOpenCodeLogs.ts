@@ -18,8 +18,8 @@ export function useOpenCodeLogs(): OpenCodeLogsState & {
   const refresh = useCallback(async (): Promise<void> => {
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }))
-      const logs = await window.api.logs.getOpenCodeLogs()
-      setState({ logs, loading: false, error: null })
+      const logPath = await window.api.logger.getLogPath()
+      setState({ logs: `Log file location: ${logPath}`, loading: false, error: null })
     } catch (error) {
       setState((prev) => ({
         ...prev,

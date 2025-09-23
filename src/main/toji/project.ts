@@ -4,6 +4,10 @@ import { app } from 'electron'
 import { join } from 'path'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import type { ServerManager } from './server'
+import { createFileDebugLogger } from '../utils/logger'
+
+const log = createFileDebugLogger('toji:project')
+// const logSDK = createFileDebugLogger('toji:project:sdk') // Reserved for future SDK operations
 
 export interface ProjectInfo {
   path: string
@@ -18,7 +22,8 @@ export class ProjectManager {
   constructor(
     private getClient: () => OpencodeClient | undefined,
     private server?: ServerManager,
-    private config?: ConfigProvider
+    private config?: ConfigProvider,
+    private toji?: { connectClientToProject: (directory: string) => Promise<void> }
   ) {}
 
   /**
@@ -74,14 +79,39 @@ export class ProjectManager {
    * Open project (starts server)
    */
   async openProject(directory: string): Promise<number> {
-    if (!this.server || !this.config) {
-      throw new Error('ServerManager or ConfigProvider not available')
+    log('Opening project: %s', directory)
+
+    if (!this.server || !this.config || !this.toji) {
+      const error = new Error('ServerManager, ConfigProvider, or Toji not available')
+      log('ERROR: %s', error.message)
+      throw error
     }
 
+    // Get project configuration
     const config = this.config.getProjectConfig(directory)
-    const port = await this.server.start(directory, config)
-    this.config.setProjectOpen(directory, true, port)
-    return port
+    log('Project config: %o', config)
+
+    try {
+      // Start server for this project
+      log('Starting server for project...')
+      const port = await this.server.start(directory, config)
+      log('Server started successfully on port %d', port)
+
+      // Connect client to this project's server
+      log('Connecting client to project server...')
+      await this.toji.connectClientToProject(directory)
+      log('Client connected successfully')
+
+      // Mark project as open and active
+      this.config.setProjectOpen(directory, true, port)
+      this.config.setCurrentProjectPath(directory)
+      log('Project marked as open and active: %s', directory)
+
+      return port
+    } catch (error) {
+      log('ERROR: Failed to open project %s: %o', directory, error)
+      throw error
+    }
   }
 
   /**

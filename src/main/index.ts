@@ -7,6 +7,14 @@ import { Toji } from './toji'
 import { OpenCodeService } from './services/opencode-service'
 import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
+import { initializeFileLogging, createFileDebugLogger } from './utils/logger'
+
+// Initialize file logging as early as possible
+initializeFileLogging()
+
+// const log = createFileDebugLogger('toji:main') // Reserved for future use
+const logStartup = createFileDebugLogger('toji:startup')
+const logCleanup = createFileDebugLogger('toji:cleanup')
 
 // Import modular handlers
 import {
@@ -14,7 +22,8 @@ import {
   registerProjectHandlers,
   registerWindowHandlers,
   registerDiscordHandlers,
-  registerBinaryHandlers
+  registerBinaryHandlers,
+  registerLoggerHandlers
 } from './handlers'
 
 // Global instances
@@ -72,43 +81,55 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   // Initialize configuration provider
+  logStartup('Initializing ConfigProvider')
   config = new ConfigProvider()
-  console.log('Config initialized with working directory:', config.getOpencodeWorkingDirectory())
+  logStartup('Config initialized with working directory: %s', config.getOpencodeWorkingDirectory())
 
   // Initialize binary service
+  logStartup('Initializing OpenCodeService')
   const openCodeService = new OpenCodeService()
 
   // Check binary status on startup
   const binaryInfo = openCodeService.getBinaryInfo()
-  console.log('Binary status on startup:', binaryInfo)
+  logStartup('Binary status on startup: %o', binaryInfo)
 
   // Initialize Toji API with binary service and config
+  logStartup('Initializing Toji API')
   toji = new Toji(openCodeService, config)
-  console.log('Toji API initialized')
+  logStartup('Toji API initialized')
 
   // Initialize Discord service with Toji and config
+  logStartup('Initializing Discord service')
   discordService = new DiscordService(toji, config)
-  console.log('Discord service initialized')
+  logStartup('Discord service initialized')
 
   // Auto-start OpenCode if enabled
-  if (config.getOpencodeAutoStart()) {
+  const autoStartEnabled = config.getOpencodeAutoStart()
+  logStartup('Auto-start enabled: %s', autoStartEnabled)
+
+  if (autoStartEnabled) {
     try {
+      logStartup('Starting auto-start sequence')
       // First ensure binary is installed
       await openCodeService.ensureBinary()
+      logStartup('Binary ensured')
 
       // Get the last used workspace
       const workingDirectory = config.getOpencodeWorkingDirectory()
-      console.log('Auto-starting OpenCode in:', workingDirectory)
+      logStartup('Auto-starting OpenCode in: %s', workingDirectory)
 
       // Start OpenCode server
       await toji.server.start()
+      logStartup('Server started')
+
       await toji.connectClient()
+      logStartup('Client connected')
 
       // Track this workspace in recent list
       config.addRecentWorkspace(workingDirectory)
-      console.log('OpenCode auto-started successfully')
+      logStartup('OpenCode auto-started successfully')
     } catch (error) {
-      console.error('Failed to auto-start OpenCode:', error)
+      logStartup('ERROR: Failed to auto-start OpenCode: %o', error)
       // Don't crash the app, just log the error
     }
   }
@@ -119,6 +140,7 @@ app.whenReady().then(async () => {
   registerWindowHandlers()
   registerDiscordHandlers(discordService, config)
   registerBinaryHandlers(openCodeService)
+  registerLoggerHandlers()
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.toji.toji3')
@@ -143,26 +165,27 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', async () => {
-  console.log('All windows closed, cleaning up...')
+  logCleanup('All windows closed, starting cleanup sequence')
 
   // Disconnect Discord bot
   if (discordService) {
     try {
-      console.log('Disconnecting Discord bot...')
+      logCleanup('Disconnecting Discord bot...')
       await discordService.disconnect()
-      console.log('Discord bot disconnected')
+      logCleanup('Discord bot disconnected successfully')
     } catch (error) {
-      console.error('Error disconnecting Discord:', error)
+      logCleanup('ERROR: Failed to disconnect Discord: %o', error)
     }
   }
 
   // Stop any running OpenCode agents
   if (toji) {
     try {
+      logCleanup('Stopping OpenCode servers...')
       await toji.server.stop()
-      console.log('Cleanup completed')
+      logCleanup('OpenCode servers stopped successfully')
     } catch (error) {
-      console.error('Error during cleanup:', error)
+      logCleanup('ERROR: Failed to stop OpenCode servers: %o', error)
     }
   }
 

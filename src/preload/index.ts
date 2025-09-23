@@ -2,7 +2,7 @@ import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Import all API modules
-import { tojiAPI, projectAPI, windowAPI, discordAPI, binaryAPI } from './api'
+import { tojiAPI, projectAPI, windowAPI, discordAPI, binaryAPI, loggerAPI } from './api'
 
 // Build the complete API object - clean and modular!
 const api = {
@@ -11,10 +11,7 @@ const api = {
   window: windowAPI,
   discord: discordAPI,
   binary: binaryAPI,
-  // Stub for logs - will be implemented later
-  logs: {
-    getOpenCodeLogs: (): Promise<string> => Promise.resolve('No logs available')
-  }
+  logger: loggerAPI
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

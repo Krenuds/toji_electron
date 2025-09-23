@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { tojiAPI, projectAPI, windowAPI, discordAPI, binaryAPI } from './api'
+import type { tojiAPI, projectAPI, windowAPI, discordAPI, binaryAPI, loggerAPI } from './api'
 
 declare global {
   interface Window {
@@ -10,9 +10,7 @@ declare global {
       window: typeof windowAPI
       discord: typeof discordAPI
       binary: typeof binaryAPI
-      logs: {
-        getOpenCodeLogs: () => Promise<string>
-      }
+      logger: typeof loggerAPI
     }
   }
 }

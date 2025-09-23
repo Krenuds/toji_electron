@@ -3,6 +3,11 @@ import type { ServerOptions, Config } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import type { ServerStatus } from './types'
+import { createFileDebugLogger } from '../utils/logger'
+
+const log = createFileDebugLogger('toji:server')
+const logHealth = createFileDebugLogger('toji:server:health')
+const logPort = createFileDebugLogger('toji:server:port')
 
 interface ServerInstance {
   server: { close: () => void; url: string }
@@ -43,22 +48,28 @@ export class ServerManager {
   async start(workingDir?: string, config?: Config): Promise<number> {
     // For backward compatibility, use configured working directory if not provided
     const dir = workingDir || this._config?.getOpencodeWorkingDirectory() || process.cwd()
+    log('Starting server for project: %s', dir)
 
     // Stop any existing server for this project
     if (this.servers.has(dir)) {
+      log('Existing server found for %s, stopping first', dir)
       await this.stop(dir)
     }
 
     // Ensure binary is available
     const binaryInfo = this.opencodeService.getBinaryInfo()
+    log('Binary info: %o', binaryInfo)
     if (!binaryInfo.installed) {
-      throw new Error('OpenCode binary not installed')
+      const error = new Error('OpenCode binary not installed')
+      log('ERROR: %s', error.message)
+      throw error
     }
 
     console.log('Starting OpenCode server for project:', dir)
 
     // Find available port
     const port = await this.findAvailablePort()
+    logPort('Found available port: %d', port)
 
     const serverOptions: ServerOptions = {
       hostname: '127.0.0.1',
@@ -66,23 +77,33 @@ export class ServerManager {
       timeout: 5000,
       config
     }
+    log('Server options: %o', serverOptions)
 
-    const server = await createOpencodeServer(serverOptions)
+    try {
+      log('Creating OpenCode server...')
+      const server = await createOpencodeServer(serverOptions)
+      log('OpenCode server created successfully, URL: %s', server.url)
 
-    const instance: ServerInstance = {
-      server,
-      port,
-      workingDir: dir,
-      startTime: new Date(),
-      isHealthy: true // Assume healthy on start
+      const instance: ServerInstance = {
+        server,
+        port,
+        workingDir: dir,
+        startTime: new Date(),
+        isHealthy: true // Assume healthy on start
+      }
+
+      this.servers.set(dir, instance)
+      log('Server instance stored for %s', dir)
+
+      // Start health monitoring for this instance
+      this.startHealthMonitoring(instance)
+      log('Health monitoring started for %s', dir)
+
+      return port
+    } catch (error) {
+      log('ERROR: Failed to create OpenCode server: %o', error)
+      throw error
     }
-
-    this.servers.set(dir, instance)
-
-    // Start health monitoring for this instance
-    this.startHealthMonitoring(instance)
-
-    return port
   }
 
   /**
@@ -90,22 +111,29 @@ export class ServerManager {
    */
   async stop(workingDir?: string): Promise<void> {
     if (!workingDir) {
+      log('Stopping all servers (legacy behavior)')
       // Legacy behavior - stop all servers
       return this.stopAll()
     }
+
+    log('Stopping server for project: %s', workingDir)
     const instance = this.servers.get(workingDir)
     if (!instance) {
+      log('No server found for %s, already stopped', workingDir)
       return // Already stopped or never started
     }
 
     // Stop health monitoring
+    log('Stopping health monitoring for %s', workingDir)
     this.stopHealthMonitoring(instance)
 
     // Close the server
+    log('Closing server for %s', workingDir)
     instance.server.close()
 
     // Remove from tracking
     this.servers.delete(workingDir)
+    log('Server for %s removed from tracking', workingDir)
   }
 
   /**
@@ -177,21 +205,42 @@ export class ServerManager {
     return firstServer ? firstServer.server.url : undefined
   }
 
+  /**
+   * Get URL for a specific project's server
+   */
+  getUrlForProject(workingDir: string): string | undefined {
+    const instance = this.servers.get(workingDir)
+    return instance ? instance.server.url : undefined
+  }
+
   private startHealthMonitoring(instance: ServerInstance): void {
     // Clear any existing interval for this instance
     this.stopHealthMonitoring(instance)
+    logHealth('Starting health monitoring for %s', instance.workingDir)
 
     // Single function to perform health check
     const performHealthCheck = async (): Promise<void> => {
+      const wasHealthy = instance.isHealthy
       instance.isHealthy = await this.checkHealth(instance)
       instance.lastHealthCheck = new Date()
+
+      if (wasHealthy !== instance.isHealthy) {
+        logHealth(
+          'Health status changed for %s: %s -> %s',
+          instance.workingDir,
+          wasHealthy,
+          instance.isHealthy
+        )
+      }
     }
 
     // Check immediately
+    logHealth('Performing initial health check for %s', instance.workingDir)
     performHealthCheck()
 
     // Then check every 10 seconds
     instance.healthCheckInterval = setInterval(performHealthCheck, 10000)
+    logHealth('Health check interval set for %s (every 10s)', instance.workingDir)
   }
 
   private stopHealthMonitoring(instance: ServerInstance): void {
