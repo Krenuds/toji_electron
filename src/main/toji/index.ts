@@ -84,6 +84,49 @@ export class Toji {
       baseUrl: serverUrl
     })
     logClient('Client connected successfully to project %s at %s', directory, serverUrl)
+
+    // Restore the most recent session for this project
+    await this.restoreProjectSession(directory)
+  }
+
+  // Restore the most recent session for a project
+  private async restoreProjectSession(directory: string): Promise<void> {
+    if (!this.client) {
+      logClient('Cannot restore session: client not connected')
+      return
+    }
+
+    try {
+      logClient('Attempting to restore previous session for project: %s', directory)
+
+      // Get existing sessions for this project
+      const sessions = await this.sessions.listSessions(this.client, directory)
+
+      if (sessions.length === 0) {
+        logClient('No existing sessions found for project: %s', directory)
+        return
+      }
+
+      // Find the most recent session (by lastActive date)
+      const mostRecentSession = sessions.reduce((latest, current) => {
+        if (!latest.lastActive) return current
+        if (!current.lastActive) return latest
+        return current.lastActive > latest.lastActive ? current : latest
+      })
+
+      // Set as active session
+      this.sessions.setActiveSession(mostRecentSession.id, directory)
+
+      logClient(
+        'Restored session: %s (%s) for project: %s',
+        mostRecentSession.id,
+        mostRecentSession.title || 'untitled',
+        directory
+      )
+    } catch (error) {
+      logClient('Failed to restore session for project %s: %o', directory, error)
+      // Don't throw - just continue without a restored session
+    }
   }
 
   // Check if ready
@@ -153,6 +196,12 @@ export class Toji {
         .join('')
 
       logChat('Chat response received: %d characters', responseText.length)
+
+      // Update session activity tracking
+      if (this.currentProjectDirectory) {
+        this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
+      }
+
       return responseText
     } catch (error) {
       logChat('ERROR: Chat failed: %o', error)

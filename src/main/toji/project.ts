@@ -67,7 +67,7 @@ export class ProjectManager {
     }
 
     const defaultConfig: Partial<Config> = {
-      model: 'anthropic/claude-3-5-sonnet-20241022',
+      model: 'opencode/grok-code',
       ...config
     }
 

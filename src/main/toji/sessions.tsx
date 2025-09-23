@@ -38,12 +38,20 @@ export class SessionManager {
         throw new Error(`Failed to list sessions: ${response.error || 'No response data'}`)
       }
 
-      const sessions: SessionInfo[] = response.data.map((session) => ({
-        id: session.id,
-        title: session.title || `Session ${session.id.slice(0, 8)}`,
-        projectPath: projectPath,
-        lastActive: new Date() // For now, just use current time
-      }))
+      // Get existing cached sessions to preserve lastActive times
+      const existingCache = this.sessionCache.get(projectPath || '') || []
+      const existingSessionMap = new Map(existingCache.map((s) => [s.id, s]))
+
+      const sessions: SessionInfo[] = response.data.map((session) => {
+        const existing = existingSessionMap.get(session.id)
+        return {
+          id: session.id,
+          title: session.title || `Session ${session.id.slice(0, 8)}`,
+          projectPath: projectPath,
+          // Preserve existing lastActive time, or use a reasonable default for unknown sessions
+          lastActive: existing?.lastActive || new Date(Date.now() - 3600000) // 1 hour ago for unknown sessions
+        }
+      })
 
       // Cache the results
       if (projectPath) {
@@ -82,7 +90,7 @@ export class SessionManager {
         id: response.data.id,
         title: response.data.title,
         projectPath: projectPath,
-        lastActive: new Date()
+        lastActive: new Date() // Mark as just created/active
       }
 
       // Update cache
@@ -188,11 +196,29 @@ export class SessionManager {
   }
 
   /**
-   * Set active session for project
+   * Set active session for project and update its lastActive time
    */
   setActiveSession(sessionId: string, projectPath: string): void {
     log('Setting active session: %s for project: %s', sessionId, projectPath)
     this.activeSessionPerProject.set(projectPath, sessionId)
+
+    // Update lastActive time for this session in cache
+    this.updateSessionLastActive(sessionId, projectPath)
+  }
+
+  /**
+   * Update the lastActive time for a session in cache
+   */
+  private updateSessionLastActive(sessionId: string, projectPath: string): void {
+    const cached = this.sessionCache.get(projectPath)
+    if (cached) {
+      const sessionIndex = cached.findIndex((s) => s.id === sessionId)
+      if (sessionIndex !== -1) {
+        cached[sessionIndex].lastActive = new Date()
+        this.sessionCache.set(projectPath, cached)
+        log('Updated lastActive for session: %s', sessionId)
+      }
+    }
   }
 
   /**

@@ -254,7 +254,7 @@ export class ConfigProvider {
    */
   getDefaultProjectConfig(): Partial<Config> {
     return {
-      model: 'anthropic/claude-3-5-sonnet-20241022'
+      model: 'opencode/grok-code'
     }
   }
 }
