@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Box, VStack, HStack, Text, Button, Separator, Badge, Alert } from '@chakra-ui/react'
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  Separator,
+  Badge,
+  Alert,
+  Spinner
+} from '@chakra-ui/react'
 import {
   LuTrash2,
   LuRefreshCw,
@@ -26,7 +36,8 @@ export function ChatViewSidebar(): React.JSX.Element {
     isLoading: isLoadingSessions,
     currentSessionId,
     fetchSessions,
-    deleteSession
+    deleteSession,
+    switchSession
   } = useSession()
   const {
     openProject,
@@ -37,6 +48,7 @@ export function ChatViewSidebar(): React.JSX.Element {
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
+  const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
 
   useEffect(() => {
     // Check working directory when server is running
@@ -70,6 +82,22 @@ export function ChatViewSidebar(): React.JSX.Element {
       console.log('Session deleted successfully')
     }
     setDeletingSessionId(null)
+  }
+
+  const handleSessionClick = async (sessionId: string): Promise<void> => {
+    if (sessionId === currentSessionId || switchingSessionId) return
+
+    setSwitchingSessionId(sessionId)
+    try {
+      const success = await switchSession(sessionId)
+      if (!success) {
+        console.error('Failed to switch session:', sessionId)
+      }
+    } catch (error) {
+      console.error('Error switching session:', error)
+    } finally {
+      setSwitchingSessionId(null)
+    }
   }
 
   return (
@@ -182,12 +210,28 @@ export function ChatViewSidebar(): React.JSX.Element {
                   border="1px solid"
                   borderColor={currentSessionId === session.id ? 'app.accent' : 'app.border'}
                   position="relative"
+                  cursor="pointer"
+                  _hover={{
+                    bg:
+                      currentSessionId === session.id
+                        ? 'rgba(51, 180, 47, 0.15)'
+                        : 'rgba(255,255,255,0.05)',
+                    borderColor: 'app.accent'
+                  }}
+                  onClick={() => handleSessionClick(session.id)}
+                  opacity={switchingSessionId === session.id ? 0.7 : 1}
+                  transition="all 0.2s"
                 >
                   <HStack justify="space-between">
                     <VStack align="start" gap={0} flex={1}>
-                      <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1}>
-                        {session.title || `Session ${session.id.slice(0, 8)}`}
-                      </Text>
+                      <HStack gap={2}>
+                        <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1}>
+                          {session.title || `Session ${session.id.slice(0, 8)}`}
+                        </Text>
+                        {switchingSessionId === session.id && (
+                          <Spinner size="xs" color="app.accent" />
+                        )}
+                      </HStack>
                       <Text color="app.text" fontSize="2xs">
                         ID: {session.id.slice(0, 12)}...
                       </Text>

@@ -62,6 +62,20 @@ export function ChatViewMain(): React.JSX.Element {
     syncMessages()
   }, [syncMessages])
 
+  // Listen for session changes from sidebar and sync messages
+  useEffect(() => {
+    const handleSessionChange = (event: CustomEvent): void => {
+      console.log('Session changed, syncing messages for:', event.detail.sessionId)
+      syncMessages(true) // Force refresh for new session
+    }
+
+    window.addEventListener('session-changed', handleSessionChange as EventListener)
+
+    return () => {
+      window.removeEventListener('session-changed', handleSessionChange as EventListener)
+    }
+  }, [syncMessages])
+
   // Poll server status
   useEffect(() => {
     const pollServerStatus = async (): Promise<void> => {

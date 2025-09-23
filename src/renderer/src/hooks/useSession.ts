@@ -90,6 +90,10 @@ export function useSession(): UseSessionReturn {
     try {
       await window.api.toji.switchSession(sessionId)
       setCurrentSessionId(sessionId)
+
+      // Emit event to notify other components (like ChatViewMain) to sync messages
+      window.dispatchEvent(new CustomEvent('session-changed', { detail: { sessionId } }))
+
       return true
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to switch session'
