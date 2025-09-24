@@ -8,6 +8,7 @@ import { ServerManager } from './server'
 import { SessionManager } from './sessions'
 import type { ServerStatus } from './types'
 import { createFileDebugLogger } from '../utils/logger'
+import { BrowserWindow } from 'electron'
 
 const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
@@ -87,6 +88,17 @@ export class Toji {
 
     // Restore the most recent session for this project
     await this.restoreProjectSession(directory)
+
+    // Emit project opened event to notify frontend
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      const projectName = directory.split(/[\\/]/).pop() || directory
+      mainWindow.webContents.send('project:opened', {
+        path: directory,
+        name: projectName
+      })
+      logClient('Emitted project:opened event for: %s', projectName)
+    }
   }
 
   // Restore the most recent session for a project
@@ -123,6 +135,16 @@ export class Toji {
         mostRecentSession.title || 'untitled',
         directory
       )
+
+      // Broadcast session restoration to all windows using existing pattern
+      const mainWindow = BrowserWindow.getAllWindows()[0]
+      if (mainWindow) {
+        mainWindow.webContents.send('session:restored', {
+          sessionId: mostRecentSession.id,
+          title: mostRecentSession.title,
+          projectPath: directory
+        })
+      }
     } catch (error) {
       logClient('Failed to restore session for project %s: %o', directory, error)
       // Don't throw - just continue without a restored session
@@ -264,6 +286,11 @@ export class Toji {
       return undefined
     }
     return this.sessions.getActiveSession(this.currentProjectDirectory)
+  }
+
+  // Get current project directory
+  getCurrentProjectDirectory(): string | undefined {
+    return this.currentProjectDirectory
   }
 
   // Get current session info

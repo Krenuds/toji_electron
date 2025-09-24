@@ -1,5 +1,5 @@
 // Project API for preload
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, type IpcRendererEvent } from 'electron'
 
 // Import types directly from SDK as recommended
 import type { Project, Config } from '@opencode-ai/sdk'
@@ -37,5 +37,15 @@ export const projectAPI = {
   getConfig: (directory: string): Promise<Partial<Config>> =>
     ipcRenderer.invoke('toji:project:get-config', directory),
 
-  getCurrentPath: (): Promise<string | null> => ipcRenderer.invoke('toji:project:get-current-path')
+  getCurrentPath: (): Promise<string | null> => ipcRenderer.invoke('toji:project:get-current-path'),
+
+  // Project events
+  onProjectOpened: (callback: (data: { path: string; name: string }) => void): (() => void) => {
+    const subscription = (_event: IpcRendererEvent, data: { path: string; name: string }): void =>
+      callback(data)
+    ipcRenderer.on('project:opened', subscription)
+    return (): void => {
+      ipcRenderer.removeListener('project:opened', subscription)
+    }
+  }
 }

@@ -101,8 +101,7 @@ export function registerProjectHandlers(toji: Toji): void {
   // Get current project path
   ipcMain.handle('toji:project:get-current-path', async () => {
     try {
-      // TODO: This would need to be added to Toji class or accessed through config
-      return null
+      return toji.getCurrentProjectDirectory() || null
     } catch (error) {
       console.error('Failed to get current project path:', error)
       throw error

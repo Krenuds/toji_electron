@@ -140,6 +140,19 @@ export function useProjects(): UseProjectsReturn {
               name: projectName,
               isActive: true
             })
+          } else {
+            // Fallback: if no session but server is running, check current project path
+            const currentPath = await window.api.project.getCurrentPath()
+            if (currentPath) {
+              const projectName = currentPath.split(/[\\/]/).pop() || currentPath
+              setCurrentProject(currentPath)
+              setProjectInfo({
+                path: currentPath,
+                name: projectName,
+                isActive: true
+              })
+              console.log('Fallback project detection used:', projectName)
+            }
           }
         }
       } catch (err) {
@@ -149,6 +162,27 @@ export function useProjects(): UseProjectsReturn {
 
     initializeProjects()
   }, [fetchProjects])
+
+  // Listen for project opened events from backend
+  useEffect(() => {
+    const cleanup = window.api.project.onProjectOpened((data) => {
+      console.log('Project opened event received:', data)
+      // Update project state when backend opens/auto-starts a project
+      setCurrentProject(data.path)
+      setProjectInfo({
+        path: data.path,
+        name: data.name,
+        isActive: true
+      })
+
+      // Switch to chat view after project is opened
+      if (viewContext) {
+        viewContext.setActiveView('chat')
+      }
+    })
+
+    return cleanup
+  }, [viewContext])
 
   return {
     // Project listing

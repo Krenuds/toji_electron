@@ -122,8 +122,9 @@ app.whenReady().then(async () => {
       await toji.server.start()
       logStartup('Server started')
 
-      await toji.connectClient()
-      logStartup('Client connected')
+      // Connect client to project (this will restore sessions and emit events)
+      await toji.connectClientToProject(workingDirectory)
+      logStartup('Client connected to project: %s', workingDirectory)
 
       // Track this project in recent list
       config.addRecentProject(workingDirectory)
