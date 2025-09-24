@@ -1,5 +1,5 @@
 // Core Toji API for preload
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { Message, Part } from '@opencode-ai/sdk'
 import type { Session, ServerStatus } from '../../main/toji/types'
 
@@ -48,7 +48,21 @@ export const tojiAPI = {
   deleteSession: (sessionId: string): Promise<void> =>
     ipcRenderer.invoke('toji:delete-session', sessionId),
   switchSession: (sessionId: string): Promise<void> =>
-    ipcRenderer.invoke('toji:switch-session', sessionId)
+    ipcRenderer.invoke('toji:switch-session', sessionId),
+
+  // Session events
+  onSessionRestored: (
+    callback: (data: { sessionId: string; title?: string; projectPath: string }) => void
+  ): (() => void) => {
+    const subscription = (
+      _event: IpcRendererEvent,
+      data: { sessionId: string; title?: string; projectPath: string }
+    ): void => callback(data)
+    ipcRenderer.on('session:restored', subscription)
+    return (): void => {
+      ipcRenderer.removeListener('session:restored', subscription)
+    }
+  }
 
   // Legacy operations - removed (replaced by projects system)
 }

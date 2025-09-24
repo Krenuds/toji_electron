@@ -5,7 +5,7 @@ interface UseSessionReturn {
   sessions: Session[]
   isLoading: boolean
   error: string | null
-  currentSessionId: string | null
+  getCurrentSessionId: () => Promise<string | undefined>
   fetchSessions: () => Promise<void>
   deleteSession: (sessionId: string) => Promise<boolean>
   createSession: (name?: string) => Promise<Session | null>
@@ -16,7 +16,6 @@ export function useSession(): UseSessionReturn {
   const [sessions, setSessions] = useState<Session[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
 
   const fetchSessions = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -25,19 +24,21 @@ export function useSession(): UseSessionReturn {
     try {
       const response = await window.api.toji.listSessions()
       setSessions(response || [])
-
-      // Try to determine current session from the list
-      if (response && response.length > 0) {
-        // For now, assume the first session is current
-        // In future, we might need a getCurrentSession API method
-        setCurrentSessionId(response[0].id)
-      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sessions'
       setError(errorMessage)
       setSessions([])
     } finally {
       setIsLoading(false)
+    }
+  }, [])
+
+  const getCurrentSessionId = useCallback(async (): Promise<string | undefined> => {
+    try {
+      return await window.api.toji.getCurrentSessionId()
+    } catch (error) {
+      console.error('Failed to get current session ID:', error)
+      return undefined
     }
   }, [])
 
@@ -48,13 +49,8 @@ export function useSession(): UseSessionReturn {
       try {
         await window.api.toji.deleteSession(sessionId)
 
-        // Remove from local state
-        setSessions((prev) => prev.filter((s) => s.id !== sessionId))
-
-        // Clear current if it was deleted
-        if (currentSessionId === sessionId) {
-          setCurrentSessionId(null)
-        }
+        // Refetch sessions to get updated list from backend
+        await fetchSessions()
 
         return true
       } catch (error) {
@@ -63,33 +59,34 @@ export function useSession(): UseSessionReturn {
         return false
       }
     },
-    [currentSessionId]
+    [fetchSessions]
   )
 
-  const createSession = useCallback(async (name?: string): Promise<Session | null> => {
-    setError(null)
+  const createSession = useCallback(
+    async (name?: string): Promise<Session | null> => {
+      setError(null)
 
-    try {
-      const newSession = await window.api.toji.createSession(name)
+      try {
+        const newSession = await window.api.toji.createSession(name)
 
-      // Add to local state
-      setSessions((prev) => [...prev, newSession])
-      setCurrentSessionId(newSession.id)
+        // Refetch sessions to get updated list from backend
+        await fetchSessions()
 
-      return newSession
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create session'
-      setError(errorMessage)
-      return null
-    }
-  }, [])
+        return newSession
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to create session'
+        setError(errorMessage)
+        return null
+      }
+    },
+    [fetchSessions]
+  )
 
   const switchSession = useCallback(async (sessionId: string): Promise<boolean> => {
     setError(null)
 
     try {
       await window.api.toji.switchSession(sessionId)
-      setCurrentSessionId(sessionId)
 
       // Emit event to notify other components (like ChatViewMain) to sync messages
       window.dispatchEvent(new CustomEvent('session-changed', { detail: { sessionId } }))
@@ -111,7 +108,7 @@ export function useSession(): UseSessionReturn {
     sessions,
     isLoading,
     error,
-    currentSessionId,
+    getCurrentSessionId,
     fetchSessions,
     deleteSession,
     createSession,

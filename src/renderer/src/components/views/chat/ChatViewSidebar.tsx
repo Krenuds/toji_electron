@@ -34,7 +34,7 @@ export function ChatViewSidebar(): React.JSX.Element {
   const {
     sessions,
     isLoading: isLoadingSessions,
-    currentSessionId,
+    getCurrentSessionId,
     fetchSessions,
     deleteSession,
     switchSession
@@ -49,6 +49,7 @@ export function ChatViewSidebar(): React.JSX.Element {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>()
 
   useEffect(() => {
     // Check working directory when server is running
@@ -74,6 +75,21 @@ export function ChatViewSidebar(): React.JSX.Element {
     checkWorkingDirectory()
   }, [isRunning, getCurrentProject])
 
+  // Fetch current session ID when sessions change
+  useEffect(() => {
+    const fetchCurrentSessionId = async (): Promise<void> => {
+      try {
+        const sessionId = await getCurrentSessionId()
+        setCurrentSessionId(sessionId)
+      } catch (error) {
+        console.error('Failed to get current session ID:', error)
+        setCurrentSessionId(undefined)
+      }
+    }
+
+    fetchCurrentSessionId()
+  }, [sessions, getCurrentSessionId])
+
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     setDeletingSessionId(sessionId)
     const success = await deleteSession(sessionId)
@@ -90,7 +106,11 @@ export function ChatViewSidebar(): React.JSX.Element {
     setSwitchingSessionId(sessionId)
     try {
       const success = await switchSession(sessionId)
-      if (!success) {
+      if (success) {
+        // Refresh current session ID from backend
+        const newCurrentSessionId = await getCurrentSessionId()
+        setCurrentSessionId(newCurrentSessionId)
+      } else {
         console.error('Failed to switch session:', sessionId)
       }
     } catch (error) {
@@ -292,7 +312,7 @@ export function ChatViewSidebar(): React.JSX.Element {
         onClose={() => setIsSessionsModalOpen(false)}
         sessions={sessions}
         isLoading={isLoadingSessions}
-        currentSessionId={currentSessionId}
+        currentSessionId={currentSessionId ?? null}
         onDeleteSession={handleDeleteSession}
         onRefresh={fetchSessions}
         deletingSessionId={deletingSessionId}

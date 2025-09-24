@@ -24,15 +24,26 @@ export function ChatViewMain(): React.JSX.Element {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [syncLoading, setSyncLoading] = useState(false)
 
-  // Sync messages with backend session history
+  // Sync messages with backend session history with retry for race conditions
   const syncMessages = useCallback(
-    async (forceRefresh = false): Promise<void> => {
+    async (forceRefresh = false, retryCount = 0): Promise<void> => {
       setSyncLoading(true)
       try {
         // Check if we have a current session
         const sessionInfo = await getCurrentSession()
         if (!sessionInfo) {
-          // No session yet, clear messages
+          // If no session and we haven't retried much, wait and retry
+          if (retryCount < 2) {
+            console.log(`No session found, retrying in ${(retryCount + 1) * 300}ms...`)
+            setTimeout(
+              () => {
+                syncMessages(forceRefresh, retryCount + 1)
+              },
+              (retryCount + 1) * 300
+            )
+            return
+          }
+          // No session after retries, clear messages
           setMessages([])
           return
         }
@@ -40,6 +51,7 @@ export function ChatViewMain(): React.JSX.Element {
         // Load message history from backend
         const history = await getSessionMessages(sessionInfo.id, !forceRefresh)
         setMessages(replaceMessages(history))
+        console.log(`Loaded ${history.length} messages for session ${sessionInfo.id}`)
       } catch (error) {
         console.error('Failed to sync messages:', error)
         // Don't clear messages on error, keep what we have
@@ -57,10 +69,19 @@ export function ChatViewMain(): React.JSX.Element {
     }
   }, [projectInfo, isChangingProject, syncMessages])
 
-  // Sync messages when component mounts (view navigation)
+  // Initialize component - check server status and sync messages
   useEffect(() => {
-    syncMessages()
-  }, [syncMessages])
+    const initializeChat = async (): Promise<void> => {
+      // Check server status immediately
+      const isRunning = await checkServerStatus()
+      setServerStatus(isRunning ? 'online' : 'offline')
+
+      // Sync messages (will retry if session not ready yet)
+      await syncMessages()
+    }
+
+    initializeChat()
+  }, [checkServerStatus, syncMessages])
 
   // Listen for session changes from sidebar and sync messages
   useEffect(() => {
@@ -76,16 +97,29 @@ export function ChatViewMain(): React.JSX.Element {
     }
   }, [syncMessages])
 
-  // Poll server status
+  // Listen for session restoration from backend and sync messages + update status
   useEffect(() => {
-    const pollServerStatus = async (): Promise<void> => {
-      const isRunning = await checkServerStatus()
-      setServerStatus(isRunning ? 'online' : 'offline')
-    }
+    const cleanup = window.api.toji.onSessionRestored(async (data) => {
+      console.log('Session restored from backend:', data.sessionId)
+      // Sync messages when session is restored at startup
+      await syncMessages(true)
+      // Update server status since session restoration means server is running
+      setServerStatus('online')
+    })
 
+    return cleanup
+  }, [syncMessages])
+
+  // Poll server status (less frequently since we have events)
+  useEffect(() => {
     if (!isChangingProject) {
-      pollServerStatus()
-      const interval = setInterval(pollServerStatus, 2000)
+      const pollServerStatus = async (): Promise<void> => {
+        const isRunning = await checkServerStatus()
+        setServerStatus(isRunning ? 'online' : 'offline')
+      }
+
+      // Poll every 5 seconds (less frequent since we have session restoration events)
+      const interval = setInterval(pollServerStatus, 5000)
       return () => clearInterval(interval)
     }
     return undefined
@@ -211,7 +245,7 @@ export function ChatViewMain(): React.JSX.Element {
                     w={8}
                     h={8}
                     borderRadius="full"
-                    bg={msg.type === 'user' ? 'blue.500' : 'app.accent'}
+                    bg={msg.type === 'user' ? 'green.200' : 'app.accent'}
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -240,7 +274,7 @@ export function ChatViewMain(): React.JSX.Element {
                         msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'
                       }
                       border="1px solid"
-                      borderColor={msg.type === 'user' ? 'blue.500' : 'app.border'}
+                      borderColor={msg.type === 'user' ? 'green.500' : 'app.border'}
                     >
                       <Text color="app.light" fontSize="sm" lineHeight="tall">
                         {msg.content}
