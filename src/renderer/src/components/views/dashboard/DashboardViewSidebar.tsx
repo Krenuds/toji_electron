@@ -6,7 +6,6 @@ import {
   Text,
   Button,
   Separator,
-  Card,
   Alert,
   Spinner,
   Progress,
@@ -24,6 +23,8 @@ import { useBinaryStatus } from '../../../hooks/useBinaryStatus'
 import { useOpenCodeLogs } from '../../../hooks/useOpenCodeLogs'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { SidebarContainer } from '../../SidebarContainer'
+import { SidebarHeader } from '../../shared/SidebarHeader'
+import { SidebarSection } from '../../shared/SidebarSection'
 import { StatusBadge } from '../../StatusBadge'
 
 export function DashboardViewSidebar(): React.JSX.Element {
@@ -51,188 +52,167 @@ export function DashboardViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4}>
-        {/* Dependencies Management */}
-        <Card.Root
-          size="sm"
-          bg="rgba(255,255,255,0.02)"
-          border="2px solid"
-          borderColor="app.border"
+        <SidebarHeader title="System Status" subtitle="OpenCode binary and server management" />
+
+        <Separator borderColor="app.border" />
+
+        {/* OpenCode Binary Status */}
+        <SidebarSection
+          title="OpenCode Binary"
+          action={<StatusBadge status={getBinaryStatus().status} size="sm" />}
         >
-          <Card.Header pb={2}>
-            <HStack justify="space-between" align="center">
-              <Text color="app.light" fontSize="xs" fontWeight="semibold">
-                OpenCode Binary
-              </Text>
-              <StatusBadge status={getBinaryStatus().status} size="sm" />
-            </HStack>
-          </Card.Header>
-          <Card.Body pt={0}>
-            <VStack gap={3} align="stretch">
-              {/* Binary Status Description */}
+          <VStack gap={3} align="stretch">
+            {/* Binary Status Description */}
+            <Box
+              p={2}
+              borderRadius="md"
+              bg="rgba(255,255,255,0.02)"
+              border="1px solid"
+              borderColor="app.border"
+            >
               <Text color="app.text" fontSize="2xs">
                 {getBinaryStatus().description}
               </Text>
+            </Box>
 
-              {/* Error Alert (only for actual errors) */}
-              {error && (
-                <Alert.Root status="error" size="sm">
-                  <Alert.Indicator>
-                    <LuTriangleAlert />
-                  </Alert.Indicator>
-                  <Alert.Content>
-                    <Alert.Description fontSize="2xs">{error}</Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
-              )}
+            {/* Error Alert */}
+            {error && (
+              <Alert.Root status="error" size="sm">
+                <Alert.Indicator>
+                  <LuTriangleAlert />
+                </Alert.Indicator>
+                <Alert.Content>
+                  <Alert.Description fontSize="2xs">{error}</Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
 
-              {/* Installation Progress */}
-              {installing && installProgress && (
-                <Box>
-                  <Text color="app.text" fontSize="2xs" mb={1}>
-                    {installProgress.message || `${installProgress.stage}...`}
-                  </Text>
-                  {installProgress.progress !== undefined && (
-                    <Progress.Root value={installProgress.progress} size="sm" colorPalette="blue">
-                      <Progress.Track>
-                        <Progress.Range />
-                      </Progress.Track>
-                    </Progress.Root>
-                  )}
-                </Box>
-              )}
-
-              {/* Binary Info Stats */}
-              {info && (
-                <VStack gap={2} align="stretch">
-                  <Stat.Root size="sm">
-                    <Stat.Label color="app.text" fontSize="2xs">
-                      Binary Name
-                    </Stat.Label>
-                    <Stat.ValueText color="app.light" fontSize="2xs" fontFamily="mono">
-                      {info.path?.split('\\').pop() || info.path || 'Unknown'}
-                    </Stat.ValueText>
-                  </Stat.Root>
-                  <Stat.Root size="sm">
-                    <Stat.Label color="app.text" fontSize="2xs">
-                      Last Checked
-                    </Stat.Label>
-                    <Stat.ValueText color="app.light" fontSize="2xs">
-                      {new Date().toLocaleTimeString()}
-                    </Stat.ValueText>
-                  </Stat.Root>
-                </VStack>
-              )}
-
-              {/* Action Buttons */}
-              <VStack gap={2} align="stretch">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  justifyContent="flex-start"
-                  color="app.text"
-                  _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-                  disabled={installing}
-                  loading={installing}
-                  onClick={install}
-                >
-                  <LuDownload size={14} />
-                  {info?.installed ? 'Reinstall Dependencies' : 'Install Dependencies'}
-                </Button>
-              </VStack>
-
-              {/* Logs Display */}
-              <Separator borderColor="app.border" />
-              <VStack gap={2} align="stretch">
-                <HStack justify="space-between" align="center">
-                  <Text color="app.text" fontSize="2xs" fontWeight="semibold">
-                    OpenCode Logs
-                  </Text>
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    color="app.text"
-                    _hover={{ color: 'app.light' }}
-                    onClick={refreshLogs}
-                    loading={logsLoading}
-                    disabled={!info?.installed}
-                  >
-                    <LuRefreshCw size={12} />
-                  </Button>
-                </HStack>
-
-                {logsError && (
-                  <Alert.Root status="error" size="sm">
-                    <Alert.Indicator>
-                      <LuTriangleAlert />
-                    </Alert.Indicator>
-                    <Alert.Description fontSize="2xs">{logsError}</Alert.Description>
-                  </Alert.Root>
+            {/* Installation Progress */}
+            {installing && installProgress && (
+              <Box>
+                <Text color="app.text" fontSize="2xs" mb={1}>
+                  {installProgress.message || `${installProgress.stage}...`}
+                </Text>
+                {installProgress.progress !== undefined && (
+                  <Progress.Root value={installProgress.progress} size="sm" colorPalette="blue">
+                    <Progress.Track>
+                      <Progress.Range />
+                    </Progress.Track>
+                  </Progress.Root>
                 )}
+              </Box>
+            )}
 
-                <Box
-                  bg="rgba(0,0,0,0.3)"
-                  border="1px solid"
-                  borderColor="app.border"
-                  borderRadius="md"
-                  p={2}
-                  maxH="120px"
-                  overflowY="auto"
-                >
-                  {logsLoading ? (
-                    <HStack justify="center" py={2}>
-                      <Spinner size="xs" />
-                      <Text color="app.text" fontSize="2xs">
-                        Loading logs...
-                      </Text>
-                    </HStack>
-                  ) : logs ? (
-                    <Text
-                      color="app.light"
-                      fontSize="2xs"
-                      fontFamily="mono"
-                      whiteSpace="pre-wrap"
-                      lineHeight="1.2"
-                    >
-                      {logs.slice(-1000)} {/* Show last 1000 characters for now */}
-                    </Text>
-                  ) : (
-                    <Text color="app.text" fontSize="2xs" fontStyle="italic">
-                      No logs available
-                    </Text>
-                  )}
-                </Box>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  justifyContent="flex-start"
-                  color="app.text"
-                  _hover={{ color: 'app.light', bg: 'rgba(255,255,255,0.05)' }}
-                  disabled={!info?.installed}
-                >
-                  <LuTriangleAlert size={14} />
-                  Test Connections
-                </Button>
+            {/* Binary Info Stats */}
+            {info && (
+              <VStack gap={2} align="stretch">
+                <Stat.Root size="sm">
+                  <Stat.Label color="app.text" fontSize="2xs">
+                    Binary Name
+                  </Stat.Label>
+                  <Stat.ValueText color="app.light" fontSize="2xs" fontFamily="mono">
+                    {info.path?.split('\\').pop() || info.path || 'Unknown'}
+                  </Stat.ValueText>
+                </Stat.Root>
+                <Stat.Root size="sm">
+                  <Stat.Label color="app.text" fontSize="2xs">
+                    Last Checked
+                  </Stat.Label>
+                  <Stat.ValueText color="app.light" fontSize="2xs">
+                    {new Date().toLocaleTimeString()}
+                  </Stat.ValueText>
+                </Stat.Root>
               </VStack>
-            </VStack>
-          </Card.Body>
-        </Card.Root>
+            )}
+
+            {/* Install Button */}
+            <Button
+              variant="solid"
+              colorPalette="green"
+              size="sm"
+              justifyContent="flex-start"
+              disabled={installing}
+              loading={installing}
+              onClick={install}
+            >
+              <LuDownload size={14} />
+              {info?.installed ? 'Reinstall Dependencies' : 'Install Dependencies'}
+            </Button>
+          </VStack>
+        </SidebarSection>
+
+        <Separator borderColor="app.border" />
+
+        {/* OpenCode Logs */}
+        <SidebarSection
+          title="OpenCode Logs"
+          action={
+            <Button
+              variant="ghost"
+              size="xs"
+              color="app.text"
+              _hover={{ color: 'app.light' }}
+              onClick={refreshLogs}
+              loading={logsLoading}
+              disabled={!info?.installed}
+            >
+              <LuRefreshCw size={12} />
+            </Button>
+          }
+        >
+          <VStack gap={3} align="stretch">
+            {logsError && (
+              <Alert.Root status="error" size="sm">
+                <Alert.Indicator>
+                  <LuTriangleAlert />
+                </Alert.Indicator>
+                <Alert.Description fontSize="2xs">{logsError}</Alert.Description>
+              </Alert.Root>
+            )}
+
+            <Box
+              bg="rgba(0,0,0,0.3)"
+              border="1px solid"
+              borderColor="app.border"
+              borderRadius="md"
+              p={2}
+              maxH="80px"
+              overflowY="auto"
+            >
+              {logsLoading ? (
+                <HStack justify="center" py={2}>
+                  <Spinner size="xs" />
+                  <Text color="app.text" fontSize="2xs">
+                    Loading logs...
+                  </Text>
+                </HStack>
+              ) : logs ? (
+                <Text
+                  color="app.light"
+                  fontSize="2xs"
+                  fontFamily="mono"
+                  whiteSpace="pre-wrap"
+                  lineHeight="1.2"
+                >
+                  {logs.slice(-800)}
+                </Text>
+              ) : (
+                <Text color="app.text" fontSize="2xs" fontStyle="italic">
+                  No logs available
+                </Text>
+              )}
+            </Box>
+          </VStack>
+        </SidebarSection>
+
+        <Separator borderColor="app.border" />
 
         {/* Server Control */}
-        <Card.Root
-          size="sm"
-          bg="rgba(248, 248, 250, 0.02)"
-          border="2px solid"
-          borderColor="app.border"
-        >
-          <Card.Header pb={2}>
-            <HStack justify="space-between">
-              <HStack gap={2}>
-                <LuServer size={15} />
-                <Text color="app.light" fontSize="xs" fontWeight="semibold">
-                  Server Control
-                </Text>
-              </HStack>
+        <SidebarSection
+          title="Server Control"
+          action={
+            <HStack gap={2} color="app.text">
+              <LuServer size={15} />
               <Box
                 w={2}
                 h={2}
@@ -245,109 +225,108 @@ export function DashboardViewSidebar(): React.JSX.Element {
                 }
               />
             </HStack>
-          </Card.Header>
-          <Card.Body pt={0}>
-            <VStack gap={3} align="stretch">
-              {/* Server Error Alert */}
-              {serverError && (
-                <Alert.Root status="error" size="sm">
-                  <Alert.Indicator>
-                    <LuTriangleAlert />
-                  </Alert.Indicator>
-                  <Alert.Content>
-                    <Alert.Description fontSize="2xs">{serverError}</Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
+          }
+        >
+          <VStack gap={3} align="stretch">
+            {/* Server Error Alert */}
+            {serverError && (
+              <Alert.Root status="error" size="sm">
+                <Alert.Indicator>
+                  <LuTriangleAlert />
+                </Alert.Indicator>
+                <Alert.Content>
+                  <Alert.Description fontSize="2xs">{serverError}</Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
+
+            {/* Start/Stop Button */}
+            <Button
+              size="sm"
+              variant="solid"
+              colorPalette={serverStatus.isRunning ? 'red' : 'green'}
+              onClick={serverStatus.isRunning ? stopServer : startServer}
+              disabled={serverLoading || !info?.installed}
+              loading={serverLoading}
+            >
+              {serverStatus.isRunning ? (
+                <>
+                  <LuSquare size={14} />
+                  Stop Server
+                </>
+              ) : (
+                <>
+                  <LuPlay size={14} />
+                  Start Server
+                </>
               )}
+            </Button>
 
-              {/* Start/Stop Button */}
-              <Button
-                size="sm"
-                variant="solid"
-                colorPalette={serverStatus.isRunning ? 'red' : 'green'}
-                onClick={serverStatus.isRunning ? stopServer : startServer}
-                disabled={serverLoading || !info?.installed}
-                loading={serverLoading}
-              >
-                {serverStatus.isRunning ? (
-                  <>
-                    <LuSquare size={14} />
-                    Stop Server
-                  </>
-                ) : (
-                  <>
-                    <LuPlay size={14} />
-                    Start Server
-                  </>
-                )}
-              </Button>
+            {/* Server Info */}
+            {serverStatus.isRunning && (
+              <VStack gap={1} align="stretch">
+                <Stat.Root size="sm">
+                  <Stat.Label color="app.text" fontSize="2xs">
+                    Port
+                  </Stat.Label>
+                  <Stat.ValueText color="app.light" fontSize="xs" fontFamily="mono">
+                    {serverStatus.port || '4096'}
+                  </Stat.ValueText>
+                </Stat.Root>
 
-              {/* Server Info */}
-              {serverStatus.isRunning && (
-                <VStack gap={2} align="stretch">
+                {serverStatus.isHealthy !== undefined && (
                   <Stat.Root size="sm">
                     <Stat.Label color="app.text" fontSize="2xs">
-                      Port
+                      Health Status
                     </Stat.Label>
-                    <Stat.ValueText color="app.light" fontSize="xs" fontFamily="mono">
-                      {serverStatus.port || '4096'}
+                    <Stat.ValueText
+                      color={serverStatus.isHealthy ? 'green.400' : 'red.400'}
+                      fontSize="xs"
+                    >
+                      {serverStatus.isHealthy ? 'Healthy' : 'Unhealthy'}
                     </Stat.ValueText>
                   </Stat.Root>
+                )}
 
-                  {serverStatus.isHealthy !== undefined && (
-                    <Stat.Root size="sm">
-                      <Stat.Label color="app.text" fontSize="2xs">
-                        Health Status
-                      </Stat.Label>
-                      <Stat.ValueText
-                        color={serverStatus.isHealthy ? 'green.400' : 'red.400'}
-                        fontSize="xs"
-                      >
-                        {serverStatus.isHealthy ? 'Healthy' : 'Unhealthy'}
-                      </Stat.ValueText>
-                    </Stat.Root>
-                  )}
+                {serverStatus.lastHealthCheck && (
+                  <Stat.Root size="sm">
+                    <Stat.Label color="app.text" fontSize="2xs">
+                      Last Health Check
+                    </Stat.Label>
+                    <Stat.ValueText color="app.light" fontSize="2xs">
+                      {new Date(serverStatus.lastHealthCheck).toLocaleTimeString()}
+                    </Stat.ValueText>
+                  </Stat.Root>
+                )}
 
-                  {serverStatus.lastHealthCheck && (
-                    <Stat.Root size="sm">
-                      <Stat.Label color="app.text" fontSize="2xs">
-                        Last Health Check
-                      </Stat.Label>
-                      <Stat.ValueText color="app.light" fontSize="2xs">
-                        {new Date(serverStatus.lastHealthCheck).toLocaleTimeString()}
-                      </Stat.ValueText>
-                    </Stat.Root>
-                  )}
+                {serverStatus.uptime && (
+                  <Stat.Root size="sm">
+                    <Stat.Label color="app.text" fontSize="2xs">
+                      Uptime
+                    </Stat.Label>
+                    <Stat.ValueText color="app.light" fontSize="2xs">
+                      {Math.floor(serverStatus.uptime / 1000 / 60)} minutes
+                    </Stat.ValueText>
+                  </Stat.Root>
+                )}
+              </VStack>
+            )}
 
-                  {serverStatus.uptime && (
-                    <Stat.Root size="sm">
-                      <Stat.Label color="app.text" fontSize="2xs">
-                        Uptime
-                      </Stat.Label>
-                      <Stat.ValueText color="app.light" fontSize="2xs">
-                        {Math.floor(serverStatus.uptime / 1000 / 60)} minutes
-                      </Stat.ValueText>
-                    </Stat.Root>
-                  )}
-                </VStack>
-              )}
-
-              {/* Server not installed warning */}
-              {!info?.installed && (
-                <Alert.Root status="warning" size="sm">
-                  <Alert.Indicator>
-                    <LuTriangleAlert />
-                  </Alert.Indicator>
-                  <Alert.Content>
-                    <Alert.Description fontSize="2xs">
-                      Install OpenCode binary first
-                    </Alert.Description>
-                  </Alert.Content>
-                </Alert.Root>
-              )}
-            </VStack>
-          </Card.Body>
-        </Card.Root>
+            {/* Server not installed warning */}
+            {!info?.installed && (
+              <Alert.Root status="warning" size="sm">
+                <Alert.Indicator>
+                  <LuTriangleAlert />
+                </Alert.Indicator>
+                <Alert.Content>
+                  <Alert.Description fontSize="2xs">
+                    Install OpenCode binary first
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
+          </VStack>
+        </SidebarSection>
       </VStack>
     </SidebarContainer>
   )
