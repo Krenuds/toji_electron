@@ -86,6 +86,19 @@ export class Toji {
     })
     logClient('Client connected successfully to project %s at %s', directory, serverUrl)
 
+    // Verify project appears in SDK project list (projects auto-register when server starts)
+    try {
+      const projects = await this.client.project.list()
+      const projectExists = projects.data?.some((p: any) => p.worktree === directory)
+      if (projectExists) {
+        logClient('Project confirmed in OpenCode SDK: %s', directory)
+      } else {
+        logClient('Project not yet visible in SDK list: %s', directory)
+      }
+    } catch (error) {
+      logClient('Warning: Could not verify project in SDK: %o', error)
+    }
+
     // Restore the most recent session for this project
     await this.restoreProjectSession(directory)
 

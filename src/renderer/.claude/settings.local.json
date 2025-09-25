@@ -9,7 +9,6 @@
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_hover",
       "Bash(cat:*)",
-      "Read(//c/Users/donth/toji3/**)",
       "mcp__playwright__browser_snapshot",
       "mcp__chakra-ui__customize_theme",
       "mcp__playwright__browser_take_screenshot"

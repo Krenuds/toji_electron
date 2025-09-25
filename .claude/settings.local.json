@@ -1,17 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run format:*)",
-      "Read(//c/Users/donth/AppData/Roaming/toji3/logs/**)",
-      "Bash(npm run typecheck:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(npm run lint:*)",
-      "WebFetch(domain:opencode.ai)",
-      "Bash(npm run dev:*)",
-      "Read(//c/Users/donth/OneDrive/Documents/ShareX/Screenshots/2025-09/**)",
-      "Bash(git rm:*)"
+      "Read(//c/Users/donth/.local/share/**)",
+      "Read(//c/Users/donth/**)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

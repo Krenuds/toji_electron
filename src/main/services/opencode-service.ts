@@ -1,43 +1,27 @@
-import { app } from 'electron'
 import { join } from 'path'
 import { mkdirSync, existsSync } from 'fs'
 import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
+import { homedir } from 'os'
 
 export class OpenCodeService {
   private binDir: string
-  private dataDir: string
 
   constructor() {
-    const userDataPath = app.getPath('userData')
-    this.binDir = join(userDataPath, 'opencode-bin')
-    this.dataDir = join(userDataPath, 'opencode-data')
-
+    // Use OpenCode's standard binary location
+    this.binDir = join(homedir(), '.local', 'share', 'opencode', 'bin')
     this.setupEnvironment()
   }
 
   private setupEnvironment(): void {
-    // Create binary directory for our downloaded OpenCode executable
+    // Create OpenCode's standard binary directory
     if (!existsSync(this.binDir)) {
       mkdirSync(this.binDir, { recursive: true })
     }
 
-    // WORKAROUND: Create bin/ directory due to OpenCode bug #1856
-    // https://github.com/sst/opencode/issues/1856
-    // OpenCode fails to create this directory but requires it for operations
-    const opencodeBindir = join(this.dataDir, 'bin')
-    if (!existsSync(opencodeBindir)) {
-      mkdirSync(opencodeBindir, { recursive: true })
-    }
-
-    process.env.OPENCODE_INSTALL_DIR = this.binDir
-    process.env.XDG_DATA_HOME = this.dataDir
-
-    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
-    process.env.OPENCODE_BIN_PATH = join(this.binDir, binaryName)
-
+    // Add OpenCode's standard bin directory to PATH
     const currentPath = process.env.PATH || ''
     const pathSeparator = process.platform === 'win32' ? ';' : ':'
     if (!currentPath.includes(this.binDir)) {

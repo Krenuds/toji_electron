@@ -3,14 +3,21 @@ import { Box, Text, HStack, VStack, Badge, Button } from '@chakra-ui/react'
 import { LuFolder, LuCode, LuFileText, LuPlay, LuCheck } from 'react-icons/lu'
 import { Tooltip } from '../../shared'
 
-interface Project {
-  id: string
-  worktree: string
-  vcs?: unknown
+interface ProjectInfo {
+  path: string
+  name: string
+  isOpen: boolean
+  port?: number
+  config?: unknown
+  sdkProject?: {
+    id: string
+    worktree: string
+    vcs?: string
+  }
 }
 
 interface ProjectCardProps {
-  project: Project
+  project: ProjectInfo
   isActive: boolean
   isLoading: boolean
   onOpen: (projectPath: string) => void
@@ -43,12 +50,13 @@ export function ProjectCard({
   isLoading,
   onOpen
 }: ProjectCardProps): React.JSX.Element {
-  const projectName = getProjectName(project.worktree)
-  const icon = getProjectIcon(project.worktree)
+  const projectPath = project.sdkProject?.worktree || project.path
+  const projectName = getProjectName(projectPath)
+  const icon = getProjectIcon(projectPath)
 
   const handleClick = (): void => {
     if (!isLoading && !isActive) {
-      onOpen(project.worktree)
+      onOpen(project.path)
     }
   }
 
@@ -90,9 +98,9 @@ export function ProjectCard({
               >
                 {projectName}
               </Text>
-              <Tooltip content={project.worktree} showArrow>
+              <Tooltip content={projectPath} showArrow>
                 <Text color="app.text" fontSize="xs" fontFamily="mono" truncate cursor="help">
-                  {project.worktree}
+                  {projectPath}
                 </Text>
               </Tooltip>
             </VStack>

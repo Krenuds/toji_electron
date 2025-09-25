@@ -41,7 +41,7 @@ export class ConfigProvider {
       defaults: {
         opencode: {
           // Use the current project directory as default
-          workingDirectory: 'C:\\Users\\donth\\toji3',
+          workingDirectory: this.getOpencodeWorkingDirectory(),
           autoStart: true
         },
         projects: {
@@ -59,7 +59,7 @@ export class ConfigProvider {
   getOpencodeWorkingDirectory(): string {
     // Always use the project directory as default for now
     // TODO: Allow user to change this via settings UI
-    return 'C:\\Users\\donth\\toji3'
+    return 'C:\\Users\\donth\\projects'
   }
 
   setOpencodeWorkingDirectory(path: string): void {

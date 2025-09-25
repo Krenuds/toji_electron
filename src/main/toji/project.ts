@@ -1,6 +1,5 @@
 // Project management module for Toji
 import type { OpencodeClient, Config, Project } from '@opencode-ai/sdk'
-import { app } from 'electron'
 import { join } from 'path'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import type { ServerManager } from './server'
@@ -30,23 +29,55 @@ export class ProjectManager {
    * List all projects from the OpenCode client
    */
   async list(): Promise<unknown[]> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('OpenCode client not initialized')
+    // Wait for client to be available with timeout
+    let client = this.getClient()
+    let attempts = 0
+    const maxAttempts = 50 // 5 seconds total
+
+    while (!client && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      client = this.getClient()
+      attempts++
     }
 
-    // Call the OpenCode SDK's project.list() method
-    const response = await client.project.list()
-    return response.data || []
+    if (!client) {
+      log('OpenCode client still not initialized after %d attempts', attempts)
+      return [] // Return empty array instead of throwing
+    }
+
+    // Log environment and data paths for debugging
+    log('Environment XDG_DATA_HOME: %s', process.env.XDG_DATA_HOME)
+    log('Expected project storage path: %s', this.getDataPath())
+
+    try {
+      // Call the OpenCode SDK's project.list() method
+      const response = await client.project.list()
+      log('OpenCode SDK returned %d projects from project.list()', (response.data || []).length)
+      return response.data || []
+    } catch (error) {
+      log('Failed to list projects from SDK: %o', error)
+      return []
+    }
   }
 
   /**
    * Get the current project from the OpenCode client
    */
   async getCurrent(): Promise<unknown | null> {
-    const client = this.getClient()
+    // Wait for client to be available with timeout
+    let client = this.getClient()
+    let attempts = 0
+    const maxAttempts = 50 // 5 seconds total
+
+    while (!client && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      client = this.getClient()
+      attempts++
+    }
+
     if (!client) {
-      throw new Error('OpenCode client not initialized')
+      log('OpenCode client still not initialized for getCurrent after %d attempts', attempts)
+      return null
     }
 
     try {
@@ -228,11 +259,12 @@ export class ProjectManager {
 
   /**
    * Get the path to the projects data folder
-   * Uses XDG_DATA_HOME set by OpenCodeService for cross-platform compatibility
+   * Uses standard OpenCode location (~/.local/share/opencode)
    */
   getDataPath(): string {
-    // Use XDG_DATA_HOME set by OpenCodeService, fallback to userData
-    const dataHome = process.env.XDG_DATA_HOME || join(app.getPath('userData'), 'opencode-data')
-    return join(dataHome, 'opencode', 'storage', 'project')
+    // Use standard OpenCode data location instead of custom Toji3 location
+    const os = require('os')
+    const dataHome = join(os.homedir(), '.local', 'share', 'opencode')
+    return join(dataHome, 'storage', 'project')
   }
 }

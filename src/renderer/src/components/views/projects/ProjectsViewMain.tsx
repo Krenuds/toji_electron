@@ -104,10 +104,10 @@ export function ProjectsViewMain(): React.JSX.Element {
           <VStack align="stretch" gap={3}>
             {projects.map((project) => (
               <ProjectCard
-                key={project.id}
+                key={project.sdkProject?.id || project.path}
                 project={project}
-                isActive={currentProject === project.worktree}
-                isLoading={openingProject === project.worktree}
+                isActive={currentProject === project.path}
+                isLoading={openingProject === project.path}
                 onOpen={handleOpenProject}
               />
             ))}

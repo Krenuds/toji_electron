@@ -1,22 +1,23 @@
 import { useState, useCallback, useEffect, useContext } from 'react'
 import { AppViewContext } from '../contexts/AppViewContextDef'
 
-// Project interface (temporary until we import from SDK)
-interface Project {
-  id: string
-  worktree: string
-  vcs?: unknown
-}
-
+// Import ProjectInfo interface from preload API
 interface ProjectInfo {
   path: string
   name: string
-  isActive: boolean
+  isOpen: boolean
+  port?: number
+  config?: unknown
+  sdkProject?: {
+    id: string
+    worktree: string
+    vcs?: string
+  }
 }
 
 interface UseProjectsReturn {
   // Project listing
-  projects: Project[]
+  projects: ProjectInfo[]
   isLoading: boolean
   error: string | null
   fetchProjects: () => Promise<void>
@@ -31,7 +32,7 @@ interface UseProjectsReturn {
 }
 
 export function useProjects(): UseProjectsReturn {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -48,7 +49,7 @@ export function useProjects(): UseProjectsReturn {
     setError(null)
 
     try {
-      const projectList = await window.api.project.list()
+      const projectList = await window.api.project.getAll()
       setProjects(projectList || [])
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
