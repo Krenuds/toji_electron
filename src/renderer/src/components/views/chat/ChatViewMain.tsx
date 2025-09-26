@@ -12,7 +12,7 @@ import {
 export function ChatViewMain(): React.JSX.Element {
   const [message, setMessage] = useState('')
   const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
-  const { projectInfo, isChangingProject } = useProjects()
+  const { currentProject } = useProjects()
   const {
     sendMessage,
     checkServerStatus,
@@ -64,10 +64,10 @@ export function ChatViewMain(): React.JSX.Element {
 
   // Sync messages when project changes
   useEffect(() => {
-    if (projectInfo && !isChangingProject) {
+    if (currentProject) {
       syncMessages()
     }
-  }, [projectInfo, isChangingProject, syncMessages])
+  }, [currentProject, syncMessages])
 
   // Initialize component - check server status and sync messages
   useEffect(() => {
@@ -110,20 +110,17 @@ export function ChatViewMain(): React.JSX.Element {
     return cleanup
   }, [syncMessages])
 
-  // Poll server status (less frequently since we have events)
+  // Poll server status
   useEffect(() => {
-    if (!isChangingProject) {
-      const pollServerStatus = async (): Promise<void> => {
-        const isRunning = await checkServerStatus()
-        setServerStatus(isRunning ? 'online' : 'offline')
-      }
-
-      // Poll every 5 seconds (less frequent since we have session restoration events)
-      const interval = setInterval(pollServerStatus, 5000)
-      return () => clearInterval(interval)
+    const pollServerStatus = async (): Promise<void> => {
+      const isRunning = await checkServerStatus()
+      setServerStatus(isRunning ? 'online' : 'offline')
     }
-    return undefined
-  }, [isChangingProject, checkServerStatus])
+
+    // Poll every 5 seconds
+    const interval = setInterval(pollServerStatus, 5000)
+    return () => clearInterval(interval)
+  }, [checkServerStatus])
 
   const handleSendMessage = async (): Promise<void> => {
     if (!message.trim() || isLoading) return
@@ -175,7 +172,7 @@ export function ChatViewMain(): React.JSX.Element {
   }
 
   // Get project name for display
-  const projectName = projectInfo?.name || 'No Project'
+  const projectName = currentProject?.name || 'No Project'
 
   return (
     <VStack align="stretch" gap={6} h="100%">
@@ -204,8 +201,8 @@ export function ChatViewMain(): React.JSX.Element {
           </Badge>
         </HStack>
         <Text color="app.text" fontSize="sm">
-          {projectInfo
-            ? `Working in: ${projectInfo.path}`
+          {currentProject
+            ? `Working in: ${currentProject.path}`
             : 'Select a project to start chatting with your AI coding assistant'}
         </Text>
       </Box>

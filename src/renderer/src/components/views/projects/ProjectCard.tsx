@@ -1,15 +1,12 @@
 import React from 'react'
-import { Box, Text, HStack, VStack, Badge, Button } from '@chakra-ui/react'
-import { LuFolder, LuCode, LuFileText, LuPlay, LuCheck } from 'react-icons/lu'
+import { Box, Text, HStack, VStack, Badge } from '@chakra-ui/react'
+import { LuFolder, LuCode, LuFileText, LuCheck } from 'react-icons/lu'
 import { Tooltip } from '../../shared'
 
 interface ProjectInfo {
   path: string
   name: string
-  isOpen: boolean
-  port?: number
-  config?: unknown
-  sdkProject?: {
+  sdkProject: {
     id: string
     worktree: string
     vcs?: string
@@ -19,8 +16,6 @@ interface ProjectInfo {
 interface ProjectCardProps {
   project: ProjectInfo
   isActive: boolean
-  isLoading: boolean
-  onOpen: (projectPath: string) => void
 }
 
 function getProjectIcon(projectPath: string): React.ReactNode {
@@ -44,21 +39,10 @@ function getProjectName(projectPath: string): string {
   return segments[segments.length - 1] || projectPath
 }
 
-export function ProjectCard({
-  project,
-  isActive,
-  isLoading,
-  onOpen
-}: ProjectCardProps): React.JSX.Element {
-  const projectPath = project.sdkProject?.worktree || project.path
+export function ProjectCard({ project, isActive }: ProjectCardProps): React.JSX.Element {
+  const projectPath = project.sdkProject.worktree
   const projectName = getProjectName(projectPath)
   const icon = getProjectIcon(projectPath)
-
-  const handleClick = (): void => {
-    if (!isLoading && !isActive) {
-      onOpen(project.path)
-    }
-  }
 
   return (
     <Box
@@ -67,18 +51,7 @@ export function ProjectCard({
       borderRadius="md"
       borderWidth={2}
       borderColor={isActive ? 'app.accent' : 'app.border'}
-      cursor={isActive ? 'default' : 'pointer'}
-      onClick={handleClick}
-      transition="all 0.2s"
-      _hover={
-        !isActive && !isLoading
-          ? {
-              borderColor: 'app.text',
-              transform: 'translateY(-1px)',
-              bg: 'app.medium'
-            }
-          : {}
-      }
+      cursor="default"
       position="relative"
     >
       <VStack align="stretch" gap={3}>
@@ -107,25 +80,11 @@ export function ProjectCard({
           </HStack>
 
           {/* Status Badge */}
-          {isActive ? (
+          {isActive && (
             <Badge colorPalette="green" size="sm" variant="solid">
               <LuCheck size={12} />
-              <Text ml={1}>Active</Text>
+              <Text ml={1}>Current</Text>
             </Badge>
-          ) : (
-            <Button
-              size="xs"
-              variant="ghost"
-              colorPalette="green"
-              disabled={isLoading}
-              onClick={(e) => {
-                e.stopPropagation()
-                handleClick()
-              }}
-            >
-              <LuPlay size={12} />
-              <Text ml={1}>{isLoading ? 'Opening...' : 'Open'}</Text>
-            </Button>
           )}
         </HStack>
       </VStack>

@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { VStack, Box, Text, Center, Button, Spinner, HStack } from '@chakra-ui/react'
-import { LuFolderTree, LuRefreshCw, LuFolderOpen, LuPlus } from 'react-icons/lu'
+import { LuFolderTree, LuRefreshCw } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
 import { ProjectCard } from './ProjectCard'
 
 export function ProjectsViewMain(): React.JSX.Element {
-  const {
-    projects,
-    isLoading,
-    error,
-    fetchProjects,
-    openProjectsFolder,
-    changeProject,
-    isChangingProject,
-    currentProject,
-    selectAndChangeProject
-  } = useProjects()
+  const { projects, isLoading, error, fetchProjects, currentProject } = useProjects()
   const [hasLoaded, setHasLoaded] = useState(false)
-  const [openingProject, setOpeningProject] = useState<string | null>(null)
 
   useEffect(() => {
     if (!hasLoaded) {
@@ -26,16 +15,6 @@ export function ProjectsViewMain(): React.JSX.Element {
     }
   }, [hasLoaded, fetchProjects])
 
-  const handleOpenProject = async (projectPath: string): Promise<void> => {
-    setOpeningProject(projectPath)
-    try {
-      await changeProject(projectPath)
-    } catch (error) {
-      console.error('Failed to open project:', error)
-    } finally {
-      setOpeningProject(null)
-    }
-  }
   return (
     <VStack align="stretch" gap={6}>
       {/* Header */}
@@ -44,22 +23,12 @@ export function ProjectsViewMain(): React.JSX.Element {
           Projects
         </Text>
         <Text color="app.text" fontSize="sm">
-          Manage and organize your OpenCode AI projects.
+          View your OpenCode AI projects from the SDK.
         </Text>
       </Box>
 
-      {/* Action Buttons */}
-      <HStack>
-        <Button
-          size="sm"
-          variant="solid"
-          colorPalette="green"
-          onClick={selectAndChangeProject}
-          disabled={isChangingProject}
-        >
-          <LuPlus size={16} />
-          <Text ml={2}>{isChangingProject ? 'Opening...' : 'Open Project'}</Text>
-        </Button>
+      {/* Action Bar */}
+      <HStack gap={2}>
         <Button
           size="sm"
           variant="ghost"
@@ -69,10 +38,6 @@ export function ProjectsViewMain(): React.JSX.Element {
         >
           <LuRefreshCw size={16} />
           <Text ml={2}>Refresh</Text>
-        </Button>
-        <Button size="sm" variant="ghost" colorPalette="gray" onClick={openProjectsFolder}>
-          <LuFolderOpen size={16} />
-          <Text ml={2}>Show Folder</Text>
         </Button>
       </HStack>
 
@@ -104,11 +69,9 @@ export function ProjectsViewMain(): React.JSX.Element {
           <VStack align="stretch" gap={3}>
             {projects.map((project) => (
               <ProjectCard
-                key={project.sdkProject?.id || project.path}
+                key={project.sdkProject.id}
                 project={project}
-                isActive={currentProject === project.path}
-                isLoading={openingProject === project.path}
-                onOpen={handleOpenProject}
+                isActive={currentProject?.path === project.path}
               />
             ))}
           </VStack>
@@ -119,23 +82,13 @@ export function ProjectsViewMain(): React.JSX.Element {
             <LuFolderTree size={48} color="#404040" />
             <VStack gap={2}>
               <Text color="app.light" fontSize="lg" fontWeight="semibold">
-                No Projects Yet
+                No Projects Found
               </Text>
               <Text color="app.text" fontSize="sm" textAlign="center" maxW="400px">
-                Start by opening a folder with your documents, code, or any files you&apos;d like to
-                chat about with AI.
+                No projects are currently registered with OpenCode SDK. Start by opening a project
+                through the OpenCode server.
               </Text>
             </VStack>
-            <Button
-              size="md"
-              variant="solid"
-              colorPalette="green"
-              onClick={selectAndChangeProject}
-              disabled={isChangingProject}
-            >
-              <LuPlus size={16} />
-              <Text ml={2}>{isChangingProject ? 'Opening...' : 'Open Your First Project'}</Text>
-            </Button>
           </VStack>
         </Center>
       )}

@@ -28,7 +28,7 @@ export class Toji {
     // Initialize modules
     this.server = new ServerManager(opencodeService, config)
     this.sessions = new SessionManager()
-    this.project = new ProjectManager(() => this.client, this.server, config, this)
+    this.project = new ProjectManager(() => this.client)
     log('Toji initialized successfully')
   }
 
@@ -88,8 +88,12 @@ export class Toji {
 
     // Verify project appears in SDK project list (projects auto-register when server starts)
     try {
+      interface ProjectInfo {
+        worktree: string
+        // add other properties if needed
+      }
       const projects = await this.client.project.list()
-      const projectExists = projects.data?.some((p: any) => p.worktree === directory)
+      const projectExists = projects.data?.some((p: ProjectInfo) => p.worktree === directory)
       if (projectExists) {
         logClient('Project confirmed in OpenCode SDK: %s', directory)
       } else {

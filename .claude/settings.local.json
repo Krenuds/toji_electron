@@ -3,7 +3,11 @@
     "allow": [
       "Read(//c/Users/donth/.local/share/**)",
       "Read(//c/Users/donth/**)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm run format:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []
