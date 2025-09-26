@@ -35,7 +35,7 @@ export class ProjectManager {
     const maxAttempts = 50 // 5 seconds total
 
     while (!client && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       client = this.getClient()
       attempts++
     }
@@ -70,7 +70,7 @@ export class ProjectManager {
     const maxAttempts = 50 // 5 seconds total
 
     while (!client && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       client = this.getClient()
       attempts++
     }
