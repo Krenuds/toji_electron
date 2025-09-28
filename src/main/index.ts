@@ -111,26 +111,31 @@ app.whenReady().then(async () => {
     await openCodeService.ensureBinary()
     logStartup('OpenCode binary installation checked')
 
-    // Start the server (config can be passed if needed)
+    // Start the server (will connect to existing or create new)
     logStartup('Starting OpenCode server')
-
     await toji.server.start()
-    logStartup('OpenCode server started successfully')
+    logStartup('OpenCode server ready')
 
-    // Connect the client to the server
+    // Always connect the client
+    logStartup('Connecting OpenCode client')
     await toji.connectClient()
     logStartup('OpenCode client connected successfully')
 
-    // Initialize default working directory
-    const workingDirectory = config.getOpencodeWorkingDirectory()
-    logStartup('Default working directory: %s', workingDirectory)
+    // Load last project or use default
+    const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
+    logStartup('Loading project: %s', lastProject)
 
-    // Change to working directory for OpenCode context
-    process.chdir(workingDirectory)
-    logStartup('Changed working directory to: %s', workingDirectory)
+    // Change to project directory and load session
+    await toji.changeWorkingDirectory(lastProject)
+    logStartup('Changed to project directory: %s', lastProject)
+
+    // Load the most recent session for this project
+    await toji.loadMostRecentSession()
+    logStartup('Loaded most recent session')
   } catch (error) {
-    logStartup('ERROR: Failed to start OpenCode: %o', error)
-    // Server will start on first use if it fails here
+    logStartup('ERROR: Failed during OpenCode initialization: %o', error)
+    // Re-throw to prevent running with undefined state
+    throw error
   }
 
   // Register modular IPC handlers

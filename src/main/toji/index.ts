@@ -18,6 +18,7 @@ const logChat = createFileDebugLogger('toji:chat')
 export class Toji {
   private client?: OpencodeClient
   private currentProjectDirectory?: string
+  private _config?: ConfigProvider
   // private globalConfig: OpencodeConfig = defaultOpencodeConfig // Reserved for future use
 
   // Public modules
@@ -25,9 +26,9 @@ export class Toji {
   public readonly server: ServerManager
   public readonly sessions: SessionManager
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  constructor(opencodeService: OpenCodeService, _config?: ConfigProvider) {
+  constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     log('Initializing Toji with OpenCode service')
+    this._config = config
     // Initialize modules
     this.server = new ServerManager(opencodeService)
     this.sessions = new SessionManager()
@@ -77,6 +78,14 @@ export class Toji {
     process.chdir(directory)
     this.currentProjectDirectory = directory
     logClient('Working directory changed to: %s', directory)
+
+    // Save as current project in config
+    const config = this._config
+    if (config) {
+      config.setCurrentProjectPath(directory)
+      config.addRecentProject(directory)
+      logClient('Saved current project to config')
+    }
 
     // Emit project opened event to notify frontend
     const mainWindow = BrowserWindow.getAllWindows()[0]
@@ -347,7 +356,69 @@ export class Toji {
 
     // Set as active session
     this.sessions.setActiveSession(sessionId, this.currentProjectDirectory)
+
+    // Save to config
+    if (this._config) {
+      this._config.setProjectActiveSession(this.currentProjectDirectory, sessionId)
+    }
+
     logChat('Switched to session: %s for project: %s', sessionId, this.currentProjectDirectory)
+  }
+
+  /**
+   * Load the most recent session for the current project
+   */
+  async loadMostRecentSession(): Promise<void> {
+    if (!this.client || !this.currentProjectDirectory) {
+      throw new Error('Cannot load session: client not connected or no project directory')
+    }
+
+    try {
+      // First check if we have a saved active session for this project
+      const savedSessionId = this._config?.getProjectActiveSession(this.currentProjectDirectory)
+
+      if (savedSessionId) {
+        log('Found saved active session: %s', savedSessionId)
+        // Verify it still exists
+        try {
+          const response = await this.client.session.get({
+            path: { id: savedSessionId },
+            query: { directory: this.currentProjectDirectory }
+          })
+
+          if (response) {
+            this.sessions.setActiveSession(savedSessionId, this.currentProjectDirectory)
+            log('Loaded saved session: %s', savedSessionId)
+            return
+          }
+        } catch {
+          // Saved session no longer exists, will load most recent
+          log('Saved session no longer exists: %s', savedSessionId)
+        }
+      }
+
+      // No saved session or it doesn't exist, list all sessions
+      const sessions = await this.listSessions()
+
+      if (sessions.length > 0) {
+        // Use the first session (they're already ordered by the backend)
+        // In the future we could sort by lastActive if we add that to the return type
+        const mostRecent = sessions[0]
+        this.sessions.setActiveSession(mostRecent.id, this.currentProjectDirectory)
+
+        // Save to config
+        if (this._config) {
+          this._config.setProjectActiveSession(this.currentProjectDirectory, mostRecent.id)
+        }
+
+        log('Loaded most recent session: %s', mostRecent.id)
+      } else {
+        log('No sessions found for project')
+      }
+    } catch (error) {
+      log('ERROR: Failed to load most recent session: %o', error)
+      throw error
+    }
   }
 }
 

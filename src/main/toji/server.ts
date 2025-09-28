@@ -23,15 +23,45 @@ export class ServerManager {
 
   /**
    * Start the OpenCode server (single instance)
+   * First tries to connect to existing server, then creates new if needed
    */
   async start(config?: Config): Promise<number> {
     log('Starting OpenCode server')
 
-    // Stop any existing server first
+    // Stop any existing managed instance first
     if (this.instance) {
-      log('Existing server found, stopping first')
+      log('Existing managed instance found, stopping first')
       await this.stop()
     }
+
+    // Check if server is already running (external process)
+    const serverUrl = `http://127.0.0.1:${this.DEFAULT_PORT}`
+    if (await this.canConnect(serverUrl)) {
+      log('Found existing OpenCode server at %s, connecting to it', serverUrl)
+
+      // Create a lightweight instance to track the external server
+      this.instance = {
+        server: {
+          url: serverUrl,
+          close: () => {
+            log('External server - close() called but not stopping')
+          }
+        },
+        port: this.DEFAULT_PORT,
+        startTime: new Date(),
+        isHealthy: true,
+        healthCheckInterval: undefined
+      }
+
+      // Start health monitoring
+      this.startHealthMonitoring()
+      log('Connected to existing server on port %d', this.DEFAULT_PORT)
+
+      return this.DEFAULT_PORT
+    }
+
+    // No existing server, create new one
+    log('No existing server found, creating new one')
 
     // Ensure binary is available
     const binaryInfo = this.opencodeService.getBinaryInfo()
@@ -183,6 +213,24 @@ export class ServerManager {
       if (this.instance) {
         this.instance.healthCheckInterval = undefined
       }
+    }
+  }
+
+  /**
+   * Check if we can connect to a server at the given URL
+   */
+  private async canConnect(url: string): Promise<boolean> {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(2000) // 2 second timeout
+      })
+      // Any response (even 404) means server is alive
+      log('Server responded with status %d', response.status)
+      return true
+    } catch (error) {
+      log('Cannot connect to %s: %o', url, error)
+      return false
     }
   }
 

@@ -26,6 +26,7 @@ interface AppConfig {
         lastOpened?: string
       }
     >
+    activeSessions: Record<string, string> // Active session ID per project path
     current?: string // Currently active project
   }
   discord?: {
@@ -48,7 +49,8 @@ export class ConfigProvider {
           recent: [],
           configs: {},
           settings: {},
-          states: {}
+          states: {},
+          activeSessions: {}
         }
       },
       // Enable encryption for sensitive data like Discord token
@@ -256,5 +258,34 @@ export class ConfigProvider {
     return {
       model: 'opencode/grok-code'
     }
+  }
+
+  /**
+   * Get active session ID for a project
+   */
+  getProjectActiveSession(projectPath: string): string | undefined {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const activeSessions = this.store.get('projects.activeSessions', {})
+    return activeSessions[normalizedPath]
+  }
+
+  /**
+   * Set active session ID for a project
+   */
+  setProjectActiveSession(projectPath: string, sessionId: string): void {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const activeSessions = this.store.get('projects.activeSessions', {})
+    activeSessions[normalizedPath] = sessionId
+    this.store.set('projects.activeSessions', activeSessions)
+  }
+
+  /**
+   * Clear active session for a project
+   */
+  clearProjectActiveSession(projectPath: string): void {
+    const normalizedPath = this.normalizeProjectPath(projectPath)
+    const activeSessions = this.store.get('projects.activeSessions', {})
+    delete activeSessions[normalizedPath]
+    this.store.set('projects.activeSessions', activeSessions)
   }
 }
