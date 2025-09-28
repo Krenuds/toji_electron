@@ -55,30 +55,45 @@ export function registerTojiHandlers(toji: Toji): void {
   })
 
   ipcMain.handle('toji:get-current-session-id', () => {
-    return toji.getCurrentSessionId()
+    // Return undefined if no project/session active
+    return toji.getCurrentSessionId() || undefined
   })
 
   ipcMain.handle('toji:get-current-session', async () => {
     try {
+      // Return null if no client connected
+      if (!toji.isReady()) {
+        return null
+      }
       return await toji.getCurrentSession()
     } catch (error) {
       console.error('Get current session error:', error)
-      throw error
+      // Return null for graceful degradation
+      return null
     }
   })
 
   // Session management handlers
   ipcMain.handle('toji:list-sessions', async () => {
     try {
+      // Return empty array if no client is connected
+      if (!toji.isReady()) {
+        return []
+      }
       return await toji.listSessions()
     } catch (error) {
       console.error('List sessions error:', error)
-      throw error
+      // Return empty array instead of throwing for graceful degradation
+      return []
     }
   })
 
   ipcMain.handle('toji:create-session', async (_, title?: string) => {
     try {
+      // Check if client is connected first
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
       return await toji.createSession(title)
     } catch (error) {
       console.error('Create session error:', error)
@@ -88,6 +103,10 @@ export function registerTojiHandlers(toji: Toji): void {
 
   ipcMain.handle('toji:delete-session', async (_, sessionId: string) => {
     try {
+      // Check if client is connected first
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
       return await toji.deleteSession(sessionId)
     } catch (error) {
       console.error('Delete session error:', error)
@@ -97,6 +116,10 @@ export function registerTojiHandlers(toji: Toji): void {
 
   ipcMain.handle('toji:switch-session', async (_, sessionId: string) => {
     try {
+      // Check if client is connected first
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
       return await toji.switchSession(sessionId)
     } catch (error) {
       console.error('Switch session error:', error)
@@ -107,9 +130,10 @@ export function registerTojiHandlers(toji: Toji): void {
   // Project management handlers
   ipcMain.handle(
     'toji:switchProject',
-    async (_, projectPath: string, config?: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    async (_, projectPath: string, _config?: Record<string, unknown>) => {
       try {
-        return await toji.switchToProject(projectPath, config)
+        return await toji.switchToProject(projectPath)
       } catch (error) {
         console.error('Switch project error:', error)
         throw error
@@ -119,22 +143,35 @@ export function registerTojiHandlers(toji: Toji): void {
 
   ipcMain.handle('toji:getProjects', async () => {
     try {
+      // Return empty array if no client is connected
+      if (!toji.isReady()) {
+        return []
+      }
       return await toji.getAvailableProjects()
     } catch (error) {
       console.error('Get projects error:', error)
-      throw error
+      // Return empty array for graceful degradation
+      return []
     }
   })
 
   ipcMain.handle('toji:getCurrentProject', async () => {
     try {
+      // Return null values if no project is active
+      const projectDir = toji.getCurrentProjectDirectory()
+      const sessionId = toji.getCurrentSessionId()
+
       return {
-        path: toji.getCurrentProjectDirectory(),
-        sessionId: toji.getCurrentSessionId()
+        path: projectDir || null,
+        sessionId: sessionId || null
       }
     } catch (error) {
       console.error('Get current project error:', error)
-      throw error
+      // Return null values for graceful degradation
+      return {
+        path: null,
+        sessionId: null
+      }
     }
   })
 }

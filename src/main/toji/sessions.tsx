@@ -34,15 +34,19 @@ export class SessionManager {
         query: projectPath ? { directory: projectPath } : undefined
       })
 
-      if (response.error || !response.data) {
-        throw new Error(`Failed to list sessions: ${response.error || 'No response data'}`)
+      // Check if we got a valid response
+      if (!response) {
+        throw new Error('Failed to list sessions: No response data')
       }
 
       // Get existing cached sessions to preserve lastActive times
       const existingCache = this.sessionCache.get(projectPath || '') || []
       const existingSessionMap = new Map(existingCache.map((s) => [s.id, s]))
 
-      const sessions: SessionInfo[] = response.data.map((session) => {
+      // With responseStyle: 'data', response is the data directly
+      // TypeScript needs explicit type assertion due to SDK type definitions
+      const sessionsData = (response as unknown as Array<{ id: string; title?: string }>) || []
+      const sessions: SessionInfo[] = sessionsData.map((session) => {
         const existing = existingSessionMap.get(session.id)
         return {
           id: session.id,
@@ -82,13 +86,17 @@ export class SessionManager {
         query: projectPath ? { directory: projectPath } : undefined
       })
 
-      if (response.error || !response.data) {
-        throw new Error(`Failed to create session: ${response.error || 'No response data'}`)
+      // Check if we got a valid response
+      if (!response) {
+        throw new Error('Failed to create session: No response data')
       }
 
+      // With responseStyle: 'data', response is the Session directly
+      // TypeScript needs explicit type assertion due to SDK type definitions
+      const sessionData = response as unknown as { id: string; title?: string }
       const sessionInfo: SessionInfo = {
-        id: response.data.id,
-        title: response.data.title,
+        id: sessionData.id,
+        title: sessionData.title || title || `New Session ${new Date().toLocaleTimeString()}`,
         projectPath: projectPath,
         lastActive: new Date() // Mark as just created/active
       }
@@ -118,14 +126,11 @@ export class SessionManager {
     log('Deleting session: %s', sessionId)
 
     try {
-      const response = await client.session.delete({
+      await client.session.delete({
         path: { id: sessionId },
         query: projectPath ? { directory: projectPath } : undefined
       })
-
-      if (response.error) {
-        throw new Error(`Failed to delete session: ${response.error}`)
-      }
+      // With responseStyle: 'data', delete typically returns nothing on success
 
       // Update cache
       if (projectPath) {
@@ -177,18 +182,23 @@ export class SessionManager {
         query: projectPath ? { directory: projectPath } : undefined
       })
 
-      if (response.error || !response.data) {
-        throw new Error(`Failed to get session messages: ${response.error || 'No response data'}`)
+      // Check if we got a valid response
+      if (!response) {
+        throw new Error('Failed to get session messages: No response data')
       }
+
+      // With responseStyle: 'data', response is the data directly
+      // TypeScript needs explicit type assertion due to SDK type definitions
+      const messages = (response as unknown as Array<{ info: Message; parts: Part[] }>) || []
 
       // Cache the results
       this.messageCache.set(sessionId, {
-        messages: response.data,
+        messages: messages,
         timestamp: Date.now()
       })
 
-      log('Retrieved %d messages for session: %s', response.data.length, sessionId)
-      return response.data
+      log('Retrieved %d messages for session: %s', messages.length, sessionId)
+      return messages
     } catch (error) {
       log('ERROR: Failed to get session messages: %o', error)
       throw error

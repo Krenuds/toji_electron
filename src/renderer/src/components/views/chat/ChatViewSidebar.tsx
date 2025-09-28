@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Spinner } from '@chakra-ui/react'
-import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity } from 'react-icons/lu'
+import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity, LuPlus } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
@@ -9,20 +9,24 @@ import { SessionsModal } from '../../shared'
 import { ProjectSelector } from './ProjectSelector'
 import { useServerStatus } from '../../../hooks/useServerStatus'
 import { useSession } from '../../../hooks/useSession'
+import { useProjects } from '../../../hooks/useProjects'
 export function ChatViewSidebar(): React.JSX.Element {
   const { status: serverStatus } = useServerStatus()
+  const { currentProject } = useProjects()
   const {
     sessions,
     isLoading: isLoadingSessions,
     getCurrentSessionId,
     fetchSessions,
     deleteSession,
+    createSession,
     switchSession
   } = useSession()
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>()
+  const [isCreatingSession, setIsCreatingSession] = useState(false)
 
   // Fetch current session ID when sessions change
   useEffect(() => {
@@ -103,6 +107,39 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Button
                 size="xs"
                 variant="ghost"
+                colorPalette="green"
+                onClick={async () => {
+                  if (!currentProject) {
+                    console.warn('No project selected')
+                    return
+                  }
+                  setIsCreatingSession(true)
+                  try {
+                    const newSession = await createSession(
+                      `Session ${new Date().toLocaleTimeString()}`
+                    )
+                    if (newSession) {
+                      await fetchSessions()
+                      // Optionally switch to the new session
+                      if (newSession.id) {
+                        await switchSession(newSession.id)
+                        setCurrentSessionId(newSession.id)
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Failed to create session:', error)
+                  } finally {
+                    setIsCreatingSession(false)
+                  }
+                }}
+                disabled={!currentProject || isCreatingSession}
+                title={currentProject ? 'New session' : 'Select a project first'}
+              >
+                {isCreatingSession ? <Spinner size="xs" /> : <LuPlus size={12} />}
+              </Button>
+              <Button
+                size="xs"
+                variant="ghost"
                 colorPalette="gray"
                 onClick={() => setIsSessionsModalOpen(true)}
                 title="View all sessions"
@@ -123,13 +160,17 @@ export function ChatViewSidebar(): React.JSX.Element {
           }
         >
           <VStack gap={2} align="stretch">
-            {isLoadingSessions ? (
+            {!currentProject ? (
+              <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
+                Select a project to view sessions
+              </Text>
+            ) : isLoadingSessions ? (
               <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
                 Loading sessions...
               </Text>
             ) : sessions.length === 0 ? (
               <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
-                No active sessions
+                No sessions yet. Click + to create one.
               </Text>
             ) : (
               sessions.map((session) => (
@@ -168,11 +209,11 @@ export function ChatViewSidebar(): React.JSX.Element {
                     position="absolute"
                     bottom="2px"
                     right="2px"
-                    color="app.text"
+                    color="app.dark"
                     cursor={deletingSessionId === session.id ? 'not-allowed' : 'pointer'}
                     opacity={deletingSessionId === session.id ? 0.3 : 0.5}
                     _hover={
-                      deletingSessionId === session.id ? {} : { opacity: 1, color: 'red.400' }
+                      deletingSessionId === session.id ? {} : { opacity: 1, color: 'red.500' }
                     }
                     onClick={(e) => {
                       e.stopPropagation()
@@ -182,7 +223,7 @@ export function ChatViewSidebar(): React.JSX.Element {
                     }}
                     aria-label="Delete session"
                   >
-                    <LuTrash2 size={10} />
+                    <LuTrash2 size={12} />
                   </Box>
                   {currentSessionId === session.id && (
                     <Box

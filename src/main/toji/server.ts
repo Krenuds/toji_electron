@@ -1,18 +1,14 @@
 import { createOpencodeServer } from '@opencode-ai/sdk'
 import type { ServerOptions, Config } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
-import type { ConfigProvider } from '../config/ConfigProvider'
 import type { ServerStatus } from './types'
 import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:server')
-const logHealth = createFileDebugLogger('toji:server:health')
-const logPort = createFileDebugLogger('toji:server:port')
 
 interface ServerInstance {
   server: { close: () => void; url: string }
   port: number
-  workingDir: string
   startTime: Date
   isHealthy: boolean
   lastHealthCheck?: Date
@@ -20,40 +16,21 @@ interface ServerInstance {
 }
 
 export class ServerManager {
-  private servers: Map<string, ServerInstance> = new Map() // workingDir -> ServerInstance
-  private basePort = 4096
+  private instance?: ServerInstance
+  private readonly DEFAULT_PORT = 4096
 
-  constructor(
-    private opencodeService: OpenCodeService,
-    private _config?: ConfigProvider
-  ) {}
+  constructor(private opencodeService: OpenCodeService) {}
 
   /**
-   * Find the next available port starting from basePort
+   * Start the OpenCode server (single instance)
    */
-  private async findAvailablePort(): Promise<number> {
-    let port = this.basePort
-    const usedPorts = [...this.servers.values()].map((s) => s.port)
+  async start(config?: Config): Promise<number> {
+    log('Starting OpenCode server')
 
-    while (usedPorts.includes(port)) {
-      port++
-    }
-
-    return port
-  }
-
-  /**
-   * Start server for a specific project (doesn't stop others)
-   */
-  async start(workingDir?: string, config?: Config): Promise<number> {
-    // For backward compatibility, use configured working directory if not provided
-    const dir = workingDir || this._config?.getOpencodeWorkingDirectory() || process.cwd()
-    log('Starting server for project: %s', dir)
-
-    // Stop any existing server for this project
-    if (this.servers.has(dir)) {
-      log('Existing server found for %s, stopping first', dir)
-      await this.stop(dir)
+    // Stop any existing server first
+    if (this.instance) {
+      log('Existing server found, stopping first')
+      await this.stop()
     }
 
     // Ensure binary is available
@@ -65,16 +42,10 @@ export class ServerManager {
       throw error
     }
 
-    console.log('Starting OpenCode server for project:', dir)
-
-    // Find available port
-    const port = await this.findAvailablePort()
-    logPort('Found available port: %d', port)
-
     const serverOptions: ServerOptions = {
       hostname: '127.0.0.1',
-      port,
-      timeout: 5000,
+      port: this.DEFAULT_PORT,
+      timeout: 10000, // Increased timeout
       config
     }
     log('Server options: %o', serverOptions)
@@ -84,22 +55,19 @@ export class ServerManager {
       const server = await createOpencodeServer(serverOptions)
       log('OpenCode server created successfully, URL: %s', server.url)
 
-      const instance: ServerInstance = {
+      this.instance = {
         server,
-        port,
-        workingDir: dir,
+        port: this.DEFAULT_PORT,
         startTime: new Date(),
-        isHealthy: true // Assume healthy on start
+        isHealthy: true,
+        healthCheckInterval: undefined
       }
 
-      this.servers.set(dir, instance)
-      log('Server instance stored for %s', dir)
+      // Start health monitoring
+      this.startHealthMonitoring()
+      log('Server started successfully on port %d', this.DEFAULT_PORT)
 
-      // Start health monitoring for this instance
-      this.startHealthMonitoring(instance)
-      log('Health monitoring started for %s', dir)
-
-      return port
+      return this.DEFAULT_PORT
     } catch (error) {
       log('ERROR: Failed to create OpenCode server: %o', error)
       throw error
@@ -107,67 +75,58 @@ export class ServerManager {
   }
 
   /**
-   * Stop server for specific project, or all servers if no directory specified (backward compatibility)
+   * Stop the OpenCode server
    */
-  async stop(workingDir?: string): Promise<void> {
-    if (!workingDir) {
-      log('Stopping all servers (legacy behavior)')
-      // Legacy behavior - stop all servers
-      return this.stopAll()
+  async stop(): Promise<void> {
+    if (!this.instance) {
+      log('No server to stop')
+      return
     }
 
-    log('Stopping server for project: %s', workingDir)
-    const instance = this.servers.get(workingDir)
-    if (!instance) {
-      log('No server found for %s, already stopped', workingDir)
-      return // Already stopped or never started
-    }
+    log('Stopping OpenCode server')
 
     // Stop health monitoring
-    log('Stopping health monitoring for %s', workingDir)
-    this.stopHealthMonitoring(instance)
+    this.stopHealthMonitoring()
 
     // Close the server
-    log('Closing server for %s', workingDir)
-    instance.server.close()
-
-    // Remove from tracking
-    this.servers.delete(workingDir)
-    log('Server for %s removed from tracking', workingDir)
-  }
-
-  /**
-   * Stop all servers
-   */
-  async stopAll(): Promise<void> {
-    const workingDirs = [...this.servers.keys()]
-    for (const workingDir of workingDirs) {
-      await this.stop(workingDir)
+    try {
+      this.instance.server.close()
+      log('Server closed successfully')
+    } catch (error) {
+      log('ERROR: Failed to close server: %o', error)
     }
+
+    this.instance = undefined
   }
 
   /**
-   * Get all running servers
+   * Restart the server with new config
    */
-  getRunningServers(): Map<string, ServerInstance> {
-    return this.servers
+  async restart(config?: Config): Promise<number> {
+    log('Restarting OpenCode server')
+    await this.stop()
+    return this.start(config)
   }
 
   /**
-   * Get server instance for specific project
+   * Check if server is running
    */
-  getServer(workingDir: string): ServerInstance | undefined {
-    return this.servers.get(workingDir)
+  isRunning(): boolean {
+    return Boolean(this.instance)
   }
 
   /**
-   * Get status for specific project (legacy method - keeping for compatibility)
+   * Get server URL
+   */
+  getUrl(): string | undefined {
+    return this.instance?.server.url
+  }
+
+  /**
+   * Get server status
    */
   async getStatus(): Promise<ServerStatus> {
-    // For legacy compatibility, return status of any running server
-    const firstServer = [...this.servers.values()][0]
-
-    if (!firstServer) {
+    if (!this.instance) {
       return {
         isRunning: false,
         port: undefined,
@@ -181,83 +140,63 @@ export class ServerManager {
 
     return {
       isRunning: true,
-      port: firstServer.port,
+      port: this.instance.port,
       pid: undefined, // TODO: Get actual PID if needed
-      startTime: firstServer.startTime,
-      uptime: Date.now() - firstServer.startTime.getTime(),
-      isHealthy: firstServer.isHealthy,
-      lastHealthCheck: firstServer.lastHealthCheck
+      startTime: this.instance.startTime,
+      uptime: Date.now() - this.instance.startTime.getTime(),
+      isHealthy: this.instance.isHealthy,
+      lastHealthCheck: this.instance.lastHealthCheck
     }
   }
 
-  /**
-   * Check if any server is running (legacy method)
-   */
-  isRunning(): boolean {
-    return this.servers.size > 0
-  }
+  private startHealthMonitoring(): void {
+    if (!this.instance) return
 
-  /**
-   * Get URL for first running server (legacy method)
-   */
-  getUrl(): string | undefined {
-    const firstServer = [...this.servers.values()][0]
-    return firstServer ? firstServer.server.url : undefined
-  }
+    // Clear any existing interval
+    this.stopHealthMonitoring()
 
-  /**
-   * Get URL for a specific project's server
-   */
-  getUrlForProject(workingDir: string): string | undefined {
-    const instance = this.servers.get(workingDir)
-    return instance ? instance.server.url : undefined
-  }
+    // Check health every 30 seconds
+    this.instance.healthCheckInterval = setInterval(async () => {
+      if (!this.instance) return
 
-  private startHealthMonitoring(instance: ServerInstance): void {
-    // Clear any existing interval for this instance
-    this.stopHealthMonitoring(instance)
-    logHealth('Starting health monitoring for %s', instance.workingDir)
+      const wasHealthy = this.instance.isHealthy
+      this.instance.isHealthy = await this.checkHealth()
+      this.instance.lastHealthCheck = new Date()
 
-    // Single function to perform health check
-    const performHealthCheck = async (): Promise<void> => {
-      const wasHealthy = instance.isHealthy
-      instance.isHealthy = await this.checkHealth(instance)
-      instance.lastHealthCheck = new Date()
-
-      if (wasHealthy !== instance.isHealthy) {
-        logHealth(
-          'Health status changed for %s: %s -> %s',
-          instance.workingDir,
-          wasHealthy,
-          instance.isHealthy
-        )
+      if (wasHealthy !== this.instance.isHealthy) {
+        log('Health status changed: %s -> %s', wasHealthy, this.instance.isHealthy)
       }
-    }
+    }, 30000)
 
     // Check immediately
-    logHealth('Performing initial health check for %s', instance.workingDir)
-    performHealthCheck()
-
-    // Then check every 10 seconds
-    instance.healthCheckInterval = setInterval(performHealthCheck, 10000)
-    logHealth('Health check interval set for %s (every 10s)', instance.workingDir)
+    this.checkHealth().then((isHealthy) => {
+      if (this.instance) {
+        this.instance.isHealthy = isHealthy
+        this.instance.lastHealthCheck = new Date()
+      }
+    })
   }
 
-  private stopHealthMonitoring(instance: ServerInstance): void {
-    if (instance.healthCheckInterval) {
-      clearInterval(instance.healthCheckInterval)
-      instance.healthCheckInterval = undefined
+  private stopHealthMonitoring(): void {
+    if (this.instance?.healthCheckInterval) {
+      clearInterval(this.instance.healthCheckInterval)
+      if (this.instance) {
+        this.instance.healthCheckInterval = undefined
+      }
     }
   }
 
-  private async checkHealth(instance: ServerInstance): Promise<boolean> {
+  private async checkHealth(): Promise<boolean> {
+    if (!this.instance) return false
+
     try {
-      // Just ping the server - any response means it's alive
-      // Even a 404 means the server is running (connection refused would throw)
-      await fetch(instance.server.url)
+      // Simple health check - can the server respond?
+      await fetch(this.instance.server.url)
+      // Any response (even 404) means server is alive
       return true
-    } catch {
-      // Server not responding (connection refused, timeout, etc)
+    } catch (error) {
+      // Server not responding
+      log('Health check failed: %o', error)
       return false
     }
   }

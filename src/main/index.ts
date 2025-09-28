@@ -103,36 +103,34 @@ app.whenReady().then(async () => {
   discordService = new DiscordService(toji, config)
   logStartup('Discord service initialized')
 
-  // Auto-start OpenCode if enabled
-  const autoStartEnabled = config.getOpencodeAutoStart()
-  logStartup('Auto-start enabled: %s', autoStartEnabled)
+  // Always try to start OpenCode server (simplified approach)
+  try {
+    logStartup('Starting OpenCode server initialization')
 
-  if (autoStartEnabled) {
-    try {
-      logStartup('Starting auto-start sequence')
-      // First ensure binary is installed
-      await openCodeService.ensureBinary()
-      logStartup('Binary ensured')
+    // First ensure binary is installed
+    await openCodeService.ensureBinary()
+    logStartup('OpenCode binary installation checked')
 
-      // Get the last used project directory
-      const workingDirectory = config.getOpencodeWorkingDirectory()
-      logStartup('Auto-starting OpenCode in: %s', workingDirectory)
+    // Start the server (config can be passed if needed)
+    logStartup('Starting OpenCode server')
 
-      // Start OpenCode server
-      await toji.server.start()
-      logStartup('Server started')
+    await toji.server.start()
+    logStartup('OpenCode server started successfully')
 
-      // Connect client to project (this will restore sessions and emit events)
-      await toji.connectClientToProject(workingDirectory)
-      logStartup('Client connected to project: %s', workingDirectory)
+    // Connect the client to the server
+    await toji.connectClient()
+    logStartup('OpenCode client connected successfully')
 
-      // Track this project in recent list
-      config.addRecentProject(workingDirectory)
-      logStartup('OpenCode auto-started successfully')
-    } catch (error) {
-      logStartup('ERROR: Failed to auto-start OpenCode: %o', error)
-      // Don't crash the app, just log the error
-    }
+    // Initialize default working directory
+    const workingDirectory = config.getOpencodeWorkingDirectory()
+    logStartup('Default working directory: %s', workingDirectory)
+
+    // Change to working directory for OpenCode context
+    process.chdir(workingDirectory)
+    logStartup('Changed working directory to: %s', workingDirectory)
+  } catch (error) {
+    logStartup('ERROR: Failed to start OpenCode: %o', error)
+    // Server will start on first use if it fails here
   }
 
   // Register modular IPC handlers

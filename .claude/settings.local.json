@@ -7,7 +7,19 @@
       "Bash(npm run format:*)",
       "Bash(npm run lint)",
       "Bash(npm run typecheck:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "WebFetch(domain:opencode.ai)",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: implement simple project-session management in chat\n\n- Add project switching with CWD management and multi-server support\n- Create ProjectSelector component with dropdown and \"Add Project\" button\n- Implement DirectoryPicker modal for browsing/entering project paths\n- Remove redundant projects view, consolidate into chat module\n- Add default OpenCode config with model settings\n- Support per-project config overrides\n- Keep all project servers running for fast switching\n- Let OpenCode SDK handle project discovery automatically\n\nThe implementation keeps business logic in main process, uses proper\nChakra UI v3 patterns, and maintains clean separation of concerns.\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(dir:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

@@ -58,7 +58,6 @@ export const ProjectSelector: React.FC = () => {
               _hover={{ borderColor: 'app.accent' }}
               _focus={{ borderColor: 'app.accent', boxShadow: 'none' }}
             >
-              <option value="/">Global (/)</option>
               {projects.map((project) => (
                 <option key={project.worktree} value={project.worktree}>
                   {project.worktree.split(/[/\\]/).pop() || project.worktree}

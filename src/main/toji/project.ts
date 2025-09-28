@@ -25,8 +25,11 @@ export class ProjectManager {
 
     try {
       const response = await client.project.list()
-      log('OpenCode SDK returned %d projects', (response.data || []).length)
-      return (response.data as Project[]) || []
+      // With responseStyle: 'data', response is the data directly
+      // TypeScript needs explicit type assertion due to SDK type definitions
+      const projects = (response as unknown as Project[]) || []
+      log('OpenCode SDK returned %d projects', projects.length)
+      return projects
     } catch (error) {
       log('Failed to list projects from SDK: %o', error)
       return []
@@ -45,7 +48,9 @@ export class ProjectManager {
 
     try {
       const response = await client.project.current()
-      return (response.data as Project) || null
+      // With responseStyle: 'data', response is the data directly
+      // TypeScript needs explicit type assertion due to SDK type definitions
+      return (response as unknown as Project) || null
     } catch {
       return null
     }
