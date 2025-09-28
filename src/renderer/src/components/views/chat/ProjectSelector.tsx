@@ -28,13 +28,29 @@ export const ProjectSelector: React.FC = () => {
 
   return (
     <>
-      <VStack w="full" gap={2} p={3}>
+      <VStack
+        w="full"
+        gap={2}
+        p={3}
+        bg="app.dark"
+        borderRadius="md"
+        border="1px solid"
+        borderColor="app.border"
+      >
         <HStack w="full" gap={2}>
-          <Text fontSize="sm" color="gray.500" minW="fit-content">
+          <Text fontSize="xs" color="app.text" minW="fit-content" fontWeight="medium">
             Project:
           </Text>
-          <NativeSelectRoot size="sm" disabled={isLoading}>
-            <NativeSelectField value={currentProject?.path || '/'} onChange={handleProjectChange}>
+          <NativeSelectRoot size="sm" disabled={isLoading} flex={1}>
+            <NativeSelectField
+              value={currentProject?.path || '/'}
+              onChange={handleProjectChange}
+              bg="app.medium"
+              borderColor="app.border"
+              color="app.light"
+              _hover={{ borderColor: 'app.accent' }}
+              _focus={{ borderColor: 'app.accent', boxShadow: 'none' }}
+            >
               <option value="/">Global (/)</option>
               {projects.map((project) => (
                 <option key={project.worktree} value={project.worktree}>
@@ -49,8 +65,8 @@ export const ProjectSelector: React.FC = () => {
           size="sm"
           w="full"
           onClick={onOpen}
-          variant="outline"
-          colorScheme="blue"
+          variant="solid"
+          colorPalette="green"
           disabled={isLoading}
           borderRadius="md"
         >
@@ -58,7 +74,7 @@ export const ProjectSelector: React.FC = () => {
         </Button>
       </VStack>
 
-      <Separator />
+      <Separator borderColor="app.border" />
 
       <DirectoryPicker isOpen={open} onClose={onClose} onSelect={handleDirectorySelect} />
     </>

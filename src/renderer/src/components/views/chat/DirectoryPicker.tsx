@@ -79,7 +79,7 @@ export const DirectoryPicker: React.FC<DirectoryPickerProps> = ({ isOpen, onClos
             </Text>
 
             <VStack gap={3} align="stretch">
-              <Button onClick={handleBrowse} colorScheme="blue" size="lg" loading={isLoading}>
+              <Button onClick={handleBrowse} colorPalette="green" size="lg" loading={isLoading}>
                 Browse for Directory
               </Button>
 
