@@ -163,25 +163,27 @@ export function ChatViewSidebar(): React.JSX.Element {
                       ID: {session.id.slice(0, 12)}...
                     </Text>
                   </VStack>
-                  {/* Trash button positioned in bottom right */}
-                  <Button
+                  {/* Trash icon positioned in bottom right */}
+                  <Box
                     position="absolute"
-                    bottom={1}
-                    right={1}
-                    size="2xs"
-                    variant="ghost"
-                    colorPalette="red"
+                    bottom="2px"
+                    right="2px"
+                    color="app.text"
+                    cursor={deletingSessionId === session.id ? 'not-allowed' : 'pointer'}
+                    opacity={deletingSessionId === session.id ? 0.3 : 0.5}
+                    _hover={
+                      deletingSessionId === session.id ? {} : { opacity: 1, color: 'red.400' }
+                    }
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDeleteSession(session.id)
+                      if (deletingSessionId !== session.id) {
+                        handleDeleteSession(session.id)
+                      }
                     }}
-                    disabled={deletingSessionId === session.id}
                     aria-label="Delete session"
-                    opacity={0.7}
-                    _hover={{ opacity: 1 }}
                   >
                     <LuTrash2 size={10} />
-                  </Button>
+                  </Box>
                   {currentSessionId === session.id && (
                     <Box
                       position="absolute"
