@@ -72,6 +72,19 @@ export const tojiAPI = {
     ipcRenderer.invoke('toji:switchProject', projectPath, config),
   getProjects: (): Promise<Array<Record<string, unknown>>> =>
     ipcRenderer.invoke('toji:getProjects'),
-  getCurrentProject: (): Promise<{ path?: string; sessionId?: string }> =>
-    ipcRenderer.invoke('toji:getCurrentProject')
+  getCurrentProject: (): Promise<{
+    path?: string
+    sessionId?: string
+    workingDirectory?: string
+  }> => ipcRenderer.invoke('toji:getCurrentProject'),
+
+  // Multi-server management
+  getRunningServers: (): Promise<
+    Array<{
+      directory: string
+      port: number
+      url: string
+      isHealthy: boolean
+    }>
+  > => ipcRenderer.invoke('toji:getRunningServers')
 }

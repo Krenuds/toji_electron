@@ -4,118 +4,65 @@ import type { ServerOptions } from './opencode-server-patch'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ServerStatus } from './types'
 import { createFileDebugLogger } from '../utils/logger'
-import { normalizePath, pathsAreEqual } from '../utils/path'
+import { normalizePath } from '../utils/path'
 
 const log = createFileDebugLogger('toji:server')
 
 interface ServerInstance {
   server: { close: () => void; url: string }
   port: number
+  directory: string
   startTime: Date
   isHealthy: boolean
   lastHealthCheck?: Date
   healthCheckInterval?: NodeJS.Timeout
-  workingDirectory?: string // Track where the server is running from
 }
 
 export class ServerManager {
-  private instance?: ServerInstance
-  private readonly DEFAULT_PORT = 4096
+  private servers: Map<string, ServerInstance> = new Map()
+  private readonly BASE_PORT = 4096
+  private readonly MAX_SERVERS = 10
 
   constructor(private opencodeService: OpenCodeService) {}
 
   /**
-   * Get the directory where the server is currently running from
-   * Uses the /path endpoint to determine the server's actual working directory
+   * Get or create a server for the specified directory
+   * Reuses existing server if one is already running for that directory
    */
-  async getServerDirectory(): Promise<string | null> {
-    if (!this.instance) {
-      log('No server instance to query')
-      return null
-    }
+  async getOrCreateServer(directory: string, config?: Config): Promise<ServerInstance> {
+    const targetDirectory = normalizePath(directory || process.cwd())
+    log('Getting or creating server for directory: %s', targetDirectory)
 
-    try {
-      const response = await fetch(`${this.instance.server.url}/path`)
-      if (!response.ok) {
-        log('Failed to get server directory: HTTP %d', response.status)
-        return null
-      }
-
-      const data = await response.json()
-      const directory = data.directory || data.path || data.cwd
-
-      if (directory) {
-        const normalized = normalizePath(directory)
-        log('Server is running from directory: %s', normalized)
-        return normalized
-      }
-
-      log('No directory found in /path response: %o', data)
-      return null
-    } catch (error) {
-      log('Error getting server directory: %o', error)
-      return null
-    }
-  }
-
-  /**
-   * Start the OpenCode server with smart restart logic
-   * Only restarts if the existing server is in the wrong directory
-   */
-  async start(config?: Config, cwd?: string): Promise<number> {
-    const targetDirectory = normalizePath(cwd || process.cwd())
-    log('Starting OpenCode server for directory: %s', targetDirectory)
-
-    // Check if server is already running
-    const serverUrl = `http://127.0.0.1:${this.DEFAULT_PORT}`
-    if (await this.canConnect(serverUrl)) {
-      log('Found existing OpenCode server at %s', serverUrl)
-
-      // Check where the existing server is running from
-      const currentServerDir = await this.getServerDirectoryFromUrl(serverUrl)
-
-      if (currentServerDir) {
-        log('Existing server is running from: %s', currentServerDir)
-
-        // Check if it's the right directory
-        if (pathsAreEqual(currentServerDir, targetDirectory)) {
-          log('Server already running from correct directory, reusing it')
-
-          // Create a lightweight instance to track the external server
-          this.instance = {
-            server: {
-              url: serverUrl,
-              close: () => {
-                log('External server - close() called but not stopping')
-              }
-            },
-            port: this.DEFAULT_PORT,
-            startTime: new Date(),
-            isHealthy: true,
-            healthCheckInterval: undefined,
-            workingDirectory: currentServerDir
-          }
-
-          // Start health monitoring
-          this.startHealthMonitoring()
-          log('Connected to existing server on port %d', this.DEFAULT_PORT)
-          return this.DEFAULT_PORT
-        } else {
-          log('Server running from wrong directory (%s), need to restart', currentServerDir)
-          await this.killExistingServer()
-        }
+    // Check if we already have a server for this directory
+    const existing = this.servers.get(targetDirectory)
+    if (existing) {
+      log('Found existing server for %s on port %d', targetDirectory, existing.port)
+      // Check if the server is still healthy
+      const isHealthy = await this.checkServerHealth(existing)
+      if (isHealthy) {
+        return existing
       } else {
-        log('Could not determine server directory, killing and restarting')
-        await this.killExistingServer()
+        log('Existing server is unhealthy, will create new one')
+        this.stopServerForDirectory(targetDirectory)
       }
     }
 
-    // No existing server, create new one
-    log('No existing server found, creating new one')
+    // Check if we've reached max servers
+    if (this.servers.size >= this.MAX_SERVERS) {
+      log('Max servers reached (%d), stopping least recently used', this.MAX_SERVERS)
+      // Stop the oldest server (first in the map)
+      const oldestKey = this.servers.keys().next().value
+      if (oldestKey) {
+        await this.stopServerForDirectory(oldestKey)
+      }
+    }
+
+    // Find next available port
+    const port = await this.findNextAvailablePort()
+    log('Creating new server for %s on port %d', targetDirectory, port)
 
     // Ensure binary is available
     const binaryInfo = this.opencodeService.getBinaryInfo()
-    log('Binary info: %o', binaryInfo)
     if (!binaryInfo.installed) {
       const error = new Error('OpenCode binary not installed')
       log('ERROR: %s', error.message)
@@ -124,91 +71,197 @@ export class ServerManager {
 
     const serverOptions: ServerOptions = {
       hostname: '127.0.0.1',
-      port: this.DEFAULT_PORT,
-      timeout: 10000, // Increased timeout
+      port,
+      timeout: 10000,
       config,
-      cwd: targetDirectory // Use the normalized target directory
+      cwd: targetDirectory // Spawn FROM the target directory
     }
-    log('Server options: %o', serverOptions)
 
     try {
-      log('Creating OpenCode server from directory: %s', targetDirectory)
+      log('Spawning OpenCode server from directory: %s', targetDirectory)
       const server = await createOpencodeServerWithCwd(serverOptions)
-      log('OpenCode server created successfully, URL: %s', server.url)
+      log('Server created successfully at %s for directory %s', server.url, targetDirectory)
 
-      this.instance = {
+      const instance: ServerInstance = {
         server,
-        port: this.DEFAULT_PORT,
+        port,
+        directory: targetDirectory,
         startTime: new Date(),
         isHealthy: true,
-        healthCheckInterval: undefined,
-        workingDirectory: targetDirectory
+        healthCheckInterval: undefined
       }
 
-      // Start health monitoring
-      this.startHealthMonitoring()
-      log('Server started successfully on port %d', this.DEFAULT_PORT)
+      // Add to our map
+      this.servers.set(targetDirectory, instance)
 
-      return this.DEFAULT_PORT
+      // Start health monitoring
+      this.startHealthMonitoring(instance)
+
+      log('Server started successfully on port %d for %s', port, targetDirectory)
+      return instance
     } catch (error) {
-      log('ERROR: Failed to create OpenCode server: %o', error)
+      log('ERROR: Failed to create server for %s: %o', targetDirectory, error)
       throw error
     }
   }
 
   /**
-   * Stop the OpenCode server
+   * Get server for a specific directory if it exists
    */
-  async stop(): Promise<void> {
-    if (!this.instance) {
-      log('No server to stop')
+  getServerForDirectory(directory: string): ServerInstance | undefined {
+    const normalized = normalizePath(directory)
+    return this.servers.get(normalized)
+  }
+
+  /**
+   * Get all running servers
+   */
+  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
+    const servers: Array<{ directory: string; port: number; url: string; isHealthy: boolean }> = []
+    for (const [directory, instance] of this.servers) {
+      servers.push({
+        directory,
+        port: instance.port,
+        url: instance.server.url,
+        isHealthy: instance.isHealthy
+      })
+    }
+    return servers
+  }
+
+  /**
+   * Stop server for a specific directory
+   */
+  async stopServerForDirectory(directory: string): Promise<void> {
+    const normalized = normalizePath(directory)
+    const instance = this.servers.get(normalized)
+
+    if (!instance) {
+      log('No server to stop for directory: %s', normalized)
       return
     }
 
-    log('Stopping OpenCode server')
+    log('Stopping server for directory: %s (port %d)', normalized, instance.port)
 
     // Stop health monitoring
-    this.stopHealthMonitoring()
+    if (instance.healthCheckInterval) {
+      clearInterval(instance.healthCheckInterval)
+    }
 
     // Close the server
     try {
-      this.instance.server.close()
-      log('Server closed successfully')
+      instance.server.close()
+      log('Server closed successfully for %s', normalized)
     } catch (error) {
-      log('ERROR: Failed to close server: %o', error)
+      log('ERROR: Failed to close server for %s: %o', normalized, error)
     }
 
-    this.instance = undefined
+    // Remove from map
+    this.servers.delete(normalized)
   }
 
   /**
-   * Restart the server with new config and/or directory
+   * Stop all servers
    */
+  async stopAllServers(): Promise<void> {
+    log('Stopping all servers (%d total)', this.servers.size)
+    const directories = Array.from(this.servers.keys())
+    for (const directory of directories) {
+      await this.stopServerForDirectory(directory)
+    }
+
+    // After stopping all known servers, do a forceful cleanup of any orphaned OpenCode processes
+    await this.forceKillAllOpenCodeProcesses()
+  }
+
+  /**
+   * Force kill all OpenCode processes on the system
+   * This is a failsafe to ensure no processes are left running
+   */
+  private async forceKillAllOpenCodeProcesses(): Promise<void> {
+    log('Force killing any remaining OpenCode processes')
+
+    try {
+      const { exec } = await import('child_process')
+      const { promisify } = await import('util')
+      const execAsync = promisify(exec)
+
+      if (process.platform === 'win32') {
+        // On Windows, use taskkill to force kill all opencode.exe processes
+        try {
+          await execAsync('taskkill /F /IM opencode.exe')
+          log('Force killed all opencode.exe processes on Windows')
+        } catch {
+          // Error is expected if no processes are running
+          log('No opencode.exe processes found to kill (this is ok)')
+        }
+      } else {
+        // On Unix-like systems, use pkill
+        try {
+          await execAsync('pkill -f opencode')
+          log('Force killed all opencode processes on Unix')
+        } catch {
+          // Error is expected if no processes are running
+          log('No opencode processes found to kill (this is ok)')
+        }
+      }
+    } catch (error) {
+      log('Error during force kill (may be ok if no processes running): %o', error)
+    }
+  }
+
+  /**
+   * Get the primary server (for backward compatibility)
+   * Returns the server for the current working directory or the first server
+   */
+  getPrimaryServer(): ServerInstance | undefined {
+    // First try to get server for current directory
+    const cwd = process.cwd()
+    const cwdServer = this.getServerForDirectory(cwd)
+    if (cwdServer) {
+      return cwdServer
+    }
+
+    // Otherwise return the first server
+    const firstServer = this.servers.values().next().value
+    return firstServer
+  }
+
+  /**
+   * Legacy methods for backward compatibility
+   */
+  async start(config?: Config, cwd?: string): Promise<number> {
+    const instance = await this.getOrCreateServer(cwd || process.cwd(), config)
+    return instance.port
+  }
+
+  async stop(): Promise<void> {
+    // Stop the primary server
+    const primary = this.getPrimaryServer()
+    if (primary) {
+      await this.stopServerForDirectory(primary.directory)
+    }
+  }
+
   async restart(config?: Config, cwd?: string): Promise<number> {
-    log('Restarting OpenCode server')
-    await this.stop()
-    return this.start(config, cwd)
+    const targetDir = normalizePath(cwd || process.cwd())
+    await this.stopServerForDirectory(targetDir)
+    const instance = await this.getOrCreateServer(targetDir, config)
+    return instance.port
   }
 
-  /**
-   * Check if server is running
-   */
   isRunning(): boolean {
-    return Boolean(this.instance)
+    return this.servers.size > 0
   }
 
-  /**
-   * Get server URL
-   */
   getUrl(): string | undefined {
-    return this.instance?.server.url
+    const primary = this.getPrimaryServer()
+    return primary?.server.url
   }
 
-  /**
-   * Get server status
-   */
   async getStatus(): Promise<ServerStatus> {
-    if (!this.instance) {
+    const primary = this.getPrimaryServer()
+    if (!primary) {
       return {
         isRunning: false,
         port: undefined,
@@ -222,135 +275,111 @@ export class ServerManager {
 
     return {
       isRunning: true,
-      port: this.instance.port,
-      pid: undefined, // TODO: Get actual PID if needed
-      startTime: this.instance.startTime,
-      uptime: Date.now() - this.instance.startTime.getTime(),
-      isHealthy: this.instance.isHealthy,
-      lastHealthCheck: this.instance.lastHealthCheck
+      port: primary.port,
+      pid: undefined,
+      startTime: primary.startTime,
+      uptime: Date.now() - primary.startTime.getTime(),
+      isHealthy: primary.isHealthy,
+      lastHealthCheck: primary.lastHealthCheck
     }
   }
 
-  private startHealthMonitoring(): void {
-    if (!this.instance) return
+  /**
+   * Find the next available port
+   */
+  private async findNextAvailablePort(): Promise<number> {
+    const maxPort = this.BASE_PORT + this.MAX_SERVERS
 
-    // Clear any existing interval
-    this.stopHealthMonitoring()
+    for (let port = this.BASE_PORT; port < maxPort; port++) {
+      // Check if any of our servers is using this port
+      let portInUse = false
+      for (const instance of this.servers.values()) {
+        if (instance.port === port) {
+          portInUse = true
+          break
+        }
+      }
 
+      if (!portInUse) {
+        // Also check if something else is using this port
+        const isAvailable = await this.isPortAvailable(port)
+        if (isAvailable) {
+          return port
+        }
+      }
+    }
+
+    throw new Error(`No available ports in range ${this.BASE_PORT}-${maxPort}`)
+  }
+
+  /**
+   * Check if a port is available
+   */
+  private async isPortAvailable(port: number): Promise<boolean> {
+    try {
+      await fetch(`http://127.0.0.1:${port}`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(1000)
+      })
+      // If we get a response, port is in use
+      log('Port %d is in use (got response)', port)
+      return false
+    } catch {
+      // Connection failed, port is likely available
+      return true
+    }
+  }
+
+  /**
+   * Check server health
+   */
+  private async checkServerHealth(instance: ServerInstance): Promise<boolean> {
+    try {
+      await fetch(instance.server.url, {
+        signal: AbortSignal.timeout(2000)
+      })
+      return true
+    } catch (error) {
+      log('Health check failed for %s: %o', instance.directory, error)
+      return false
+    }
+  }
+
+  /**
+   * Start health monitoring for a server instance
+   */
+  private startHealthMonitoring(instance: ServerInstance): void {
     // Check health every 30 seconds
-    this.instance.healthCheckInterval = setInterval(async () => {
-      if (!this.instance) return
+    instance.healthCheckInterval = setInterval(async () => {
+      const wasHealthy = instance.isHealthy
+      instance.isHealthy = await this.checkServerHealth(instance)
+      instance.lastHealthCheck = new Date()
 
-      const wasHealthy = this.instance.isHealthy
-      this.instance.isHealthy = await this.checkHealth()
-      this.instance.lastHealthCheck = new Date()
-
-      if (wasHealthy !== this.instance.isHealthy) {
-        log('Health status changed: %s -> %s', wasHealthy, this.instance.isHealthy)
+      if (wasHealthy !== instance.isHealthy) {
+        log(
+          'Health status changed for %s: %s -> %s',
+          instance.directory,
+          wasHealthy,
+          instance.isHealthy
+        )
       }
     }, 30000)
 
     // Check immediately
-    this.checkHealth().then((isHealthy) => {
-      if (this.instance) {
-        this.instance.isHealthy = isHealthy
-        this.instance.lastHealthCheck = new Date()
-      }
+    this.checkServerHealth(instance).then((isHealthy) => {
+      instance.isHealthy = isHealthy
+      instance.lastHealthCheck = new Date()
     })
   }
 
-  private stopHealthMonitoring(): void {
-    if (this.instance?.healthCheckInterval) {
-      clearInterval(this.instance.healthCheckInterval)
-      if (this.instance) {
-        this.instance.healthCheckInterval = undefined
-      }
-    }
-  }
-
   /**
-   * Check if we can connect to a server at the given URL
+   * Get server directory from a specific URL (legacy method for compatibility)
    */
-  private async canConnect(url: string): Promise<boolean> {
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        signal: AbortSignal.timeout(2000) // 2 second timeout
-      })
-      // Any response (even 404) means server is alive
-      log('Server responded with status %d', response.status)
-      return true
-    } catch (error) {
-      log('Cannot connect to %s: %o', url, error)
-      return false
-    }
-  }
-
-  private async checkHealth(): Promise<boolean> {
-    if (!this.instance) return false
-
-    try {
-      // Simple health check - can the server respond?
-      await fetch(this.instance.server.url)
-      // Any response (even 404) means server is alive
-      return true
-    } catch (error) {
-      // Server not responding
-      log('Health check failed: %o', error)
-      return false
-    }
-  }
-
-  /**
-   * Get server directory from a specific URL (used before connecting)
-   */
-  private async getServerDirectoryFromUrl(serverUrl: string): Promise<string | null> {
-    try {
-      const response = await fetch(`${serverUrl}/path`)
-      if (!response.ok) {
-        log('Failed to get server directory from %s: HTTP %d', serverUrl, response.status)
-        return null
-      }
-
-      const data = await response.json()
-      const directory = data.directory || data.path || data.cwd
-
-      if (directory) {
-        const normalized = normalizePath(directory)
-        log('Server at %s is running from: %s', serverUrl, normalized)
-        return normalized
-      }
-
-      return null
-    } catch (error) {
-      log('Error getting server directory from %s: %o', serverUrl, error)
+  async getServerDirectory(): Promise<string | null> {
+    const primary = this.getPrimaryServer()
+    if (!primary) {
       return null
     }
-  }
-
-  /**
-   * Kill any existing OpenCode server process
-   */
-  private async killExistingServer(): Promise<void> {
-    log('Killing existing OpenCode server process')
-
-    try {
-      // Use platform-specific command to kill OpenCode
-      const { exec } = await import('child_process')
-      const { promisify } = await import('util')
-      const execAsync = promisify(exec)
-
-      if (process.platform === 'win32') {
-        await execAsync('taskkill /F /IM opencode.exe')
-      } else {
-        await execAsync('pkill -f opencode')
-      }
-
-      // Wait for process to die
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      log('Existing server process killed')
-    } catch (error) {
-      log('Failed to kill existing server (may not be running): %o', error)
-    }
+    return primary.directory
   }
 }

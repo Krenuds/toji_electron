@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Spinner, IconButton } from '@chakra-ui/react'
 import { LuTrash2, LuRefreshCw, LuList, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
@@ -28,6 +28,21 @@ export function ChatViewSidebar(): React.JSX.Element {
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
+  const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
+
+  // Fetch working directory on mount and when project changes
+  useEffect(() => {
+    const fetchWorkingDirectory = async (): Promise<void> => {
+      try {
+        const info = await window.api.toji.getCurrentProject()
+        setWorkingDirectory(info.workingDirectory)
+      } catch (error) {
+        console.error('Failed to get working directory:', error)
+      }
+    }
+
+    fetchWorkingDirectory()
+  }, [currentProject])
 
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     if (deletingSessionId) return
@@ -143,6 +158,20 @@ export function ChatViewSidebar(): React.JSX.Element {
 
         {/* Project Selection */}
         <ProjectSelector />
+
+        {/* Working Directory Display */}
+        {workingDirectory && (
+          <Box p={2} bg="app.dark" borderRadius="md" border="1px solid" borderColor="app.border">
+            <VStack align="start" gap={1}>
+              <Text color="app.text" fontSize="2xs" fontWeight="medium">
+                Working in:
+              </Text>
+              <Text color="app.light" fontSize="xs" fontFamily="mono" lineClamp={2}>
+                {workingDirectory}
+              </Text>
+            </VStack>
+          </Box>
+        )}
 
         {/* Server Status */}
         <SidebarSection title="Server Status">

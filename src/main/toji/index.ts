@@ -1,4 +1,4 @@
-// Minimal Toji implementation with direct OpenCode SDK usage
+// Minimal Toji implementation with multi-server OpenCode SDK usage
 import { createOpencodeClient } from '@opencode-ai/sdk'
 import type { OpencodeClient, Part, Message, Project } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
@@ -10,19 +10,20 @@ import type { ServerStatus } from './types'
 import type { OpencodeConfig } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 import { BrowserWindow } from 'electron'
+import { normalizePath } from '../utils/path'
 
 const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
 const logChat = createFileDebugLogger('toji:chat')
 
 export class Toji {
-  private client?: OpencodeClient
+  private clients: Map<string, OpencodeClient> = new Map()
   private currentProjectDirectory?: string
   private _config?: ConfigProvider
   // private globalConfig: OpencodeConfig = defaultOpencodeConfig // Reserved for future use
 
   // Public modules
-  public readonly project: ProjectManager
+  public project: ProjectManager
   public readonly server: ServerManager
   public readonly sessions: SessionManager
 
@@ -32,7 +33,7 @@ export class Toji {
     // Initialize modules
     this.server = new ServerManager(opencodeService)
     this.sessions = new SessionManager()
-    this.project = new ProjectManager(() => this.client)
+    this.project = new ProjectManager(() => this.getClient())
     log('Toji initialized successfully')
   }
 
@@ -40,26 +41,43 @@ export class Toji {
     return this.server.getStatus()
   }
 
-  // Connect the client to the server
-  async connectClient(): Promise<void> {
-    logClient('Connecting client to OpenCode server')
-    const serverUrl = this.server.getUrl()
-    if (!serverUrl) {
-      const error = new Error('Server not started')
-      logClient('ERROR: %s', error.message)
-      throw error
+  // Connect a client to a specific server
+  async connectClient(directory?: string): Promise<void> {
+    const targetDirectory = directory || process.cwd()
+    logClient('Connecting client for directory: %s', targetDirectory)
+
+    // Get or create server for this directory
+    const serverInstance = await this.server.getOrCreateServer(targetDirectory)
+    const serverUrl = serverInstance.server.url
+
+    logClient('Connecting to server URL: %s for directory: %s', serverUrl, targetDirectory)
+
+    // Create client for this directory if not exists
+    const normalized = normalizePath(targetDirectory)
+    if (!this.clients.has(normalized)) {
+      const client = createOpencodeClient({
+        baseUrl: serverUrl,
+        responseStyle: 'data' // Get data directly without wrapper
+      })
+      this.clients.set(normalized, client)
+      logClient('Client created and connected for %s', normalized)
+    } else {
+      logClient('Reusing existing client for %s', normalized)
     }
 
-    logClient('Connecting to server URL: %s', serverUrl)
-    this.client = createOpencodeClient({
-      baseUrl: serverUrl,
-      responseStyle: 'data' // Get data directly without wrapper
-    })
-    logClient('Client connected successfully to %s', serverUrl)
+    // Set current directory
+    this.currentProjectDirectory = targetDirectory
+    logClient('Current project directory set to: %s', this.currentProjectDirectory)
 
-    // Set current directory as default (but don't change process.cwd)
-    this.currentProjectDirectory = process.cwd()
-    logClient('Default project directory set to: %s', this.currentProjectDirectory)
+    // Update project manager with new client
+    this.project = new ProjectManager(() => this.getClient())
+  }
+
+  // Get client for current or specific directory
+  private getClient(directory?: string): OpencodeClient | undefined {
+    const targetDir = directory || this.currentProjectDirectory || process.cwd()
+    const normalized = normalizePath(targetDir)
+    return this.clients.get(normalized)
   }
 
   // Change working directory (for project context)
@@ -74,7 +92,11 @@ export class Toji {
       throw new Error(`Cannot access directory: ${directory}`)
     }
 
-    // Update the current project directory (no process.chdir needed)
+    // CRITICAL: Change Node.js process working directory
+    process.chdir(directory)
+    logClient('Changed process.cwd() to: %s', process.cwd())
+
+    // Update the current project directory
     this.currentProjectDirectory = directory
     logClient('Project directory set to: %s', directory)
 
@@ -100,14 +122,16 @@ export class Toji {
 
   // Check if ready
   isReady(): boolean {
-    return Boolean(this.server.isRunning() && this.client)
+    const client = this.getClient()
+    return Boolean(this.server.isRunning() && client)
   }
 
   // Chat with the AI using session management
   async chat(message: string, sessionId?: string): Promise<string> {
     logChat('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
 
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       const error = new Error('Client not connected to server')
       logChat('ERROR: %s', error.message)
       throw error
@@ -123,7 +147,7 @@ export class Toji {
       if (!activeSessionId) {
         logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
         const sessionInfo = await this.sessions.createSession(
-          this.client,
+          client,
           undefined, // title
           this.currentProjectDirectory
         )
@@ -136,7 +160,7 @@ export class Toji {
 
       // Send message to session
       logChat('Sending message to session %s', activeSessionId)
-      const response = await this.client.session.prompt({
+      const response = await client.session.prompt({
         path: { id: activeSessionId },
         body: {
           parts: [{ type: 'text', text: message }]
@@ -192,13 +216,14 @@ export class Toji {
       return []
     }
 
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
     try {
       return await this.sessions.getSessionMessages(
-        this.client,
+        client,
         activeSessionId,
         this.currentProjectDirectory,
         useCache
@@ -222,6 +247,11 @@ export class Toji {
     return this.currentProjectDirectory
   }
 
+  // Get the actual Node.js working directory
+  getCurrentWorkingDirectory(): string {
+    return process.cwd()
+  }
+
   // Set global configuration
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setGlobalConfig(_config: OpencodeConfig): void {
@@ -231,37 +261,42 @@ export class Toji {
 
   // Get available projects (from OpenCode SDK)
   async getAvailableProjects(): Promise<Array<Project>> {
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       log('Client not connected, returning empty project list')
       return []
     }
+    // Update project manager to use current client
+    this.project = new ProjectManager(() => client)
     return this.project.list()
   }
 
-  // Switch to a project (restarts server from correct directory if needed)
+  // Switch to a project (uses multi-server architecture)
   async switchToProject(projectPath: string): Promise<{ success: boolean; projectPath: string }> {
     log('Switching to project: %s', projectPath)
 
     try {
-      // First ensure the server is running from the correct directory
-      log('Checking if server needs restart for project: %s', projectPath)
-      await this.server.start(undefined, projectPath) // Smart restart if needed
+      // Get or create server for this project directory
+      log('Getting or creating server for project: %s', projectPath)
+      const serverInstance = await this.server.getOrCreateServer(projectPath)
+      log('Server ready on port %d for %s', serverInstance.port, projectPath)
 
-      // Update the project directory
+      // Update the project directory and process.chdir()
       await this.changeWorkingDirectory(projectPath)
 
-      // Reconnect client after potential server restart
-      await this.connectClient()
+      // Connect client to the appropriate server
+      await this.connectClient(projectPath)
 
       // Check if project is properly discovered by OpenCode
-      if (this.client) {
+      const client = this.getClient(projectPath)
+      if (client) {
         const normalizedPath = projectPath.replace(/\\/g, '/')
         log('Checking project discovery for: %s', normalizedPath)
 
         // Try to get current project with the directory parameter
         try {
           const response = await fetch(
-            `${this.server.getUrl()}/project/current?directory=${encodeURIComponent(normalizedPath)}`
+            `${serverInstance.server.url}/project/current?directory=${encodeURIComponent(normalizedPath)}`
           )
           const current = await response.json()
 
@@ -270,7 +305,7 @@ export class Toji {
             log('Project not discovered, attempting to trigger discovery...')
 
             // Create a session to trigger project discovery
-            await this.client.session.create({
+            await client.session.create({
               body: { title: 'Initialize Project' },
               query: { directory: normalizedPath }
             })
@@ -305,7 +340,8 @@ export class Toji {
       return null
     }
 
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
@@ -313,7 +349,7 @@ export class Toji {
       // Normalize path to forward slashes for OpenCode API
       const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
 
-      const response = await this.client.session.get({
+      const response = await client.session.get({
         path: { id: activeSessionId },
         query: normalizedPath ? { directory: normalizedPath } : undefined
       })
@@ -336,23 +372,25 @@ export class Toji {
 
   // Session management methods for IPC
   async listSessions(): Promise<Array<{ id: string; title?: string; projectPath?: string }>> {
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
-    const sessions = await this.sessions.listSessions(this.client, this.currentProjectDirectory)
+    const sessions = await this.sessions.listSessions(client, this.currentProjectDirectory)
     return sessions
   }
 
   async createSession(
     title?: string
   ): Promise<{ id: string; title?: string; projectPath?: string }> {
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
     const sessionInfo = await this.sessions.createSession(
-      this.client,
+      client,
       title,
       this.currentProjectDirectory
     )
@@ -366,11 +404,12 @@ export class Toji {
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
-    await this.sessions.deleteSession(this.client, sessionId, this.currentProjectDirectory)
+    await this.sessions.deleteSession(client, sessionId, this.currentProjectDirectory)
   }
 
   async switchSession(sessionId: string): Promise<void> {
@@ -379,14 +418,15 @@ export class Toji {
     }
 
     // Verify session exists by trying to get it
-    if (!this.client) {
+    const client = this.getClient()
+    if (!client) {
       throw new Error('Client not connected to server')
     }
 
     // Normalize path to forward slashes for OpenCode API
     const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
 
-    const response = await this.client.session.get({
+    const response = await client.session.get({
       path: { id: sessionId },
       query: normalizedPath ? { directory: normalizedPath } : undefined
     })
@@ -411,7 +451,8 @@ export class Toji {
    * Load the most recent session for the current project
    */
   async loadMostRecentSession(): Promise<void> {
-    if (!this.client || !this.currentProjectDirectory) {
+    const client = this.getClient()
+    if (!client || !this.currentProjectDirectory) {
       throw new Error('Cannot load session: client not connected or no project directory')
     }
 
@@ -426,7 +467,7 @@ export class Toji {
           // Normalize path to forward slashes for OpenCode API
           const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
 
-          const response = await this.client.session.get({
+          const response = await client.session.get({
             path: { id: savedSessionId },
             query: normalizedPath ? { directory: normalizedPath } : undefined
           })
@@ -464,6 +505,11 @@ export class Toji {
       log('ERROR: Failed to load most recent session: %o', error)
       throw error
     }
+  }
+
+  // Get all running servers info
+  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
+    return this.server.getAllServers()
   }
 }
 

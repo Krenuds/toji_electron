@@ -160,18 +160,31 @@ export function registerTojiHandlers(toji: Toji): void {
       // Return null values if no project is active
       const projectDir = toji.getCurrentProjectDirectory()
       const sessionId = toji.getCurrentSessionId()
+      const workingDir = toji.getCurrentWorkingDirectory() // Get actual process.cwd()
 
       return {
         path: projectDir || null,
-        sessionId: sessionId || null
+        sessionId: sessionId || null,
+        workingDirectory: workingDir
       }
     } catch (error) {
       console.error('Get current project error:', error)
       // Return null values for graceful degradation
       return {
         path: null,
-        sessionId: null
+        sessionId: null,
+        workingDirectory: process.cwd()
       }
+    }
+  })
+
+  // Get all running servers
+  ipcMain.handle('toji:getRunningServers', async () => {
+    try {
+      return toji.getAllServers()
+    } catch (error) {
+      console.error('Get running servers error:', error)
+      return []
     }
   })
 }

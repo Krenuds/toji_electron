@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { execSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
 import icon from '../../resources/toji.png?asset'
@@ -120,18 +121,26 @@ app.whenReady().then(async () => {
     await toji.server.start(undefined, lastProject)
     logStartup('OpenCode server ready (running from %s)', lastProject)
 
-    // Always connect the client
-    logStartup('Connecting OpenCode client')
-    await toji.connectClient()
+    // Connect the client to the specific project directory
+    logStartup('Connecting OpenCode client for directory: %s', lastProject)
+    await toji.connectClient(lastProject)
     logStartup('OpenCode client connected successfully')
 
     // Set the working directory
     await toji.changeWorkingDirectory(lastProject)
     logStartup('Project directory set: %s', lastProject)
 
-    // Load the most recent session for this project
-    await toji.loadMostRecentSession()
-    logStartup('Loaded most recent session')
+    // Try to load the most recent session for this project
+    try {
+      await toji.loadMostRecentSession()
+      logStartup('Loaded most recent session')
+    } catch (sessionError) {
+      logStartup(
+        'Could not load most recent session (this is ok for new projects): %o',
+        sessionError
+      )
+      // This is ok - might be a new project with no sessions
+    }
   } catch (error) {
     logStartup('ERROR: Failed during OpenCode initialization: %o', error)
     // Re-throw to prevent running with undefined state
@@ -187,12 +196,12 @@ app.on('window-all-closed', async () => {
     }
   }
 
-  // Stop any running OpenCode agents
+  // Stop ALL running OpenCode servers
   if (toji) {
     try {
-      logCleanup('Stopping OpenCode servers...')
-      await toji.server.stop()
-      logCleanup('OpenCode servers stopped successfully')
+      logCleanup('Stopping all OpenCode servers...')
+      await toji.server.stopAllServers()
+      logCleanup('All OpenCode servers stopped successfully')
     } catch (error) {
       logCleanup('ERROR: Failed to stop OpenCode servers: %o', error)
     }
@@ -201,6 +210,41 @@ app.on('window-all-closed', async () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Handle process exit as last resort
+process.on('exit', () => {
+  // Synchronous cleanup only - last chance
+  if (toji) {
+    try {
+      // Try to kill all OpenCode processes synchronously
+      if (process.platform === 'win32') {
+        execSync('taskkill /F /IM opencode.exe', { stdio: 'ignore' })
+      } else {
+        execSync('pkill -f opencode', { stdio: 'ignore' })
+      }
+    } catch {
+      // Ignore errors - best effort
+    }
+  }
+})
+
+// Handle SIGINT (Ctrl+C)
+process.on('SIGINT', async () => {
+  console.log('\nReceived SIGINT, shutting down gracefully...')
+  if (toji) {
+    await toji.server.stopAllServers()
+  }
+  process.exit(0)
+})
+
+// Handle SIGTERM
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down gracefully...')
+  if (toji) {
+    await toji.server.stopAllServers()
+  }
+  process.exit(0)
 })
 
 // Handle application quit events
@@ -218,11 +262,12 @@ app.on('before-quit', async (event) => {
         console.log('Discord bot disconnected')
       }
 
-      // Then shutdown Toji/OpenCode
+      // Then shutdown ALL Toji/OpenCode servers
       if (toji) {
-        await toji.server.stop()
+        console.log('Stopping all OpenCode servers...')
+        await toji.server.stopAllServers()
         toji = null
-        console.log('Toji shutdown completed')
+        console.log('All OpenCode servers stopped, Toji shutdown completed')
       }
 
       console.log('All cleanup completed, quitting app')
