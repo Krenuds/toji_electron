@@ -12,7 +12,7 @@ import { useSession } from '../../../hooks/useSession'
 import { useProjects } from '../../../hooks/useProjects'
 export function ChatViewSidebar(): React.JSX.Element {
   const { status: serverStatus } = useServerStatus()
-  const { currentProject } = useProjects()
+  const { currentProject, switchProject } = useProjects()
   const {
     sessions,
     isLoading: isLoadingSessions,
@@ -27,6 +27,13 @@ export function ChatViewSidebar(): React.JSX.Element {
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>()
   const [isCreatingSession, setIsCreatingSession] = useState(false)
+
+  // Fetch sessions when project changes
+  useEffect(() => {
+    if (currentProject) {
+      fetchSessions()
+    }
+  }, [currentProject, fetchSessions])
 
   // Fetch current session ID when sessions change
   useEffect(() => {
@@ -53,18 +60,29 @@ export function ChatViewSidebar(): React.JSX.Element {
     setDeletingSessionId(null)
   }
 
-  const handleSessionClick = async (sessionId: string): Promise<void> => {
-    if (sessionId === currentSessionId || switchingSessionId) return
+  const handleSessionClick = async (session: {
+    id: string
+    projectPath?: string
+  }): Promise<void> => {
+    if (session.id === currentSessionId || switchingSessionId) return
 
-    setSwitchingSessionId(sessionId)
+    setSwitchingSessionId(session.id)
     try {
-      const success = await switchSession(sessionId)
+      // If session is from a different project, switch project first
+      if (session.projectPath && session.projectPath !== currentProject?.path) {
+        console.log('Switching to project:', session.projectPath)
+        await switchProject(session.projectPath)
+        // Small delay to let project switch complete
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      const success = await switchSession(session.id)
       if (success) {
         // Refresh current session ID from backend
         const newCurrentSessionId = await getCurrentSessionId()
         setCurrentSessionId(newCurrentSessionId)
       } else {
-        console.error('Failed to switch session:', sessionId)
+        console.error('Failed to switch session:', session.id)
       }
     } catch (error) {
       console.error('Error switching session:', error)
@@ -187,7 +205,7 @@ export function ChatViewSidebar(): React.JSX.Element {
                     bg: currentSessionId === session.id ? 'green.800' : 'app.medium',
                     borderColor: 'app.accent'
                   }}
-                  onClick={() => handleSessionClick(session.id)}
+                  onClick={() => void handleSessionClick(session)}
                   opacity={switchingSessionId === session.id ? 0.7 : 1}
                   transition="all 0.2s"
                 >
@@ -200,8 +218,10 @@ export function ChatViewSidebar(): React.JSX.Element {
                         <Spinner size="xs" color="app.accent" />
                       )}
                     </HStack>
-                    <Text color="app.light" fontSize="2xs">
-                      ID: {session.id.slice(0, 12)}...
+                    <Text color="app.text" fontSize="2xs">
+                      {session.projectPath
+                        ? session.projectPath.split(/[\\/]/).pop() || 'Root'
+                        : 'No project'}
                     </Text>
                   </VStack>
                   {/* Trash icon positioned in bottom right */}
@@ -218,7 +238,7 @@ export function ChatViewSidebar(): React.JSX.Element {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (deletingSessionId !== session.id) {
-                        handleDeleteSession(session.id)
+                        void handleDeleteSession(session.id)
                       }
                     }}
                     aria-label="Delete session"

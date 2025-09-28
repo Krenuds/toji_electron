@@ -16,6 +16,7 @@ export interface TojiConfig {
 export interface Session {
   id: string
   title?: string
+  projectPath?: string // The project directory this session belongs to
   created?: Date
   updated?: Date
   version?: string
