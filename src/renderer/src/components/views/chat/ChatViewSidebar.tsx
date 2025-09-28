@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Spinner, IconButton } from '@chakra-ui/react'
-import { LuTrash2, LuRefreshCw, LuList, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
+import { LuTrash2, LuRefreshCw, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
+import { SidebarCard } from '../../shared/SidebarCard'
 import { StatusBadge } from '../../StatusBadge'
-import { SessionsModal } from '../../shared'
-import { ProjectSelector } from './ProjectSelector'
+import { ProjectList } from './ProjectList'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 import type { Session } from '../../../../../preload/index.d'
 
@@ -25,7 +25,6 @@ export function ChatViewSidebar(): React.JSX.Element {
     clearErrors
   } = useChatCoordinatorContext()
 
-  const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false)
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
   const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
@@ -76,76 +75,92 @@ export function ChatViewSidebar(): React.JSX.Element {
     const isSwitching = switchingSessionId === session.id
 
     return (
-      <Box
+      <SidebarCard
         key={session.id}
-        p={2}
-        borderRadius="md"
-        bg={isActive ? 'green.800' : 'app.dark'}
-        border="1px solid"
-        borderColor={isActive ? 'app.accent' : 'app.border'}
+        isActive={isActive}
+        isDisabled={isDeleting || isSwitching}
+        onClick={() => handleSwitchSession(session.id)}
         position="relative"
-        cursor={isDeleting ? 'not-allowed' : 'pointer'}
-        opacity={isDeleting || isSwitching ? 0.6 : 1}
-        _hover={
-          !isDeleting && !isSwitching
-            ? {
-                bg: isActive ? 'green.800' : 'app.medium',
-                borderColor: 'app.accent'
-              }
-            : {}
-        }
-        onClick={() => !isDeleting && !isSwitching && handleSwitchSession(session.id)}
-        transition="all 0.2s"
+        minH="3.5rem"
+        maxW="100%"
+        overflow="hidden"
       >
-        <VStack align="start" gap={0} w="full">
-          <HStack justify="space-between" w="full">
-            <HStack gap={2} flex={1}>
-              <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1} flex={1}>
-                {session.title || `Session ${session.id.slice(0, 8)}`}
-              </Text>
-              {isSwitching && <Spinner size="xs" color="app.accent" />}
-            </HStack>
+        {/* Active badge - top right */}
+        {isActive && (
+          <Box
+            position="absolute"
+            top={1}
+            right={1}
+            px={1.5}
+            py={0.5}
+            bg="app.accent"
+            color="app.dark"
+            borderRadius="sm"
+            fontSize="2xs"
+            fontWeight="bold"
+            textTransform="uppercase"
+            zIndex={1}
+          >
+            Active
+          </Box>
+        )}
 
-            {/* Actions */}
-            <HStack gap={1}>
-              {isActive && (
-                <Box
-                  as="span"
-                  px={1.5}
-                  py={0.5}
-                  bg="app.accent"
-                  color="app.dark"
-                  borderRadius="sm"
-                  fontSize="2xs"
-                  fontWeight="bold"
-                  textTransform="uppercase"
-                >
-                  Active
-                </Box>
-              )}
-              <IconButton
-                aria-label="Delete session"
-                size="xs"
-                variant="ghost"
-                colorPalette="red"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDeleteSession(session.id)
-                }}
-                disabled={isDeleting}
-              >
-                {isDeleting ? <Spinner size="xs" /> : <LuTrash2 size={12} />}
-              </IconButton>
-            </HStack>
-          </HStack>
-
-          {session.projectPath && (
-            <Text color="app.text" fontSize="2xs" lineClamp={1}>
-              {session.projectPath.split(/[\\/]/).pop() || 'Project'}
+        <Box w="calc(100% - 3rem)" pr={2}>
+          <VStack align="start" gap={1} w="full">
+            {/* Session title - WILL TRUNCATE */}
+            <Text
+              color="app.light"
+              fontSize="sm"
+              fontWeight="medium"
+              noOfLines={1}
+              textOverflow="ellipsis"
+              overflow="hidden"
+              whiteSpace="nowrap"
+              display="block"
+              w="full"
+            >
+              {session.title || `Session ${session.id.slice(0, 8)}`}
             </Text>
-          )}
-        </VStack>
-      </Box>
+            {isSwitching && <Spinner size="xs" color="app.accent" position="absolute" right={2} top={2} />}
+
+            {/* Project name */}
+            <Text
+              color="app.text"
+              fontSize="2xs"
+              noOfLines={1}
+              textOverflow="ellipsis"
+              overflow="hidden"
+              whiteSpace="nowrap"
+              minH="1rem"
+              w="full"
+            >
+              {session.projectPath ? session.projectPath.split(/[\\/]/).pop() || 'Project' : ' '}
+            </Text>
+          </VStack>
+        </Box>
+
+        {/* Delete button - bottom right */}
+        <IconButton
+          position="absolute"
+          bottom={1}
+          right={1}
+          aria-label="Delete session"
+          size="xs"
+          variant="ghost"
+          color="white"
+          _hover={{
+            bg: 'red.500',
+            color: 'white'
+          }}
+          onClick={(e) => {
+            e.stopPropagation()
+            handleDeleteSession(session.id)
+          }}
+          disabled={isDeleting}
+        >
+          {isDeleting ? <Spinner size="xs" color="white" /> : <LuTrash2 size={12} />}
+        </IconButton>
+      </SidebarCard>
     )
   }
 
@@ -157,41 +172,7 @@ export function ChatViewSidebar(): React.JSX.Element {
         <Separator borderColor="app.border" />
 
         {/* Project Selection */}
-        <ProjectSelector />
-
-        {/* Working Directory Display */}
-        {workingDirectory && (
-          <Box p={2} bg="app.dark" borderRadius="md" border="1px solid" borderColor="app.border">
-            <VStack align="start" gap={1}>
-              <Text color="app.text" fontSize="2xs" fontWeight="medium">
-                Working in:
-              </Text>
-              <Text color="app.light" fontSize="xs" fontFamily="mono" lineClamp={2}>
-                {workingDirectory}
-              </Text>
-            </VStack>
-          </Box>
-        )}
-
-        {/* Server Status */}
-        <SidebarSection title="Server Status">
-          <Box p={2} borderRadius="md" bg="app.dark" border="1px solid" borderColor="app.border">
-            <HStack justify="space-between">
-              <Text color="app.light" fontSize="xs" fontWeight="medium">
-                Status
-              </Text>
-              <StatusBadge
-                status={
-                  serverStatus === 'online'
-                    ? 'running'
-                    : serverStatus === 'initializing'
-                      ? 'starting'
-                      : 'stopped'
-                }
-              />
-            </HStack>
-          </Box>
-        </SidebarSection>
+        <ProjectList />
 
         <Separator borderColor="app.border" />
 
@@ -209,15 +190,6 @@ export function ChatViewSidebar(): React.JSX.Element {
                 title={currentProject ? 'New session' : 'Select a project first'}
               >
                 <LuPlus size={12} />
-              </Button>
-              <Button
-                size="xs"
-                variant="ghost"
-                colorPalette="gray"
-                onClick={() => setIsSessionsModalOpen(true)}
-                title="View all sessions"
-              >
-                <LuList size={12} />
               </Button>
               <Button
                 size="xs"
@@ -309,18 +281,6 @@ export function ChatViewSidebar(): React.JSX.Element {
           </VStack>
         </SidebarSection>
       </VStack>
-
-      {/* Sessions Modal */}
-      <SessionsModal
-        isOpen={isSessionsModalOpen}
-        onClose={() => setIsSessionsModalOpen(false)}
-        sessions={sessions}
-        isLoading={isLoadingSessions}
-        currentSessionId={currentSessionId ?? null}
-        onDeleteSession={handleDeleteSession}
-        onRefresh={refreshAll}
-        deletingSessionId={deletingSessionId}
-      />
     </SidebarContainer>
   )
 }

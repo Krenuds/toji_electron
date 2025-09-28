@@ -156,12 +156,12 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   }, [updateState])
 
   // Load sessions for current project
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (): Promise<Session[]> => {
     console.log('[ChatCoordinator] Loading sessions for project:', state.currentProject?.path)
 
     if (!state.currentProject) {
       updateState({ sessions: [], currentSessionId: undefined })
-      return
+      return []
     }
 
     updateState({ isLoadingSessions: true, sessionError: null })
@@ -179,12 +179,15 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       if (currentId) {
         saveToCache(CACHE_KEYS.LAST_SESSION, currentId)
       }
+
+      return sessions || []
     } catch (error) {
       console.error('[ChatCoordinator] Failed to load sessions:', error)
       updateState({
         sessions: [],
         sessionError: 'Failed to load sessions'
       })
+      return []
     } finally {
       updateState({ isLoadingSessions: false })
     }
@@ -312,16 +315,51 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
           })
 
           // Load new project's sessions
-          await loadSessions()
+          const sessions = await loadSessions()
 
           // Load projects list (might have new project)
           await loadProjects()
 
-          // If there's a current session, load its messages
-          const currentId = await window.api.toji.getCurrentSessionId()
-          if (currentId) {
-            updateState({ currentSessionId: currentId })
+          // Auto-select or create a session
+          if (sessions && sessions.length > 0) {
+            // Sort sessions by most recent activity
+            const sortedSessions = [...sessions].sort((a, b) => {
+              const dateA = new Date(a.updated || a.created || 0)
+              const dateB = new Date(b.updated || b.created || 0)
+              return dateB.getTime() - dateA.getTime()
+            })
+
+            // Select the most recent session
+            const mostRecentSession = sortedSessions[0]
+            console.log('[ChatCoordinator] Auto-selecting most recent session:', mostRecentSession.id)
+
+            await window.api.toji.switchSession(mostRecentSession.id)
+            updateState({ currentSessionId: mostRecentSession.id })
+            saveToCache(CACHE_KEYS.LAST_SESSION, mostRecentSession.id)
+
+            // Load messages for the selected session
             await loadMessages()
+          } else {
+            // No sessions exist - create one automatically
+            console.log('[ChatCoordinator] No sessions found, creating default session')
+            const projectName = projectPath.split(/[/\\]/).pop() || 'Project'
+            const sessionName = `${projectName} - ${new Date().toLocaleDateString()}`
+
+            try {
+              const newSession = await window.api.toji.createSession(sessionName)
+              if (newSession) {
+                console.log('[ChatCoordinator] Created new session:', newSession.id)
+                updateState({
+                  sessions: [newSession],
+                  currentSessionId: newSession.id
+                })
+                await window.api.toji.switchSession(newSession.id)
+                saveToCache(CACHE_KEYS.LAST_SESSION, newSession.id)
+              }
+            } catch (error) {
+              console.error('[ChatCoordinator] Failed to auto-create session:', error)
+              // Continue without a session - user can create one manually
+            }
           }
         } else {
           throw new Error('Failed to switch project')
