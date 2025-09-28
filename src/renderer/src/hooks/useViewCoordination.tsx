@@ -3,6 +3,8 @@ import { useAppView } from './useAppView'
 import { ViewType, ViewStateData } from '../types/ViewTypes'
 import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
 import { ChatViewMain } from '../components/views/chat/ChatViewMain'
+import { IntegrationsViewSidebar } from '../components/views/integrations/IntegrationsViewSidebar'
+import { IntegrationsViewMain } from '../components/views/integrations/IntegrationsViewMain'
 import { PlaceholderSidebar, PlaceholderMain } from '../components/PlaceholderViews'
 
 interface UseViewCoordinationReturn {
@@ -21,6 +23,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
     switch (activeView) {
       case 'chat':
         return <ChatViewSidebar />
+      case 'integrations':
+        return <IntegrationsViewSidebar />
       default:
         return <PlaceholderSidebar viewName="unknown" />
     }
@@ -30,6 +34,8 @@ export function useViewCoordination(): UseViewCoordinationReturn {
     switch (activeView) {
       case 'chat':
         return <ChatViewMain />
+      case 'integrations':
+        return <IntegrationsViewMain />
       default:
         return <PlaceholderMain viewName="unknown" />
     }

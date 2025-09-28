@@ -44,19 +44,10 @@ export class SlashCommandModule implements DiscordModule {
     try {
       // Import commands directly - this is the only way we load commands
       const helpCommand = await import('../commands/help')
-      // TODO: Fix these commands to work with new Toji API
-      // const projectCommand = await import('../commands/project')
-      // const sessionCommand = await import('../commands/session')
-      // const statusCommand = await import('../commands/status')
-      // const devCommand = await import('../commands/dev')
+      const chatCommand = await import('../commands/chat')
+      // Future commands can be added here
 
-      const commands = [
-        helpCommand
-        // projectCommand,
-        // sessionCommand,
-        // statusCommand,
-        // devCommand
-      ]
+      const commands = [helpCommand, chatCommand]
 
       for (const command of commands) {
         if ('data' in command && 'execute' in command) {

@@ -16,8 +16,9 @@ export async function deployCommands(
 
   // Import all commands directly
   const helpCommand = await import('./commands/help')
+  const chatCommand = await import('./commands/chat')
 
-  const commandModules = [helpCommand]
+  const commandModules = [helpCommand, chatCommand]
 
   // Load command data
   for (const command of commandModules) {

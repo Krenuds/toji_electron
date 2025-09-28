@@ -19,8 +19,7 @@ export class DiscordChatModule implements DiscordModule {
   private sessions: Map<string, ChannelSession> = new Map()
   private maxContextSize = 10 // Keep last 10 messages for context
 
-  // @ts-expect-error - Toji will be used when chat functionality is implemented
-  constructor(private _toji: Toji) {}
+  constructor(private toji: Toji) {}
 
   /**
    * Initialize the module with the parent plugin
@@ -88,9 +87,9 @@ export class DiscordChatModule implements DiscordModule {
       console.log(
         `DiscordChatModule: Processing message in session ${session.sessionId}: "${content}"`
       )
-      // TODO: Implement chat method in new Toji API
-      const response = 'Chat functionality is being refactored. Please try again later.'
-      // const response = await this.toji.chat(content)
+
+      // Use Toji's chat method with the session ID
+      const response = await this.toji.chat(content, session.sessionId)
 
       // Add response to context
       this.addToContext(session, `Bot: ${response}`)
@@ -114,22 +113,54 @@ export class DiscordChatModule implements DiscordModule {
     if (!session) {
       console.log(`DiscordChatModule: Creating new session for channel ${channelKey}`)
 
-      // TODO: Implement session management in new Toji API
-      // await this.toji.ensureReadyForChat()
-      // const tojiSession = await this.toji.session.create(`Discord: ${message.channel.id}`)
-      const tojiSession = { id: `temp-${Date.now()}` }
+      // Create a session name for this Discord channel
+      const sessionName = message.guildId
+        ? `discord-${message.guildId}-${message.channelId}`
+        : `discord-dm-${message.author.id}`
 
-      session = {
-        sessionId: tojiSession.id,
-        guildId: message.guildId || undefined,
-        channelId: message.channelId,
-        lastActivity: new Date(),
-        context: []
+      try {
+        // Check if Toji is ready first
+        if (!this.toji.isReady()) {
+          console.log('DiscordChatModule: Waiting for Toji to be ready...')
+          // For MVP, we'll just throw an error if not ready
+          throw new Error('Toji is not ready. Please ensure OpenCode server is running.')
+        }
+
+        // Try to get existing sessions first
+        const existingSessions = await this.toji.listSessions()
+        const existingSession = existingSessions.find((s) => s.title === sessionName)
+
+        let sessionId: string
+
+        if (existingSession) {
+          console.log(`DiscordChatModule: Found existing session: ${existingSession.id}`)
+          sessionId = existingSession.id
+          // Switch to the existing session
+          await this.toji.switchSession(sessionId)
+        } else {
+          console.log(`DiscordChatModule: Creating new session: ${sessionName}`)
+          // Create a new Toji session for this channel
+          const tojiSession = await this.toji.createSession(sessionName)
+          sessionId = tojiSession.id
+        }
+
+        session = {
+          sessionId,
+          guildId: message.guildId || undefined,
+          channelId: message.channelId,
+          lastActivity: new Date(),
+          context: []
+        }
+
+        this.sessions.set(channelKey, session)
+      } catch (error) {
+        console.error('DiscordChatModule: Failed to create/get session:', error)
+        throw error
       }
-
-      this.sessions.set(channelKey, session)
     } else {
       session.lastActivity = new Date()
+      // Make sure we're on the right session
+      await this.toji.switchSession(session.sessionId)
     }
 
     return session

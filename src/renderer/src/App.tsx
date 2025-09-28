@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
-import { LuMessageCircle } from 'react-icons/lu'
+import { LuMessageCircle, LuPlug } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
@@ -46,6 +46,13 @@ function AppContent(): React.JSX.Element {
               tooltip="Chat"
               viewName="chat"
               isActive={activeView === 'chat'}
+              onClick={handleIconClick}
+            />
+            <IconButton
+              icon={<LuPlug />}
+              tooltip="Integrations"
+              viewName="integrations"
+              isActive={activeView === 'integrations'}
               onClick={handleIconClick}
             />
           </Stack>

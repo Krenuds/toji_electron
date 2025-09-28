@@ -9,13 +9,14 @@ interface AppViewProviderProps {
 export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.Element {
   const [activeView, setActiveViewState] = useState<ViewType>('chat')
   const [viewState, setViewStateData] = useState<Record<ViewType, ViewStateData>>({
-    chat: {}
+    chat: {},
+    integrations: {}
   })
 
   // Load persisted view from localStorage on mount
   useEffect(() => {
     const savedView = localStorage.getItem('toji-active-view')
-    if (savedView && savedView === 'chat') {
+    if (savedView && (savedView === 'chat' || savedView === 'integrations')) {
       setActiveViewState(savedView as ViewType)
     }
 
