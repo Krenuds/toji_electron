@@ -22,3 +22,4 @@ e2e/**/*.js
 # Claude local settings
 .claude/settings.local.json
 .toji.project
+nul
