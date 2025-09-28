@@ -1,19 +1,17 @@
 // Default configuration for OpenCode SDK servers
 
-// The Config type from SDK is optional partial config override
-// We'll define our own minimal config interface
+// Valid OpenCode configuration based on the official Config API
+// See: https://github.com/sst/opencode/blob/dev/packages/sdk/js/src/gen/types.gen.ts
 export interface OpencodeConfig {
-  model?: string
-  rules?: string[]
-  project?: {
-    name: string
-    initialized: string
-    type: string
-  }
-  // Add other config options as needed
+  model?: string // Primary model in "provider/model" format
+  small_model?: string // Smaller model for tasks like title generation
+  instructions?: string[] // Additional instruction files
+  share?: 'manual' | 'auto' | 'disabled' // Control sharing behavior
+  autoupdate?: boolean // Automatically update to latest version
+  // Note: "rules" and "project" are NOT valid fields
 }
 
 export const defaultOpencodeConfig: OpencodeConfig = {
-  model: 'anthropic/claude-3-5-sonnet-20241022'
-  // Add other default config options as needed
+  model: 'opencode/grok-code'
+  // Minimal config - only model is required
 }

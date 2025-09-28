@@ -268,21 +268,9 @@ Project settings are stored in \`opencode.json\`.
 
     const opencodeConfig = {
       ...defaultOpencodeConfig,
-      ...config,
-      // Add project-specific metadata
-      project: {
-        name: projectName,
-        initialized: new Date().toISOString(),
-        type: 'general' // Can be extended later: 'nodejs', 'python', etc.
-      },
-      // Default rules if not provided
-      rules: config?.rules || [
-        `Project: ${projectName}`,
-        'Follow existing code style and patterns',
-        'Write clean, maintainable code',
-        'Include appropriate error handling',
-        'Add comments for complex logic'
-      ]
+      ...config
+      // Only include valid OpenCode config fields
+      // No "rules" or "project" fields as they are not valid
     }
 
     const configPath = join(directory, 'opencode.json')
