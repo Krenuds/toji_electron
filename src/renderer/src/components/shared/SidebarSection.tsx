@@ -17,16 +17,31 @@ export function SidebarSection({
   children
 }: SidebarSectionProps): React.JSX.Element {
   return (
-    <Box>
+    <Box w="full" maxW="full" overflow="hidden">
       {action ? (
-        <HStack justify="space-between" mb={3}>
-          <Text color="app.light" fontSize="xs" fontWeight="semibold">
+        <HStack justify="space-between" mb={3} w="full" maxW="full">
+          <Text
+            color="app.light"
+            fontSize="xs"
+            fontWeight="semibold"
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
+          >
             {title}
           </Text>
           {action}
         </HStack>
       ) : (
-        <Text color="app.light" fontSize="xs" fontWeight="semibold" mb={3}>
+        <Text
+          color="app.light"
+          fontSize="xs"
+          fontWeight="semibold"
+          mb={3}
+          overflow="hidden"
+          textOverflow="ellipsis"
+          whiteSpace="nowrap"
+        >
           {title}
         </Text>
       )}

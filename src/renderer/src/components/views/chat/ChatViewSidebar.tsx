@@ -4,7 +4,6 @@ import { LuTrash2, LuRefreshCw, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
-import { SidebarCard } from '../../shared/SidebarCard'
 // import { StatusBadge } from '../../StatusBadge' // Not currently used
 import { ProjectList } from './ProjectList'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
@@ -76,17 +75,34 @@ export function ChatViewSidebar(): React.JSX.Element {
     const isSwitching = switchingSessionId === session.id
 
     return (
-      <SidebarCard
+      <Box
         key={session.id}
-        isActive={isActive}
-        isDisabled={isDeleting || isSwitching}
-        onClick={() => handleSwitchSession(session.id)}
         position="relative"
+        p={2}
         minH="3.5rem"
-        maxW="100%"
+        borderRadius="md"
+        bg={isActive ? 'green.800' : 'app.dark'}
+        border="1px solid"
+        borderColor={isActive ? 'app.accent' : 'app.border'}
+        cursor={isDeleting || isSwitching ? 'not-allowed' : 'pointer'}
+        opacity={isDeleting || isSwitching ? 0.6 : 1}
+        _hover={
+          !isDeleting && !isSwitching
+            ? {
+                bg: isActive ? 'green.800' : 'app.medium',
+                borderColor: 'app.accent'
+              }
+            : {}
+        }
+        onClick={() => {
+          if (!isDeleting && !isSwitching) {
+            handleSwitchSession(session.id)
+          }
+        }}
+        transition="all 0.2s"
         overflow="hidden"
       >
-        {/* Active badge - top right */}
+        {/* Active badge */}
         {isActive && (
           <Box
             position="absolute"
@@ -106,43 +122,44 @@ export function ChatViewSidebar(): React.JSX.Element {
           </Box>
         )}
 
-        <Box w="calc(100% - 3rem)" pr={2}>
-          <VStack align="start" gap={1} w="full">
-            {/* Session title - WILL TRUNCATE */}
-            <Text
-              color="app.light"
-              fontSize="sm"
-              fontWeight="medium"
-              lineClamp={1}
-              textOverflow="ellipsis"
-              overflow="hidden"
-              whiteSpace="nowrap"
-              display="block"
-              w="full"
-            >
-              {session.title || `Session ${session.id.slice(0, 8)}`}
-            </Text>
-            {isSwitching && (
-              <Spinner size="xs" color="app.accent" position="absolute" right={2} top={2} />
-            )}
+        {/* Content with proper flex constraints */}
+        <HStack align="start" gap={2} pr="2rem">
+          <VStack align="start" gap={0.5} flex={1} minW="0">
+            {/* Session title with truncation */}
+            <Box w="full" overflow="hidden">
+              <Text
+                color="app.light"
+                fontSize="sm"
+                fontWeight="medium"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                whiteSpace="nowrap"
+              >
+                {session.title || `Session ${session.id.slice(0, 8)}`}
+              </Text>
+            </Box>
 
-            {/* Project name */}
-            <Text
-              color="app.text"
-              fontSize="2xs"
-              lineClamp={1}
-              textOverflow="ellipsis"
-              overflow="hidden"
-              whiteSpace="nowrap"
-              minH="1rem"
-              w="full"
-            >
-              {session.projectPath ? session.projectPath.split(/[\\/]/).pop() || 'Project' : ' '}
-            </Text>
+            {/* Project name with truncation */}
+            <Box w="full" overflow="hidden">
+              <Text
+                color="app.text"
+                fontSize="2xs"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                whiteSpace="nowrap"
+              >
+                {session.projectPath ? session.projectPath.split(/[\\/]/).pop() || 'Project' : ' '}
+              </Text>
+            </Box>
           </VStack>
-        </Box>
+        </HStack>
 
-        {/* Delete button - bottom right */}
+        {/* Loading spinner */}
+        {isSwitching && (
+          <Spinner size="xs" color="app.accent" position="absolute" right={2} top={2} />
+        )}
+
+        {/* Delete button */}
         <IconButton
           position="absolute"
           bottom={1}
@@ -163,13 +180,13 @@ export function ChatViewSidebar(): React.JSX.Element {
         >
           {isDeleting ? <Spinner size="xs" color="white" /> : <LuTrash2 size={12} />}
         </IconButton>
-      </SidebarCard>
+      </Box>
     )
   }
 
   return (
     <SidebarContainer>
-      <VStack align="stretch" gap={4}>
+      <VStack align="stretch" gap={4} minW="0">
         <SidebarHeader title="Chat with Toji" subtitle="AI-powered coding assistant" />
 
         <Separator borderColor="app.border" />
@@ -218,7 +235,7 @@ export function ChatViewSidebar(): React.JSX.Element {
             </HStack>
           }
         >
-          <VStack gap={2} align="stretch">
+          <VStack gap={2} align="stretch" minW="0">
             {!currentProject ? (
               <Text color="app.text" fontSize="2xs" textAlign="center" py={2}>
                 Select a project to view sessions
@@ -262,7 +279,7 @@ export function ChatViewSidebar(): React.JSX.Element {
 
         {/* Quick Stats */}
         <SidebarSection title="Session Info">
-          <VStack gap={2} align="stretch">
+          <VStack gap={2} align="stretch" minW="0">
             <HStack justify="space-between">
               <Text color="app.text" fontSize="2xs">
                 Total Sessions

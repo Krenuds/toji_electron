@@ -24,6 +24,9 @@ export const SidebarCard: React.FC<SidebarCardProps> = ({
       borderColor={isActive ? 'app.accent' : 'app.border'}
       cursor={isDisabled ? 'not-allowed' : onClick ? 'pointer' : 'default'}
       opacity={isDisabled ? 0.6 : 1}
+      w="full"
+      maxW="full"
+      overflow="hidden"
       _hover={
         !isDisabled && onClick
           ? {

@@ -59,7 +59,17 @@ function AppContent(): React.JSX.Element {
         </Box>
 
         {/* Sidebar - Middle Panel */}
-        <Box w="300px" h="100%" bg="app.dark" borderRight="3px" borderColor="app.border">
+        <Box
+          w="300px"
+          minW="300px"
+          maxW="300px"
+          flexShrink={0}
+          h="100%"
+          bg="app.dark"
+          borderRight="3px"
+          borderColor="app.border"
+          overflow="hidden"
+        >
           {getSidebarContent()}
         </Box>
 

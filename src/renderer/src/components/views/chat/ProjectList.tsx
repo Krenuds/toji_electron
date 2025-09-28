@@ -1,9 +1,8 @@
 import React from 'react'
-import { VStack, HStack, Text, Button } from '@chakra-ui/react'
+import { VStack, HStack, Text, Button, Box } from '@chakra-ui/react'
 import { LuFolderOpen, LuCheck } from 'react-icons/lu'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 import { SidebarSection } from '../../shared/SidebarSection'
-import { SidebarCard } from '../../shared/SidebarCard'
 import { Tooltip } from '../../shared/Tooltip'
 
 interface Project {
@@ -42,22 +41,37 @@ export const ProjectList: React.FC = () => {
           fontSize: 'xs'
         }}
       >
-        <SidebarCard isActive={isActive} onClick={() => handleProjectClick(project.worktree)}>
-          <HStack gap={2}>
-            <Text
-              color="app.light"
-              fontSize="sm"
-              fontWeight="medium"
-              lineClamp={1}
-              overflow="hidden"
-              textOverflow="ellipsis"
-              flex={1}
-            >
-              {projectName}
-            </Text>
+        <Box
+          p={2}
+          borderRadius="md"
+          bg={isActive ? 'green.800' : 'app.dark'}
+          border="1px solid"
+          borderColor={isActive ? 'app.accent' : 'app.border'}
+          cursor="pointer"
+          _hover={{
+            bg: isActive ? 'green.800' : 'app.medium',
+            borderColor: 'app.accent'
+          }}
+          onClick={() => handleProjectClick(project.worktree)}
+          transition="all 0.2s"
+          overflow="hidden"
+        >
+          <HStack gap={2} minW="0">
+            <Box flex={1} minW="0" overflow="hidden">
+              <Text
+                color="app.light"
+                fontSize="sm"
+                fontWeight="medium"
+                overflow="hidden"
+                textOverflow="ellipsis"
+                whiteSpace="nowrap"
+              >
+                {projectName}
+              </Text>
+            </Box>
             {isActive && <LuCheck size={14} color="#48bb78" />}
           </HStack>
-        </SidebarCard>
+        </Box>
       </Tooltip>
     )
   }
@@ -79,9 +93,9 @@ export const ProjectList: React.FC = () => {
         )
       }
     >
-      <VStack gap={2} align="stretch">
+      <VStack gap={2} align="stretch" minW="0">
         {projectError ? (
-          <VStack gap={2} py={2}>
+          <VStack gap={2} py={2} minW="0">
             <Text color="red.400" fontSize="2xs" textAlign="center">
               {projectError}
             </Text>
@@ -90,7 +104,7 @@ export const ProjectList: React.FC = () => {
             </Button>
           </VStack>
         ) : projects.length === 0 ? (
-          <VStack gap={3} py={2}>
+          <VStack gap={3} py={2} minW="0">
             <Text color="app.text" fontSize="xs" textAlign="center">
               No projects yet
             </Text>
