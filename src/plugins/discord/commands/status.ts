@@ -2,6 +2,10 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
 import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 import { DISCORD_COLORS } from '../constants'
+import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createErrorEmbed } from '../utils/errors'
+
+const log = createFileDebugLogger('discord:commands:status')
 
 export const data = new SlashCommandBuilder()
   .setName('status')
@@ -30,7 +34,7 @@ export async function execute(
         activeServers = servers.length
         serverStatus = '✅ Connected'
       } catch (err) {
-        console.error('Error getting Toji status details:', err)
+        log('ERROR: Failed to get Toji status details: %o', err)
         serverStatus = '⚠️ Connection issues'
       }
     }
@@ -88,16 +92,8 @@ export async function execute(
 
     await interaction.editReply({ embeds: [statusEmbed] })
   } catch (error) {
-    console.error('Status command error:', error)
-
-    const errorEmbed = {
-      color: DISCORD_COLORS.ERROR,
-      title: '❌ Status Check Failed',
-      description: `Failed to retrieve status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      footer: {
-        text: 'Try checking the OpenCode server connection'
-      }
-    }
+    log('ERROR: Status command failed: %o', error)
+    const errorEmbed = createErrorEmbed(error, 'Status Check')
 
     await interaction.editReply({ embeds: [errorEmbed] })
   }

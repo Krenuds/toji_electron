@@ -5,6 +5,7 @@ import type { DiscordProjectManager } from './modules/DiscordProjectManager'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
 import { createFileDebugLogger } from '../../main/utils/logger'
+import { sendDiscordResponse } from './utils/messages'
 
 const log = createFileDebugLogger('discord:plugin')
 
@@ -103,7 +104,7 @@ export class DiscordPlugin extends EventEmitter {
 
             log('Got response (%d chars), sending to Discord', response?.length || 0)
             // Send response
-            await this.sendResponse(message, response)
+            await sendDiscordResponse(message, response)
           } catch (error) {
             log('ERROR: Failed to process message in project channel: %o', error)
             await message.reply(
@@ -125,7 +126,7 @@ export class DiscordPlugin extends EventEmitter {
         try {
           // Use current active project context
           const response = await this.projectManager.chat(content)
-          await this.sendResponse(message, response)
+          await sendDiscordResponse(message, response)
         } catch (error) {
           log('ERROR: Failed to process mentioned message: %o', error)
           await message.reply(
@@ -134,83 +135,6 @@ export class DiscordPlugin extends EventEmitter {
         }
       }
     }
-  }
-
-  /**
-   * Send a response to Discord, handling message splitting
-   */
-  private async sendResponse(message: Message, response: string): Promise<void> {
-    try {
-      // Check if we have a valid response
-      if (!response || response.trim().length === 0) {
-        log('WARNING: Empty response received, sending default message')
-        await message.reply('I received your message but got an empty response. Please try again.')
-        return
-      }
-
-      // Discord has a 2000 character limit per message
-      if (response.length > 2000) {
-        log('Response is long (%d chars), splitting into chunks', response.length)
-        const chunks = this.splitMessage(response, 2000)
-        for (const chunk of chunks) {
-          await message.reply(chunk)
-        }
-      } else {
-        log('Sending response (%d chars)', response.length)
-        await message.reply(response)
-      }
-    } catch (error) {
-      log('ERROR: Failed to send Discord response: %o', error)
-      try {
-        await message.reply(
-          '❌ Failed to send response: ' +
-            (error instanceof Error ? error.message : 'Unknown error')
-        )
-      } catch (fallbackError) {
-        log('ERROR: Failed to send error message: %o', fallbackError)
-      }
-    }
-  }
-
-  /**
-   * Split a long message into chunks for Discord's character limit
-   */
-  private splitMessage(text: string, maxLength: number): string[] {
-    const chunks: string[] = []
-    let currentChunk = ''
-
-    const lines = text.split('\n')
-    for (const line of lines) {
-      if (currentChunk.length + line.length + 1 > maxLength) {
-        if (currentChunk) {
-          chunks.push(currentChunk)
-          currentChunk = ''
-        }
-
-        // If a single line is too long, split it
-        if (line.length > maxLength) {
-          const words = line.split(' ')
-          for (const word of words) {
-            if (currentChunk.length + word.length + 1 > maxLength) {
-              chunks.push(currentChunk)
-              currentChunk = word
-            } else {
-              currentChunk += (currentChunk ? ' ' : '') + word
-            }
-          }
-        } else {
-          currentChunk = line
-        }
-      } else {
-        currentChunk += (currentChunk ? '\n' : '') + line
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk)
-    }
-
-    return chunks
   }
 
   /**

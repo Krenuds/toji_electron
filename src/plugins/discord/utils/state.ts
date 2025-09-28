@@ -26,7 +26,7 @@ export async function loadState(): Promise<DiscordBotState> {
     const data = await fs.readFile(STATE_FILE, 'utf-8')
     log('Loaded state from %s', STATE_FILE)
     return JSON.parse(data)
-  } catch (error) {
+  } catch {
     log('No existing state found, starting fresh')
     return {
       projects: {}

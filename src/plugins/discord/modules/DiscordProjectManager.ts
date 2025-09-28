@@ -217,7 +217,6 @@ export class DiscordProjectManager implements DiscordModule {
       await this.toji.switchToProject(project.projectPath)
 
       // Update active channel
-      const previousActive = this.activeChannelId
       this.activeChannelId = channelId
 
       // No need for visual indicators - we auto-switch based on channel context
@@ -418,10 +417,7 @@ export class DiscordProjectManager implements DiscordModule {
       // Save state after import
       await this.persistState()
 
-      // Update visual indicators
-      for (const [channelId, project] of this.projectChannels) {
-        await this.updateChannelIndicator(channelId, project.isActive)
-      }
+      // No visual indicators needed - we auto-switch based on channel context
 
       log('Auto-import complete: %d projects imported', this.projectChannels.size)
     } catch (error) {

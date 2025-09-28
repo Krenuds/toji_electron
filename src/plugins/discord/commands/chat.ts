@@ -1,6 +1,9 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
 import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
+import { createFileDebugLogger } from '../../../main/utils/logger'
+
+const log = createFileDebugLogger('discord:commands:chat')
 
 export const data = new SlashCommandBuilder()
   .setName('chat')
@@ -64,7 +67,7 @@ export async function execute(
       content: `**Your message:** ${message}${projectInfo}\n**Toji's response:**\n${truncatedResponse}`
     })
   } catch (error) {
-    console.error('Chat command error:', error)
+    log('ERROR: Chat command failed: %o', error)
 
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
 
