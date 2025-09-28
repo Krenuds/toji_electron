@@ -1,94 +1,93 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
-// Import ProjectInfo interface matching backend
-interface ProjectInfo {
+interface Project {
+  worktree: string
+  // Add other project properties as needed
+}
+
+interface CurrentProject {
   path: string
-  name: string
-  sdkProject: {
-    id: string
-    worktree: string
-    vcs?: string
-  }
+  sessionId?: string
 }
 
 interface UseProjectsReturn {
-  // Project listing
-  projects: ProjectInfo[]
+  projects: Project[]
+  currentProject: CurrentProject | null
+  switchProject: (
+    projectPath: string,
+    config?: Record<string, unknown>
+  ) => Promise<{ success: boolean; projectPath: string; port: number }>
   isLoading: boolean
-  error: string | null
-  fetchProjects: () => Promise<void>
-
-  // Current project info
-  currentProject: ProjectInfo | null
-  currentProjectError: string | null
-  fetchCurrentProject: () => Promise<void>
+  refreshProjects: () => Promise<void>
 }
 
-export function useProjects(): UseProjectsReturn {
-  const [projects, setProjects] = useState<ProjectInfo[]>([])
+export const useProjects = (): UseProjectsReturn => {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [currentProject, setCurrentProject] = useState<CurrentProject | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  // Current project state
-  const [currentProject, setCurrentProject] = useState<ProjectInfo | null>(null)
-  const [currentProjectError, setCurrentProjectError] = useState<string | null>(null)
-
-  const fetchProjects = useCallback(async (): Promise<void> => {
-    setIsLoading(true)
-    setError(null)
-
+  // Load projects and current project on mount and periodically
+  const loadProjects = useCallback(async () => {
     try {
-      const projectList = await window.api.project.getAll()
-      setProjects(projectList || [])
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
-      setError(errorMessage)
-      setProjects([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      const [projectList, current] = await Promise.all([
+        window.api.toji.getProjects(),
+        window.api.toji.getCurrentProject()
+      ])
 
-  const fetchCurrentProject = useCallback(async (): Promise<void> => {
-    setCurrentProjectError(null)
-    try {
-      const current = await window.api.project.current()
-      if (current) {
-        setCurrentProject({
-          path: current.worktree,
-          name: current.worktree.split(/[\\/]/).pop() || current.worktree,
-          sdkProject: current
-        })
-      } else {
-        setCurrentProject(null)
+      setProjects((projectList as unknown as Project[]) || [])
+
+      if (current && current.path) {
+        setCurrentProject({ path: current.path, sessionId: current.sessionId })
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to fetch current project'
-      setCurrentProjectError(errorMessage)
-      setCurrentProject(null)
+      console.error('Failed to load projects:', error)
     }
   }, [])
 
-  // Fetch projects and current project on mount
+  // Initialize and set up periodic refresh
   useEffect(() => {
-    const initialize = async (): Promise<void> => {
-      await Promise.all([fetchProjects(), fetchCurrentProject()])
-    }
+    // Load immediately
+    loadProjects()
 
-    initialize()
-  }, [fetchProjects, fetchCurrentProject])
+    // Refresh every 5 seconds to catch newly discovered projects
+    const interval = setInterval(loadProjects, 5000)
+
+    return () => clearInterval(interval)
+  }, [loadProjects])
+
+  // Switch to a different project
+  const switchProject = useCallback(
+    async (projectPath: string, config?: Record<string, unknown>) => {
+      setIsLoading(true)
+      try {
+        const result = await window.api.toji.switchProject(projectPath, config)
+
+        if (result.success) {
+          // Update current project immediately
+          setCurrentProject({ path: projectPath })
+
+          // Refresh the projects list (new project should appear)
+          await loadProjects()
+
+          return result
+        } else {
+          throw new Error('Failed to switch project')
+        }
+      } catch (error) {
+        console.error('Error switching project:', error)
+        throw error
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [loadProjects]
+  )
 
   return {
-    // Project listing
     projects,
-    isLoading,
-    error,
-    fetchProjects,
-
-    // Current project info
     currentProject,
-    currentProjectError,
-    fetchCurrentProject
+    switchProject,
+    isLoading,
+    refreshProjects: loadProjects
   }
 }

@@ -103,4 +103,38 @@ export function registerTojiHandlers(toji: Toji): void {
       throw error
     }
   })
+
+  // Project management handlers
+  ipcMain.handle(
+    'toji:switchProject',
+    async (_, projectPath: string, config?: Record<string, unknown>) => {
+      try {
+        return await toji.switchToProject(projectPath, config)
+      } catch (error) {
+        console.error('Switch project error:', error)
+        throw error
+      }
+    }
+  )
+
+  ipcMain.handle('toji:getProjects', async () => {
+    try {
+      return await toji.getAvailableProjects()
+    } catch (error) {
+      console.error('Get projects error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:getCurrentProject', async () => {
+    try {
+      return {
+        path: toji.getCurrentProjectDirectory(),
+        sessionId: toji.getCurrentSessionId()
+      }
+    } catch (error) {
+      console.error('Get current project error:', error)
+      throw error
+    }
+  })
 }

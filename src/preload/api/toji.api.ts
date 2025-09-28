@@ -62,7 +62,16 @@ export const tojiAPI = {
     return (): void => {
       ipcRenderer.removeListener('session:restored', subscription)
     }
-  }
+  },
 
-  // Legacy operations - removed (replaced by projects system)
+  // Project management operations
+  switchProject: (
+    projectPath: string,
+    config?: Record<string, unknown>
+  ): Promise<{ success: boolean; projectPath: string; port: number }> =>
+    ipcRenderer.invoke('toji:switchProject', projectPath, config),
+  getProjects: (): Promise<Array<Record<string, unknown>>> =>
+    ipcRenderer.invoke('toji:getProjects'),
+  getCurrentProject: (): Promise<{ path?: string; sessionId?: string }> =>
+    ipcRenderer.invoke('toji:getCurrentProject')
 }

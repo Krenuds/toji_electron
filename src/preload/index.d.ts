@@ -11,6 +11,11 @@ declare global {
       discord: typeof discordAPI
       binary: typeof binaryAPI
       logger: typeof loggerAPI
+      dialog: {
+        showOpenDialog: (
+          options: Electron.OpenDialogOptions
+        ) => Promise<{ canceled: boolean; filePaths: string[] }>
+      }
     }
   }
 }

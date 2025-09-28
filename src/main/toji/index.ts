@@ -7,6 +7,8 @@ import { ProjectManager } from './project'
 import { ServerManager } from './server'
 import { SessionManager } from './sessions'
 import type { ServerStatus } from './types'
+import { defaultOpencodeConfig } from './config'
+import type { OpencodeConfig } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 import { BrowserWindow } from 'electron'
 
@@ -17,6 +19,8 @@ const logChat = createFileDebugLogger('toji:chat')
 export class Toji {
   private client?: OpencodeClient
   private currentProjectDirectory?: string
+  private globalConfig: OpencodeConfig = defaultOpencodeConfig
+  private originalCwd: string = process.cwd()
 
   // Public modules
   public readonly project: ProjectManager
@@ -308,6 +312,65 @@ export class Toji {
   // Get current project directory
   getCurrentProjectDirectory(): string | undefined {
     return this.currentProjectDirectory
+  }
+
+  // Set global configuration
+  setGlobalConfig(config: OpencodeConfig): void {
+    this.globalConfig = config
+    log('Updated global config: %o', config)
+  }
+
+  // Get available projects (from OpenCode SDK)
+  async getAvailableProjects(): Promise<Array<Record<string, unknown>>> {
+    if (!this.client) {
+      log('Client not connected, returning empty project list')
+      return []
+    }
+    return this.project.list()
+  }
+
+  // Switch to a project (changing CWD and starting server)
+  async switchToProject(
+    projectPath: string,
+    configOverride?: Partial<OpencodeConfig>
+  ): Promise<{ success: boolean; projectPath: string; port: number }> {
+    log('Switching to project: %s with config override: %o', projectPath, configOverride)
+
+    try {
+      // 1. Save current CWD (in case we need to restore)
+      const previousCwd = process.cwd()
+      log('Current CWD: %s', previousCwd)
+
+      // 2. Change to project directory (critical for OpenCode discovery!)
+      log('Changing CWD to: %s', projectPath)
+      process.chdir(projectPath)
+
+      // 3. Merge configs
+      const config = { ...this.globalConfig, ...configOverride }
+      log('Merged config for project: %o', config)
+
+      // 4. Start server for this project (keeps others running)
+      const port = await this.server.start(projectPath, config)
+      log('Server started on port %d for project: %s', port, projectPath)
+
+      // 5. Connect client to this project's server
+      await this.connectClientToProject(projectPath)
+      log('Client connected to project: %s', projectPath)
+
+      // 6. Project will now appear in project.list() automatically!
+      // OpenCode discovers it when the server starts in that directory
+
+      return {
+        success: true,
+        projectPath,
+        port
+      }
+    } catch (error) {
+      log('ERROR: Failed to switch to project %s: %o', projectPath, error)
+      // Restore CWD on error
+      process.chdir(this.originalCwd)
+      throw error
+    }
   }
 
   // Get current session info

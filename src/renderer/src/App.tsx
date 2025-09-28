@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
-import { LuLayoutDashboard, LuMessageCircle, LuFolderTree } from 'react-icons/lu'
+import { LuLayoutDashboard, LuMessageCircle } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
@@ -45,13 +45,6 @@ function AppContent(): React.JSX.Element {
               tooltip="Dashboard"
               viewName="dashboard"
               isActive={activeView === 'dashboard'}
-              onClick={handleIconClick}
-            />
-            <IconButton
-              icon={<LuFolderTree />}
-              tooltip="Projects"
-              viewName="projects"
-              isActive={activeView === 'projects'}
               onClick={handleIconClick}
             />
             <IconButton

@@ -1,4 +1,4 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Import all API modules
@@ -11,7 +11,11 @@ const api = {
   window: windowAPI,
   discord: discordAPI,
   binary: binaryAPI,
-  logger: loggerAPI
+  logger: loggerAPI,
+  dialog: {
+    showOpenDialog: (options: Electron.OpenDialogOptions) =>
+      ipcRenderer.invoke('dialog:showOpenDialog', options)
+  }
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

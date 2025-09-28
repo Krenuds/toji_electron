@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
@@ -142,6 +142,11 @@ app.whenReady().then(async () => {
   registerDiscordHandlers(discordService, config)
   registerBinaryHandlers(openCodeService)
   registerLoggerHandlers()
+
+  // Register dialog handler
+  ipcMain.handle('dialog:showOpenDialog', async (_, options) => {
+    return dialog.showOpenDialog(options)
+  })
 
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.toji.toji3')

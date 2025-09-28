@@ -172,7 +172,9 @@ export function ChatViewMain(): React.JSX.Element {
   }
 
   // Get project name for display
-  const projectName = currentProject?.name || 'No Project'
+  const projectName = currentProject?.path
+    ? currentProject.path.split(/[/\\]/).pop() || currentProject.path
+    : 'No Project'
 
   return (
     <VStack align="stretch" gap={6} h="100%">
