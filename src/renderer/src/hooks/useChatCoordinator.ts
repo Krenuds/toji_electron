@@ -559,17 +559,31 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       localStorage.removeItem(CACHE_KEYS.LAST_PROJECT)
       console.log('[ChatCoordinator.closeProject] Cleared cache and state')
 
-      // Close project in backend (stops server)
+      // Close project in backend (this will stop the project server and reconnect to global server)
       await window.api.toji.closeProject()
       console.log('[ChatCoordinator.closeProject] Project closed successfully')
 
-      // Reload projects list (closed project should still appear but inactive)
+      // Wait a moment for the global server to be ready
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Check if global server is ready
+      const serverReady = await checkServerStatus()
+      if (!serverReady) {
+        console.log('[ChatCoordinator.closeProject] Waiting for global server to be ready...')
+        updateState({ serverStatus: 'initializing' })
+        // Give it more time for the global server to start
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await checkServerStatus()
+      }
+
+      // Reload projects list (from the global server)
+      console.log('[ChatCoordinator.closeProject] Loading projects from global server')
       await loadProjects()
     } catch (error) {
       console.error('[ChatCoordinator.closeProject] Failed to close project:', error)
       updateState({ projectError: 'Failed to close project' })
     }
-  }, [loadProjects, updateState])
+  }, [loadProjects, updateState, checkServerStatus])
 
   // Initialize project with git and opencode.json
   const initializeProject = useCallback(async () => {

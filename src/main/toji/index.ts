@@ -396,11 +396,34 @@ export class Toji {
 
     // Clear current project directory
     this.currentProjectDirectory = undefined
+    this.currentProjectId = undefined
 
     // Clear from config
     if (this._config) {
       this._config.setCurrentProjectPath('')
       log('Cleared current project from config')
+    }
+
+    // CRITICAL: Reconnect to a default global server
+    // This ensures the project list remains accessible
+    try {
+      // Use the app's install directory as the default global location
+      // This ensures we have a consistent "global" server for project discovery
+      const { app } = await import('electron')
+      const globalDirectory = app.getPath('userData') // AppData/Roaming/toji3
+
+      log('Reconnecting to global server at: %s', globalDirectory)
+
+      // Connect to global server (this will create one if needed)
+      await this.connectClient(globalDirectory)
+
+      // Set the currentProjectId to 'global' to indicate we're in global mode
+      this.currentProjectId = 'global'
+
+      log('Successfully connected to global server')
+    } catch (error) {
+      log('ERROR: Failed to connect to global server: %o', error)
+      // Don't throw here - we've at least closed the project
     }
 
     // Emit project closed event to notify frontend
