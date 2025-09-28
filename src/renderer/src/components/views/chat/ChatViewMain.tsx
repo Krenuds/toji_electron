@@ -254,12 +254,12 @@ export function ChatViewMain(): React.JSX.Element {
             {currentProject && (
               <Badge
                 size="sm"
-                colorPalette="red"
+                colorPalette="gray"
                 variant="subtle"
                 cursor="pointer"
                 onClick={closeProject}
                 _hover={{
-                  bg: 'red.600',
+                  bg: 'gray.600',
                   color: 'white'
                 }}
                 title="Close project and stop server"
