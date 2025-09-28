@@ -194,7 +194,7 @@ export class Toji {
       const activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
       logChat('Clearing current session: %s', activeSessionId || 'none')
       if (activeSessionId) {
-        this.sessions.invalidateMessageCache(activeSessionId)
+        this.sessions.invalidateMessageCache(activeSessionId, this.currentProjectDirectory)
       }
       // Remove the active session reference
       this.sessions.setActiveSession('', this.currentProjectDirectory)

@@ -15,6 +15,7 @@ export class SessionManager {
   // Per-project session tracking
   private sessionCache: Map<string, SessionInfo[]> = new Map()
   private activeSessionPerProject: Map<string, string> = new Map()
+  // Changed: Use composite key (projectPath:sessionId) for message cache to prevent cross-project contamination
   private messageCache: Map<
     string,
     { messages: Array<{ info: Message; parts: Part[] }>; timestamp: number }
@@ -147,8 +148,11 @@ export class SessionManager {
         )
       }
 
-      // Clear message cache for this session
-      this.messageCache.delete(sessionId)
+      // Clear message cache for this session (check all possible cache keys)
+      this.messageCache.delete(sessionId) // Legacy key
+      if (projectPath) {
+        this.messageCache.delete(`${projectPath}:${sessionId}`) // Composite key
+      }
 
       // Clear active session if it was deleted
       if (projectPath && this.activeSessionPerProject.get(projectPath) === sessionId) {
@@ -171,13 +175,25 @@ export class SessionManager {
     projectPath?: string,
     useCache = true
   ): Promise<Array<{ info: Message; parts: Part[] }>> {
-    log('Getting messages for session: %s (useCache: %s)', sessionId, useCache)
+    log(
+      'Getting messages for session: %s in project: %s (useCache: %s)',
+      sessionId,
+      projectPath || 'default',
+      useCache
+    )
+
+    // Create composite cache key to prevent cross-project contamination
+    const cacheKey = projectPath ? `${projectPath}:${sessionId}` : sessionId
 
     // Check cache first
-    if (useCache && this.messageCache.has(sessionId)) {
-      const cached = this.messageCache.get(sessionId)!
+    if (useCache && this.messageCache.has(cacheKey)) {
+      const cached = this.messageCache.get(cacheKey)!
       if (Date.now() - cached.timestamp < this.CACHE_TTL) {
-        log('Returning cached messages for session: %s', sessionId)
+        log(
+          'Returning cached messages for session: %s in project: %s',
+          sessionId,
+          projectPath || 'default'
+        )
         return cached.messages
       }
     }
@@ -197,8 +213,9 @@ export class SessionManager {
       // TypeScript needs explicit type assertion due to SDK type definitions
       const messages = (response as unknown as Array<{ info: Message; parts: Part[] }>) || []
 
-      // Cache the results
-      this.messageCache.set(sessionId, {
+      // Cache the results with composite key
+      const cacheKey = projectPath ? `${projectPath}:${sessionId}` : sessionId
+      this.messageCache.set(cacheKey, {
         messages: messages,
         timestamp: Date.now()
       })
@@ -247,9 +264,24 @@ export class SessionManager {
   /**
    * Clear message cache for a session
    */
-  invalidateMessageCache(sessionId: string): void {
-    log('Invalidating message cache for session: %s', sessionId)
+  invalidateMessageCache(sessionId: string, projectPath?: string): void {
+    log(
+      'Invalidating message cache for session: %s in project: %s',
+      sessionId,
+      projectPath || 'all'
+    )
+    // Clear both legacy and composite keys
     this.messageCache.delete(sessionId)
+    if (projectPath) {
+      this.messageCache.delete(`${projectPath}:${sessionId}`)
+    } else {
+      // If no project path provided, clear all entries for this session
+      for (const key of this.messageCache.keys()) {
+        if (key.endsWith(`:${sessionId}`)) {
+          this.messageCache.delete(key)
+        }
+      }
+    }
   }
 
   /**
@@ -258,6 +290,13 @@ export class SessionManager {
   invalidateSessionCache(projectPath: string): void {
     log('Invalidating session cache for project: %s', projectPath)
     this.sessionCache.delete(projectPath)
+
+    // Also clear message caches for all sessions in this project
+    for (const key of this.messageCache.keys()) {
+      if (key.startsWith(`${projectPath}:`)) {
+        this.messageCache.delete(key)
+      }
+    }
   }
 
   /**

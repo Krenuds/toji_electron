@@ -42,16 +42,13 @@ export const ProjectList: React.FC = () => {
           fontSize: 'xs'
         }}
       >
-        <SidebarCard
-          isActive={isActive}
-          onClick={() => handleProjectClick(project.worktree)}
-        >
+        <SidebarCard isActive={isActive} onClick={() => handleProjectClick(project.worktree)}>
           <HStack gap={2}>
             <Text
               color="app.light"
               fontSize="sm"
               fontWeight="medium"
-              noOfLines={1}
+              lineClamp={1}
               overflow="hidden"
               textOverflow="ellipsis"
               flex={1}
@@ -88,12 +85,7 @@ export const ProjectList: React.FC = () => {
             <Text color="red.400" fontSize="2xs" textAlign="center">
               {projectError}
             </Text>
-            <Button
-              size="xs"
-              variant="ghost"
-              colorPalette="red"
-              onClick={clearErrors}
-            >
+            <Button size="xs" variant="ghost" colorPalette="red" onClick={clearErrors}>
               Dismiss
             </Button>
           </VStack>

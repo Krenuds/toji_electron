@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Spinner, IconButton } from '@chakra-ui/react'
 import { LuTrash2, LuRefreshCw, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
 import { SidebarCard } from '../../shared/SidebarCard'
-import { StatusBadge } from '../../StatusBadge'
+// import { StatusBadge } from '../../StatusBadge' // Not currently used
 import { ProjectList } from './ProjectList'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 import type { Session } from '../../../../../preload/index.d'
@@ -15,7 +15,7 @@ export function ChatViewSidebar(): React.JSX.Element {
     currentProject,
     sessions,
     currentSessionId,
-    serverStatus,
+    // serverStatus, // Not currently used
     isLoadingSessions,
     sessionError,
     createSession,
@@ -27,21 +27,22 @@ export function ChatViewSidebar(): React.JSX.Element {
 
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
-  const [workingDirectory, setWorkingDirectory] = useState<string | undefined>()
+  // const [workingDirectory, setWorkingDirectory] = useState<string | undefined>() // Not currently used
 
   // Fetch working directory on mount and when project changes
-  useEffect(() => {
-    const fetchWorkingDirectory = async (): Promise<void> => {
-      try {
-        const info = await window.api.toji.getCurrentProject()
-        setWorkingDirectory(info.workingDirectory)
-      } catch (error) {
-        console.error('Failed to get working directory:', error)
-      }
-    }
-
-    fetchWorkingDirectory()
-  }, [currentProject])
+  // Currently not used, but keeping for future use
+  // useEffect(() => {
+  //   const fetchWorkingDirectory = async (): Promise<void> => {
+  //     try {
+  //       const info = await window.api.toji.getCurrentProject()
+  //       setWorkingDirectory(info.workingDirectory)
+  //     } catch (error) {
+  //       console.error('Failed to get working directory:', error)
+  //     }
+  //   }
+  //
+  //   fetchWorkingDirectory()
+  // }, [currentProject])
 
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     if (deletingSessionId) return
@@ -112,7 +113,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               color="app.light"
               fontSize="sm"
               fontWeight="medium"
-              noOfLines={1}
+              lineClamp={1}
               textOverflow="ellipsis"
               overflow="hidden"
               whiteSpace="nowrap"
@@ -121,13 +122,15 @@ export function ChatViewSidebar(): React.JSX.Element {
             >
               {session.title || `Session ${session.id.slice(0, 8)}`}
             </Text>
-            {isSwitching && <Spinner size="xs" color="app.accent" position="absolute" right={2} top={2} />}
+            {isSwitching && (
+              <Spinner size="xs" color="app.accent" position="absolute" right={2} top={2} />
+            )}
 
             {/* Project name */}
             <Text
               color="app.text"
               fontSize="2xs"
-              noOfLines={1}
+              lineClamp={1}
               textOverflow="ellipsis"
               overflow="hidden"
               whiteSpace="nowrap"

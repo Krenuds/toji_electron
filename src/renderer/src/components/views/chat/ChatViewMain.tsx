@@ -33,6 +33,11 @@ export function ChatViewMain(): React.JSX.Element {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
+    console.log('[ChatViewMain] Messages updated, count:', messages.length)
+    if (messages.length > 0) {
+      console.log('[ChatViewMain] First message:', messages[0])
+      console.log('[ChatViewMain] Last message:', messages[messages.length - 1])
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
@@ -42,10 +47,12 @@ export function ChatViewMain(): React.JSX.Element {
     const currentMessage = messageInput
     setMessageInput('')
 
+    console.log('[ChatViewMain] Sending message:', currentMessage)
     // Note: In a real app, we'd update the coordinator's state here optimistically
     // For now, let the coordinator handle it after the response
 
     await sendMessage(currentMessage)
+    console.log('[ChatViewMain] Message sent successfully')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -156,6 +163,7 @@ export function ChatViewMain(): React.JSX.Element {
     }
 
     // Show messages
+    console.log('[ChatViewMain.renderChatContent] Rendering', messages.length, 'messages')
     return (
       <VStack
         gap={3}
@@ -176,50 +184,58 @@ export function ChatViewMain(): React.JSX.Element {
           }
         }}
       >
-        {messages.map((msg) => (
-          <Box key={msg.id} w="100%">
-            <HStack align="flex-start" gap={3}>
-              <Box
-                w={8}
-                h={8}
-                borderRadius="full"
-                bg={msg.type === 'user' ? 'green.200' : 'app.accent'}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexShrink={0}
-                mt={1}
-              >
-                {msg.type === 'user' ? (
-                  <LuUser size={16} color="white" />
-                ) : (
-                  <LuBot size={16} color="white" />
-                )}
-              </Box>
-              <Box flex="1">
-                <HStack gap={2} mb={1}>
-                  <Text color="app.light" fontSize="sm" fontWeight="medium">
-                    {msg.type === 'user' ? 'You' : 'Toji'}
-                  </Text>
-                  <Text color="app.text" fontSize="xs">
-                    {msg.timestamp.toLocaleTimeString()}
-                  </Text>
-                </HStack>
+        {messages.map((msg) => {
+          console.log(
+            '[ChatViewMain.renderChatContent] Rendering message:',
+            msg.id,
+            msg.type,
+            msg.content.substring(0, 50)
+          )
+          return (
+            <Box key={msg.id} w="100%">
+              <HStack align="flex-start" gap={3}>
                 <Box
-                  p={3}
-                  borderRadius="md"
-                  bg={msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'}
-                  border="1px solid"
-                  borderColor={msg.type === 'user' ? 'green.500' : 'app.border'}
+                  w={8}
+                  h={8}
+                  borderRadius="full"
+                  bg={msg.type === 'user' ? 'green.200' : 'app.accent'}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  flexShrink={0}
+                  mt={1}
                 >
-                  <Text color="app.light" fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
-                    {msg.content}
-                  </Text>
+                  {msg.type === 'user' ? (
+                    <LuUser size={16} color="white" />
+                  ) : (
+                    <LuBot size={16} color="white" />
+                  )}
                 </Box>
-              </Box>
-            </HStack>
-          </Box>
-        ))}
+                <Box flex="1">
+                  <HStack gap={2} mb={1}>
+                    <Text color="app.light" fontSize="sm" fontWeight="medium">
+                      {msg.type === 'user' ? 'You' : 'Toji'}
+                    </Text>
+                    <Text color="app.text" fontSize="xs">
+                      {msg.timestamp.toLocaleTimeString()}
+                    </Text>
+                  </HStack>
+                  <Box
+                    p={3}
+                    borderRadius="md"
+                    bg={msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'}
+                    border="1px solid"
+                    borderColor={msg.type === 'user' ? 'green.500' : 'app.border'}
+                  >
+                    <Text color="app.light" fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
+                      {msg.content}
+                    </Text>
+                  </Box>
+                </Box>
+              </HStack>
+            </Box>
+          )
+        })}
         <div ref={messagesEndRef} />
       </VStack>
     )

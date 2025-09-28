@@ -86,6 +86,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   const switchingProjectRef = useRef(false)
   const switchingSessionRef = useRef(false)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const loadMessagesAbortRef = useRef<AbortController | null>(null)
 
   // Helper to update state partially
   const updateState = useCallback((updates: Partial<ChatState>) => {
@@ -193,31 +194,107 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     }
   }, [state.currentProject, updateState, saveToCache])
 
-  // Load messages for current session
+  // Load messages for specific session
   const loadMessages = useCallback(
-    async (forceRefresh = false) => {
-      if (!state.currentSessionId) {
+    async (sessionId?: string, forceRefresh = false) => {
+      console.log(
+        '[ChatCoordinator.loadMessages] Starting - sessionId:',
+        sessionId,
+        'currentSessionId:',
+        state.currentSessionId,
+        'forceRefresh:',
+        forceRefresh
+      )
+
+      // Cancel any in-flight message loading
+      if (loadMessagesAbortRef.current) {
+        console.log('[ChatCoordinator.loadMessages] Aborting previous message load')
+        loadMessagesAbortRef.current.abort()
+      }
+
+      // Create new abort controller for this request
+      const abortController = new AbortController()
+      loadMessagesAbortRef.current = abortController
+
+      // Use provided sessionId or fall back to current state
+      const targetSessionId = sessionId || state.currentSessionId
+
+      if (!targetSessionId) {
+        console.log('[ChatCoordinator.loadMessages] No session ID, clearing messages')
         updateState({ messages: [] })
         saveToCache(CACHE_KEYS.CACHED_MESSAGES, [])
         return
       }
 
+      // If a specific sessionId is provided, we're explicitly loading for that session
+      // This happens during project/session switches before state is updated
+      // So we should NOT skip based on currentSessionId comparison
+      if (!sessionId && !state.currentSessionId) {
+        console.log('[ChatCoordinator.loadMessages] No sessionId provided and no current session')
+        return
+      }
+
+      console.log('[ChatCoordinator.loadMessages] Loading messages for session:', targetSessionId)
       updateState({ isLoadingMessages: true, messageError: null })
 
       try {
-        const sdkMessages = await window.api.toji.getSessionMessages(
-          state.currentSessionId,
-          !forceRefresh
+        const sdkMessages = await window.api.toji.getSessionMessages(targetSessionId, !forceRefresh)
+        console.log(
+          '[ChatCoordinator.loadMessages] SDK returned',
+          sdkMessages?.length || 0,
+          'messages for session:',
+          targetSessionId
         )
-        const messages = formatMessagesFromSDK(sdkMessages)
 
-        updateState({ messages })
-        saveToCache(CACHE_KEYS.CACHED_MESSAGES, messages)
+        // Check if request was aborted
+        if (abortController.signal.aborted) {
+          console.log('[ChatCoordinator.loadMessages] Request was aborted')
+          return
+        }
+
+        const messages = formatMessagesFromSDK(sdkMessages)
+        console.log(
+          '[ChatCoordinator.loadMessages] Formatted',
+          messages.length,
+          'messages for display'
+        )
+
+        // If we explicitly requested this session's messages, update state
+        // OR if it matches the current session
+        if (sessionId || targetSessionId === state.currentSessionId) {
+          console.log(
+            '[ChatCoordinator.loadMessages] Updating state with',
+            messages.length,
+            'messages for session:',
+            targetSessionId
+          )
+          updateState({ messages })
+          saveToCache(CACHE_KEYS.CACHED_MESSAGES, messages)
+        } else {
+          console.log(
+            "[ChatCoordinator.loadMessages] Not updating - no explicit session and doesn't match current:",
+            targetSessionId,
+            '!==',
+            state.currentSessionId
+          )
+        }
       } catch (error) {
-        console.error('Failed to load messages:', error)
-        updateState({ messageError: 'Failed to load messages' })
+        // Don't log errors for aborted requests
+        if (!abortController.signal.aborted) {
+          console.error('[ChatCoordinator.loadMessages] Failed to load messages:', error)
+          updateState({ messageError: 'Failed to load messages' })
+        } else {
+          console.log('[ChatCoordinator.loadMessages] Error was due to abort, ignoring')
+        }
       } finally {
-        updateState({ isLoadingMessages: false })
+        if (!abortController.signal.aborted) {
+          console.log('[ChatCoordinator.loadMessages] Complete, setting loading to false')
+          updateState({ isLoadingMessages: false })
+        }
+        // Clear the abort controller reference if it's still this one
+        if (loadMessagesAbortRef.current === abortController) {
+          loadMessagesAbortRef.current = null
+        }
       }
     },
     [state.currentSessionId, updateState, saveToCache]
@@ -256,7 +333,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
         if (currentSessionId) {
           updateState({ currentSessionId })
           saveToCache(CACHE_KEYS.LAST_SESSION, currentSessionId)
-          await loadMessages()
+          await loadMessages(currentSessionId)
         }
       }
 
@@ -280,8 +357,25 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   // Switch project with proper sequencing
   const switchProject = useCallback(
     async (projectPath: string) => {
-      if (switchingProjectRef.current || state.currentProject?.path === projectPath) return
+      console.log(
+        '[ChatCoordinator.switchProject] Starting switch to:',
+        projectPath,
+        'from:',
+        state.currentProject?.path || 'none'
+      )
+
+      if (switchingProjectRef.current || state.currentProject?.path === projectPath) {
+        console.log('[ChatCoordinator.switchProject] Already switching or same project, skipping')
+        return
+      }
       switchingProjectRef.current = true
+
+      // Cancel any in-flight message loading
+      if (loadMessagesAbortRef.current) {
+        console.log('[ChatCoordinator.switchProject] Aborting in-flight message loading')
+        loadMessagesAbortRef.current.abort()
+        loadMessagesAbortRef.current = null
+      }
 
       updateState({
         isLoadingProjects: true,
@@ -308,11 +402,17 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
           saveToCache(CACHE_KEYS.LAST_PROJECT, project)
 
           // Clear old session/messages immediately
+          console.log('[ChatCoordinator.switchProject] Clearing old session data and messages')
           updateState({
             sessions: [],
             currentSessionId: undefined,
             messages: []
           })
+
+          // Clear message cache to prevent showing stale data
+          localStorage.removeItem(CACHE_KEYS.CACHED_MESSAGES)
+          localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
+          console.log('[ChatCoordinator.switchProject] Cleared cache')
 
           // Load new project's sessions
           const sessions = await loadSessions()
@@ -331,14 +431,25 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
             // Select the most recent session
             const mostRecentSession = sortedSessions[0]
-            console.log('[ChatCoordinator] Auto-selecting most recent session:', mostRecentSession.id)
+            console.log(
+              '[ChatCoordinator.switchProject] Auto-selecting most recent session:',
+              mostRecentSession.id,
+              'for project:',
+              projectPath
+            )
 
-            await window.api.toji.switchSession(mostRecentSession.id)
+            // Update state FIRST so loadMessages has the right context
             updateState({ currentSessionId: mostRecentSession.id })
             saveToCache(CACHE_KEYS.LAST_SESSION, mostRecentSession.id)
 
+            // Then switch in backend
+            await window.api.toji.switchSession(mostRecentSession.id)
+
             // Load messages for the selected session
-            await loadMessages()
+            console.log(
+              '[ChatCoordinator.switchProject] Loading messages for auto-selected session'
+            )
+            await loadMessages(mostRecentSession.id, true)
           } else {
             // No sessions exist - create one automatically
             console.log('[ChatCoordinator] No sessions found, creating default session')
@@ -485,19 +596,31 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   // Switch session
   const switchSession = useCallback(
     async (sessionId: string) => {
-      if (switchingSessionRef.current || state.currentSessionId === sessionId) return
+      console.log(
+        '[ChatCoordinator.switchSession] Switching from:',
+        state.currentSessionId,
+        'to:',
+        sessionId
+      )
+
+      if (switchingSessionRef.current || state.currentSessionId === sessionId) {
+        console.log('[ChatCoordinator.switchSession] Already switching or same session')
+        return
+      }
       switchingSessionRef.current = true
 
       updateState({ isLoadingMessages: true, sessionError: null })
 
       try {
-        await window.api.toji.switchSession(sessionId)
-
+        // Update state FIRST so loadMessages has the right context
         updateState({ currentSessionId: sessionId })
         saveToCache(CACHE_KEYS.LAST_SESSION, sessionId)
 
+        // Then switch in backend
+        await window.api.toji.switchSession(sessionId)
+
         // Load messages for new session
-        await loadMessages(true)
+        await loadMessages(sessionId, true)
       } catch (error) {
         console.error('Failed to switch session:', error)
         updateState({ sessionError: 'Failed to switch session' })
@@ -529,7 +652,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
         if (response) {
           // Reload messages to get the complete conversation
-          await loadMessages(true)
+          await loadMessages(state.currentSessionId, true)
         }
       } catch (error) {
         console.error('Failed to send message:', error)
@@ -543,8 +666,13 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
-    await Promise.all([checkServerStatus(), loadProjects(), loadSessions(), loadMessages(true)])
-  }, [checkServerStatus, loadProjects, loadSessions, loadMessages])
+    const [, , sessions] = await Promise.all([checkServerStatus(), loadProjects(), loadSessions()])
+    // Load messages separately with current session ID from sessions
+    const currentId = sessions.find((s) => s.id === state.currentSessionId)?.id
+    if (currentId) {
+      await loadMessages(currentId, true)
+    }
+  }, [checkServerStatus, loadProjects, loadSessions, loadMessages, state.currentSessionId])
 
   // Clear all errors
   const clearErrors = useCallback(() => {
@@ -585,7 +713,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       saveToCache(CACHE_KEYS.LAST_SESSION, data.sessionId)
 
       // Load messages for restored session
-      await loadMessages(true)
+      await loadMessages(data.sessionId, true)
     })
 
     return cleanup
@@ -599,13 +727,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentProject]) // Only depend on currentProject
 
-  // Watch for session changes to reload messages
-  useEffect(() => {
-    if (state.currentSessionId && !switchingSessionRef.current) {
-      loadMessages()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.currentSessionId]) // Only depend on currentSessionId
+  // Removed duplicate useEffect - messages are loaded explicitly in switchSession and switchProject
 
   return {
     ...state,

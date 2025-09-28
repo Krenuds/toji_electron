@@ -18,12 +18,14 @@ interface SDKMessageItem {
  * Convert OpenCode SDK message history to UI ChatMessage format
  */
 export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessage[] {
+  console.log('[MessageFormatter] Formatting', sdkMessages?.length || 0, 'SDK messages')
+
   if (!Array.isArray(sdkMessages)) {
-    console.warn('Invalid SDK messages format, expected array:', sdkMessages)
+    console.warn('[MessageFormatter] Invalid SDK messages format, expected array:', sdkMessages)
     return []
   }
 
-  return sdkMessages
+  const formatted = sdkMessages
     .map((messageItem): ChatMessage | null => {
       try {
         const { info, parts } = messageItem
@@ -60,6 +62,9 @@ export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessag
     })
     .filter((message): message is ChatMessage => message !== null)
     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()) // Sort by timestamp
+
+  console.log('[MessageFormatter] Formatted', formatted.length, 'messages successfully')
+  return formatted
 }
 
 /**
