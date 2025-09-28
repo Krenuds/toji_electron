@@ -137,47 +137,51 @@ export function ChatViewSidebar(): React.JSX.Element {
                   key={session.id}
                   p={2}
                   borderRadius="md"
-                  bg={currentSessionId === session.id ? 'green.50' : 'app.dark'}
+                  bg={currentSessionId === session.id ? 'green.800' : 'app.dark'}
                   border="1px solid"
                   borderColor={currentSessionId === session.id ? 'app.accent' : 'app.border'}
                   position="relative"
                   cursor="pointer"
                   _hover={{
-                    bg: currentSessionId === session.id ? 'green.100' : 'app.medium',
+                    bg: currentSessionId === session.id ? 'green.800' : 'app.medium',
                     borderColor: 'app.accent'
                   }}
                   onClick={() => handleSessionClick(session.id)}
                   opacity={switchingSessionId === session.id ? 0.7 : 1}
                   transition="all 0.2s"
                 >
-                  <HStack justify="space-between">
-                    <VStack align="start" gap={0} flex={1}>
-                      <HStack gap={2}>
-                        <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1}>
-                          {session.title || `Session ${session.id.slice(0, 8)}`}
-                        </Text>
-                        {switchingSessionId === session.id && (
-                          <Spinner size="xs" color="app.accent" />
-                        )}
-                      </HStack>
-                      <Text color="app.text" fontSize="2xs">
-                        ID: {session.id.slice(0, 12)}...
+                  <VStack align="start" gap={0} w="full">
+                    <HStack gap={2}>
+                      <Text color="app.light" fontSize="xs" fontWeight="medium" lineClamp={1}>
+                        {session.title || `Session ${session.id.slice(0, 8)}`}
                       </Text>
-                    </VStack>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      colorPalette="red"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteSession(session.id)
-                      }}
-                      disabled={deletingSessionId === session.id}
-                      aria-label="Delete session"
-                    >
-                      <LuTrash2 size={12} />
-                    </Button>
-                  </HStack>
+                      {switchingSessionId === session.id && (
+                        <Spinner size="xs" color="app.accent" />
+                      )}
+                    </HStack>
+                    <Text color="app.light" fontSize="2xs">
+                      ID: {session.id.slice(0, 12)}...
+                    </Text>
+                  </VStack>
+                  {/* Trash button positioned in bottom right */}
+                  <Button
+                    position="absolute"
+                    bottom={1}
+                    right={1}
+                    size="2xs"
+                    variant="ghost"
+                    colorPalette="red"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSession(session.id)
+                    }}
+                    disabled={deletingSessionId === session.id}
+                    aria-label="Delete session"
+                    opacity={0.7}
+                    _hover={{ opacity: 1 }}
+                  >
+                    <LuTrash2 size={10} />
+                  </Button>
                   {currentSessionId === session.id && (
                     <Box
                       position="absolute"
