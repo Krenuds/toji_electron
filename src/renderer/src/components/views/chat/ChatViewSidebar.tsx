@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Box, VStack, HStack, Text, Button, Separator, Badge, Spinner } from '@chakra-ui/react'
+import { Box, VStack, HStack, Text, Button, Separator, Spinner } from '@chakra-ui/react'
 import { LuTrash2, LuRefreshCw, LuList, LuMessageCircle, LuActivity } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
@@ -82,13 +82,7 @@ export function ChatViewSidebar(): React.JSX.Element {
         {/* Server Status */}
         <SidebarSection title="Server Status">
           <VStack align="stretch" gap={3}>
-            <Box
-              p={2}
-              borderRadius="md"
-              bg="rgba(255,255,255,0.02)"
-              border="1px solid"
-              borderColor="app.border"
-            >
+            <Box p={2} borderRadius="md" bg="app.dark" border="1px solid" borderColor="app.border">
               <HStack justify="space-between">
                 <Text color="app.light" fontSize="xs" fontWeight="medium">
                   Status
@@ -109,8 +103,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Button
                 size="xs"
                 variant="ghost"
-                color="app.text"
-                _hover={{ color: 'app.light' }}
+                colorPalette="gray"
                 onClick={() => setIsSessionsModalOpen(true)}
                 title="View all sessions"
               >
@@ -119,8 +112,7 @@ export function ChatViewSidebar(): React.JSX.Element {
               <Button
                 size="xs"
                 variant="ghost"
-                color="app.text"
-                _hover={{ color: 'app.light' }}
+                colorPalette="gray"
                 onClick={fetchSessions}
                 disabled={isLoadingSessions}
                 title="Refresh sessions"
@@ -145,20 +137,13 @@ export function ChatViewSidebar(): React.JSX.Element {
                   key={session.id}
                   p={2}
                   borderRadius="md"
-                  bg={
-                    currentSessionId === session.id
-                      ? 'rgba(51, 180, 47, 0.1)'
-                      : 'rgba(255,255,255,0.02)'
-                  }
+                  bg={currentSessionId === session.id ? 'green.50' : 'app.dark'}
                   border="1px solid"
                   borderColor={currentSessionId === session.id ? 'app.accent' : 'app.border'}
                   position="relative"
                   cursor="pointer"
                   _hover={{
-                    bg:
-                      currentSessionId === session.id
-                        ? 'rgba(51, 180, 47, 0.15)'
-                        : 'rgba(255,255,255,0.05)',
+                    bg: currentSessionId === session.id ? 'green.100' : 'app.medium',
                     borderColor: 'app.accent'
                   }}
                   onClick={() => handleSessionClick(session.id)}
@@ -182,9 +167,11 @@ export function ChatViewSidebar(): React.JSX.Element {
                     <Button
                       size="xs"
                       variant="ghost"
-                      color="app.text"
-                      _hover={{ color: 'red.400', bg: 'rgba(255,0,0,0.1)' }}
-                      onClick={() => handleDeleteSession(session.id)}
+                      colorPalette="red"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteSession(session.id)
+                      }}
                       disabled={deletingSessionId === session.id}
                       aria-label="Delete session"
                     >
@@ -192,16 +179,21 @@ export function ChatViewSidebar(): React.JSX.Element {
                     </Button>
                   </HStack>
                   {currentSessionId === session.id && (
-                    <Badge
-                      size="xs"
-                      colorPalette="green"
-                      variant="subtle"
+                    <Box
                       position="absolute"
                       top={1}
                       right={1}
+                      px={2}
+                      py={0.5}
+                      bg="app.accent"
+                      color="app.dark"
+                      borderRadius="md"
+                      fontSize="2xs"
+                      fontWeight="medium"
+                      textTransform="uppercase"
                     >
                       Active
-                    </Badge>
+                    </Box>
                   )}
                 </Box>
               ))
