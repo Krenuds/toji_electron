@@ -336,6 +336,30 @@ export class Toji {
   ): Promise<{ success: boolean; projectPath: string; port: number }> {
     log('Switching to project: %s with config override: %o', projectPath, configOverride)
 
+    // Validate project directory exists and is accessible
+    const fs = await import('fs')
+    const path = await import('path')
+
+    try {
+      const absolutePath = path.resolve(projectPath)
+
+      // Check if directory exists
+      const stats = await fs.promises.stat(absolutePath)
+      if (!stats.isDirectory()) {
+        throw new Error(`Path is not a directory: ${absolutePath}`)
+      }
+
+      // Check read permission
+      await fs.promises.access(absolutePath, fs.constants.R_OK)
+
+      log('Validated project directory: %s', absolutePath)
+    } catch (error) {
+      log('ERROR: Invalid project directory: %o', error)
+      throw new Error(
+        `Invalid project directory: ${error instanceof Error ? error.message : String(error)}`
+      )
+    }
+
     try {
       // 1. Save current CWD (in case we need to restore)
       const previousCwd = process.cwd()
