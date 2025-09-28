@@ -59,9 +59,9 @@ export class ConfigProvider {
   }
 
   getOpencodeWorkingDirectory(): string {
-    // Always use the project directory as default for now
-    // TODO: Allow user to change this via settings UI
-    return 'C:\\Users\\donth\\projects'
+    // Use current working directory as default
+    // This provides a sensible fallback that always exists
+    return process.cwd()
   }
 
   setOpencodeWorkingDirectory(path: string): void {

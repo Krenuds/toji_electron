@@ -246,6 +246,37 @@ export class Toji {
     try {
       await this.changeWorkingDirectory(projectPath)
 
+      // Check if project is properly discovered by OpenCode
+      if (this.client) {
+        const normalizedPath = projectPath.replace(/\\/g, '/')
+        log('Checking project discovery for: %s', normalizedPath)
+
+        // Try to get current project with the directory parameter
+        try {
+          const response = await fetch(
+            `${this.server.getUrl()}/project/current?directory=${encodeURIComponent(normalizedPath)}`
+          )
+          const current = await response.json()
+
+          // If project is assigned to "global", it wasn't properly discovered
+          if (current?.id === 'global') {
+            log('Project not discovered, attempting to trigger discovery...')
+
+            // Create a session to trigger project discovery
+            await this.client.session.create({
+              body: { title: 'Initialize Project' },
+              query: { directory: normalizedPath }
+            })
+
+            log('Created session to trigger project discovery')
+          } else {
+            log('Project already discovered: %s', current?.worktree)
+          }
+        } catch (error) {
+          log('WARNING: Could not check project discovery: %o', error)
+        }
+      }
+
       return {
         success: true,
         projectPath
@@ -272,10 +303,13 @@ export class Toji {
     }
 
     try {
+      // Normalize path to forward slashes for OpenCode API
+      const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+
       const response = await this.client.session.get({
         path: { id: activeSessionId },
-        query: this.currentProjectDirectory
-          ? { directory: this.currentProjectDirectory }
+        query: normalizedPath
+          ? { directory: normalizedPath }
           : undefined
       })
 
@@ -344,9 +378,12 @@ export class Toji {
       throw new Error('Client not connected to server')
     }
 
+    // Normalize path to forward slashes for OpenCode API
+    const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+
     const response = await this.client.session.get({
       path: { id: sessionId },
-      query: { directory: this.currentProjectDirectory }
+      query: normalizedPath ? { directory: normalizedPath } : undefined
     })
 
     // Check if we got a valid session
@@ -381,9 +418,12 @@ export class Toji {
         log('Found saved active session: %s', savedSessionId)
         // Verify it still exists
         try {
+          // Normalize path to forward slashes for OpenCode API
+          const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+
           const response = await this.client.session.get({
             path: { id: savedSessionId },
-            query: { directory: this.currentProjectDirectory }
+            query: normalizedPath ? { directory: normalizedPath } : undefined
           })
 
           if (response) {

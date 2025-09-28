@@ -111,10 +111,12 @@ app.whenReady().then(async () => {
     await openCodeService.ensureBinary()
     logStartup('OpenCode binary installation checked')
 
-    // Start the server (will connect to existing or create new)
+    // Start the server from user's home directory so it can access all projects
     logStartup('Starting OpenCode server')
-    await toji.server.start()
-    logStartup('OpenCode server ready')
+    const os = await import('os')
+    const homeDir = os.homedir()
+    await toji.server.start(undefined, homeDir)
+    logStartup('OpenCode server ready (running from %s)', homeDir)
 
     // Always connect the client
     logStartup('Connecting OpenCode client')

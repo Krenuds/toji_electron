@@ -1,5 +1,6 @@
-import { createOpencodeServer } from '@opencode-ai/sdk'
-import type { ServerOptions, Config } from '@opencode-ai/sdk'
+import { createOpencodeServerWithCwd } from './opencode-server-patch'
+import type { Config } from '@opencode-ai/sdk'
+import type { ServerOptions } from './opencode-server-patch'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ServerStatus } from './types'
 import { createFileDebugLogger } from '../utils/logger'
@@ -25,7 +26,7 @@ export class ServerManager {
    * Start the OpenCode server (single instance)
    * First tries to connect to existing server, then creates new if needed
    */
-  async start(config?: Config): Promise<number> {
+  async start(config?: Config, cwd?: string): Promise<number> {
     log('Starting OpenCode server')
 
     // Stop any existing managed instance first
@@ -76,13 +77,14 @@ export class ServerManager {
       hostname: '127.0.0.1',
       port: this.DEFAULT_PORT,
       timeout: 10000, // Increased timeout
-      config
+      config,
+      cwd: cwd || process.cwd() // Pass the working directory!
     }
     log('Server options: %o', serverOptions)
 
     try {
-      log('Creating OpenCode server...')
-      const server = await createOpencodeServer(serverOptions)
+      log('Creating OpenCode server from directory: %s', serverOptions.cwd)
+      const server = await createOpencodeServerWithCwd(serverOptions)
       log('OpenCode server created successfully, URL: %s', server.url)
 
       this.instance = {

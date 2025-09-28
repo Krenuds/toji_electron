@@ -30,8 +30,11 @@ export class SessionManager {
     log('Listing sessions for project: %s', projectPath || 'default')
 
     try {
+      // Normalize path to forward slashes for OpenCode API
+      const normalizedPath = projectPath?.replace(/\\/g, '/')
+
       const response = await client.session.list({
-        query: projectPath ? { directory: projectPath } : undefined
+        query: normalizedPath ? { directory: normalizedPath } : undefined
       })
 
       // Check if we got a valid response
@@ -81,9 +84,12 @@ export class SessionManager {
     log('Creating session: title="%s", project="%s"', title || 'untitled', projectPath || 'default')
 
     try {
+      // Normalize path to forward slashes for OpenCode API
+      const normalizedPath = projectPath?.replace(/\\/g, '/')
+
       const response = await client.session.create({
         body: { title: title || `New Session ${new Date().toLocaleTimeString()}` },
-        query: projectPath ? { directory: projectPath } : undefined
+        query: normalizedPath ? { directory: normalizedPath } : undefined
       })
 
       // Check if we got a valid response
