@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Flex, Stack } from '@chakra-ui/react'
-import { LuLayoutDashboard, LuMessageCircle } from 'react-icons/lu'
+import { LuMessageCircle } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
@@ -41,13 +41,6 @@ function AppContent(): React.JSX.Element {
         {/* Icon Bar - Left Panel */}
         <Box w="35px" bg="app.medium" borderRight="1px" borderColor="app.border">
           <Stack direction="column" gap={1} p={1}>
-            <IconButton
-              icon={<LuLayoutDashboard />}
-              tooltip="Dashboard"
-              viewName="dashboard"
-              isActive={activeView === 'dashboard'}
-              onClick={handleIconClick}
-            />
             <IconButton
               icon={<LuMessageCircle />}
               tooltip="Chat"

@@ -42,7 +42,9 @@
       "Bash(C:/Users/donth/.local/share/opencode/bin/opencode.exe serve --hostname=127.0.0.1 --port=4096)",
       "WebFetch(domain:www.chakra-ui.com)",
       "Bash(C:/Users/donth/.local/share/opencode/bin/opencode.exe serve --hostname=127.0.0.1 --port=4098)",
-      "Bash(echo $ANTHROPIC_API_KEY)"
+      "Bash(echo $ANTHROPIC_API_KEY)",
+      "Bash(npm run typecheck:web:*)",
+      "Bash(npx prettier:*)"
     ],
     "deny": [],
     "ask": []

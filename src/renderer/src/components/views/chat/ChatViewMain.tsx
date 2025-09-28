@@ -38,11 +38,6 @@ export function ChatViewMain(): React.JSX.Element {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    console.log('[ChatViewMain] Messages updated, count:', messages.length)
-    if (messages.length > 0) {
-      console.log('[ChatViewMain] First message:', messages[0])
-      console.log('[ChatViewMain] Last message:', messages[messages.length - 1])
-    }
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
@@ -52,12 +47,10 @@ export function ChatViewMain(): React.JSX.Element {
     const currentMessage = messageInput
     setMessageInput('')
 
-    console.log('[ChatViewMain] Sending message:', currentMessage)
     // Note: In a real app, we'd update the coordinator's state here optimistically
     // For now, let the coordinator handle it after the response
 
     await sendMessage(currentMessage)
-    console.log('[ChatViewMain] Message sent successfully')
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -168,7 +161,6 @@ export function ChatViewMain(): React.JSX.Element {
     }
 
     // Show messages
-    console.log('[ChatViewMain.renderChatContent] Rendering', messages.length, 'messages')
     return (
       <VStack
         gap={3}
@@ -190,12 +182,6 @@ export function ChatViewMain(): React.JSX.Element {
         }}
       >
         {messages.map((msg) => {
-          console.log(
-            '[ChatViewMain.renderChatContent] Rendering message:',
-            msg.id,
-            msg.type,
-            msg.content.substring(0, 50)
-          )
           return (
             <Box key={msg.id} w="100%">
               <HStack align="flex-start" gap={3}>

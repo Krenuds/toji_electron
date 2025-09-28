@@ -264,8 +264,6 @@ Project settings are stored in \`opencode.json\`.
     directory: string,
     config?: Partial<OpencodeConfig>
   ): Promise<void> {
-    const projectName = directory.split(/[/\\]/).pop() || 'project'
-
     const opencodeConfig = {
       ...defaultOpencodeConfig,
       ...config

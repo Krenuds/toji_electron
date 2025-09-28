@@ -18,10 +18,7 @@ interface SDKMessageItem {
  * Convert OpenCode SDK message history to UI ChatMessage format
  */
 export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessage[] {
-  console.log('[MessageFormatter] Formatting', sdkMessages?.length || 0, 'SDK messages')
-
   if (!Array.isArray(sdkMessages)) {
-    console.warn('[MessageFormatter] Invalid SDK messages format, expected array:', sdkMessages)
     return []
   }
 
@@ -31,7 +28,6 @@ export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessag
         const { info, parts } = messageItem
 
         if (!info || !Array.isArray(parts)) {
-          console.warn('Invalid message item structure:', messageItem)
           return null
         }
 
@@ -63,7 +59,6 @@ export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessag
     .filter((message): message is ChatMessage => message !== null)
     .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()) // Sort by timestamp
 
-  console.log('[MessageFormatter] Formatted', formatted.length, 'messages successfully')
   return formatted
 }
 

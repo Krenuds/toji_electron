@@ -1,8 +1,6 @@
 import React from 'react'
 import { useAppView } from './useAppView'
 import { ViewType, ViewStateData } from '../types/ViewTypes'
-import { DashboardViewSidebar } from '../components/views/dashboard/DashboardViewSidebar'
-import { DashboardViewMain } from '../components/views/dashboard/DashboardViewMain'
 import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
 import { ChatViewMain } from '../components/views/chat/ChatViewMain'
 import { PlaceholderSidebar, PlaceholderMain } from '../components/PlaceholderViews'
@@ -21,8 +19,6 @@ export function useViewCoordination(): UseViewCoordinationReturn {
 
   const getSidebarContent = (): React.ReactNode => {
     switch (activeView) {
-      case 'dashboard':
-        return <DashboardViewSidebar />
       case 'chat':
         return <ChatViewSidebar />
       default:
@@ -32,8 +28,6 @@ export function useViewCoordination(): UseViewCoordinationReturn {
 
   const getMainContent = (): React.ReactNode => {
     switch (activeView) {
-      case 'dashboard':
-        return <DashboardViewMain />
       case 'chat':
         return <ChatViewMain />
       default:

@@ -7,16 +7,15 @@ interface AppViewProviderProps {
 }
 
 export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.Element {
-  const [activeView, setActiveViewState] = useState<ViewType>('dashboard')
+  const [activeView, setActiveViewState] = useState<ViewType>('chat')
   const [viewState, setViewStateData] = useState<Record<ViewType, ViewStateData>>({
-    dashboard: {},
     chat: {}
   })
 
   // Load persisted view from localStorage on mount
   useEffect(() => {
     const savedView = localStorage.getItem('toji-active-view')
-    if (savedView && ['dashboard', 'chat'].includes(savedView)) {
+    if (savedView && savedView === 'chat') {
       setActiveViewState(savedView as ViewType)
     }
 
@@ -26,7 +25,7 @@ export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.E
         const parsedState = JSON.parse(savedViewState)
         setViewStateData(parsedState)
       } catch (error) {
-        console.warn('Failed to parse saved view state:', error)
+        console.error('Failed to parse saved view state:', error)
       }
     }
   }, [])
