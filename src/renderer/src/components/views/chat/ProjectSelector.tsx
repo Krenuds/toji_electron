@@ -4,26 +4,33 @@ import {
   HStack,
   Text,
   Button,
-  useDisclosure,
   Separator,
   NativeSelectRoot,
   NativeSelectField
 } from '@chakra-ui/react'
-import { DirectoryPicker } from './DirectoryPicker'
+import { LuFolderOpen } from 'react-icons/lu'
 import { useProjects } from '../../../hooks/useProjects'
 
 export const ProjectSelector: React.FC = () => {
   const { projects, currentProject, switchProject, isLoading } = useProjects()
-  const { open, onOpen, onClose } = useDisclosure()
 
   const handleProjectChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
     const projectPath = event.target.value
     switchProject(projectPath)
   }
 
-  const handleDirectorySelect = async (directoryPath: string): Promise<void> => {
-    await switchProject(directoryPath)
-    onClose()
+  const handleOpenProject = async (): Promise<void> => {
+    try {
+      const result = await window.api.dialog.showOpenDialog({
+        properties: ['openDirectory']
+      })
+
+      if (!result.canceled && result.filePaths[0]) {
+        await switchProject(result.filePaths[0])
+      }
+    } catch (error) {
+      console.error('Failed to open project:', error)
+    }
   }
 
   return (
@@ -64,19 +71,18 @@ export const ProjectSelector: React.FC = () => {
         <Button
           size="sm"
           w="full"
-          onClick={onOpen}
+          onClick={handleOpenProject}
           variant="solid"
           colorPalette="green"
           disabled={isLoading}
           borderRadius="md"
         >
-          Add Project Directory
+          <LuFolderOpen size={14} />
+          Open Project
         </Button>
       </VStack>
 
       <Separator borderColor="app.border" />
-
-      <DirectoryPicker isOpen={open} onClose={onClose} onSelect={handleDirectorySelect} />
     </>
   )
 }
