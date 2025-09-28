@@ -251,23 +251,25 @@ export function ChatViewMain(): React.JSX.Element {
             {currentProject ? `Chatting with ${projectName}` : 'Toji Chat'}
           </Text>
           <HStack gap={2}>
-            <Badge
-              size="sm"
-              colorPalette={
-                serverStatus === 'online'
-                  ? 'green'
-                  : serverStatus === 'initializing'
-                    ? 'yellow'
-                    : 'gray'
-              }
-              variant="subtle"
-            >
-              {serverStatus === 'online'
-                ? 'Online'
-                : serverStatus === 'initializing'
-                  ? 'Starting...'
-                  : 'Offline'}
-            </Badge>
+            {currentProject && (
+              <Badge
+                size="sm"
+                colorPalette="red"
+                variant="subtle"
+                cursor="pointer"
+                onClick={closeProject}
+                _hover={{
+                  bg: 'red.600',
+                  color: 'white'
+                }}
+                title="Close project and stop server"
+              >
+                <HStack gap={1}>
+                  <LuX size={12} />
+                  <Text>Close Project</Text>
+                </HStack>
+              </Badge>
+            )}
             {messageError && (
               <Button
                 size="xs"
@@ -280,21 +282,6 @@ export function ChatViewMain(): React.JSX.Element {
                 title="Retry failed operation"
               >
                 <LuRefreshCw size={12} />
-              </Button>
-            )}
-            {currentProject && (
-              <Button
-                size="sm"
-                variant="ghost"
-                colorPalette="gray"
-                onClick={closeProject}
-                title="Close project"
-                _hover={{
-                  bg: 'red.500',
-                  color: 'white'
-                }}
-              >
-                <LuX size={16} />
               </Button>
             )}
           </HStack>
