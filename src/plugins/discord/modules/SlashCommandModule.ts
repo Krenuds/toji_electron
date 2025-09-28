@@ -45,9 +45,10 @@ export class SlashCommandModule implements DiscordModule {
       // Import commands directly - this is the only way we load commands
       const helpCommand = await import('../commands/help')
       const chatCommand = await import('../commands/chat')
-      // Future commands can be added here
+      const statusCommand = await import('../commands/status')
+      const clearCommand = await import('../commands/clear')
 
-      const commands = [helpCommand, chatCommand]
+      const commands = [helpCommand, chatCommand, statusCommand, clearCommand]
 
       for (const command of commands) {
         if ('data' in command && 'execute' in command) {

@@ -98,7 +98,31 @@ export class DiscordChatModule implements DiscordModule {
       await this.sendResponse(message, response)
     } catch (error) {
       console.error('DiscordChatModule: Error processing message:', error)
-      await message.reply('Sorry, I encountered an error processing your request.')
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+
+      // Provide helpful error response
+      let reply = '❌ **Sorry, I encountered an error**\n\n'
+
+      if (errorMessage.includes('No response data') || errorMessage.includes('ECONNREFUSED')) {
+        reply +=
+          '**Issue:** OpenCode server not responding\n' +
+          '**Try:** Restarting Toji or using `/status` to check connection'
+      } else if (errorMessage.includes('not ready')) {
+        reply +=
+          '**Issue:** Toji is not ready yet\n' +
+          '**Try:** Wait a moment or use `/status` to check system health'
+      } else if (errorMessage.includes('session')) {
+        reply +=
+          '**Issue:** Session problem detected\n' +
+          "**Try:** Use `/clear` to reset this channel's conversation"
+      } else {
+        reply +=
+          `**Error:** ${errorMessage.substring(0, 100)}...\n` +
+          '**Try:** Use `/status` or `/clear` commands'
+      }
+
+      await message.reply(reply)
     }
   }
 

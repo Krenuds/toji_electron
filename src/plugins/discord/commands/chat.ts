@@ -13,8 +13,17 @@ export const data = new SlashCommandBuilder()
   )
 
 export async function execute(interaction: ChatInputCommandInteraction, toji: Toji): Promise<void> {
-  // Defer the reply since AI responses can take time
+  // Show typing indicator while processing
   await interaction.deferReply()
+
+  // Also send typing to channel if possible
+  try {
+    if (interaction.channel && 'sendTyping' in interaction.channel) {
+      await interaction.channel.sendTyping()
+    }
+  } catch {
+    // Ignore typing errors
+  }
 
   try {
     // Get the message from the user
@@ -23,7 +32,13 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
     // Check if Toji is ready
     if (!toji.isReady()) {
       await interaction.editReply({
-        content: '❌ Toji is not ready. Please ensure the OpenCode server is running.'
+        content:
+          '❌ **Toji is not ready**\n\n' +
+          '**Possible solutions:**\n' +
+          '• Check if the OpenCode server is running\n' +
+          '• Restart the Toji application\n' +
+          '• Use `/status` to check the connection\n' +
+          '• Contact support if the issue persists'
       })
       return
     }
@@ -59,8 +74,36 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
 
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
 
+    // Provide helpful error messages based on the error type
+    let helpfulMessage = '❌ **Failed to process your message**\n\n'
+
+    if (errorMessage.includes('No response data') || errorMessage.includes('ECONNREFUSED')) {
+      helpfulMessage +=
+        '**OpenCode server connection issue detected**\n\n' +
+        '**Try these solutions:**\n' +
+        '• Restart the Toji application\n' +
+        '• Check if OpenCode server is running on port 4096\n' +
+        '• Use `/status` to diagnose the issue\n' +
+        "• Use `/clear` to reset this channel's session"
+    } else if (errorMessage.includes('session')) {
+      helpfulMessage +=
+        '**Session error detected**\n\n' +
+        '**Try these solutions:**\n' +
+        "• Use `/clear` to reset this channel's session\n" +
+        '• Try again in a few seconds\n' +
+        '• Check `/status` for system health'
+    } else {
+      helpfulMessage +=
+        `**Error:** ${errorMessage}\n\n` +
+        '**General solutions:**\n' +
+        '• Try again in a few seconds\n' +
+        '• Use `/status` to check system health\n' +
+        '• Use `/clear` if the session seems stuck\n' +
+        '• Contact support with the error message'
+    }
+
     await interaction.editReply({
-      content: `❌ Failed to process chat: ${errorMessage}`
+      content: helpfulMessage
     })
   }
 }

@@ -12,23 +12,28 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     description: 'I&apos;m Toji, your AI coding assistant powered by OpenCode!',
     fields: [
       {
-        name: '💬 Chat with me',
-        value: 'Just mention me in any message and I&apos;ll respond!',
+        name: '💬 Chat with @mention',
+        value: 'Just mention me (@Toji) in any message and I&apos;ll respond!',
         inline: false
       },
       {
-        name: '📁 /project',
-        value: 'View or change the current project directory',
+        name: '💬 /chat [message]',
+        value: 'Send a message directly using the slash command',
         inline: false
       },
       {
-        name: '💼 /session',
-        value: 'Manage chat sessions (list, create, clear, info)',
+        name: '❓ /help',
+        value: 'Show this help message',
         inline: false
       },
       {
         name: '📊 /status',
-        value: 'Check Toji system status',
+        value: 'Check Toji and OpenCode connection status',
+        inline: false
+      },
+      {
+        name: '🗑️ /clear',
+        value: 'Clear the conversation history for this channel',
         inline: false
       }
     ],
