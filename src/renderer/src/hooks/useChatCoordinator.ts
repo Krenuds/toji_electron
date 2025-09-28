@@ -42,6 +42,7 @@ interface UseChatCoordinatorReturn extends ChatState {
   // Project actions
   switchProject: (projectPath: string) => Promise<void>
   openProjectDialog: () => Promise<void>
+  closeProject: () => Promise<void>
 
   // Session actions
   createSession: (name?: string) => Promise<void>
@@ -514,6 +515,41 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     }
   }, [switchProject, updateState])
 
+  // Close current project
+  const closeProject = useCallback(async () => {
+    console.log('[ChatCoordinator.closeProject] Closing current project')
+
+    try {
+      // Clear UI state immediately for responsiveness
+      updateState({
+        currentProject: undefined,
+        sessions: [],
+        currentSessionId: undefined,
+        messages: [],
+        serverStatus: 'offline',
+        projectError: null,
+        sessionError: null,
+        messageError: null
+      })
+
+      // Clear all cache
+      localStorage.removeItem(CACHE_KEYS.CACHED_MESSAGES)
+      localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
+      localStorage.removeItem(CACHE_KEYS.LAST_PROJECT)
+      console.log('[ChatCoordinator.closeProject] Cleared cache and state')
+
+      // Close project in backend (stops server)
+      await window.api.toji.closeProject()
+      console.log('[ChatCoordinator.closeProject] Project closed successfully')
+
+      // Reload projects list (closed project should still appear but inactive)
+      await loadProjects()
+    } catch (error) {
+      console.error('[ChatCoordinator.closeProject] Failed to close project:', error)
+      updateState({ projectError: 'Failed to close project' })
+    }
+  }, [loadProjects, updateState])
+
   // Create session
   const createSession = useCallback(
     async (name?: string) => {
@@ -661,7 +697,14 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
         updateState({ isSendingMessage: false })
       }
     },
-    [state.isSendingMessage, state.serverStatus, checkServerStatus, loadMessages, updateState]
+    [
+      state.isSendingMessage,
+      state.serverStatus,
+      state.currentSessionId,
+      checkServerStatus,
+      loadMessages,
+      updateState
+    ]
   )
 
   // Refresh all data
@@ -733,6 +776,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     ...state,
     switchProject,
     openProjectDialog,
+    closeProject,
     createSession,
     deleteSession,
     switchSession,

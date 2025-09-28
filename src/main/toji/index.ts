@@ -370,6 +370,48 @@ export class Toji {
     }
   }
 
+  // Close the current project (stop server, clear client, reset state)
+  async closeCurrentProject(): Promise<void> {
+    log('Closing current project: %s', this.currentProjectDirectory || 'none')
+
+    if (!this.currentProjectDirectory) {
+      log('No current project to close')
+      return
+    }
+
+    const projectToClose = this.currentProjectDirectory
+
+    // Clear active session
+    this.sessions.setActiveSession('', projectToClose)
+
+    // Remove client from map
+    const normalized = normalizePath(projectToClose)
+    this.clients.delete(normalized)
+    log('Removed client for %s', normalized)
+
+    // Stop the server for this directory
+    await this.server.stopServerForDirectory(projectToClose)
+    log('Stopped server for %s', projectToClose)
+
+    // Clear current project directory
+    this.currentProjectDirectory = undefined
+
+    // Clear from config
+    if (this._config) {
+      this._config.setCurrentProjectPath('')
+      log('Cleared current project from config')
+    }
+
+    // Emit project closed event to notify frontend
+    const mainWindow = BrowserWindow.getAllWindows()[0]
+    if (mainWindow) {
+      mainWindow.webContents.send('project:closed', {
+        path: projectToClose
+      })
+      log('Emitted project:closed event for: %s', projectToClose)
+    }
+  }
+
   // Session management methods for IPC
   async listSessions(): Promise<Array<{ id: string; title?: string; projectPath?: string }>> {
     const client = this.getClient()

@@ -187,4 +187,15 @@ export function registerTojiHandlers(toji: Toji): void {
       return []
     }
   })
+
+  // Close current project
+  ipcMain.handle('toji:closeProject', async () => {
+    try {
+      await toji.closeCurrentProject()
+      return { success: true }
+    } catch (error) {
+      console.error('Close project error:', error)
+      throw error
+    }
+  })
 }

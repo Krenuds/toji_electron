@@ -11,7 +11,7 @@ import {
   Spinner,
   Center
 } from '@chakra-ui/react'
-import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo } from 'react-icons/lu'
+import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo, LuX } from 'react-icons/lu'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 
 export function ChatViewMain(): React.JSX.Element {
@@ -28,7 +28,8 @@ export function ChatViewMain(): React.JSX.Element {
     messageError,
     sendMessage,
     refreshAll,
-    clearErrors
+    clearErrors,
+    closeProject
   } = useChatCoordinatorContext()
 
   // Auto-scroll to bottom when new messages arrive
@@ -279,6 +280,21 @@ export function ChatViewMain(): React.JSX.Element {
                 title="Retry failed operation"
               >
                 <LuRefreshCw size={12} />
+              </Button>
+            )}
+            {currentProject && (
+              <Button
+                size="sm"
+                variant="ghost"
+                colorPalette="gray"
+                onClick={closeProject}
+                title="Close project"
+                _hover={{
+                  bg: 'red.500',
+                  color: 'white'
+                }}
+              >
+                <LuX size={16} />
               </Button>
             )}
           </HStack>

@@ -86,5 +86,8 @@ export const tojiAPI = {
       url: string
       isHealthy: boolean
     }>
-  > => ipcRenderer.invoke('toji:getRunningServers')
+  > => ipcRenderer.invoke('toji:getRunningServers'),
+
+  // Close current project
+  closeProject: (): Promise<{ success: boolean }> => ipcRenderer.invoke('toji:closeProject')
 }
