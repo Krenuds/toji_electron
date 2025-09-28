@@ -42,6 +42,8 @@ export function useDiscord(): UseDiscordReturn {
 
   const refreshStatus = async (): Promise<void> => {
     try {
+      // Check both token and status when refreshing
+      await checkToken()
       const discordStatus = await window.api.discord.getStatus()
       setStatus(discordStatus)
     } catch (err) {

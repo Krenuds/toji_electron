@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Box, VStack, HStack, Text, Button, Card, Input, Badge, Spinner } from '@chakra-ui/react'
-import { LuBotMessageSquare, LuPlug, LuPowerOff, LuTrash2, LuEye, LuEyeOff } from 'react-icons/lu'
+import { LuPlug, LuPowerOff, LuTrash2, LuEye, LuEyeOff, LuExternalLink } from 'react-icons/lu'
+import { FaDiscord } from 'react-icons/fa6'
 import { useDiscord } from '../../../hooks/useDiscord'
 
 export function IntegrationsViewMain(): React.JSX.Element {
@@ -69,12 +70,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   w={10}
                   h={10}
                   borderRadius="full"
-                  bg="purple.500"
+                  bg="#5865F2"
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <LuBotMessageSquare size={20} color="white" />
+                  <FaDiscord size={24} color="white" />
                 </Box>
                 <Box>
                   <Text color="app.light" fontSize="lg" fontWeight="semibold">
@@ -86,6 +87,42 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </Box>
               </HStack>
             </HStack>
+
+            {/* Bot Invite Link */}
+            {status.botId && (
+              <Box
+                p={3}
+                bg="rgba(88, 101, 242, 0.1)"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="#5865F2"
+              >
+                <VStack align="start" gap={2}>
+                  <Text color="#5865F2" fontSize="sm" fontWeight="medium">
+                    Invite Bot to Server
+                  </Text>
+                  <Button
+                    size="sm"
+                    bg="#5865F2"
+                    _hover={{ bg: '#4752C4' }}
+                    color="white"
+                    variant="solid"
+                    onClick={() => {
+                      // Discord permissions: Administrator (8) for full access
+                      const permissions = '8'
+                      const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${status.botId}&permissions=${permissions}&scope=bot%20applications.commands`
+                      window.open(inviteUrl, '_blank')
+                    }}
+                  >
+                    <LuExternalLink size={14} />
+                    <Text ml={1}>Add to Discord Server</Text>
+                  </Button>
+                  <Text color="app.text" fontSize="xs">
+                    Click to invite Toji to your Discord server with required permissions
+                  </Text>
+                </VStack>
+              </Box>
+            )}
 
             {/* Connection Status */}
             {status.connected && (
@@ -147,7 +184,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                       borderColor="app.border"
                       color="app.light"
                       _placeholder={{ color: 'app.text' }}
-                      _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
+                      _focus={{ borderColor: '#5865F2', boxShadow: 'none' }}
                       pr={10}
                     />
                     <Button
@@ -164,7 +201,9 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     </Button>
                   </Box>
                   <Button
-                    colorPalette="purple"
+                    bg="#5865F2"
+                    _hover={{ bg: '#4752C4' }}
+                    color="white"
                     variant="solid"
                     size="sm"
                     onClick={handleSaveToken}
@@ -177,7 +216,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   Need a bot token?{' '}
                   <Text
                     as="span"
-                    color="purple.400"
+                    color="#5865F2"
                     textDecoration="underline"
                     cursor="pointer"
                     onClick={() =>

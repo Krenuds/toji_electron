@@ -1,6 +1,7 @@
 import React from 'react'
 import { VStack, Text, Box, HStack, Badge } from '@chakra-ui/react'
-import { LuBotMessageSquare, LuSlack, LuGithub } from 'react-icons/lu'
+import { LuSlack, LuGithub } from 'react-icons/lu'
+import { FaDiscord } from 'react-icons/fa6'
 import { SidebarCard } from '../../shared/SidebarCard'
 import { useDiscord } from '../../../hooks/useDiscord'
 
@@ -19,9 +20,9 @@ export function IntegrationsViewSidebar(): React.JSX.Element {
     {
       id: 'discord',
       name: 'Discord',
-      icon: <LuBotMessageSquare size={16} />,
+      icon: <FaDiscord size={16} />,
       status: discordStatus.connected ? 'connected' : 'disconnected',
-      color: 'purple.500'
+      color: '#5865F2'
     },
     {
       id: 'slack',
