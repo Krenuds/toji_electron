@@ -57,9 +57,9 @@ export class Toji {
     })
     logClient('Client connected successfully to %s', serverUrl)
 
-    // Set current directory as default
+    // Set current directory as default (but don't change process.cwd)
     this.currentProjectDirectory = process.cwd()
-    logClient('Working directory set to: %s', this.currentProjectDirectory)
+    logClient('Default project directory set to: %s', this.currentProjectDirectory)
   }
 
   // Change working directory (for project context)
@@ -74,10 +74,9 @@ export class Toji {
       throw new Error(`Cannot access directory: ${directory}`)
     }
 
-    // Change process working directory
-    process.chdir(directory)
+    // Update the current project directory (no process.chdir needed)
     this.currentProjectDirectory = directory
-    logClient('Working directory changed to: %s', directory)
+    logClient('Project directory set to: %s', directory)
 
     // Save as current project in config
     const config = this._config
@@ -239,12 +238,20 @@ export class Toji {
     return this.project.list()
   }
 
-  // Switch to a project (just changes working directory)
+  // Switch to a project (restarts server from correct directory if needed)
   async switchToProject(projectPath: string): Promise<{ success: boolean; projectPath: string }> {
     log('Switching to project: %s', projectPath)
 
     try {
+      // First ensure the server is running from the correct directory
+      log('Checking if server needs restart for project: %s', projectPath)
+      await this.server.start(undefined, projectPath) // Smart restart if needed
+
+      // Update the project directory
       await this.changeWorkingDirectory(projectPath)
+
+      // Reconnect client after potential server restart
+      await this.connectClient()
 
       // Check if project is properly discovered by OpenCode
       if (this.client) {
@@ -308,9 +315,7 @@ export class Toji {
 
       const response = await this.client.session.get({
         path: { id: activeSessionId },
-        query: normalizedPath
-          ? { directory: normalizedPath }
-          : undefined
+        query: normalizedPath ? { directory: normalizedPath } : undefined
       })
 
       // Check if we got a valid session

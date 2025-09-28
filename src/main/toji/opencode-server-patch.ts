@@ -7,7 +7,7 @@ export interface ServerOptions {
   timeout?: number
   signal?: AbortSignal
   config?: Config
-  cwd?: string  // Add the missing cwd option
+  cwd?: string // Add the missing cwd option
 }
 
 export async function createOpencodeServerWithCwd(options?: ServerOptions): Promise<{
@@ -22,18 +22,14 @@ export async function createOpencodeServerWithCwd(options?: ServerOptions): Prom
     ...options
   }
 
-  const proc = spawn(
-    'opencode',
-    ['serve', `--hostname=${opts.hostname}`, `--port=${opts.port}`],
-    {
-      cwd: opts.cwd, // THIS IS THE KEY - Set the working directory!
-      signal: opts.signal,
-      env: {
-        ...process.env,
-        OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})
-      }
+  const proc = spawn('opencode', ['serve', `--hostname=${opts.hostname}`, `--port=${opts.port}`], {
+    cwd: opts.cwd, // THIS IS THE KEY - Set the working directory!
+    signal: opts.signal,
+    env: {
+      ...process.env,
+      OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})
     }
-  )
+  })
 
   const url = await new Promise<string>((resolve, reject) => {
     const id = setTimeout(() => {

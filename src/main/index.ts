@@ -111,25 +111,23 @@ app.whenReady().then(async () => {
     await openCodeService.ensureBinary()
     logStartup('OpenCode binary installation checked')
 
-    // Start the server from user's home directory so it can access all projects
-    logStartup('Starting OpenCode server')
-    const os = await import('os')
-    const homeDir = os.homedir()
-    await toji.server.start(undefined, homeDir)
-    logStartup('OpenCode server ready (running from %s)', homeDir)
+    // Load last project or use default
+    const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
+    logStartup('Loading project: %s', lastProject)
+
+    // Start the server from the project directory
+    logStartup('Starting OpenCode server from project directory')
+    await toji.server.start(undefined, lastProject)
+    logStartup('OpenCode server ready (running from %s)', lastProject)
 
     // Always connect the client
     logStartup('Connecting OpenCode client')
     await toji.connectClient()
     logStartup('OpenCode client connected successfully')
 
-    // Load last project or use default
-    const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
-    logStartup('Loading project: %s', lastProject)
-
-    // Change to project directory and load session
+    // Set the working directory
     await toji.changeWorkingDirectory(lastProject)
-    logStartup('Changed to project directory: %s', lastProject)
+    logStartup('Project directory set: %s', lastProject)
 
     // Load the most recent session for this project
     await toji.loadMostRecentSession()

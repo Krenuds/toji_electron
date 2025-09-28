@@ -8,7 +8,7 @@ import { StatusBadge } from '../../StatusBadge'
 import { SessionsModal } from '../../shared'
 import { ProjectSelector } from './ProjectSelector'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
-import type { Session } from '../../../../preload/index.d'
+import type { Session } from '../../../../../preload/index.d'
 
 export function ChatViewSidebar(): React.JSX.Element {
   const {
