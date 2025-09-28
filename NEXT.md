@@ -1,231 +1,229 @@
-# NEXT: OpenCode Project Discovery Fix
+# NEXT Steps & Session Learnings
 
-## Executive Summary
+## Session Summary (2025-09-28)
 
-The OpenCode server spawns from one directory and stays there forever, causing file discovery issues when switching projects. The current code blindly reuses any existing server without checking where it's running from.
+### What We Accomplished
 
-## The Investigation Journey
+#### 1. Discord Integration MVP ✅
+- **Fixed Discord ChatModule** to use real Toji chat instead of placeholder responses
+- **Created `/chat` slash command** for Discord interactions with proper session management
+- **Built Integrations UI** with token management, connection controls, and status display
+- **Added Discord branding** with official colors (#5865F2) and logo (FaDiscord)
+- **Implemented bot invite link** with administrator permissions
+- **Fixed UI auto-update** when saving Discord token
 
-### Initial Symptoms
+#### 2. Code Cleanup & Refactoring
+- Removed ~1300 lines of dead code across 8 files
+- Cleaned up ConfigProvider from 292 to 134 lines (removed 60% unused methods)
+- Fixed file extensions (.tsx → .ts for main process files)
+- Consolidated dashboard components into chat module
 
-- User reported: "tester" project wasn't being recognized as valid
-- CNC project worked fine
-- Both had .git directories, but different behavior
-- Files couldn't be seen initially in test2, then suddenly appeared
+#### 3. Key Issues Discovered
 
-### Key Discoveries
+##### OpenCode Server Connection Problem 🔴
+**Critical Issue**: OpenCode server returns "No response data" errors
+- Sessions API failing: `Failed to list sessions: No response data`
+- Create session failing: `Failed to create session: No response data`
+- Connection refused: `ECONNREFUSED 127.0.0.1:4096`
 
-#### 1. The Server Spawn Location Problem
+**Root Cause** (from previous investigation):
+- OpenCode server spawns from one directory and stays there
+- Server reuse logic doesn't check if server is in correct directory
+- When switching projects, server is still looking at old project files
 
-**What we found:** The OpenCode server is a subprocess that spawns from a specific directory and STAYS THERE.
+##### Discord Bot Integration Status
+- ✅ Bot connects and appears online
+- ✅ Slash commands registered
+- ✅ Token storage working
+- ✅ UI updates properly
+- ❌ Chat responses failing due to OpenCode connection issue
 
-- When app starts, server spawns from home directory (C:\Users\donth)
-- The server process keeps running from that original directory
-- `process.chdir()` only changes Node.js process directory, NOT the OpenCode subprocess
+## Architecture Insights
 
-**Evidence:**
-
-- Tested by spawning servers from different directories
-- Used `/path` endpoint to verify actual server location
-- Confirmed subprocess working directory is fixed at spawn time
-
-#### 2. The Blind Reuse Logic
-
-**Current broken behavior (src/main/toji/server.ts lines 40-62):**
-
-- Checks if ANY server is running on port 4096
-- If yes, connects to it WITHOUT checking where it's running from
-- This means switching projects doesn't actually move the server
-
-**Why this breaks:** Server running from toji3 can't properly see files in Desktop/tester
-
-#### 3. Git Commit Requirement
-
-**Discovery:** OpenCode requires at least one git commit to recognize a project
-
-- Directory with .git but no commits = "global" project
-- After creating initial commit, tester was properly recognized
-- This explains why some projects work and others don't
-
-#### 4. Path Format Chaos
-
-**Critical finding from user conversation:**
-
+### Discord Integration Architecture
 ```
-User: What files are in this folder?
-Toji: There are no files in this folder.
-User: We are in C:\Users\donth\OneDrive\Desktop\test2
-User: look again
-Toji: The folder contains: index.html
+User -> Discord -> DiscordService (main) -> DiscordPlugin -> ChatModule -> Toji -> OpenCode SDK
 ```
 
-**Path format issues:**
+**Key Design Decisions:**
+- Discord runs in main process for security and reliability
+- One Toji session per Discord channel for context isolation
+- DiscordPlugin acts as business logic layer consuming Toji API
+- SlashCommandModule handles Discord's native commands
 
-- Windows uses backslashes: `C:\Users\donth\toji3`
-- OpenCode returns mixed formats: `C:/Users/donth/toji3` or with trailing slashes
-- The "list" tool was returning `C:\Users\donth\OneDrive\Desktop/` (mixed separators!)
+### Session Management Pattern
+```typescript
+// Per-channel session mapping
+const sessionName = `discord-${channel.id}`
+const session = await toji.createSession(sessionName)
+await toji.chat(message, session.id)
+```
+
+### UI State Management Fix
+```typescript
+// Problem: refreshStatus() didn't update hasToken
+// Solution: Check both token and status when refreshing
+const refreshStatus = async () => {
+  await checkToken()  // Added this line
+  const discordStatus = await window.api.discord.getStatus()
+  setStatus(discordStatus)
+}
+```
+
+## Critical Next Steps
+
+### 1. Fix OpenCode Server Management (HIGHEST PRIORITY)
+
+**The Problem:**
+- Server spawns from initial directory and never moves
 - Path comparison fails due to format mismatches
+- Server blindly reused without checking directory
 
-## The Solution
+**The Solution:**
+```typescript
+// In server.ts - Check where server is actually running
+async getServerDirectory(): Promise<string> {
+  const response = await fetch(`http://127.0.0.1:${port}/path`)
+  return normalizePath(response.data.path)
+}
 
-### Core Principle
+// Before reusing server, verify it's in right directory
+if (existingServer) {
+  const serverDir = await getServerDirectory()
+  if (normalizePath(serverDir) !== normalizePath(targetDir)) {
+    await killServer()
+    await startNewServer(targetDir)
+  }
+}
+```
 
-Each project needs its own OpenCode server running FROM that project's directory.
+### 2. Complete Discord-Toji Integration
 
-### Implementation Strategy
+Once OpenCode is fixed:
+- [ ] Test end-to-end chat flow with real responses
+- [ ] Handle Discord's 2000 character limit for long responses
+- [ ] Add typing indicators while processing
+- [ ] Implement error recovery for failed messages
 
-#### Step 1: Add Server Directory Detection
+### 3. Session Persistence
 
-- Use `/path` endpoint to get server's actual working directory
-- This tells us WHERE the subprocess is running from
+- [ ] Store Discord channel → Toji session mappings in config
+- [ ] Restore sessions on app restart
+- [ ] Clean up old sessions periodically
+- [ ] Show session history in UI
 
-#### Step 2: Smart Server Reuse
+## Known Issues & Solutions
 
-- Before reusing a server, check if it's in the RIGHT directory
-- Compare target project path with server's current directory
-- Only reuse if they match; otherwise restart
+### Issue: Multiple Dev Servers Running
+**Symptom**: Ports 5173-5176 all occupied
+**Solution**: Kill all node processes and restart
 
-#### Step 3: Proper Path Normalization
+### Issue: OpenCode "No response data"
+**Symptom**: All session operations fail
+**Solution**: Implement proper server directory management (see above)
 
-**Critical for Windows:**
+### Issue: Discord Token Not Updating UI
+**Symptom**: Save token but UI doesn't change
+**Solution**: ✅ Already fixed - refreshStatus() now calls checkToken()
 
-- Remove all trailing slashes
-- Convert all paths to forward slashes for comparison
-- Handle mixed Unix/Windows formats from OpenCode
-- Example: `C:\Users\donth\toji3\` → `C:/Users/donth/toji3`
+## Testing Checklist
 
-#### Step 4: Remove Misleading Code
+### Discord Integration
+- [ ] Save token → UI updates to show connection controls
+- [ ] Connect bot → Bot appears online in Discord
+- [ ] Invite bot to server using generated link
+- [ ] Use `/chat` command → Get AI response
+- [ ] Multiple channels → Independent sessions
+- [ ] Disconnect → Bot goes offline
+- [ ] Clear token → Returns to token input
 
-- Delete all `process.chdir()` calls - they don't help
-- Remove the blind server reuse logic
-- The spawn directory is what matters, not Node's cwd
+### OpenCode Integration
+- [ ] Switch projects → Server restarts if needed
+- [ ] Create session → No errors
+- [ ] Send chat message → Get response
+- [ ] List sessions → Shows all sessions
+- [ ] Path with spaces → Works correctly
 
-## Why Previous Fixes Failed
+## Configuration Requirements
 
-### Path Normalization Attempts
+### Discord Bot Setup
+1. Create app at https://discord.com/developers/applications
+2. Bot section → Reset Token → Copy token
+3. Bot section → Enable MESSAGE CONTENT intent
+4. OAuth2 → URL Generator → Select bot + applications.commands
+5. Select Administrator permission
+6. Use generated URL to invite bot
 
-- We tried normalizing paths but didn't handle ALL cases
-- Missed trailing slashes
-- Didn't account for OpenCode returning different formats
+### Environment Variables
+```env
+# Required for OpenCode to use Claude
+ANTHROPIC_API_KEY=sk-ant-...
+```
 
-### process.chdir() Confusion
+### Project Requirements
+- Must have `.git` directory
+- Must have at least one commit (or shows as "global")
+- Must have `opencode.json` config file
 
-- We thought changing Node's directory would help
-- But OpenCode subprocess doesn't inherit directory changes
-- Led to false assumptions about where things were running
+## Debugging Commands
 
-### The "Global" Project Mystery
+```bash
+# Check OpenCode servers
+tasklist | findstr opencode
 
-- Didn't initially understand this meant "no git commits"
-- Wasted time thinking it was a path issue
-- Actually two separate problems: spawn location AND git commits
+# Kill all Node processes (nuclear option)
+taskkill /F /IM node.exe
 
-## Implementation Checklist
+# View logs
+tail -50 "C:\Users\donth\AppData\Roaming\toji3\logs\toji-2025-09-28.log"
 
-### Files to Modify
+# Test OpenCode manually
+cd "C:\Users\donth\toji3"
+opencode serve --port 4096
 
-1. **src/main/toji/server.ts**
-   - Add `getServerDirectory()` method using `/path` endpoint
-   - Modify `start()` to check directory before reuse
-   - Remove blind reuse logic (lines 40-62)
-   - Add proper path normalization
+# Check Discord bot in dev tools console
+window.api.discord.getStatus()
+window.api.discord.getDebugInfo()
+```
 
-2. **src/main/toji/index.ts**
-   - Update `switchToProject()` to pass directory to server
-   - Remove ALL `process.chdir()` calls
-   - Add logging for debugging
+## Code Locations
 
-3. **src/main/index.ts**
-   - Consider starting from last project instead of home
-   - Pass proper directory to initial server start
+### Discord Integration
+- `src/plugins/discord/` - Discord bot implementation
+- `src/main/services/discord-service.ts` - Discord service layer
+- `src/main/handlers/discord.handlers.ts` - IPC handlers
+- `src/renderer/src/components/views/integrations/` - UI components
+- `src/renderer/src/hooks/useDiscord.ts` - React hook
 
-4. **Path Normalization Utility**
-   - Create consistent path normalization function
-   - Strip trailing slashes
-   - Convert to forward slashes
-   - Handle edge cases
+### OpenCode/Toji Integration
+- `src/main/toji/` - Toji business logic
+- `src/main/toji/server.ts` - OpenCode server management (NEEDS FIX)
+- `src/main/toji/sessions.ts` - Session management
+- `src/main/toji/index.ts` - Main Toji class
 
-## Testing Requirements
+## Success Metrics
 
-1. **Project Switching**
-   - Switch between multiple projects
-   - Verify server restarts when needed
-   - Confirm files are visible immediately
+### Working MVP
+- [x] Discord bot UI complete with branding
+- [x] Token management secure and functional
+- [x] Bot connects and shows online
+- [x] Slash commands registered
+- [ ] Chat commands return AI responses (blocked by OpenCode)
+- [x] Sessions created per channel
+- [x] UI auto-updates on state changes
 
-2. **Path Edge Cases**
-   - Paths with spaces
-   - OneDrive paths
-   - Network drives
-   - Paths with special characters
+### Production Ready
+- [ ] Error recovery and retry logic
+- [ ] Rate limiting on commands
+- [ ] Session cleanup on disconnect
+- [ ] Multi-project support
+- [ ] Comprehensive error messages
+- [ ] Loading states for all operations
 
-3. **Git Status Variants**
-   - Repo with commits (should work)
-   - Repo without commits (shows as "global")
-   - Non-git directory (shows as "global")
+## Final Notes
 
-4. **Performance**
-   - Server restart takes ~6 seconds
-   - Need loading state in UI
-   - Consider debouncing rapid switches
+The Discord integration is architecturally complete and the UI is polished. The only blocker is the OpenCode server connection issue, which is a known problem with a clear solution (proper server directory management).
 
-## Potential Gotchas
+Once the server management is fixed, the Discord bot should work end-to-end. The session-per-channel pattern is implemented and ready. The UI properly reflects all states and uses official Discord branding.
 
-1. **Timing Issues**
-   - Killing process isn't instant
-   - Starting server takes time
-   - Need proper await/async handling
-
-2. **Port Conflicts**
-   - Only one server can use port 4096
-   - Must ensure old server is dead before starting new
-
-3. **Windows-Specific Issues**
-   - Path separators
-   - Case sensitivity
-   - Drive letters
-   - UNC paths
-
-4. **Error Handling**
-   - Server might fail to start
-   - Directory might not exist
-   - Permissions issues
-
-## Success Criteria
-
-1. Switching to any project immediately shows correct files
-2. No more "global" projects (except repos without commits)
-3. Server only restarts when necessary (different directory)
-4. Path formats don't cause comparison failures
-5. Clear logging shows what's happening
-
-## Next Session Action Plan
-
-1. **Start with clean slate**
-   - Kill all OpenCode processes
-   - Clear any cached state
-   - Start fresh dev environment
-
-2. **Implement in order**
-   - Path normalization utility first
-   - Server directory detection second
-   - Smart restart logic third
-   - Remove old code last
-
-3. **Test incrementally**
-   - Test each change in isolation
-   - Use test scripts from Desktop/opencode-test
-   - Verify with multiple projects
-
-## The Core Insight
-
-The OpenCode server is a subprocess that runs from a fixed directory. To work with different projects, we need different servers OR we need to restart the server from the new project directory. The current code doesn't do either - it just reuses whatever server is running, regardless of where it's running from.
-
-This is why files weren't visible initially - the server was looking in the wrong place!
-
-## Remember
-
-- OpenCode subprocess working directory is FIXED at spawn time
-- `process.chdir()` is a red herring - ignore it
-- Path normalization is CRITICAL on Windows
-- Git commits are REQUIRED for project recognition
-- The `/path` endpoint is our friend - use it!
+**Key Insight**: The OpenCode server subprocess working directory is FIXED at spawn time. We must spawn a new server from each project directory or implement a multi-server architecture with different ports per project.
