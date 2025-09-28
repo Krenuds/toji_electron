@@ -15,6 +15,13 @@ interface ChatState {
   // Projects
   projects: Project[]
   currentProject: CurrentProject | null
+  projectStatus: {
+    isGlobalProject: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    gitAvailable: boolean
+    path: string
+  } | null
 
   // Sessions
   sessions: Session[]
@@ -31,6 +38,7 @@ interface ChatState {
   isLoadingSessions: boolean
   isLoadingMessages: boolean
   isSendingMessage: boolean
+  isInitializingProject: boolean
 
   // Error states
   projectError: string | null
@@ -43,6 +51,7 @@ interface UseChatCoordinatorReturn extends ChatState {
   switchProject: (projectPath: string) => Promise<void>
   openProjectDialog: () => Promise<void>
   closeProject: () => Promise<void>
+  initializeProject: () => Promise<void>
 
   // Session actions
   createSession: (name?: string) => Promise<void>
@@ -69,6 +78,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   const [state, setState] = useState<ChatState>({
     projects: [],
     currentProject: null,
+    projectStatus: null,
     sessions: [],
     currentSessionId: undefined,
     messages: [],
@@ -77,6 +87,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     isLoadingSessions: false,
     isLoadingMessages: false,
     isSendingMessage: false,
+    isInitializingProject: false,
     projectError: null,
     sessionError: null,
     messageError: null
@@ -402,6 +413,16 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
           updateState({ currentProject: project })
           saveToCache(CACHE_KEYS.LAST_PROJECT, project)
 
+          // Check project status (global vs proper project)
+          const status = await window.api.toji.getProjectStatus()
+          updateState({ projectStatus: status })
+
+          if (status?.isGlobalProject) {
+            console.log(
+              '[ChatCoordinator.switchProject] Project is global (non-git), limited functionality'
+            )
+          }
+
           // Clear old session/messages immediately
           console.log('[ChatCoordinator.switchProject] Clearing old session data and messages')
           updateState({
@@ -549,6 +570,49 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       updateState({ projectError: 'Failed to close project' })
     }
   }, [loadProjects, updateState])
+
+  // Initialize project with git and opencode.json
+  const initializeProject = useCallback(async () => {
+    if (!state.currentProject) {
+      console.error('[ChatCoordinator.initializeProject] No current project')
+      return
+    }
+
+    console.log('[ChatCoordinator.initializeProject] Starting project initialization')
+    updateState({ isInitializingProject: true, projectError: null })
+
+    try {
+      const result = await window.api.toji.initializeProject()
+
+      if (result.success) {
+        console.log('[ChatCoordinator.initializeProject] Project initialized successfully')
+
+        // Refresh project status
+        const status = await window.api.toji.getProjectStatus()
+        updateState({ projectStatus: status })
+
+        // Reload sessions (project should now be recognized)
+        await loadSessions()
+
+        // Sessions will be created as needed by the user
+
+        // Show success message
+        updateState({ projectError: null })
+      } else {
+        console.error('[ChatCoordinator.initializeProject] Initialization failed:', result.error)
+        updateState({
+          projectError: result.needsGitInstall
+            ? 'Git is not installed. Please install Git from https://git-scm.com'
+            : result.error || 'Failed to initialize project'
+        })
+      }
+    } catch (error) {
+      console.error('[ChatCoordinator.initializeProject] Error:', error)
+      updateState({ projectError: 'Failed to initialize project' })
+    } finally {
+      updateState({ isInitializingProject: false })
+    }
+  }, [state.currentProject, loadSessions, updateState])
 
   // Create session
   const createSession = useCallback(
@@ -777,6 +841,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     switchProject,
     openProjectDialog,
     closeProject,
+    initializeProject,
     createSession,
     deleteSession,
     switchSession,

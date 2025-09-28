@@ -89,5 +89,29 @@ export const tojiAPI = {
   > => ipcRenderer.invoke('toji:getRunningServers'),
 
   // Close current project
-  closeProject: (): Promise<{ success: boolean }> => ipcRenderer.invoke('toji:closeProject')
+  closeProject: (): Promise<{ success: boolean }> => ipcRenderer.invoke('toji:closeProject'),
+
+  // Get project status (global vs proper project)
+  getProjectStatus: (): Promise<{
+    isGlobalProject: boolean
+    hasGit: boolean
+    hasOpenCodeConfig: boolean
+    gitAvailable: boolean
+    path: string
+  } | null> => ipcRenderer.invoke('toji:getProjectStatus'),
+
+  // Initialize project with git and opencode.json
+  initializeProject: (
+    config?: Record<string, unknown>
+  ): Promise<{
+    success: boolean
+    error?: string
+    needsGitInstall?: boolean
+    steps?: string[]
+    projectPath?: string
+    rollbackPerformed?: boolean
+  }> => ipcRenderer.invoke('toji:initializeProject', config),
+
+  // Check if git is available
+  checkGitAvailable: (): Promise<boolean> => ipcRenderer.invoke('toji:checkGitAvailable')
 }

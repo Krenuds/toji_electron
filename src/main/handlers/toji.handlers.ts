@@ -1,6 +1,7 @@
 // Core Toji handlers for IPC
 import { ipcMain } from 'electron'
 import type { Toji } from '../toji'
+import type { OpencodeConfig } from '../toji/config'
 
 export function registerTojiHandlers(toji: Toji): void {
   // Check if Toji is ready
@@ -196,6 +197,36 @@ export function registerTojiHandlers(toji: Toji): void {
     } catch (error) {
       console.error('Close project error:', error)
       throw error
+    }
+  })
+
+  // Get project status (global vs proper project)
+  ipcMain.handle('toji:getProjectStatus', async () => {
+    try {
+      return await toji.getProjectStatus()
+    } catch (error) {
+      console.error('Get project status error:', error)
+      return null
+    }
+  })
+
+  // Initialize project with git and opencode.json
+  ipcMain.handle('toji:initializeProject', async (_, config?: Record<string, unknown>) => {
+    try {
+      return await toji.initializeProject(config as OpencodeConfig | undefined)
+    } catch (error) {
+      console.error('Initialize project error:', error)
+      throw error
+    }
+  })
+
+  // Check if git is available on the system
+  ipcMain.handle('toji:checkGitAvailable', async () => {
+    try {
+      return await toji.projectInitializer.checkGitAvailable()
+    } catch (error) {
+      console.error('Check git available error:', error)
+      return false
     }
   })
 }

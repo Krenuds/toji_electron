@@ -20,16 +20,20 @@ export function ChatViewMain(): React.JSX.Element {
 
   const {
     currentProject,
+    projectStatus,
     currentSessionId,
     messages,
     serverStatus,
     isLoadingMessages,
     isSendingMessage,
+    isInitializingProject,
     messageError,
+    projectError,
     sendMessage,
     refreshAll,
     clearErrors,
-    closeProject
+    closeProject,
+    initializeProject
   } = useChatCoordinatorContext()
 
   // Auto-scroll to bottom when new messages arrive
@@ -247,10 +251,35 @@ export function ChatViewMain(): React.JSX.Element {
       {/* Header */}
       <Box>
         <HStack justify="space-between" align="center" mb={2}>
-          <Text color="app.light" fontSize="2xl" fontWeight="bold">
-            {currentProject ? `Chatting with ${projectName}` : 'Toji Chat'}
-          </Text>
+          <HStack gap={3}>
+            <Text color="app.light" fontSize="2xl" fontWeight="bold">
+              {currentProject ? `Chatting with ${projectName}` : 'Toji Chat'}
+            </Text>
+            {projectStatus?.isGlobalProject && currentProject && (
+              <Badge
+                size="sm"
+                colorPalette="yellow"
+                variant="subtle"
+                title="Non-git folder - limited functionality"
+              >
+                Global Project
+              </Badge>
+            )}
+          </HStack>
           <HStack gap={2}>
+            {projectStatus?.isGlobalProject && currentProject && !projectError && (
+              <Button
+                size="sm"
+                colorPalette="green"
+                variant="solid"
+                onClick={initializeProject}
+                loading={isInitializingProject}
+                disabled={isInitializingProject}
+                title="Initialize with git and opencode.json"
+              >
+                Initialize Project
+              </Button>
+            )}
             {currentProject && (
               <Badge
                 size="sm"
@@ -287,9 +316,21 @@ export function ChatViewMain(): React.JSX.Element {
           </HStack>
         </HStack>
         {currentProject && (
-          <Text color="app.text" fontSize="sm">
-            Working in: {currentProject.path}
-          </Text>
+          <VStack align="start" gap={1}>
+            <Text color="app.text" fontSize="sm">
+              Working in: {currentProject.path}
+            </Text>
+            {projectStatus?.isGlobalProject && (
+              <Text color="yellow.400" fontSize="xs">
+                ⚠ Limited functionality - This folder is not a git repository
+              </Text>
+            )}
+            {projectError && (
+              <Text color="red.400" fontSize="xs">
+                ❌ {projectError}
+              </Text>
+            )}
+          </VStack>
         )}
       </Box>
 

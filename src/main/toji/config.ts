@@ -4,6 +4,12 @@
 // We'll define our own minimal config interface
 export interface OpencodeConfig {
   model?: string
+  rules?: string[]
+  project?: {
+    name: string
+    initialized: string
+    type: string
+  }
   // Add other config options as needed
 }
 

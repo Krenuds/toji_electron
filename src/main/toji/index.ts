@@ -6,6 +6,8 @@ import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
 import { ServerManager } from './server'
 import { SessionManager } from './sessions'
+import { ProjectInitializer } from './project-initializer'
+import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus } from './types'
 import type { OpencodeConfig } from './config'
 import { createFileDebugLogger } from '../utils/logger'
@@ -19,6 +21,7 @@ const logChat = createFileDebugLogger('toji:chat')
 export class Toji {
   private clients: Map<string, OpencodeClient> = new Map()
   private currentProjectDirectory?: string
+  private currentProjectId?: string
   private _config?: ConfigProvider
   // private globalConfig: OpencodeConfig = defaultOpencodeConfig // Reserved for future use
 
@@ -26,6 +29,7 @@ export class Toji {
   public project: ProjectManager
   public readonly server: ServerManager
   public readonly sessions: SessionManager
+  public readonly projectInitializer: ProjectInitializer
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     log('Initializing Toji with OpenCode service')
@@ -34,6 +38,7 @@ export class Toji {
     this.server = new ServerManager(opencodeService)
     this.sessions = new SessionManager()
     this.project = new ProjectManager(() => this.getClient())
+    this.projectInitializer = new ProjectInitializer()
     log('Toji initialized successfully')
   }
 
@@ -300,17 +305,13 @@ export class Toji {
           )
           const current = await response.json()
 
+          // Store the current project ID
+          this.currentProjectId = current?.id
+
           // If project is assigned to "global", it wasn't properly discovered
           if (current?.id === 'global') {
-            log('Project not discovered, attempting to trigger discovery...')
-
-            // Create a session to trigger project discovery
-            await client.session.create({
-              body: { title: 'Initialize Project' },
-              query: { directory: normalizedPath }
-            })
-
-            log('Created session to trigger project discovery')
+            log('Project not discovered (global project), limited functionality available')
+            // Don't try to trigger discovery automatically - let user decide
           } else {
             log('Project already discovered: %s', current?.worktree)
           }
@@ -547,6 +548,65 @@ export class Toji {
       log('ERROR: Failed to load most recent session: %o', error)
       throw error
     }
+  }
+
+  // Get the current project status (global vs proper project)
+  async getProjectStatus(): Promise<ProjectStatus | null> {
+    if (!this.currentProjectDirectory) {
+      return null
+    }
+
+    return this.projectInitializer.getProjectStatus(
+      this.currentProjectDirectory,
+      this.currentProjectId
+    )
+  }
+
+  // Initialize a project with git and opencode.json
+  async initializeProject(config?: OpencodeConfig): Promise<InitializationResult> {
+    if (!this.currentProjectDirectory) {
+      return {
+        success: false,
+        error: 'No project directory selected'
+      }
+    }
+
+    log('Initializing project at: %s', this.currentProjectDirectory)
+    const result = await this.projectInitializer.initializeProject(
+      this.currentProjectDirectory,
+      config
+    )
+
+    if (result.success) {
+      log('Project initialized successfully, restarting server...')
+
+      // Restart the server to pick up the new git repository
+      await this.server.stopServerForDirectory(this.currentProjectDirectory)
+
+      // Small delay for cleanup
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Start new server (will now recognize the project)
+      const serverInstance = await this.server.getOrCreateServer(this.currentProjectDirectory)
+
+      // Reconnect client
+      await this.connectClient(this.currentProjectDirectory)
+
+      // Check project status again
+      try {
+        const normalizedPath = this.currentProjectDirectory.replace(/\\/g, '/')
+        const response = await fetch(
+          `${serverInstance.server.url}/project/current?directory=${encodeURIComponent(normalizedPath)}`
+        )
+        const current = await response.json()
+        this.currentProjectId = current?.id
+        log('Project now recognized as: %s', current?.id)
+      } catch (error) {
+        log('WARNING: Could not verify project after initialization: %o', error)
+      }
+    }
+
+    return result
   }
 
   // Get all running servers info
