@@ -1,172 +1,56 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { Box, VStack, HStack, Text, Input, Button, Card, Badge } from '@chakra-ui/react'
-import { LuSend, LuUser, LuBot } from 'react-icons/lu'
-import { useProjects } from '../../../hooks/useProjects'
-import { useChat } from '../../../hooks/useChat'
+import React, { useState, useEffect, useRef } from 'react'
 import {
-  createChatMessage,
-  replaceMessages,
-  type ChatMessage
-} from '../../../utils/messageFormatter'
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  Button,
+  Card,
+  Badge,
+  Spinner,
+  Center
+} from '@chakra-ui/react'
+import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo } from 'react-icons/lu'
+import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 
 export function ChatViewMain(): React.JSX.Element {
-  const [message, setMessage] = useState('')
-  const [serverStatus, setServerStatus] = useState<'offline' | 'online' | 'initializing'>('offline')
-  const { currentProject } = useProjects()
+  const [messageInput, setMessageInput] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
   const {
+    currentProject,
+    currentSessionId,
+    messages,
+    serverStatus,
+    isLoadingMessages,
+    isSendingMessage,
+    messageError,
     sendMessage,
-    checkServerStatus,
-    ensureReadyForChat,
-    getSessionMessages,
-    getCurrentSession,
-    isLoading
-  } = useChat()
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [syncLoading, setSyncLoading] = useState(false)
+    refreshAll,
+    clearErrors
+  } = useChatCoordinatorContext()
 
-  // Sync messages with backend session history with retry for race conditions
-  const syncMessages = useCallback(
-    async (forceRefresh = false, retryCount = 0): Promise<void> => {
-      setSyncLoading(true)
-      try {
-        // Check if we have a current session
-        const sessionInfo = await getCurrentSession()
-        if (!sessionInfo) {
-          // If no session and we haven't retried much, wait and retry
-          if (retryCount < 2) {
-            console.log(`No session found, retrying in ${(retryCount + 1) * 300}ms...`)
-            setTimeout(
-              () => {
-                syncMessages(forceRefresh, retryCount + 1)
-              },
-              (retryCount + 1) * 300
-            )
-            return
-          }
-          // No session after retries, clear messages
-          setMessages([])
-          return
-        }
-
-        // Load message history from backend
-        const history = await getSessionMessages(sessionInfo.id, !forceRefresh)
-        setMessages(replaceMessages(history))
-        console.log(`Loaded ${history.length} messages for session ${sessionInfo.id}`)
-      } catch (error) {
-        console.error('Failed to sync messages:', error)
-        // Don't clear messages on error, keep what we have
-      } finally {
-        setSyncLoading(false)
-      }
-    },
-    [getCurrentSession, getSessionMessages]
-  )
-
-  // Sync messages when project changes
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (currentProject) {
-      syncMessages()
-    }
-  }, [currentProject, syncMessages])
-
-  // Initialize component - check server status and sync messages
-  useEffect(() => {
-    const initializeChat = async (): Promise<void> => {
-      // Check server status immediately
-      const isRunning = await checkServerStatus()
-      setServerStatus(isRunning ? 'online' : 'offline')
-
-      // Sync messages (will retry if session not ready yet)
-      await syncMessages()
-    }
-
-    initializeChat()
-  }, [checkServerStatus, syncMessages])
-
-  // Listen for session changes from sidebar and sync messages
-  useEffect(() => {
-    const handleSessionChange = (event: CustomEvent): void => {
-      console.log('Session changed, syncing messages for:', event.detail.sessionId)
-      syncMessages(true) // Force refresh for new session
-    }
-
-    window.addEventListener('session-changed', handleSessionChange as EventListener)
-
-    return () => {
-      window.removeEventListener('session-changed', handleSessionChange as EventListener)
-    }
-  }, [syncMessages])
-
-  // Listen for session restoration from backend and sync messages + update status
-  useEffect(() => {
-    const cleanup = window.api.toji.onSessionRestored(async (data) => {
-      console.log('Session restored from backend:', data.sessionId)
-      // Sync messages when session is restored at startup
-      await syncMessages(true)
-      // Update server status since session restoration means server is running
-      setServerStatus('online')
-    })
-
-    return cleanup
-  }, [syncMessages])
-
-  // Poll server status
-  useEffect(() => {
-    const pollServerStatus = async (): Promise<void> => {
-      const isRunning = await checkServerStatus()
-      setServerStatus(isRunning ? 'online' : 'offline')
-    }
-
-    // Poll every 5 seconds
-    const interval = setInterval(pollServerStatus, 5000)
-    return () => clearInterval(interval)
-  }, [checkServerStatus])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleSendMessage = async (): Promise<void> => {
-    if (!message.trim() || isLoading) return
+    if (!messageInput.trim() || isSendingMessage) return
 
-    // Create user message and add it immediately for responsive UI
-    const userMessage = createChatMessage('user', message)
-    setMessages((prev) => [...prev, userMessage])
-    const currentMessage = message
-    setMessage('')
+    const currentMessage = messageInput
+    setMessageInput('')
 
-    // Ensure server is ready if this is the first message
-    if (serverStatus === 'offline') {
-      setServerStatus('initializing')
-      const readyStatus = await ensureReadyForChat()
-      if (readyStatus.serverStatus === 'online') {
-        setServerStatus('online')
-      } else {
-        const errorMessage = createChatMessage(
-          'assistant',
-          `Error: ${readyStatus.error || 'Failed to initialize OpenCode server'}`
-        )
-        setMessages((prev) => [...prev, errorMessage])
-        setServerStatus('offline')
-        return
-      }
-    }
+    // Note: In a real app, we'd update the coordinator's state here optimistically
+    // For now, let the coordinator handle it after the response
 
-    // Send the actual message
-    const response = await sendMessage(currentMessage)
-
-    if (response.success) {
-      // Sync messages from backend to get the complete conversation
-      // Force refresh to bypass cache and get the latest response
-      await syncMessages(true)
-    } else {
-      const errorMessage = createChatMessage(
-        'assistant',
-        `Error: ${response.error || 'Failed to send message'}`
-      )
-      setMessages((prev) => [...prev, errorMessage])
-      setServerStatus('offline')
-    }
+    await sendMessage(currentMessage)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Enter' && !isLoading) {
+    if (e.key === 'Enter' && !e.shiftKey && !isSendingMessage) {
+      e.preventDefault()
       handleSendMessage()
     }
   }
@@ -176,37 +60,218 @@ export function ChatViewMain(): React.JSX.Element {
     ? currentProject.path.split(/[/\\]/).pop() || currentProject.path
     : 'No Project'
 
+  // Determine what to show in the chat area
+  const renderChatContent = (): React.JSX.Element => {
+    // No project selected
+    if (!currentProject) {
+      return (
+        <Center h="100%" color="app.text">
+          <VStack gap={3}>
+            <LuInfo size={48} />
+            <Text fontSize="lg" fontWeight="medium">
+              No Project Selected
+            </Text>
+            <Text fontSize="sm" textAlign="center">
+              Select a project from the sidebar to start chatting
+            </Text>
+          </VStack>
+        </Center>
+      )
+    }
+
+    // No session selected
+    if (!currentSessionId) {
+      return (
+        <Center h="100%" color="app.text">
+          <VStack gap={3}>
+            <LuInfo size={48} />
+            <Text fontSize="lg" fontWeight="medium">
+              No Session Active
+            </Text>
+            <Text fontSize="sm" textAlign="center">
+              Create or select a session to start chatting
+            </Text>
+          </VStack>
+        </Center>
+      )
+    }
+
+    // Loading messages
+    if (isLoadingMessages && messages.length === 0) {
+      return (
+        <Center h="100%">
+          <VStack gap={3}>
+            <Spinner size="xl" color="app.accent" />
+            <Text color="app.text" fontSize="sm">
+              Loading conversation...
+            </Text>
+          </VStack>
+        </Center>
+      )
+    }
+
+    // Error loading messages
+    if (messageError && messages.length === 0) {
+      return (
+        <Center h="100%">
+          <VStack gap={3}>
+            <LuInfo size={48} color="red" />
+            <Text color="red.400" fontSize="lg" fontWeight="medium">
+              Failed to Load Messages
+            </Text>
+            <Text color="app.text" fontSize="sm">
+              {messageError}
+            </Text>
+            <Button
+              size="sm"
+              colorPalette="green"
+              variant="solid"
+              onClick={() => {
+                clearErrors()
+                refreshAll()
+              }}
+            >
+              <LuRefreshCw size={14} />
+              Retry
+            </Button>
+          </VStack>
+        </Center>
+      )
+    }
+
+    // No messages yet
+    if (messages.length === 0) {
+      return (
+        <Center h="100%" color="app.text">
+          <VStack gap={3}>
+            <Text fontSize="lg" fontWeight="medium">
+              Start a Conversation
+            </Text>
+            <Text fontSize="sm" textAlign="center">
+              Type a message below to begin chatting with Toji
+            </Text>
+          </VStack>
+        </Center>
+      )
+    }
+
+    // Show messages
+    return (
+      <VStack
+        gap={3}
+        align="stretch"
+        h="100%"
+        overflowY="auto"
+        p={4}
+        css={{
+          '&::-webkit-scrollbar': {
+            width: '6px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#404040',
+            borderRadius: '3px'
+          }
+        }}
+      >
+        {messages.map((msg) => (
+          <Box key={msg.id} w="100%">
+            <HStack align="flex-start" gap={3}>
+              <Box
+                w={8}
+                h={8}
+                borderRadius="full"
+                bg={msg.type === 'user' ? 'green.200' : 'app.accent'}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                flexShrink={0}
+                mt={1}
+              >
+                {msg.type === 'user' ? (
+                  <LuUser size={16} color="white" />
+                ) : (
+                  <LuBot size={16} color="white" />
+                )}
+              </Box>
+              <Box flex="1">
+                <HStack gap={2} mb={1}>
+                  <Text color="app.light" fontSize="sm" fontWeight="medium">
+                    {msg.type === 'user' ? 'You' : 'Toji'}
+                  </Text>
+                  <Text color="app.text" fontSize="xs">
+                    {msg.timestamp.toLocaleTimeString()}
+                  </Text>
+                </HStack>
+                <Box
+                  p={3}
+                  borderRadius="md"
+                  bg={msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'}
+                  border="1px solid"
+                  borderColor={msg.type === 'user' ? 'green.500' : 'app.border'}
+                >
+                  <Text color="app.light" fontSize="sm" lineHeight="tall" whiteSpace="pre-wrap">
+                    {msg.content}
+                  </Text>
+                </Box>
+              </Box>
+            </HStack>
+          </Box>
+        ))}
+        <div ref={messagesEndRef} />
+      </VStack>
+    )
+  }
+
   return (
     <VStack align="stretch" gap={6} h="100%">
       {/* Header */}
       <Box>
         <HStack justify="space-between" align="center" mb={2}>
           <Text color="app.light" fontSize="2xl" fontWeight="bold">
-            Chatting with {projectName}
+            {currentProject ? `Chatting with ${projectName}` : 'Toji Chat'}
           </Text>
-          <Badge
-            size="sm"
-            colorPalette={
-              serverStatus === 'online'
-                ? 'green'
+          <HStack gap={2}>
+            <Badge
+              size="sm"
+              colorPalette={
+                serverStatus === 'online'
+                  ? 'green'
+                  : serverStatus === 'initializing'
+                    ? 'yellow'
+                    : 'gray'
+              }
+              variant="subtle"
+            >
+              {serverStatus === 'online'
+                ? 'Online'
                 : serverStatus === 'initializing'
-                  ? 'yellow'
-                  : 'gray'
-            }
-            variant="subtle"
-          >
-            {serverStatus === 'online'
-              ? 'Server Online'
-              : serverStatus === 'initializing'
-                ? 'Initializing...'
-                : 'Server Offline'}
-          </Badge>
+                  ? 'Starting...'
+                  : 'Offline'}
+            </Badge>
+            {messageError && (
+              <Button
+                size="xs"
+                variant="ghost"
+                colorPalette="red"
+                onClick={() => {
+                  clearErrors()
+                  refreshAll()
+                }}
+                title="Retry failed operation"
+              >
+                <LuRefreshCw size={12} />
+              </Button>
+            )}
+          </HStack>
         </HStack>
-        <Text color="app.text" fontSize="sm">
-          {currentProject
-            ? `Working in: ${currentProject.path}`
-            : 'Select a project to start chatting with your AI coding assistant'}
-        </Text>
+        {currentProject && (
+          <Text color="app.text" fontSize="sm">
+            Working in: {currentProject.path}
+          </Text>
+        )}
       </Box>
 
       {/* Chat Messages */}
@@ -218,83 +283,29 @@ export function ChatViewMain(): React.JSX.Element {
         overflow="hidden"
       >
         <Card.Body p={0} h="100%">
-          <VStack
-            gap={3}
-            align="stretch"
-            h="100%"
-            overflowY="auto"
-            p={4}
-            css={{
-              '&::-webkit-scrollbar': {
-                width: '6px'
-              },
-              '&::-webkit-scrollbar-track': {
-                background: 'transparent'
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#404040',
-                borderRadius: '3px'
-              }
-            }}
-          >
-            {messages.map((msg) => (
-              <Box key={msg.id} w="100%">
-                <HStack align="flex-start" gap={3}>
-                  <Box
-                    w={8}
-                    h={8}
-                    borderRadius="full"
-                    bg={msg.type === 'user' ? 'green.200' : 'app.accent'}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    flexShrink={0}
-                    mt={1}
-                  >
-                    {msg.type === 'user' ? (
-                      <LuUser size={16} color="white" />
-                    ) : (
-                      <LuBot size={16} color="white" />
-                    )}
-                  </Box>
-                  <Box flex="1">
-                    <HStack gap={2} mb={1}>
-                      <Text color="app.light" fontSize="sm" fontWeight="medium">
-                        {msg.type === 'user' ? 'You' : 'Toji'}
-                      </Text>
-                      <Text color="app.text" fontSize="xs">
-                        {msg.timestamp.toLocaleTimeString()}
-                      </Text>
-                    </HStack>
-                    <Box
-                      p={3}
-                      borderRadius="md"
-                      bg={
-                        msg.type === 'user' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255,255,255,0.02)'
-                      }
-                      border="1px solid"
-                      borderColor={msg.type === 'user' ? 'green.500' : 'app.border'}
-                    >
-                      <Text color="app.light" fontSize="sm" lineHeight="tall">
-                        {msg.content}
-                      </Text>
-                    </Box>
-                  </Box>
-                </HStack>
-              </Box>
-            ))}
-          </VStack>
+          {renderChatContent()}
         </Card.Body>
       </Card.Root>
 
       {/* Input Area */}
-      <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
+      <Card.Root
+        bg="app.dark"
+        border="1px solid"
+        borderColor="app.border"
+        opacity={!currentProject || !currentSessionId ? 0.5 : 1}
+      >
         <Card.Body p={4}>
           <HStack gap={3}>
             <Input
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              placeholder={
+                !currentProject
+                  ? 'Select a project first...'
+                  : !currentSessionId
+                    ? 'Select or create a session first...'
+                    : 'Type your message...'
+              }
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
               onKeyPress={handleKeyPress}
               bg="rgba(255,255,255,0.02)"
               border="1px solid"
@@ -303,23 +314,32 @@ export function ChatViewMain(): React.JSX.Element {
               _placeholder={{ color: 'app.text' }}
               _focus={{ borderColor: 'app.accent', boxShadow: 'none' }}
               flex="1"
+              disabled={!currentProject || !currentSessionId || isSendingMessage}
             />
             <Button
               onClick={handleSendMessage}
               colorPalette="green"
               variant="solid"
-              disabled={!message.trim() || isLoading}
+              disabled={
+                !messageInput.trim() ||
+                !currentProject ||
+                !currentSessionId ||
+                isSendingMessage ||
+                isLoadingMessages
+              }
               px={4}
             >
-              <LuSend size={16} />
+              {isSendingMessage ? <Spinner size="sm" /> : <LuSend size={16} />}
             </Button>
           </HStack>
           <Text color="app.text" fontSize="xs" mt={2}>
-            {isLoading
+            {isSendingMessage
               ? 'Toji is thinking...'
-              : syncLoading
-                ? 'Syncing messages...'
-                : 'Press Enter to send • OpenCode powered'}
+              : isLoadingMessages
+                ? 'Loading messages...'
+                : serverStatus === 'offline'
+                  ? 'Server offline - will start when you send a message'
+                  : 'Press Enter to send • OpenCode powered'}
           </Text>
         </Card.Body>
       </Card.Root>

@@ -4,6 +4,7 @@ import { LuLayoutDashboard, LuMessageCircle } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
+import { ChatCoordinatorProvider } from './contexts/ChatCoordinatorContext'
 import { ViewType } from './types/ViewTypes'
 import { useViewCoordination } from './hooks/useViewCoordination'
 import { useWindowControls } from './hooks/useWindowControls'
@@ -74,7 +75,9 @@ function AppContent(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <AppViewProvider>
-      <AppContent />
+      <ChatCoordinatorProvider>
+        <AppContent />
+      </ChatCoordinatorProvider>
     </AppViewProvider>
   )
 }

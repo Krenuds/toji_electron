@@ -19,7 +19,11 @@
       "Bash(dir:*)",
       "Bash(pkill:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(curl:*)",
+      "Bash(tasklist)",
+      "Bash(wmic:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

@@ -1,36 +1,59 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
+  Box,
   VStack,
   HStack,
   Text,
   Button,
   Separator,
-  NativeSelectRoot,
-  NativeSelectField
+  SelectRoot,
+  SelectTrigger,
+  SelectValueText,
+  SelectContent,
+  SelectItem,
+  Spinner
 } from '@chakra-ui/react'
-import { LuFolderOpen } from 'react-icons/lu'
-import { useProjects } from '../../../hooks/useProjects'
+import { LuFolderOpen, LuInfo } from 'react-icons/lu'
+import { ListCollection } from '@zag-js/collection'
+import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 
 export const ProjectSelector: React.FC = () => {
-  const { projects, currentProject, switchProject, isLoading } = useProjects()
+  const {
+    projects,
+    currentProject,
+    isLoadingProjects,
+    projectError,
+    switchProject,
+    openProjectDialog,
+    clearErrors
+  } = useChatCoordinatorContext()
 
-  const handleProjectChange = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-    const projectPath = event.target.value
-    switchProject(projectPath)
-  }
+  // Create collection items for the select dropdown
+  const projectItems = useMemo(
+    () =>
+      projects.map((project) => {
+        const projectName = project.worktree.split(/[/\\]/).pop() ?? project.worktree
+        return { label: projectName, value: project.worktree }
+      }),
+    [projects]
+  )
 
-  const handleOpenProject = async (): Promise<void> => {
-    try {
-      const result = await window.api.dialog.showOpenDialog({
-        properties: ['openDirectory']
-      })
+  const projectCollection = useMemo(
+    () =>
+      new ListCollection({
+        items: projectItems,
+        itemToValue: (item) => item.value,
+        itemToString: (item) => item.label
+      }),
+    [projectItems]
+  )
 
-      if (!result.canceled && result.filePaths[0]) {
-        await switchProject(result.filePaths[0])
-      }
-    } catch (error) {
-      console.error('Failed to open project:', error)
+  const handleProjectChange = async (value: string[]): Promise<void> => {
+    const nextPath = value[0]
+    if (!nextPath || nextPath === currentProject?.path) {
+      return
     }
+    await switchProject(nextPath)
   }
 
   return (
@@ -42,38 +65,85 @@ export const ProjectSelector: React.FC = () => {
         bg="app.dark"
         borderRadius="md"
         border="1px solid"
-        borderColor="app.border"
+        borderColor={projectError ? 'red.500' : 'app.border'}
       >
+        {projectError && (
+          <HStack w="full" gap={2} color="red.400">
+            <LuInfo size={14} />
+            <Text fontSize="2xs" flex={1}>
+              {projectError}
+            </Text>
+            <Button size="xs" variant="ghost" colorPalette="red" onClick={clearErrors}>
+              ×
+            </Button>
+          </HStack>
+        )}
+
         <HStack w="full" gap={2}>
           <Text fontSize="xs" color="app.text" minW="fit-content" fontWeight="medium">
             Project:
           </Text>
-          <NativeSelectRoot size="sm" disabled={isLoading} flex={1}>
-            <NativeSelectField
-              value={currentProject?.path || '/'}
-              onChange={handleProjectChange}
+          <SelectRoot
+            size="sm"
+            flex={1}
+            disabled={isLoadingProjects}
+            collection={projectCollection}
+            value={currentProject?.path ? [currentProject.path] : []}
+            onValueChange={({ value }) => handleProjectChange(value)}
+          >
+            <SelectTrigger
               bg="app.medium"
               borderColor="app.border"
               color="app.light"
               _hover={{ borderColor: 'app.accent' }}
-              _focus={{ borderColor: 'app.accent', boxShadow: 'none' }}
+              _focusVisible={{ borderColor: 'app.accent', boxShadow: 'none' }}
             >
-              {projects.map((project) => (
-                <option key={project.worktree} value={project.worktree}>
-                  {project.worktree.split(/[/\\]/).pop() || project.worktree}
-                </option>
-              ))}
-            </NativeSelectField>
-          </NativeSelectRoot>
+              {isLoadingProjects ? (
+                <HStack gap={2}>
+                  <Spinner size="xs" />
+                  <Text>Loading projects...</Text>
+                </HStack>
+              ) : (
+                <SelectValueText placeholder="Select a project" />
+              )}
+            </SelectTrigger>
+            <SelectContent bg="app.dark" borderColor="app.border" color="app.light" shadow="lg">
+              {projectItems.length === 0 ? (
+                <Box p={2}>
+                  <Text fontSize="xs" color="app.text" textAlign="center">
+                    No projects found. Click &quot;Open Project&quot; to add one.
+                  </Text>
+                </Box>
+              ) : (
+                projectItems.map((project) => (
+                  <SelectItem
+                    key={project.value}
+                    item={project}
+                    color="app.light"
+                    _hover={{ bg: 'app.medium' }}
+                    _highlighted={{ bg: 'app.medium', color: 'app.light' }}
+                    _selected={{ bg: 'app.medium', color: 'app.light' }}
+                  >
+                    <VStack align="start" gap={0}>
+                      <Text fontSize="sm">{project.label}</Text>
+                      <Text fontSize="2xs" color="app.text" lineClamp={1}>
+                        {project.value}
+                      </Text>
+                    </VStack>
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </SelectRoot>
         </HStack>
 
         <Button
           size="sm"
           w="full"
-          onClick={handleOpenProject}
+          onClick={openProjectDialog}
           variant="solid"
           colorPalette="green"
-          disabled={isLoading}
+          disabled={isLoadingProjects}
           borderRadius="md"
         >
           <LuFolderOpen size={14} />
