@@ -35,6 +35,21 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         name: '🗑️ /clear',
         value: 'Clear the conversation history for this channel',
         inline: false
+      },
+      {
+        name: '🎯 /init',
+        value: 'Initialize Discord channels from saved state',
+        inline: false
+      },
+      {
+        name: '🔄 /refresh',
+        value: 'Refresh and sync Discord channels with state',
+        inline: false
+      },
+      {
+        name: '📂 /project [subcommand]',
+        value: 'Project management (list, add, remove, switch)',
+        inline: false
       }
     ],
     footer: {

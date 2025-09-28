@@ -1,54 +1,38 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
-import type { DiscordChatModule } from '../modules/ChatModule'
+import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 import { DISCORD_COLORS } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('clear')
-  .setDescription('Clear the conversation history for this channel')
+  .setDescription('Clear the conversation history in the current project')
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
   toji: Toji,
-  chatModule?: DiscordChatModule
+  projectManager?: DiscordProjectManager
 ): Promise<void> {
   await interaction.deferReply({ ephemeral: true })
 
   try {
-    const channelId = interaction.channelId
+    // Clear the conversation in Toji (project context is maintained)
+    toji.clearSession()
 
-    // Clear the session in the chat module
-    if (chatModule) {
-      await chatModule.clearSession(channelId)
-    }
-
-    // Try to clear the Toji session as well
-    const sessionName = interaction.guildId
-      ? `discord-${interaction.guildId}-${channelId}`
-      : `discord-dm-${interaction.user.id}`
-
-    try {
-      const sessions = await toji.listSessions()
-      const existingSession = sessions.find((s) => s.title === sessionName)
-
-      if (existingSession) {
-        // Note: Toji doesn't have a delete session method yet,
-        // so we'll just clear the module's cache
-        console.log(`Cleared session cache for ${sessionName}`)
-      }
-    } catch (err) {
-      console.error('Error checking Toji sessions:', err)
-    }
+    // Get current project info for the embed
+    const activeProject = projectManager?.getActiveProject()
+    const projectInfo = activeProject
+      ? `Project: **${activeProject.projectName}**`
+      : 'No active project'
 
     const successEmbed = {
       color: DISCORD_COLORS.SUCCESS,
-      title: '🗑️ Session Cleared',
+      title: '🗑️ Conversation Cleared',
       description:
-        'The conversation history for this channel has been cleared.\nA new session will be created on your next message.',
+        'The conversation history has been cleared.\nThe project context remains active.',
       fields: [
         {
-          name: 'Channel',
-          value: `<#${channelId}>`,
+          name: 'Current Context',
+          value: projectInfo,
           inline: true
         },
         {
@@ -58,7 +42,7 @@ export async function execute(
         }
       ],
       footer: {
-        text: 'Start a new conversation anytime!'
+        text: 'Start a fresh conversation in the same project context!'
       },
       timestamp: new Date().toISOString()
     }
@@ -70,9 +54,9 @@ export async function execute(
     const errorEmbed = {
       color: DISCORD_COLORS.ERROR,
       title: '❌ Clear Failed',
-      description: `Failed to clear session: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      description: `Failed to clear conversation: ${error instanceof Error ? error.message : 'Unknown error'}`,
       footer: {
-        text: 'Try again or contact support if the issue persists'
+        text: 'Try again or use /project switch to reset'
       }
     }
 

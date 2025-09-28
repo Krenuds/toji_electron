@@ -1,262 +1,249 @@
-# NEXT Steps & Session Summary
+# Toji Discord Bot - Project-Centric Design
 
-## Session Overview (2025-09-28)
+## Vision
 
-This session focused on completing the Discord integration MVP for Toji3, creating a fully-featured Discord bot interface for the OpenCode AI assistant. We went from a partially stubbed implementation to a production-ready Discord integration with proper error handling, user feedback, and essential commands.
+Transform Discord into a lightweight project management interface for Toji, where Discord's native UI elements (categories, channels, topics) serve as the project manager. No complex session management - just projects and conversations.
 
-## Major Accomplishments
+## Core Architecture
 
-### 1. Discord Integration MVP Complete ✅
+### The "Toji Desktop" Category
 
-#### Initial State Analysis
-- Found two interaction methods: @mentions and `/chat` command
-- Discovered dead code: `/help` referenced non-existent commands
-- Unused methods in ChatModule (clearSession, getSessionInfo)
-- No error handling or user guidance
+A dedicated Discord category that serves as the project manager:
 
-#### What We Built
-- **Full command suite**: `/help`, `/chat`, `/status`, `/clear`
-- **Smart error handling** with context-aware troubleshooting
-- **Health diagnostics** via `/status` command
-- **Session management** with ability to reset conversations
-- **Professional UX** with typing indicators and helpful messages
-
-#### Integration Architecture
 ```
-User → Discord → DiscordService → DiscordPlugin → ChatModule → Toji → OpenCode
-         ↓                ↓                ↓           ↓
-    [Main Process]  [Token Storage]  [Commands]  [Sessions]
+📁 Toji Desktop
+  ├─ 🟢 test4           [ACTIVE PROJECT]
+  ├─ ⚪ my-app          [inactive]
+  ├─ ⚪ another-project [inactive]
+  └─ ➕ add-project     [special command channel]
 ```
 
-### 2. UI Enhancements
+### Key Principles
 
-#### Discord Branding Implementation
-- Applied official Discord color (#5865F2) throughout
-- Added Discord logo (FaDiscord) to all touchpoints
-- Created invite link with administrator permissions
-- Fixed token save UI auto-refresh issue
+1. **One Active Project** - Only one project can be active at a time (like Electron)
+2. **Channel = Project** - Each channel represents a project directory
+3. **Visual State** - Active project shown via emoji/topic/color
+4. **Auto-Switch** - Typing in a project channel activates it
+5. **No Sessions** - Just projects and their conversation history
 
-#### User Flow
-1. Save token → UI updates immediately (fixed)
-2. Connect bot → Shows online status
-3. Invite to server → One-click with proper permissions
-4. Use commands → Get helpful responses or clear errors
+## Discord Commands
 
-### 3. Code Quality Improvements
+### Project Management
 
-#### Removed Dead Code
-- ~1300 lines across 8 files in earlier refactor
-- Cleaned ConfigProvider: 292 → 134 lines
-- Fixed help command referencing phantom features
-- Removed unused session methods
+- `/project list` - Show all available projects
+- `/project current` - Display the currently active project
+- `/project switch [name]` - Switch to a different project
+- `/project add [path]` - Add a new project (creates channel)
+- `/project remove [name]` - Remove a project (archives channel)
 
-#### Added Essential Features
+### Chat Commands
+
+- `/chat [message]` - Send message to Toji in current project context
+- `/clear` - Clear conversation history in current project
+- `/status` - Check Toji and OpenCode connection status
+- `/help` - Show available commands
+
+### Natural Interaction
+
+- **@Toji [message]** - Works anywhere, uses active project
+- **Direct messages in project channels** - Auto-activates and responds
+
+## Implementation Architecture
+
+### Client Management Strategy
+
 ```typescript
-// New commands structure
-commands/
-  ├── help.ts    // Shows actual available commands
-  ├── chat.ts    // Enhanced with better errors
-  ├── status.ts  // NEW: Health diagnostics
-  └── clear.ts   // NEW: Reset conversations
-```
+// Hybrid approach: Share servers, independent clients
+class DiscordProjectManager {
+  private activeProject?: {
+    channelId: string
+    projectPath: string
+    client: OpencodeClient
+  }
 
-## Technical Implementation Details
+  private projects: Map<channelId, ProjectInfo> = new Map()
 
-### Session Management Pattern
-Each Discord channel gets its own Toji session:
-```typescript
-const sessionName = interaction.guildId
-  ? `discord-${guildId}-${channelId}`
-  : `discord-dm-${userId}`
-```
+  async switchProject(channelId: string) {
+    // Get project info
+    const project = this.projects.get(channelId)
 
-### Error Handling Strategy
-Context-aware error messages with solutions:
-```typescript
-if (error.includes('ECONNREFUSED')) {
-  // OpenCode connection issue - specific guidance
-} else if (error.includes('session')) {
-  // Session problem - suggest /clear
-} else {
-  // Generic error - provide general help
+    // Get or create server from Toji
+    const server = await this.toji.server.getOrCreateServer(project.path)
+
+    // Create dedicated Discord client for this project
+    const client = createOpencodeClient({
+      baseUrl: server.url,
+      responseStyle: 'data'
+    })
+
+    // Update active project
+    this.activeProject = { channelId, projectPath: project.path, client }
+
+    // Update Discord UI
+    await this.updateChannelIndicators()
+  }
 }
 ```
 
-### Command Implementation
-All commands follow consistent pattern:
-- Defer reply for processing time
-- Check Toji readiness
-- Provide helpful errors with solutions
-- Use embeds for rich formatting
+### Message Flow
 
-## Critical Issues & Solutions
-
-### 🔴 OpenCode Server Connection Problem
-**Status**: Identified but not yet fixed
-
-**Symptoms**:
-- "No response data" errors
-- ECONNREFUSED 127.0.0.1:4096
-- Sessions API completely failing
-
-**Root Cause**:
-- Server spawns from one directory and stays there
-- Path comparison fails on Windows
-- Server reuse doesn't check working directory
-
-**Solution Path**:
-```typescript
-// Need to implement in server.ts
-async getServerDirectory(): Promise<string> {
-  const response = await fetch(`http://127.0.0.1:${port}/path`)
-  return normalizePath(response.data.path)
-}
-
-// Check before reusing
-if (serverDir !== targetDir) {
-  await restartServer(targetDir)
-}
+```
+User Message → Project Channel → Auto-Switch → OpenCode Client → Response
+                     ↓                              ↓
+              [Makes Active]              [Project-Specific Server]
 ```
 
-### ✅ Fixed Issues
-1. **UI not updating after token save** - Added checkToken() to refreshStatus()
-2. **No health diagnostics** - Created /status command
-3. **Can't reset stuck sessions** - Added /clear command
-4. **Unhelpful errors** - Implemented smart error messages
-5. **Missing typing indicators** - Added to slash commands
+### Channel Structure
 
-## Testing Status
-
-### What Works
-- [x] Discord bot connects and appears online
-- [x] Slash commands registered and responding
-- [x] Token storage with encryption
-- [x] UI updates properly on state changes
-- [x] Error messages provide helpful guidance
-- [x] Status command shows system health
-- [x] Clear command resets sessions
-
-### What's Blocked (by OpenCode issue)
-- [ ] Actual AI responses from Toji
-- [ ] Real session persistence
-- [ ] Multi-project support
-- [ ] Context management
+```typescript
+interface ProjectChannel {
+  name: string // Clean project name
+  channelId: string // Discord channel ID
+  projectPath: string // Absolute path on disk
+  serverPort: number // OpenCode server port
+  isActive: boolean // Visual indicator state
+}
+```
 
 ## User Experience Flow
 
-### Happy Path
-1. User saves Discord token
-2. Clicks "Connect Bot"
-3. Bot appears online in Discord
-4. User invites bot to server
-5. Uses `/chat Hello!`
-6. Gets AI response from Toji
+### First Time Setup
 
-### Current Reality (with OpenCode issue)
-1. Steps 1-4 work perfectly
-2. `/chat` returns helpful error about OpenCode
-3. `/status` shows connection problem
-4. User can diagnose but not fix (needs code change)
+1. Bot joins server
+2. Creates "Toji Desktop" category automatically
+3. Creates "➕ add-project" channel
+4. Waits for user to add projects
 
-## Commands Reference
+### Adding a Project
 
-### For Users
-- `/help` - List all commands
-- `/chat [message]` - Send message to Toji
-- `/status` - Check system health
-- `/clear` - Reset conversation
-- `@Toji [message]` - Alternative to /chat
+1. User types path in "add-project" channel
+2. Bot validates path exists
+3. Creates new channel with project name
+4. Starts OpenCode server for that path
+5. Makes it the active project
 
-### For Debugging
-```javascript
-// In Discord dev tools console
-window.api.discord.getStatus()
-window.api.discord.getDebugInfo()
+### Working with Projects
 
-// In terminal
-tasklist | findstr opencode
-tail -50 "C:\Users\donth\AppData\Roaming\toji3\logs\toji-2025-09-28.log"
+1. User clicks on project channel (e.g., "test4")
+2. Channel becomes active (visual indicator changes)
+3. All messages in channel go to that project's context
+4. User can freely switch by clicking different channels
+5. `/chat` works from anywhere using active project
+
+### Visual Feedback
+
+- **Active Project**: 🟢 prefix or green topic
+- **Inactive Projects**: ⚪ or no prefix
+- **Channel Topics**: Show project path and status
+- **Bot Status**: Shows current active project
+
+## Technical Implementation
+
+### Phase 1: Core Structure (MVP)
+
+1. Create category management
+2. Implement project-to-channel mapping
+3. Add active project tracking
+4. Handle messages in project channels
+
+### Phase 2: Project Commands
+
+5. Implement `/project` command suite
+6. Add project addition/removal
+7. Create visual status indicators
+8. Handle project switching
+
+### Phase 3: Polish
+
+9. Add project validation
+10. Implement error recovery
+11. Add persistence across restarts
+12. Create help documentation
+
+## Benefits of This Approach
+
+### Simplicity
+
+- No session management complexity
+- Clear visual project organization
+- Intuitive Discord-native interface
+- One active context at a time
+
+### Scalability
+
+- Each project has dedicated client
+- Shared server infrastructure
+- Clean separation of concerns
+- Easy to add new projects
+
+### User Experience
+
+- Visual project management
+- Quick project switching
+- Natural Discord interaction
+- Persistent conversation history per project
+
+## State Management
+
+### What to Persist
+
+```typescript
+interface DiscordBotState {
+  activeProjectChannelId?: string
+  projects: {
+    [channelId: string]: {
+      name: string
+      path: string
+      serverPort?: number
+    }
+  }
+}
 ```
 
-## Next Priorities
+### On Bot Restart
 
-### 1. Fix OpenCode Server (CRITICAL)
-The entire system is blocked by server directory management. This must be fixed first.
+1. Restore "Toji Desktop" category
+2. Recreate project channels from state
+3. Reconnect to OpenCode servers
+4. Restore active project indicator
 
-### 2. Add Advanced Features
-Once basic chat works:
-- Conversation context (use stored array)
-- Code formatting in responses
-- File attachments support
-- Multi-project switching
+## Error Handling
 
-### 3. Production Hardening
-- Rate limiting
-- Timeout handling
-- Graceful reconnection
-- Session cleanup
+### Common Scenarios
 
-## Architecture Insights
+- **Project path not found**: Offer to remove channel
+- **Server connection failed**: Show status in channel topic
+- **No active project**: Prompt user to select one
+- **Channel deleted**: Clean up project mapping
 
-### Why It's Well-Designed
-1. **Separation of Concerns**: Discord knows nothing about Toji internals
-2. **Security**: Token in main process only
-3. **Scalability**: One session per channel
-4. **Maintainability**: Clear module boundaries
+## Success Metrics
 
-### Key Patterns
-- **Thin IPC Layer**: Handlers just forward to services
-- **Plugin Architecture**: Discord is just another interface
-- **Session Isolation**: No cross-channel contamination
-- **Error Propagation**: Errors bubble up with context
+A properly implemented Discord bot will:
 
-## Metrics of Success
+1. Create and manage "Toji Desktop" category automatically
+2. Map channels to projects with visual indicators
+3. Switch projects by channel interaction
+4. Maintain one active project at a time
+5. Provide clear visual feedback
+6. Handle errors gracefully
+7. Persist state across restarts
 
-### Completed This Session
-- 4 working Discord commands
-- 2 new essential commands (status, clear)
-- 100% of UI integration done
-- Smart error handling throughout
-- Professional Discord branding
+## Next Steps
 
-### Still Needed
-- Fix OpenCode server spawning
-- Add context to conversations
-- Implement rate limiting
-- Add session persistence
+1. **Implement category manager** - Create and maintain "Toji Desktop"
+2. **Build project-channel mapping** - Link channels to project paths
+3. **Add active project tracking** - Single active project with indicators
+4. **Create project commands** - `/project` suite for management
+5. **Test with real Discord** - Verify UX and performance
 
-## Final Assessment
+## Notes
 
-The Discord integration is **architecturally complete** and **user-ready**. The UI is polished, commands are helpful, and error handling is professional. The only blocker is the OpenCode server directory issue, which is a known problem with a clear solution.
-
-Once the server management is fixed, Toji will have a fully functional Discord interface that rivals commercial Discord bots. The foundation is solid, the code is clean, and the user experience is thoughtful.
-
-**Session Grade: A-** (Would be A+ if OpenCode was working)
-
-## Code Locations Quick Reference
-
-```
-src/
-├── plugins/discord/          # Discord bot core
-│   ├── commands/            # All slash commands
-│   ├── modules/             # Chat & command handling
-│   └── DiscordPlugin.ts     # Main plugin class
-├── main/
-│   ├── services/            # Discord service layer
-│   ├── handlers/            # IPC handlers
-│   └── toji/                # Business logic (OpenCode issue here)
-└── renderer/
-    └── components/views/integrations/  # Discord UI
-```
-
-## Remember for Next Time
-
-1. OpenCode server MUST spawn from project directory
-2. Path normalization is critical on Windows
-3. User experience > feature count
-4. Error messages should always suggest solutions
-5. Test with actual Discord before declaring "done"
+- This is significantly simpler than Electron's session management
+- Discord's UI becomes our file manager
+- Each channel maintains its own conversation history
+- Projects are persistent, conversations are clearable
+- The bot should feel like a natural Discord experience
 
 ---
 
-*This session transformed a half-implemented Discord integration into a production-ready interface. The remaining OpenCode issue is well-understood and documented. Once fixed, Toji's Discord integration will be complete.*
+_This design leverages Discord's native UI to create a simple, visual project management system that requires minimal code while providing maximum clarity._

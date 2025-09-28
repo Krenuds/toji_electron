@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
-import type { DiscordChatModule } from '../modules/ChatModule'
+import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 import { DISCORD_COLORS } from '../constants'
 
 export const data = new SlashCommandBuilder()
@@ -10,7 +10,7 @@ export const data = new SlashCommandBuilder()
 export async function execute(
   interaction: ChatInputCommandInteraction,
   toji: Toji,
-  chatModule?: DiscordChatModule
+  projectManager?: DiscordProjectManager
 ): Promise<void> {
   await interaction.deferReply()
 
@@ -18,32 +18,33 @@ export async function execute(
     // Check Toji readiness
     const isReady = toji.isReady()
 
-    // Try to get current project
-    let currentProject = 'Unknown'
-    let sessionCount = 0
-    let openCodeStatus = '❌ Disconnected'
+    // Try to get current project and server info
+    let currentProject = 'None'
+    let serverStatus = '❌ Disconnected'
+    let activeServers = 0
 
     if (isReady) {
       try {
-        currentProject = toji.getCurrentProject() || 'No project loaded'
-        const sessions = await toji.listSessions()
-        sessionCount = sessions.length
-        openCodeStatus = '✅ Connected'
+        currentProject = toji.getCurrentProjectDirectory() || 'No project loaded'
+        const servers = toji.getAllServers()
+        activeServers = servers.length
+        serverStatus = '✅ Connected'
       } catch (err) {
         console.error('Error getting Toji status details:', err)
-        openCodeStatus = '⚠️ Connection issues'
+        serverStatus = '⚠️ Connection issues'
       }
     }
 
-    // Get session info for this channel if available
-    let channelSessionInfo = ''
-    if (chatModule && interaction.channelId) {
-      const sessionInfo = chatModule.getSessionInfo(interaction.channelId)
-      if (sessionInfo) {
-        channelSessionInfo = `\n**Channel Session:** Active (ID: ${sessionInfo.sessionId.substring(0, 8)}...)`
-      } else {
-        channelSessionInfo = '\n**Channel Session:** Not initialized'
+    // Get Discord project info
+    let discordProjectInfo = ''
+    if (projectManager) {
+      const activeProject = projectManager.getActiveProject()
+      const totalProjects = projectManager.getProjects().length
+
+      if (activeProject) {
+        discordProjectInfo = `\n**Discord Active:** ${activeProject.projectName} (<#${activeProject.channelId}>)`
       }
+      discordProjectInfo += `\n**Total Projects:** ${totalProjects} channels`
     }
 
     // Build status embed
@@ -58,18 +59,18 @@ export async function execute(
         },
         {
           name: 'OpenCode Server',
-          value: openCodeStatus,
+          value: serverStatus,
           inline: true
         },
         {
-          name: 'Current Project',
-          value: `\`${currentProject}\``,
+          name: 'Active Servers',
+          value: activeServers.toString(),
+          inline: true
+        },
+        {
+          name: 'Current Project Path',
+          value: currentProject !== 'None' ? `\`${currentProject}\`` : 'No project active',
           inline: false
-        },
-        {
-          name: 'Total Sessions',
-          value: sessionCount.toString(),
-          inline: true
         },
         {
           name: 'Bot Uptime',
@@ -77,7 +78,7 @@ export async function execute(
           inline: true
         }
       ],
-      description: `**Overall Status:** ${isReady ? 'Operational' : 'Issues Detected'}${channelSessionInfo}`,
+      description: `**Overall Status:** ${isReady ? 'Operational' : 'Issues Detected'}${discordProjectInfo}`,
       footer: {
         text: `Requested by ${interaction.user.username}`,
         icon_url: interaction.user.displayAvatarURL()

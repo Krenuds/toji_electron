@@ -1,9 +1,10 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
+import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 
 export const data = new SlashCommandBuilder()
   .setName('chat')
-  .setDescription('Chat with Toji AI')
+  .setDescription('Chat with Toji AI using the current project context')
   .addStringOption((option) =>
     option
       .setName('message')
@@ -12,7 +13,11 @@ export const data = new SlashCommandBuilder()
       .setMaxLength(500)
   )
 
-export async function execute(interaction: ChatInputCommandInteraction, toji: Toji): Promise<void> {
+export async function execute(
+  interaction: ChatInputCommandInteraction,
+  toji: Toji,
+  projectManager?: DiscordProjectManager
+): Promise<void> {
   // Show typing indicator while processing
   await interaction.deferReply()
 
@@ -35,39 +40,28 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
         content:
           '❌ **Toji is not ready**\n\n' +
           '**Possible solutions:**\n' +
-          '• Check if the OpenCode server is running\n' +
-          '• Restart the Toji application\n' +
+          '• Select a project first using `/project switch`\n' +
+          '• Or type in a project channel in the Toji Desktop category\n' +
           '• Use `/status` to check the connection\n' +
-          '• Contact support if the issue persists'
+          '• Restart the Toji application if needed'
       })
       return
     }
 
-    // Create a session name for this user
-    const sessionName = `discord-slash-${interaction.user.id}`
+    // Get current project for context
+    const currentProject = projectManager?.getActiveProject()
+    const projectInfo = currentProject ? `\n*Using project: ${currentProject.projectName}*\n` : ''
 
-    // Get or create a session for this user
-    const sessions = await toji.listSessions()
-    let session = sessions.find((s) => s.title === sessionName)
-
-    if (!session) {
-      // Create a new session
-      session = await toji.createSession(sessionName)
-    }
-
-    // Switch to the session
-    await toji.switchSession(session.id)
-
-    // Send the message to Toji
-    const response = await toji.chat(message, session.id)
+    // Send the message to Toji using current project context
+    const response = await toji.chat(message)
 
     // Send the response back to Discord
     // Truncate if too long (Discord has a 2000 char limit)
     const truncatedResponse =
-      response.length > 1900 ? response.substring(0, 1897) + '...' : response
+      response.length > 1800 ? response.substring(0, 1797) + '...' : response
 
     await interaction.editReply({
-      content: `**Your message:** ${message}\n\n**Toji's response:**\n${truncatedResponse}`
+      content: `**Your message:** ${message}${projectInfo}\n**Toji's response:**\n${truncatedResponse}`
     })
   } catch (error) {
     console.error('Chat command error:', error)
@@ -81,25 +75,25 @@ export async function execute(interaction: ChatInputCommandInteraction, toji: To
       helpfulMessage +=
         '**OpenCode server connection issue detected**\n\n' +
         '**Try these solutions:**\n' +
-        '• Restart the Toji application\n' +
-        '• Check if OpenCode server is running on port 4096\n' +
+        '• Select a project with `/project switch`\n' +
+        '• Check if a project is active with `/project current`\n' +
         '• Use `/status` to diagnose the issue\n' +
-        "• Use `/clear` to reset this channel's session"
-    } else if (errorMessage.includes('session')) {
+        '• Restart the Toji application'
+    } else if (errorMessage.includes('not connected')) {
       helpfulMessage +=
-        '**Session error detected**\n\n' +
-        '**Try these solutions:**\n' +
-        "• Use `/clear` to reset this channel's session\n" +
-        '• Try again in a few seconds\n' +
-        '• Check `/status` for system health'
+        '**No active project**\n\n' +
+        '**Solutions:**\n' +
+        '• Use `/project add [path]` to add a project\n' +
+        '• Use `/project switch [name]` to switch projects\n' +
+        '• Or type directly in a project channel'
     } else {
       helpfulMessage +=
         `**Error:** ${errorMessage}\n\n` +
         '**General solutions:**\n' +
-        '• Try again in a few seconds\n' +
+        '• Check `/project current` to see active project\n' +
         '• Use `/status` to check system health\n' +
-        '• Use `/clear` if the session seems stuck\n' +
-        '• Contact support with the error message'
+        '• Use `/clear` to reset conversation\n' +
+        '• Try again in a few seconds'
     }
 
     await interaction.editReply({

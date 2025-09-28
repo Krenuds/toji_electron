@@ -1,7 +1,10 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
 import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
-import type { DiscordChatModule } from './ChatModule'
+import type { DiscordProjectManager } from './DiscordProjectManager'
+import { createFileDebugLogger } from '../../../main/utils/logger'
+
+const log = createFileDebugLogger('discord:slash-commands')
 
 interface SlashCommand {
   data: {
@@ -11,7 +14,7 @@ interface SlashCommand {
   execute: (
     interaction: ChatInputCommandInteraction,
     toji: Toji,
-    chatModule?: DiscordChatModule
+    projectManager?: DiscordProjectManager
   ) => Promise<void>
 }
 
@@ -20,26 +23,28 @@ interface SlashCommand {
  */
 export class SlashCommandModule implements DiscordModule {
   private commands: Collection<string, SlashCommand> = new Collection()
-  private plugin?: DiscordPlugin
 
-  constructor(private toji: Toji) {
+  constructor(
+    private toji: Toji,
+    private projectManager?: DiscordProjectManager
+  ) {
     // Commands will be loaded during initialization
   }
 
   /**
    * Initialize the module with the parent plugin
    */
-  async initialize(plugin: DiscordPlugin): Promise<void> {
-    this.plugin = plugin
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async initialize(_plugin: DiscordPlugin): Promise<void> {
     await this.loadCommands()
-    console.log('SlashCommandModule: Initialized')
+    log('Initialized')
   }
 
   /**
    * Load all command files
    */
   private async loadCommands(): Promise<void> {
-    console.log('SlashCommandModule: Loading commands via direct imports')
+    log('Loading commands via direct imports')
 
     try {
       // Import commands directly - this is the only way we load commands
@@ -47,19 +52,30 @@ export class SlashCommandModule implements DiscordModule {
       const chatCommand = await import('../commands/chat')
       const statusCommand = await import('../commands/status')
       const clearCommand = await import('../commands/clear')
+      const projectCommand = await import('../commands/project')
+      const initCommand = await import('../commands/init')
+      const refreshCommand = await import('../commands/refresh')
 
-      const commands = [helpCommand, chatCommand, statusCommand, clearCommand]
+      const commands = [
+        helpCommand,
+        chatCommand,
+        statusCommand,
+        clearCommand,
+        projectCommand,
+        initCommand,
+        refreshCommand
+      ]
 
       for (const command of commands) {
         if ('data' in command && 'execute' in command) {
           this.commands.set(command.data.name, command)
-          console.log(`SlashCommandModule: Loaded command ${command.data.name}`)
+          log(`Loaded command ${command.data.name}`)
         }
       }
 
-      console.log(`SlashCommandModule: Loaded ${this.commands.size} slash commands`)
+      log(`Loaded ${this.commands.size} slash commands`)
     } catch (error) {
-      console.error('SlashCommandModule: Failed to load commands:', error)
+      log('ERROR: Failed to load commands: %o', error)
     }
   }
 
@@ -70,40 +86,36 @@ export class SlashCommandModule implements DiscordModule {
     const command = this.commands.get(interaction.commandName)
 
     if (!command) {
-      console.error(`SlashCommandModule: Unknown command ${interaction.commandName}`)
+      log('ERROR: Unknown command %s', interaction.commandName)
       try {
         await interaction.reply({
           content: 'I don&apos;t know that command!',
           ephemeral: true
         })
       } catch (err) {
-        console.error('Failed to send unknown command response:', err)
+        log('ERROR: Failed to send unknown command response: %o', err)
       }
       return
     }
 
     try {
-      console.log(
-        `SlashCommandModule: Executing command ${interaction.commandName} ` +
-          `by ${interaction.user.tag} in ${interaction.channelId}`
+      log(
+        'Executing command %s by %s in %s',
+        interaction.commandName,
+        interaction.user.tag,
+        interaction.channelId
       )
 
       // Check if interaction is still valid before executing
       if (interaction.replied) {
-        console.warn('SlashCommandModule: Interaction already replied to, skipping')
+        log('WARNING: Interaction already replied to, skipping')
         return
       }
 
-      // Get chat module for session-related commands
-      const chatModule = await this.getChatModule()
-
-      // Execute the command
-      await command.execute(interaction, this.toji, chatModule)
+      // Execute the command with projectManager
+      await command.execute(interaction, this.toji, this.projectManager)
     } catch (error) {
-      console.error(
-        `SlashCommandModule: Error executing command ${interaction.commandName}:`,
-        error
-      )
+      log('ERROR: Error executing command %s: %o', interaction.commandName, error)
 
       const errorMessage = `❌ Error executing command: ${
         error instanceof Error ? error.message : 'Unknown error'
@@ -123,25 +135,16 @@ export class SlashCommandModule implements DiscordModule {
           })
         }
       } catch (replyError) {
-        console.error('SlashCommandModule: Failed to send error response:', replyError)
+        log('ERROR: Failed to send error response: %o', replyError)
       }
     }
-  }
-
-  /**
-   * Get the chat module instance
-   */
-  private async getChatModule(): Promise<DiscordChatModule | undefined> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const modules = (this.plugin as any)?.modules as Map<string, DiscordModule>
-    return modules?.get('chat') as DiscordChatModule | undefined
   }
 
   /**
    * Cleanup module resources
    */
   cleanup(): void {
-    console.log('SlashCommandModule: Cleaning up')
+    log('Cleaning up')
     this.commands.clear()
   }
 }

@@ -134,11 +134,13 @@ export class Toji {
   // Chat with the AI using session management
   async chat(message: string, sessionId?: string): Promise<string> {
     logChat('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+    log('CHAT METHOD CALLED: message="%s", projectDir=%s', message, this.currentProjectDirectory)
 
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
       logChat('ERROR: %s', error.message)
+      log('ERROR: Chat failed - no client connected')
       throw error
     }
 

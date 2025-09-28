@@ -24,7 +24,7 @@ export class DiscordService {
   ) {
     console.log('DiscordService: Initialized with Toji and ConfigProvider')
     console.log('DiscordService: Config has token:', this.config.hasDiscordToken())
-    this.initializePlugin()
+    // Don't initialize plugin in constructor - do it when connecting
   }
 
   /**
@@ -49,6 +49,7 @@ export class DiscordService {
       console.log('DiscordService: Plugin initialized')
     } catch (error) {
       console.error('DiscordService: Failed to initialize plugin:', error)
+      throw error // Re-throw to prevent connecting with broken plugin
     }
   }
 
@@ -87,6 +88,10 @@ export class DiscordService {
       console.log('DiscordService: Already connected, disconnecting first')
       await this.disconnect()
     }
+
+    // Initialize plugin before connecting (ensure commands are loaded)
+    console.log('DiscordService: Initializing Discord plugin...')
+    await this.initializePlugin()
 
     // Create Discord client with necessary intents
     console.log('DiscordService: Creating Discord client with intents')
@@ -142,9 +147,10 @@ export class DiscordService {
       this.isConnected = false
     }
 
-    // Cleanup plugin
+    // Cleanup plugin but keep reference so we can reinitialize
     if (this.plugin) {
       await this.plugin.cleanup()
+      this.plugin = undefined // Clear reference so it gets recreated on next connect
     }
   }
 

@@ -19,8 +19,19 @@ export async function deployCommands(
   const chatCommand = await import('./commands/chat')
   const statusCommand = await import('./commands/status')
   const clearCommand = await import('./commands/clear')
+  const projectCommand = await import('./commands/project')
+  const initCommand = await import('./commands/init')
+  const refreshCommand = await import('./commands/refresh')
 
-  const commandModules = [helpCommand, chatCommand, statusCommand, clearCommand]
+  const commandModules = [
+    helpCommand,
+    chatCommand,
+    statusCommand,
+    clearCommand,
+    projectCommand,
+    initCommand,
+    refreshCommand
+  ]
 
   // Load command data
   for (const command of commandModules) {

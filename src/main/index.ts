@@ -104,6 +104,21 @@ app.whenReady().then(async () => {
   discordService = new DiscordService(toji, config)
   logStartup('Discord service initialized')
 
+  // Auto-connect Discord bot if token is configured
+  const discordToken = config.getDiscordToken()
+  if (discordToken) {
+    logStartup('Discord token found, connecting bot...')
+    try {
+      await discordService.connect()
+      logStartup('Discord bot connected successfully')
+    } catch (error) {
+      logStartup('WARNING: Failed to connect Discord bot: %o', error)
+      // Continue without Discord - it's not critical
+    }
+  } else {
+    logStartup('No Discord token configured, bot will not connect')
+  }
+
   // Always try to start OpenCode server (simplified approach)
   try {
     logStartup('Starting OpenCode server initialization')

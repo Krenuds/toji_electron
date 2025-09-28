@@ -1,9 +1,12 @@
 import { EventEmitter } from 'events'
 import type { Client, Message, Interaction } from 'discord.js'
 import type { Toji } from '../../main/toji'
-import type { DiscordChatModule } from './modules/ChatModule'
+import type { DiscordProjectManager } from './modules/DiscordProjectManager'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
+import { createFileDebugLogger } from '../../main/utils/logger'
+
+const log = createFileDebugLogger('discord:plugin')
 
 export interface DiscordPluginEvents {
   message: [message: Message]
@@ -23,7 +26,7 @@ export interface DiscordModule {
  */
 export class DiscordPlugin extends EventEmitter {
   private modules: Map<string, DiscordModule> = new Map()
-  private chatModule?: DiscordChatModule
+  private projectManager?: DiscordProjectManager
   private slashCommandModule?: SlashCommandModule
   private initialized = false
 
@@ -39,31 +42,31 @@ export class DiscordPlugin extends EventEmitter {
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
-      console.log('DiscordPlugin: Already initialized')
+      log('Already initialized')
       return
     }
 
-    console.log('DiscordPlugin: Initializing...')
+    log('Initializing...')
 
     // Import and register modules
-    const { DiscordChatModule } = await import('./modules/ChatModule')
+    const { DiscordProjectManager } = await import('./modules/DiscordProjectManager')
     const { SlashCommandModule } = await import('./modules/SlashCommandModule')
 
-    this.chatModule = new DiscordChatModule(this.toji)
-    this.slashCommandModule = new SlashCommandModule(this.toji)
+    this.projectManager = new DiscordProjectManager(this.toji)
+    this.slashCommandModule = new SlashCommandModule(this.toji, this.projectManager)
 
-    await this.registerModule('chat', this.chatModule)
+    await this.registerModule('project', this.projectManager)
     await this.registerModule('slashCommand', this.slashCommandModule)
 
     this.initialized = true
-    console.log('DiscordPlugin: Initialized successfully')
+    log('Initialized successfully')
   }
 
   /**
    * Register a module with the plugin
    */
   private async registerModule(name: string, module: DiscordModule): Promise<void> {
-    console.log(`DiscordPlugin: Registering module: ${name}`)
+    log(`Registering module: ${name}`)
     await module.initialize(this)
     this.modules.set(name, module)
   }
@@ -72,19 +75,149 @@ export class DiscordPlugin extends EventEmitter {
    * Handle incoming messages from DiscordService
    */
   async handleMessage(message: Message): Promise<void> {
-    console.log(`DiscordPlugin: Handling message from ${message.author.tag}`)
+    // Ignore bot's own messages
+    if (message.author.bot) return
 
-    // All messages go to chat module (slash commands are handled via interactions)
-    if (this.chatModule) {
-      await this.chatModule.handleMessage(message)
+    log(`Handling message from ${message.author.tag} in channel ${message.channel.id}`)
+
+    // Check if message is in a project channel within Toji Desktop category
+    if (this.projectManager) {
+      const isInTojiCategory = await this.projectManager.isInTojiCategory(message.channel.id)
+
+      if (isInTojiCategory) {
+        // It's a project channel - auto-switch and process
+        if (this.projectManager.isProjectChannel(message.channel.id)) {
+          try {
+            log('Message in project channel, switching project...')
+            // Switch to the project
+            await this.projectManager.switchToProject(message.channel.id)
+
+            // Show typing indicator
+            if ('sendTyping' in message.channel) {
+              await message.channel.sendTyping()
+            }
+
+            log('Calling chat with message: %s', message.content)
+            // Process message through Toji
+            const response = await this.projectManager.chat(message.content)
+
+            log('Got response (%d chars), sending to Discord', response?.length || 0)
+            // Send response
+            await this.sendResponse(message, response)
+          } catch (error) {
+            log('ERROR: Failed to process message in project channel: %o', error)
+            await message.reply(
+              '❌ Error: ' + (error instanceof Error ? error.message : 'Unknown error')
+            )
+          }
+          return
+        }
+      }
+
+      // Outside Toji Desktop category - only respond to mentions
+      if (message.mentions.has(message.client.user!.id)) {
+        const content = message.content.replace(/<@!?\d+>/g, '').trim()
+        if (!content) {
+          await message.reply('Please provide a message for me to process.')
+          return
+        }
+
+        try {
+          // Use current active project context
+          const response = await this.projectManager.chat(content)
+          await this.sendResponse(message, response)
+        } catch (error) {
+          log('ERROR: Failed to process mentioned message: %o', error)
+          await message.reply(
+            '❌ Please select a project first using `/project switch` or type in a project channel.'
+          )
+        }
+      }
     }
+  }
+
+  /**
+   * Send a response to Discord, handling message splitting
+   */
+  private async sendResponse(message: Message, response: string): Promise<void> {
+    try {
+      // Check if we have a valid response
+      if (!response || response.trim().length === 0) {
+        log('WARNING: Empty response received, sending default message')
+        await message.reply('I received your message but got an empty response. Please try again.')
+        return
+      }
+
+      // Discord has a 2000 character limit per message
+      if (response.length > 2000) {
+        log('Response is long (%d chars), splitting into chunks', response.length)
+        const chunks = this.splitMessage(response, 2000)
+        for (const chunk of chunks) {
+          await message.reply(chunk)
+        }
+      } else {
+        log('Sending response (%d chars)', response.length)
+        await message.reply(response)
+      }
+    } catch (error) {
+      log('ERROR: Failed to send Discord response: %o', error)
+      try {
+        await message.reply(
+          '❌ Failed to send response: ' +
+            (error instanceof Error ? error.message : 'Unknown error')
+        )
+      } catch (fallbackError) {
+        log('ERROR: Failed to send error message: %o', fallbackError)
+      }
+    }
+  }
+
+  /**
+   * Split a long message into chunks for Discord's character limit
+   */
+  private splitMessage(text: string, maxLength: number): string[] {
+    const chunks: string[] = []
+    let currentChunk = ''
+
+    const lines = text.split('\n')
+    for (const line of lines) {
+      if (currentChunk.length + line.length + 1 > maxLength) {
+        if (currentChunk) {
+          chunks.push(currentChunk)
+          currentChunk = ''
+        }
+
+        // If a single line is too long, split it
+        if (line.length > maxLength) {
+          const words = line.split(' ')
+          for (const word of words) {
+            if (currentChunk.length + word.length + 1 > maxLength) {
+              chunks.push(currentChunk)
+              currentChunk = word
+            } else {
+              currentChunk += (currentChunk ? ' ' : '') + word
+            }
+          }
+        } else {
+          currentChunk = line
+        }
+      } else {
+        currentChunk += (currentChunk ? '\n' : '') + line
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk)
+    }
+
+    return chunks
   }
 
   /**
    * Handle interaction events from Discord
    */
   async handleInteraction(interaction: Interaction): Promise<void> {
-    console.log(`DiscordPlugin: Handling interaction: ${interaction.type}`)
+    log(`Handling interaction: ${interaction.type}`)
 
     // Route to slash command module
     if (interaction.isChatInputCommand() && this.slashCommandModule) {
@@ -96,20 +229,25 @@ export class DiscordPlugin extends EventEmitter {
    * Handle ready event from DiscordService
    */
   async onReady(client: Client): Promise<void> {
-    console.log(`DiscordPlugin: Bot ready as ${client.user?.tag}`)
+    log(`Bot ready as ${client.user?.tag}`)
+
+    // Initialize project manager with client
+    if (this.projectManager) {
+      await this.projectManager.initializeWithClient(client)
+    }
 
     // Deploy slash commands if we have config
     if (this.config?.token && this.config?.clientId && client.user) {
       try {
-        console.log('DiscordPlugin: Deploying slash commands...')
+        log('Deploying slash commands...')
         await deployCommands(
           this.config.token,
           this.config.clientId,
           this.config.guildId // Optional: guild-specific for faster updates
         )
-        console.log('DiscordPlugin: Slash commands deployed successfully')
+        log('Slash commands deployed successfully')
       } catch (error) {
-        console.error('DiscordPlugin: Failed to deploy commands:', error)
+        log('ERROR: Failed to deploy commands: %o', error)
       }
     }
 
@@ -117,10 +255,17 @@ export class DiscordPlugin extends EventEmitter {
   }
 
   /**
+   * Get the project manager instance
+   */
+  getProjectManager(): DiscordProjectManager | undefined {
+    return this.projectManager
+  }
+
+  /**
    * Handle error events from DiscordService
    */
   onError(error: Error): void {
-    console.error('DiscordPlugin: Error received:', error)
+    log('ERROR: Error received: %o', error)
     this.emit('error', error)
   }
 
@@ -128,11 +273,11 @@ export class DiscordPlugin extends EventEmitter {
    * Cleanup plugin resources
    */
   async cleanup(): Promise<void> {
-    console.log('DiscordPlugin: Cleaning up...')
+    log('Cleaning up...')
 
     // Cleanup all modules
     for (const [name, module] of this.modules.entries()) {
-      console.log(`DiscordPlugin: Cleaning up module: ${name}`)
+      log(`Cleaning up module: ${name}`)
       module.cleanup()
     }
 
