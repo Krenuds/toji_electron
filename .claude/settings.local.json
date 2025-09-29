@@ -48,7 +48,8 @@
       "Bash(sort -Property LastWriteTime -Descending)",
       "Bash(select:*)",
       "Bash(git diff-tree:*)",
-      "Bash(del \"C:\\Users\\donth\\toji3\\src\\plugins\\discord\\modules\\ChatModule.ts\")"
+      "Bash(del \"C:\\Users\\donth\\toji3\\src\\plugins\\discord\\modules\\ChatModule.ts\")",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

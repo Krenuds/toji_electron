@@ -1,0 +1,2513 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: C:\Users\donth\toji3                       │
+╰───────────────────────────────────────────────────╯
+
+> <session-start-hook>?? TOJI3 SESSION STARTED 
+?? Project: Toji3 
+?? Time: Sun 09/28/2025 18:53:59.50 
+ 
+?? MANDATORY PRE-WORK CHECKLIST: 
+? Read recent commits: git log --oneline -4 
+? Check OpenCode docs: https://opencode.ai/docs/sdk/ 
+? Review Electron-Vite: https://electron-vite.org/guide/ 
+? Check Chakra UI v3: https://chakra-ui.com/docs/get-started/frameworks/vi
+te</session-start-hook>
+
+> /clear 
+  ⎿  (no content)
+
+> How does the @src\main\toji\ send messages back to the clients like 
+discord and electron?
+  ⎿  Listed directory src\main\toji\
+
+● I'll examine how the main Toji class sends messages back to clients like
+   Discord and Electron.
+
+● Read(src\main\toji\index.ts)
+  ⎿  Read 644 lines (ctrl+o to expand)
+
+● Now let me check how the IPC handlers work to understand the
+  communication flow:
+
+● Search(pattern: "webContents\.send\(|ipcMain\.handle\(|ipcRenderer\.send\(",
+         path: "src\main")
+  ⎿  Found 8 files (ctrl+o to expand)
+
+● Let me look at the Discord handlers to see how it receives messages:
+
+● Read(src\main\handlers\discord.handlers.ts)
+  ⎿  Read 73 lines (ctrl+o to expand)
+
+● Now let me check the Discord service to see how it communicates back:
+
+● Read(src\plugins\discord\modules\ChatModule.ts)
+  ⎿  Error reading file
+
+● Search(pattern: "**/ChatModule.ts", path: "src\plugins\discord")
+  ⎿  Found 0 files 
+
+● Search(pattern: "**/*.ts", path: "src\plugins\discord")
+  ⎿  Found 16 files (ctrl+o to expand)
+
+● Let me check the Discord chat command to see how it communicates:
+
+● Read(src\plugins\discord\commands\chat.ts)
+  ⎿  Read 107 lines (ctrl+o to expand)
+
+● Now let me check how the main process handles chat requests for the
+  Electron renderer:
+
+● Read(src\main\handlers\toji.handlers.ts)
+  ⎿  Read 150 lines (ctrl+o to expand)
+
+● How the Toji Main Process Sends Messages Back to Clients
+
+  Based on my examination of the code, here's how the main Toji process
+  sends messages back to Discord and Electron clients:
+
+  Communication Architecture
+
+  1. Pull-based Model: The Toji main process doesn't actively "push"
+  messages to clients. Instead, it uses a request-response pattern where:
+    - Clients (Discord bot, Electron renderer) initiate requests
+    - Toji processes them and returns responses
+    - Clients then handle displaying those responses
+
+  For Discord Bot
+
+  The Discord plugin calls Toji methods directly:
+  - Direct method calls: await toji.chat(message) in
+  src/plugins/discord/commands/chat.ts:59
+  - The Discord bot waits for the response and formats it for Discord's
+  2000-character limit
+  - No push notifications - Discord commands are synchronous
+  request/response
+
+  For Electron Renderer
+
+  Communication happens via IPC (Inter-Process Communication):
+  1. IPC Handlers: Registered in src/main/handlers/toji.handlers.ts:35
+    - ipcMain.handle('toji:chat', async (_, message, sessionId) => 
+  toji.chat(message, sessionId))
+  2. Event Emission for state changes (src/main/toji/index.ts:117-125):
+  mainWindow.webContents.send('project:opened', {
+    path: directory,
+    name: projectName
+  })
+
+  Two Communication Patterns
+
+  1. Request-Response (Main pattern):
+    - Client sends: window.api.toji.chat(message)
+    - Main process: Processes via toji.chat()
+    - Returns: Response data back through IPC
+  2. Event Broadcasting (For state changes):
+    - Main emits: webContents.send('project:opened')
+    - Main emits: webContents.send('project:closed')
+    - Renderer listens: Via event listeners
+
+  The architecture follows the principle that the main process owns all 
+  business logic while clients are thin presentation layers that display
+  responses.
+
+> Alright and how do the clients send meesages and commands back to toji?
+
+● How Clients Send Messages and Commands to Toji
+
+  Based on the code, here's how each client type communicates with the
+  main Toji process:
+
+  Discord Bot → Toji
+
+  The Discord bot has direct access to the Toji instance and calls methods
+   directly:
+
+  1. Direct Method Invocation (src/plugins/discord/commands/chat.ts:59):
+  const response = await toji.chat(message)
+  2. Other Discord Commands:
+    - await toji.switchToProject(projectPath) - for project switching
+    - await toji.getCurrentSession() - for session info
+    - await toji.clearSession() - to clear conversations
+    - await toji.listSessions() - to list sessions
+
+  The Discord bot runs in the same Node.js process as the main Toji, so it
+   can call Toji methods directly without IPC.
+
+  Electron Renderer → Toji
+
+  The Electron renderer uses IPC (Inter-Process Communication) through a
+  preload bridge:
+
+  1. Renderer makes IPC calls via window.api:
+  // Example from renderer
+  window.api.toji.chat(message, sessionId)
+  window.api.toji.switchProject(projectPath)
+  window.api.toji.createSession(title)
+  2. Preload Bridge exposes methods (would be in src/preload/index.ts):
+  toji: {
+    chat: (message, sessionId?) => ipcRenderer.invoke('toji:chat',
+  message, sessionId),
+    switchProject: (path) => ipcRenderer.invoke('toji:switchProject',
+  path),
+    // ... other methods
+  }
+  3. Main Process Handlers receive and process
+  (src/main/handlers/toji.handlers.ts):
+  ipcMain.handle('toji:chat', async (_, message, sessionId) => {
+    return await toji.chat(message, sessionId)
+  })
+
+  Communication Flow Summary
+
+  Discord Bot:
+  Discord User → Discord API → Discord Bot → toji.method() → Response
+
+  Electron Renderer:
+  UI Event → window.api.toji.method() → IPC invoke → ipcMain.handle →
+  toji.method() → Response
+
+  Key Difference
+
+  - Discord: Direct method calls (same process)
+  - Electron: IPC bridge (separate processes for security)
+
+  Both follow the architecture principle that clients are "thin" - they
+  just pass messages to Toji and display responses, with all business
+  logic in the main process.
+
+> Ok great now the next piece of the puzzle. How does our server config 
+objects work? 
+Lets explore an idea. What if we wanted to change some of our opencode 
+settings and the restart server to pick up the changes. What kind of 
+system do we have in place for loading config objects, and how can we 
+leverage this against server management? think hard
+
+✻ Thinking…
+
+  The user is asking about server config objects and how they work, 
+  specifically in the context of changing OpenCode settings and restarting the
+   server to pick up changes. They want to understand the config loading 
+  system and how it can be leveraged with server management.
+
+  Let me investigate:
+  1. How config objects are loaded
+  2. The config management system
+  3. How servers are started/restarted
+  4. The relationship between config and server management
+
+  This is plan mode, so I need to research thoroughly and then present a 
+  comprehensive plan.
+
+● I'll investigate the server configuration system and how it interacts
+  with server management. Let me explore how configs are loaded and how we
+   can leverage this for dynamic configuration changes.
+
+● Read(src\main\toji\config.ts)
+  ⎿  Read 18 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Now let me check how the server manager loads and uses configs when starting
+   servers.
+
+● Read(src\main\toji\server.ts)
+  ⎿  Read 150 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  I can see that the ServerManager's getOrCreateServer method accepts a config
+   parameter of type Config. Let me check how this config is loaded and where 
+  it comes from, and how we handle opencode.json files.
+
+● Read(src\main\config\ConfigProvider.ts)
+  ⎿  Read 135 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  I notice that ConfigProvider doesn't handle OpenCode configs. Let me check 
+  how opencode.json files are handled and if there's a way to load 
+  project-specific configs.
+
+● Search(pattern: "opencode\.json|loadConfig|readConfig", path: "src\main")
+  ⎿  Found 3 files (ctrl+o to expand)
+
+✻ Thinking…
+
+  Let me check the project-initializer to see how it handles opencode.json 
+  files.
+
+● Read(src\main\toji\project-initializer.ts)
+  ⎿  Read 307 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Now let me check how config is actually passed to the server when it's 
+  created. I need to see if there's any existing mechanism for loading 
+  project-specific configs from opencode.json files.
+
+● Search(pattern: "getOrCreateServer|switchToProject", path:
+        "src\main\toji\index.ts", output_mode: "content")
+  ⎿  Found 32 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  I can see that the calls to getOrCreateServer() don't pass a config 
+  parameter currently. Let me check if the OpenCode server reads opencode.json
+   automatically or if we need to explicitly load and pass it.
+
+● Read(src\main\toji\opencode-server-patch.ts)
+  ⎿  Read 120 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Perfect! I can see that the opencode-server-patch.ts passes config via the 
+  OPENCODE_CONFIG_CONTENT environment variable (line 42). The server spawns 
+  with this config, but currently we're not loading any config from 
+  opencode.json files.
+
+  Let me check if there are any handlers for updating configurations.
+
+● Search(pattern: "updateConfig|reloadConfig|setConfig|config:update", path:
+        "src")
+  ⎿  Found 0 files 
+
+✻ Thinking…
+
+  Let me check if there's any mechanism to read the opencode.json file from 
+  projects.
+
+● Search(pattern: "readFile.*opencode|JSON\.parse.*opencode", path: "src")
+  ⎿  Found 0 files 
+
+✻ Thinking…
+
+  Now let me look at what handlers exist for managing OpenCode configs from 
+  the UI.
+
+● Search(pattern: "ipcMain\.handle.*config|OpencodeConfig", path:
+        "src\main\handlers", output_mode: "content")
+  ⎿  Found 13 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Let me check the documentation about how OpenCode handles configuration 
+  files automatically.
+
+● Fetch(https://opencode.ai/docs/sdk/)
+  ⎿  Received 86.3KB (200 OK)
+
+✻ Thinking…
+
+  Perfect! So the OpenCode server does automatically load opencode.json from 
+  the working directory when it's started (since we set cwd in the spawn 
+  options). Now I understand the full picture.
+
+  Let me compile my findings and present a comprehensive plan.
+
+● Server Configuration System Analysis
+
+  Based on my investigation, here's how the server configuration system
+  currently works and how we can leverage it:
+
+  Current Configuration Architecture
+
+  1. OpenCode Server Auto-loads Config: When spawned from a directory (via
+   cwd option), the OpenCode server automatically loads opencode.json if
+  present in that directory.
+  2. Config Override Mechanism: The system supports config overrides via
+  the OPENCODE_CONFIG_CONTENT environment variable
+  (src/main/toji/opencode-server-patch.ts:42).
+  3. Multi-Server Architecture: Each project directory gets its own server
+   instance, meaning each can have its own configuration.
+  4. Config Flow:
+    - Server spawns from project directory → reads local opencode.json
+    - Optional: Pass config object → sent via OPENCODE_CONFIG_CONTENT env
+  var
+    - Server merges: opencode.json + programmatic overrides
+
+  Current Gaps
+
+  1. No Dynamic Config Loading: We don't read opencode.json files
+  programmatically before starting servers
+  2. No Config Update Mechanism: Can't update config without restarting
+  the server
+  3. No UI for Config Management: Users can't modify OpenCode settings
+  from the app
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────╮
+     │ Plan: Implement Dynamic OpenCode Configuration Management             │
+     │                                                                       │
+     │ Goal                                                                  │
+     │                                                                       │
+     │ Create a system that allows users to modify OpenCode settings (model, │
+     │ instructions, etc.) and apply changes by restarting the server with   │
+     │ the new configuration.                                                │
+     │                                                                       │
+     │ Implementation Steps                                                  │
+     │                                                                       │
+     │ 1. Add Config Loading Utility                                         │
+     │   - Create a utility to read and parse opencode.json from project     │
+     │ directories                                                           │
+     │   - Validate config against the OpencodeConfig interface              │
+     │   - Handle missing or malformed config files gracefully               │
+     │ 2. Enhance ServerManager                                              │
+     │   - Modify getOrCreateServer() to load project config before starting │
+     │   - Add restartServerWithConfig() method to apply config changes      │
+     │   - Pass loaded config to createOpencodeServerWithCwd()               │
+     │ 3. Add Config Management to Toji Core                                 │
+     │   - Add getProjectConfig() method to read current config              │
+     │   - Add updateProjectConfig() method to save and apply changes        │
+     │   - Implement config reload flow: save → stop server → start with new │
+     │ config                                                                │
+     │ 4. Create IPC Handlers                                                │
+     │   - toji:getProjectConfig - retrieve current opencode.json            │
+     │   - toji:updateProjectConfig - save config and restart server         │
+     │   - toji:getAvailableModels - list supported AI models                │
+     │ 5. Add UI Components                                                  │
+     │   - Settings panel for viewing/editing OpenCode configuration         │
+     │   - Model selector dropdown                                           │
+     │   - Instructions editor                                               │
+     │   - Apply/Save button with server restart confirmation                │
+     │ 6. Implement Config Persistence                                       │
+     │   - Save changes to project's opencode.json file                      │
+     │   - Support both global defaults and per-project overrides            │
+     │   - Handle config migration for future schema changes                 │
+     │                                                                       │
+     │ Benefits                                                              │
+     │                                                                       │
+     │ - Users can switch AI models without manual file editing              │
+     │ - Per-project configuration customization                             │
+     │ - Hot-reload config changes with server restart                       │
+     │ - Consistent config management across all clients (Electron, Discord) │
+     ╰───────────────────────────────────────────────────────────────────────╯
+
+> Ok this is great but lets look at opencode.ai/docs first opencode can 
+help us with this I believe we can retrive the config objects
+
+● I'll search the OpenCode documentation to understand how we can retrieve
+   config objects from the server.
+
+● Fetch(https://opencode.ai/docs/sdk/)
+  ⎿  Received 86.3KB (200 OK)
+
+● Excellent! OpenCode provides built-in methods to retrieve configuration.
+   Let me check if we're already using these methods anywhere in our
+  codebase.
+
+● Search(pattern: "config\.get\(|config\.providers\(|client\.config", path:
+        "src")
+  ⎿  Found 0 files 
+
+● Perfect! We're not using these config methods yet. Let me look at the
+  OpenCode SDK types to understand what the Config object contains.
+
+● Read(node_modules\@opencode-ai\sdk\dist\index.d.ts)
+  ⎿  Read 3 lines (ctrl+o to expand)
+
+● Search(pattern: "export.*Config|interface Config|type Config", path:
+        "node_modules\@opencode-ai\sdk\dist", output_mode: "content",
+        head_limit: 20)
+  ⎿  Found 20 lines (ctrl+o to expand)
+
+● Read(node_modules\@opencode-ai\sdk\dist\gen\types.gen.d.ts)
+  ⎿  Read 50 lines (ctrl+o to expand)
+
+● Read(node_modules\@opencode-ai\sdk\dist\gen\types.gen.d.ts)
+  ⎿  Read 50 lines (ctrl+o to expand)
+
+● Read(node_modules\@opencode-ai\sdk\dist\gen\types.gen.d.ts)
+  ⎿  Read 50 lines (ctrl+o to expand)
+
+● Perfect! Now I understand the full Config type from OpenCode. Let me
+  check how we can import and use these types properly.
+
+● Search(pattern: "import.*Config.*from.*@opencode-ai/sdk", path: "src",
+        output_mode: "content")
+  ⎿  Found 3 lines (ctrl+o to expand)
+
+● Now let me check how the OpenCode client is structured to understand the
+   available config methods:
+
+● Search(pattern: "OpencodeClient|createOpencodeClient", path:
+        "src\main\toji\index.ts", output_mode: "content", head_limit: 20)
+  ⎿  Found 20 lines (ctrl+o to expand)
+
+● Now let me look at the OpencodeClient type to see if it has config
+  methods available:
+
+● Read(node_modules\@opencode-ai\sdk\dist\gen\client.gen.d.ts)
+  ⎿  Read 13 lines (ctrl+o to expand)
+
+● Search(pattern: "interface.*OpencodeClient|type.*OpencodeClient", path:
+        "node_modules\@opencode-ai\sdk\dist", output_mode: "content",
+        head_limit: 25)
+  ⎿  Found 5 lines (ctrl+o to expand)
+
+● Read(node_modules\@opencode-ai\sdk\dist\gen\sdk.gen.d.ts)
+  ⎿  Read 50 lines (ctrl+o to expand)
+
+● Perfect! I can see the Config class has the get() and providers()
+  methods. Now let me look for the OpencodeClient structure to see how
+  it's composed:
+
+● Search(pattern: "export class OpencodeClient|OpencodeClient =", path:
+        "node_modules\@opencode-ai\sdk\dist\gen", output_mode: "content")
+  ⎿  Found 18 lines (ctrl+o to expand)
+
+● Perfect! I can see that OpencodeClient has a config property that
+  provides access to the config methods. Let me check the TypeScript
+  definitions to confirm:
+
+● Search(pattern: "export declare class OpencodeClient", path:
+        "node_modules\@opencode-ai\sdk\dist\gen", output_mode: "content")
+  ⎿  Found 21 lines (ctrl+o to expand)
+
+● Excellent! Now I have a complete understanding of the configuration
+  system. Let me create a comprehensive plan based on my research:
+
+  Server Configuration System Analysis
+
+  Current State
+
+  1. OpenCode SDK provides built-in config retrieval methods:
+    - client.config.get() - Retrieves current server configuration
+    - client.config.providers() - Lists available providers and models
+  2. Configuration Sources:
+    - opencode.json files in project directories (auto-loaded by server)
+    - Programmatic config passed via OPENCODE_CONFIG_CONTENT env variable
+    - Server merges both sources with programmatic overrides taking
+  precedence
+  3. Current Gaps:
+    - We're not using the SDK's config retrieval methods
+    - No way to modify config and restart servers with new settings
+    - No UI for viewing/editing OpenCode configuration
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────╮
+     │ Plan: Dynamic OpenCode Configuration Management System                │
+     │                                                                       │
+     │ Goal                                                                  │
+     │                                                                       │
+     │ Create a comprehensive configuration management system that allows    │
+     │ users to view, modify, and apply OpenCode settings by leveraging the  │
+     │ SDK's built-in config methods and server restart capabilities.        │
+     │                                                                       │
+     │ Implementation Steps                                                  │
+     │                                                                       │
+     │ 1. Add Config Retrieval Methods to Toji Core                          │
+     │                                                                       │
+     │ - Add getServerConfig() method to retrieve current config via         │
+     │ client.config.get()                                                   │
+     │ - Add getAvailableProviders() method via client.config.providers()    │
+     │ - Add loadProjectConfig() to read local opencode.json file            │
+     │ - Add saveProjectConfig() to write updated config to opencode.json    │
+     │                                                                       │
+     │ 2. Enhance ServerManager for Config-Aware Restarts                    │
+     │                                                                       │
+     │ - Modify getOrCreateServer() to optionally load project's             │
+     │ opencode.json                                                         │
+     │ - Add restartServerWithConfig(directory, config) method:              │
+     │   - Stop existing server for directory                                │
+     │   - Start new server with updated config                              │
+     │   - Reconnect client                                                  │
+     │ - Pass loaded/modified config via OPENCODE_CONFIG_CONTENT env         │
+     │ variable                                                              │
+     │                                                                       │
+     │ 3. Create Config Update Flow                                          │
+     │                                                                       │
+     │ - Add updateProjectConfig(config) method in Toji:                     │
+     │   - Save config to project's opencode.json                            │
+     │   - Stop current server                                               │
+     │   - Start new server with updated config                              │
+     │   - Reconnect all clients                                             │
+     │   - Preserve session state if possible                                │
+     │                                                                       │
+     │ 4. Add IPC Handlers for Config Management                             │
+     │                                                                       │
+     │ - toji:getServerConfig - retrieve current running config              │
+     │ - toji:getProjectConfig - read local opencode.json                    │
+     │ - toji:updateProjectConfig - save and apply config changes            │
+     │ - toji:getAvailableProviders - list all providers/models              │
+     │ - toji:restartWithConfig - restart server with new config             │
+     │                                                                       │
+     │ 5. Create UI Components                                               │
+     │                                                                       │
+     │ - Settings panel with tabs for different config sections:             │
+     │   - Model selection (primary and small models)                        │
+     │   - Provider configuration                                            │
+     │   - Advanced settings (share, autoupdate, etc.)                       │
+     │ - Model selector with provider grouping                               │
+     │ - Apply button with restart confirmation dialog                       │
+     │ - Show current active configuration                                   │
+     │                                                                       │
+     │ 6. Handle Config Migration & Validation                               │
+     │                                                                       │
+     │ - Validate config against OpenCode's Config type                      │
+     │ - Support merging partial configs                                     │
+     │ - Handle missing/invalid fields gracefully                            │
+     │ - Provide defaults from defaultOpencodeConfig                         │
+     │                                                                       │
+     │ Benefits                                                              │
+     │                                                                       │
+     │ - Dynamic Configuration: Change models and settings without manual    │
+     │ file editing                                                          │
+     │ - Live Config Retrieval: See actual running configuration from server │
+     │ - Per-Project Customization: Each project can have unique settings    │
+     │ - Provider Discovery: Automatically list available AI providers and   │
+     │ models                                                                │
+     │ - Seamless Updates: Apply changes with automatic server restart       │
+     │ - Type Safety: Full TypeScript support using SDK types                │
+     ╰───────────────────────────────────────────────────────────────────────╯
+
+> Ok thios is too much MVP is simply let the user change models and 
+restart the server using the same model. We can scaffold as we go but lets
+ just focus on proper implementation pipeline before we go crazy with 
+features, yah? Do we need opencode.json? or can we just let users manage 
+their own
+
+● You're absolutely right! Let's keep it simple and focused.
+
+  MVP: Change Model & Restart Server
+
+  Key Insight
+
+  We don't need opencode.json files at all! The OpenCode server accepts
+  config via environment variable (OPENCODE_CONFIG_CONTENT), and we can:
+  1. Retrieve current config from running server using client.config.get()
+  2. Let user change the model
+  3. Restart server with new config passed programmatically
+
+  Simple Implementation Pipeline
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────╮
+     │ MVP Plan: Model Switcher with Server Restart                          │
+     │                                                                       │
+     │ Core Concept                                                          │
+     │                                                                       │
+     │ Skip opencode.json entirely - just use programmatic config through the│
+     │  server restart.                                                      │
+     │                                                                       │
+     │ Implementation (3 simple steps)                                       │
+     │                                                                       │
+     │ 1. Add Config Methods to Toji                                         │
+     │                                                                       │
+     │ // Get current config from running server                             │
+     │ async getServerConfig(): Promise<Config | null> {                     │
+     │   const client = this.getClient()                                     │
+     │   if (!client) return null                                            │
+     │   return await client.config.get()                                    │
+     │ }                                                                     │
+     │                                                                       │
+     │ // Get available models/providers                                     │
+     │ async getAvailableProviders() {                                       │
+     │   const client = this.getClient()                                     │
+     │   if (!client) return null                                            │
+     │   return await client.config.providers()                              │
+     │ }                                                                     │
+     │                                                                       │
+     │ // Restart server with new model                                      │
+     │ async changeModel(newModel: string) {                                 │
+     │   const directory = this.currentProjectDirectory                      │
+     │   // Stop current server                                              │
+     │   await this.server.stopServerForDirectory(directory)                 │
+     │   // Start with new config                                            │
+     │   await this.server.getOrCreateServer(directory, { model: newModel }) │
+     │   // Reconnect client                                                 │
+     │   await this.connectClient(directory)                                 │
+     │ }                                                                     │
+     │                                                                       │
+     │ 2. Update ServerManager                                               │
+     │                                                                       │
+     │ - Modify getOrCreateServer() to use the config parameter properly (it │
+     │ already accepts it!)                                                  │
+     │ - Config gets passed via OPENCODE_CONFIG_CONTENT env variable (already│
+     │  implemented!)                                                        │
+     │                                                                       │
+     │ 3. Add Simple IPC Handlers                                            │
+     │                                                                       │
+     │ ipcMain.handle('toji:getServerConfig', () => toji.getServerConfig())  │
+     │ ipcMain.handle('toji:getProviders', () =>                             │
+     │ toji.getAvailableProviders())                                         │
+     │ ipcMain.handle('toji:changeModel', (_, model) =>                      │
+     │ toji.changeModel(model))                                              │
+     │                                                                       │
+     │ That's it!                                                            │
+     │                                                                       │
+     │ - No file management                                                  │
+     │ - No config persistence (users can add opencode.json if they want)    │
+     │ - Just retrieve, change model, restart                                │
+     │ - Everything else already works!                                      │
+     ╰───────────────────────────────────────────────────────────────────────╯
+
+> What takes priority and how does loading work? the server config object 
+or the opencode.json?
+
+● Great question! Let me check the OpenCode documentation to understand
+  the config priority system.
+
+● Fetch(https://opencode.ai/docs/sdk/)
+  ⎿  Received 86.3KB (200 OK)
+
+● Let me look at how we're currently passing config to the server to
+  understand the mechanism better:
+
+● Read(src\main\toji\opencode-server-patch.ts)
+  ⎿  Read 10 lines (ctrl+o to expand)
+
+● Now let me search for how the OpenCode SDK's native server creation
+  handles this:
+
+● Search(pattern: "OPENCODE_CONFIG_CONTENT|createOpencodeServer", path:
+        "node_modules\@opencode-ai\sdk", output_mode: "content", head_limit:
+        20)
+  ⎿  Found 0 lines 
+
+● Let me check the actual OpenCode server implementation in the SDK:
+
+● Read(node_modules\@opencode-ai\sdk\dist\server.js)
+  ⎿  Read 92 lines (ctrl+o to expand)
+
+● Perfect! Now I can see that the official SDK also uses
+  OPENCODE_CONFIG_CONTENT. Let me check the OpenCode binary documentation
+  or source to understand the precedence:
+
+● Web Search("OpenCode OPENCODE_CONFIG_CONTENT environment variable precedence
+             priority opencode.json")
+  ⎿  Did 2 searches in 27s                                               
+
+● Let me fetch the OpenCode config documentation directly:
+
+● Fetch(https://opencode.ai/docs/config/)
+  ⎿  Received 88.8KB (200 OK)
+
+● Configuration Priority Answer
+
+  Based on my research and looking at the OpenCode SDK source code:
+
+  How Loading Works:
+
+  1. OPENCODE_CONFIG_CONTENT is an SDK-specific mechanism - The OpenCode
+  SDK uses this environment variable to pass configuration directly as
+  JSON to the server process (see
+  node_modules/@opencode-ai/sdk/dist/server.js:12)
+  2. Priority Order (from highest to lowest):
+    - OPENCODE_CONFIG_CONTENT (programmatic config via SDK) - Highest 
+  priority
+    - opencode.json in project directory
+    - Global config (~/.config/opencode/opencode.json)
+  3. The SDK documentation states: "The server still picks up your
+  opencode.json, but you can override or add configuration inline" -
+  suggesting that programmatic config (via OPENCODE_CONFIG_CONTENT) merges
+   with and overrides the file-based config.
+
+  Practical Implications:
+
+  - If you pass { model: "anthropic/claude-3" } via the SDK, it will
+  override any model setting in opencode.json
+  - Other settings in opencode.json remain active unless explicitly
+  overridden
+  - This is a merge operation, not a replacement
+
+  For Our MVP:
+
+  This is perfect because:
+  - We can let users keep their opencode.json files for base configuration
+  - When they change models in the UI, we pass just { model: "new-model" }
+
+  - The server will merge this with existing opencode.json
+  - Users get both file-based persistence AND dynamic runtime changes!
+
+> Alright now how are we planning on dealing with configuration though? 
+Where do we get the list of models from? Are we using env for this? please
+ explain it ot me in laymans terms
+
+● Configuration in Layman's Terms
+
+  Where Models Come From
+
+  OpenCode provides the list of available models directly from the server!
+
+
+  When you call client.config.providers(), the OpenCode server returns:
+  - All available AI providers (Anthropic, OpenAI, Google, etc.)
+  - All models each provider offers
+  - Which model is currently set as default
+
+  Think of it like asking Spotify "what songs are available?" - you don't
+  need to maintain your own list.
+
+  How Configuration Works (Simple Version)
+
+  1. User's Project Has Optional opencode.json
+  {
+    "model": "anthropic/claude-3-sonnet",
+    "share": "manual"
+  }
+  2. When User Changes Model in UI:
+    - We DON'T edit their file
+    - We restart server with override: { model: "openai/gpt-4" }
+    - Server combines both (override wins)
+  3. No Environment Variables Needed for Models
+    - The server knows all available models
+    - We just ask it: "Hey, what models can I use?"
+    - User picks one from dropdown
+    - We restart with that choice
+
+  The Flow
+
+  1. Start server → reads opencode.json (if exists)
+  2. Ask server: "What models are available?" → get list
+  3. User picks new model in UI
+  4. Stop server → Start with override → Model changed!
+
+  What About API Keys?
+
+  API keys come from user's environment (they set these up once):
+  - ANTHROPIC_API_KEY for Claude
+  - OPENAI_API_KEY for GPT
+  - etc.
+
+  We don't manage these - OpenCode handles it automatically.
+
+  Summary
+
+  - Models list: From server (dynamic, always up-to-date)
+  - User config: Optional opencode.json file (they manage)
+  - Runtime changes: We pass overrides when restarting
+  - API keys: From user's environment variables
+  - We don't store anything: Just ask server and apply changes
+
+> we'll do api keys through electron vault like our discord right? Is 
+discord using electron vault?
+
+● Let me check how we're currently handling the Discord token storage:
+
+● Read(src\main\config\ConfigProvider.ts)
+  ⎿  Read 40 lines (ctrl+o to expand)
+
+● Search(pattern: "electron-store|Store from", path:
+        "src\main\config\ConfigProvider.ts", output_mode: "content")
+  ⎿  Found 1 line (ctrl+o to expand)
+
+● Yes! Discord is Using Encrypted Storage
+
+  Discord token is already using electron-store with encryption (line 27:
+  encryptionKey: 'toji3-discord-secure')
+
+  This is actually better than Electron's safeStorage API for our use case
+   because:
+  - It's already set up and working
+  - Provides encrypted storage automatically
+  - Cross-platform compatible
+
+  For API Keys - Two Options:
+
+  Option 1: Use Environment Variables (Current OpenCode way)
+  - Users set ANTHROPIC_API_KEY, OPENAI_API_KEY in their shell
+  - OpenCode reads these automatically
+  - Pros: Works immediately, no code needed
+  - Cons: Users must manage their shell environment
+
+  Option 2: Store in ConfigProvider like Discord (Better UX)
+  // Add to ConfigProvider:
+  setAnthropicApiKey(key: string): void {
+    this.store.set('apiKeys.anthropic', key)
+  }
+
+  // When starting server, inject into environment:
+  env: {
+    ...process.env,
+    ANTHROPIC_API_KEY: config.getAnthropicApiKey() ||
+  process.env.ANTHROPIC_API_KEY,
+    OPENAI_API_KEY: config.getOpenAIApiKey() || process.env.OPENAI_API_KEY
+  }
+
+  Pros:
+  - Encrypted storage via electron-store
+  - Better UX (set once in app, forget about it)
+  - Falls back to environment if not set in app
+  - Consistent with Discord token approach
+
+  Recommendation: Use Option 2 - Store API keys in ConfigProvider with the
+   same encrypted storage as Discord. This gives users flexibility to
+  either set keys in the app OR use environment variables.
+
+> Alright we'll add that to the plan. We're going to need our opencode zen
+ key most likely but we do have 2 free models. So please now recap the 
+plan for me. Users need to be able to change models, and then we can build
+ out from there. This is a good use case, right?
+
+● Recap: MVP Model Switcher Plan
+
+  The Use Case
+
+  Yes, this is a PERFECT use case! Users want to:
+  - Switch between Claude, GPT-4, free models, etc. without restarting the
+   app
+  - Test different models for different tasks
+  - Use free models when experimenting, paid models for production work
+
+  The Complete MVP Plan
+
+  Phase 1: Core Model Switching
+
+  1. Add Config Methods to Toji (src/main/toji/index.ts)
+  // Get current config from running server
+  async getServerConfig(): Promise<Config | null>
+
+  // Get list of available models/providers
+  async getAvailableProviders()
+
+  // Restart server with new model
+  async changeModel(newModel: string)
+  2. Add IPC Handlers (src/main/handlers/toji.handlers.ts)
+  ipcMain.handle('toji:getServerConfig', ...)
+  ipcMain.handle('toji:getProviders', ...)
+  ipcMain.handle('toji:changeModel', ...)
+  3. Simple UI Component
+    - Dropdown showing available models (grouped by provider)
+    - Current model indicator
+    - "Apply" button that restarts server
+
+  Phase 2: API Key Management
+
+  4. Extend ConfigProvider (src/main/config/ConfigProvider.ts)
+  // Store encrypted API keys
+  setApiKey(provider: string, key: string)
+  getApiKey(provider: string): string | undefined
+  5. Inject Keys at Server Start (src/main/toji/opencode-server-patch.ts)
+  env: {
+    ...process.env,
+    ANTHROPIC_API_KEY: config.getApiKey('anthropic') ||
+  process.env.ANTHROPIC_API_KEY,
+    OPENAI_API_KEY: config.getApiKey('openai') ||
+  process.env.OPENAI_API_KEY,
+    // etc...
+  }
+  6. API Key UI
+    - Settings section for API keys
+    - Secure input fields
+    - Save to encrypted storage
+
+  The Flow
+
+  1. User opens model selector → Fetches list from
+  client.config.providers()
+  2. Shows current model → From client.config.get()
+  3. User selects new model → Click "Apply"
+  4. Server restarts → Stop → Start with { model: "new-model" }
+  5. Sessions preserved → User continues conversation with new model
+
+  Free Models Available
+
+  - opencode/grok-code (default free model)
+  - opencode/fast (another free option)
+  - Plus any models the user has API keys for
+
+  Why This Works
+
+  - No file management - Users can still use opencode.json if they want
+  - Simple implementation - Leverages existing server restart mechanism
+  - Immediate value - Users can switch models without editing files
+  - Foundation for more - Can add more config options later
+
+  This is the perfect MVP - useful, focused, and builds on what we already
+   have!
+
+> Ok next step is to simulate the implemenation. Make a first pass and 
+pretend to add the implementatoin you will learn a lot from this
+
+● I'll simulate the implementation to discover potential issues and refine
+   our approach.
+
+● Simulated Implementation - First Pass
+
+  1. Adding Config Methods to Toji (src/main/toji/index.ts)
+
+  // Import the Config type from SDK
+  import type { Config } from '@opencode-ai/sdk'
+
+  // Add to Toji class:
+
+  async getServerConfig(): Promise<Config | null> {
+    const client = this.getClient()
+    if (!client) {
+      log('No client connected, cannot get config')
+      return null
+    }
+
+    try {
+      // DISCOVERY: config.get() returns the full Config object
+      const config = await client.config.get()
+      log('Retrieved server config: model=%s', config.model)
+      return config
+    } catch (error) {
+      log('ERROR: Failed to get server config: %o', error)
+      return null
+    }
+  }
+
+  async getAvailableProviders(): Promise<{ providers: Provider[], default:
+   Record<string, string> } | null> {
+    const client = this.getClient()
+    if (!client) return null
+
+    try {
+      // DISCOVERY: Returns providers array and defaults map
+      const result = await client.config.providers()
+      log('Found %d providers', result.providers.length)
+      return result
+    } catch (error) {
+      log('ERROR: Failed to get providers: %o', error)
+      return null
+    }
+  }
+
+  async changeModel(newModel: string): Promise<void> {
+    const directory = this.currentProjectDirectory
+    if (!directory) {
+      throw new Error('No project directory set')
+    }
+
+    log('Changing model to %s for directory %s', newModel, directory)
+
+    // ISSUE DISCOVERED: We need to preserve sessions!
+    const currentSessionId = this.getCurrentSessionId()
+
+    // Stop current server
+    await this.server.stopServerForDirectory(directory)
+
+    // ISSUE: Need small delay to ensure port is freed
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Start with new config
+    // DISCOVERY: We should preserve other config settings!
+    const currentConfig = await this.getServerConfig()
+    const mergedConfig = {
+      ...currentConfig,
+      model: newModel
+    }
+
+    await this.server.getOrCreateServer(directory, mergedConfig)
+
+    // Reconnect client
+    await this.connectClient(directory)
+
+    // ISSUE: Should we restore the session?
+    if (currentSessionId) {
+      // Sessions might not persist across restarts...
+      log('Previous session was: %s', currentSessionId)
+    }
+
+    log('Model changed successfully to %s', newModel)
+  }
+
+  2. IPC Handlers (src/main/handlers/toji.handlers.ts)
+
+  // Add these handlers:
+
+  ipcMain.handle('toji:getServerConfig', async () => {
+    try {
+      return await toji.getServerConfig()
+    } catch (error) {
+      console.error('Get server config error:', error)
+      // DISCOVERY: Should return null for graceful degradation
+      return null
+    }
+  })
+
+  ipcMain.handle('toji:getProviders', async () => {
+    try {
+      const result = await toji.getAvailableProviders()
+      if (!result) return { providers: [], default: {} }
+
+      // DISCOVERY: Need to filter providers based on which have API keys!
+      // We should check which providers are actually usable
+
+      return result
+    } catch (error) {
+      console.error('Get providers error:', error)
+      return { providers: [], default: {} }
+    }
+  })
+
+  ipcMain.handle('toji:changeModel', async (_, model: string) => {
+    try {
+      // ISSUE: Should validate model format (provider/model)
+      if (!model.includes('/')) {
+        throw new Error('Invalid model format. Expected: provider/model')
+      }
+
+      await toji.changeModel(model)
+
+      // DISCOVERY: Should emit event to notify UI
+      BrowserWindow.getAllWindows()[0]?.webContents.send('model:changed',
+  { model })
+
+      return { success: true, model }
+    } catch (error) {
+      console.error('Change model error:', error)
+      throw error
+    }
+  })
+
+  3. ConfigProvider Extensions (src/main/config/ConfigProvider.ts)
+
+  // Add to interface:
+  interface AppConfig {
+    // ...existing...
+    apiKeys?: {
+      anthropic?: string
+      openai?: string
+      google?: string
+      xai?: string
+      // DISCOVERY: Need to support arbitrary providers!
+      [provider: string]: string | undefined
+    }
+  }
+
+  // Add methods:
+  setApiKey(provider: string, key: string): void {
+    const apiKeys = this.store.get('apiKeys', {})
+    apiKeys[provider.toLowerCase()] = key
+    this.store.set('apiKeys', apiKeys)
+    log('Stored API key for provider: %s', provider)
+  }
+
+  getApiKey(provider: string): string | undefined {
+    const apiKeys = this.store.get('apiKeys', {})
+    return apiKeys[provider.toLowerCase()]
+  }
+
+  getAllApiKeys(): Record<string, string> {
+    return this.store.get('apiKeys', {})
+  }
+
+  // DISCOVERY: Need method to check which providers have keys
+  getConfiguredProviders(): string[] {
+    const apiKeys = this.store.get('apiKeys', {})
+    return Object.keys(apiKeys).filter(k => apiKeys[k])
+  }
+
+  4. Server Spawn Update (src/main/toji/opencode-server-patch.ts)
+
+  // Modify the spawn call:
+  const proc = spawn(binaryPath, ['serve', `--hostname=${opts.hostname}`,
+  `--port=${opts.port}`], {
+    cwd: opts.cwd,
+    signal: opts.signal,
+    env: {
+      ...process.env,
+      OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {}),
+      // DISCOVERY: Need to map provider names to env var names!
+      ANTHROPIC_API_KEY: opts.apiKeys?.anthropic ||
+  process.env.ANTHROPIC_API_KEY,
+      OPENAI_API_KEY: opts.apiKeys?.openai || process.env.OPENAI_API_KEY,
+      GOOGLE_API_KEY: opts.apiKeys?.google || process.env.GOOGLE_API_KEY,
+      XAI_API_KEY: opts.apiKeys?.xai || process.env.XAI_API_KEY,
+      // ISSUE: What about other providers? Need dynamic mapping...
+    }
+  })
+
+● Key Discoveries from Simulation
+
+  Issues Found:
+
+  1. Session Persistence Problem
+    - Sessions are lost when server restarts
+    - Need to decide: Accept this limitation OR implement session
+  export/import
+  2. API Key Environment Variable Mapping
+    - Need to map provider names to their env var format
+    - anthropic → ANTHROPIC_API_KEY
+    - Some providers might have different patterns
+  3. Config Merging
+    - Should preserve existing config settings when changing model
+    - Need to get current config first, then merge
+  4. Provider Filtering
+    - Should only show providers that have API keys configured
+    - Or clearly mark which ones are available vs need setup
+  5. Server Restart Timing
+    - Need delay between stop and start to free port
+    - Should show loading state in UI
+
+  Improvements Needed:
+
+  1. Add Provider-to-EnvVar Mapping
+  const API_KEY_ENV_VARS: Record<string, string> = {
+    anthropic: 'ANTHROPIC_API_KEY',
+    openai: 'OPENAI_API_KEY',
+    google: 'GOOGLE_API_KEY',
+    xai: 'XAI_API_KEY',
+    // Add more as needed
+  }
+
+  2. Better Error Handling
+    - Validate model format
+    - Check if provider requires API key
+    - Graceful fallback if config retrieval fails
+  3. UI Notifications
+    - Emit events for model changes
+    - Show server restart progress
+    - Warn about session loss
+  4. ServerManager Updates
+    - Accept apiKeys in getOrCreateServer
+    - Pass through to spawn function
+
+  Refined Plan:
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────╮
+     │ Final Implementation Plan - Model Switcher                            │
+     │                                                                       │
+     │ Phase 1: Core Implementation                                          │
+     │                                                                       │
+     │ 1. Toji Core Methods (src/main/toji/index.ts)                         │
+     │   - getServerConfig() - Get current config from server                │
+     │   - getAvailableProviders() - List all providers/models               │
+     │   - changeModel(model, preserveConfig = true) - Restart with new      │
+     │ model                                                                 │
+     │ 2. IPC Handlers (src/main/handlers/toji.handlers.ts)                  │
+     │   - toji:getServerConfig - Returns current Config                     │
+     │   - toji:getProviders - Returns providers list                        │
+     │   - toji:changeModel - Changes model with validation                  │
+     │ 3. ConfigProvider API Keys (src/main/config/ConfigProvider.ts)        │
+     │   - setApiKey(provider, key) - Store encrypted                        │
+     │   - getApiKey(provider) - Retrieve key                                │
+     │   - getAllApiKeys() - Get all configured keys                         │
+     │   - Add API_KEY_ENV_VARS mapping constant                             │
+     │ 4. Server Spawn Updates                                               │
+     │   - Modify ServerManager.getOrCreateServer() to accept apiKeys param  │
+     │   - Update opencode-server-patch.ts to inject API keys into env       │
+     │   - Add proper provider-to-env-var mapping                            │
+     │                                                                       │
+     │ Phase 2: UI Components (Next PR)                                      │
+     │                                                                       │
+     │ - Model selector dropdown                                             │
+     │ - API key configuration panel                                         │
+     │ - Loading states during restart                                       │
+     │                                                                       │
+     │ Key Decisions:                                                        │
+     │                                                                       │
+     │ - Accept session loss on restart (document this limitation)           │
+     │ - Preserve other config settings when changing model                  │
+     │ - Show only configured providers in UI                                │
+     │ - Add 500ms delay between stop/start for port cleanup                 │
+     │                                                                       │
+     │ Benefits:                                                             │
+     │                                                                       │
+     │ - Clean separation of concerns                                        │
+     │ - Type-safe implementation                                            │
+     │ - Graceful error handling                                             │
+     │ - Foundation for future config options                                │
+     ╰───────────────────────────────────────────────────────────────────────╯
+
+> yes that looks good. We need to alse remember 
+@src\main\toji\project-initializer.ts that creates a config object. I'm 
+thinking we need a default model and since opencode just added Code 
+Supernova for free we should default to that one when we initialize 
+projects.
+  ⎿  Read src\main\toji\project-initializer.ts (307 lines)
+
+● Good catch! Let me check the project-initializer to see how it creates
+  the config:
+
+● Read(src\main\toji\project-initializer.ts)
+  ⎿  Read 20 lines (ctrl+o to expand)
+
+● Read(src\main\toji\config.ts)
+  ⎿  Read 18 lines (ctrl+o to expand)
+
+● Perfect! I see where we need to update. Let me check what the new Code
+  Supernova model identifier is:
+
+● Web Search("OpenCode Code Supernova model free identifier
+            opencode/supernova")
+  ⎿  Did 1 search in 27s                                                 
+
+● Let me check the OpenCode models documentation to find the exact
+  identifier:
+
+● Fetch(https://opencode.ai/docs/models/)
+  ⎿  Received 52.4KB (200 OK)
+
+● Let me check the OpenCode providers documentation:
+
+● Fetch(https://opencode.ai/docs/providers/)
+  ⎿  Received 188KB (200 OK)
+
+● Based on the research, here's the updated understanding:
+
+  Default Model Configuration
+
+  Current Free Models in OpenCode:
+
+  1. xai/grok-code - Currently free for limited time (xAI monitoring logs)
+  2. opencode/zen models - Requires OpenCode API key but has free tier
+  3. Local models via Ollama/LM Studio
+
+  About Code Supernova:
+
+  - The search results show Code Supernova is a mystery frontier model
+  - It's available in other tools (Cline, Cursor, Kilo Code)
+  - But not clearly documented in OpenCode's official docs yet
+
+  Recommendation for Default Model:
+
+  Since Code Supernova isn't officially documented in OpenCode yet, we
+  should update the default to one of these options:
+
+  1. Keep opencode/grok-code (current default) - But this might not exist
+  anymore
+  2. Switch to xai/grok-code - The actual free Grok model
+  3. Use opencode/zen - Requires API key but reliable
+
+  Updated Plan Addition:
+  ⎿  User rejected Claude's plan:
+     ╭───────────────────────────────────────────────────────────────────────╮
+     │ Final Implementation Plan - Model Switcher with Config Updates        │
+     │                                                                       │
+     │ Phase 1: Core Implementation                                          │
+     │                                                                       │
+     │ 1. Update Default Config (src/main/toji/config.ts)                    │
+     │ export const defaultOpencodeConfig: OpencodeConfig = {                │
+     │   model: 'xai/grok-code' // Update from 'opencode/grok-code' to       │
+     │ actual free model                                                     │
+     │ }                                                                     │
+     │ 2. Toji Core Methods (src/main/toji/index.ts)                         │
+     │   - getServerConfig() - Get current config from server                │
+     │   - getAvailableProviders() - List all providers/models               │
+     │   - changeModel(model, preserveConfig = true) - Restart with new      │
+     │ model                                                                 │
+     │ 3. IPC Handlers (src/main/handlers/toji.handlers.ts)                  │
+     │   - toji:getServerConfig - Returns current Config                     │
+     │   - toji:getProviders - Returns providers list                        │
+     │   - toji:changeModel - Changes model with validation                  │
+     │ 4. ConfigProvider API Keys (src/main/config/ConfigProvider.ts)        │
+     │   - setApiKey(provider, key) - Store encrypted                        │
+     │   - getApiKey(provider) - Retrieve key                                │
+     │   - getAllApiKeys() - Get all configured keys                         │
+     │   - Add API_KEY_ENV_VARS mapping:                                     │
+     │   const API_KEY_ENV_VARS = {                                          │
+     │   anthropic: 'ANTHROPIC_API_KEY',                                     │
+     │   openai: 'OPENAI_API_KEY',                                           │
+     │   google: 'GOOGLE_API_KEY',                                           │
+     │   xai: 'XAI_API_KEY',                                                 │
+     │   opencode: 'OPENCODE_API_KEY'                                        │
+     │ }                                                                     │
+     │ 5. Server Spawn Updates                                               │
+     │   - Modify ServerManager.getOrCreateServer() to accept apiKeys param  │
+     │   - Update opencode-server-patch.ts to inject API keys into env       │
+     │   - Use provider-to-env-var mapping                                   │
+     │                                                                       │
+     │ Key Updates:                                                          │
+     │                                                                       │
+     │ - Default model changed to xai/grok-code (confirmed free)             │
+     │ - Support for OpenCode API key (OPENCODE_API_KEY) for zen models      │
+     │ - Ready to add Code Supernova when officially supported               │
+     │                                                                       │
+     │ Next Steps:                                                           │
+     │                                                                       │
+     │ - Test with actual server to verify model identifiers                 │
+     │ - Add UI components in separate PR                                    │
+     │ - Document supported free models                                      │
+     ╰───────────────────────────────────────────────────────────────────────╯
+
+> This looks good. Now write an executive summary of the plan to NEXT.md 
+No code neccesary keep it a technical overview of which systems we're 
+affecting and our intent.
+
+● Write(NEXT.md)
+  ⎿  Error writing file
+
+● Read(NEXT.md)
+  ⎿  Read 250 lines (ctrl+o to expand)
+
+● Write(NEXT.md)
+  ⎿  Updated NEXT.md with 113 additions and 2 removals                 
+         1 -  # Toji Discord Bot - Project-Centric Design
+         1 +  # Next: Dynamic Model Configuration System
+         2    
+         3 +  ## Executive Summary
+         4 +  
+         5 +  Implement a dynamic model switching system that allows 
+           + users to change AI models at runtime without editing 
+           + configuration files. The system will leverage OpenCode 
+           + SDK's built-in configuration API to retrieve available 
+           + models and apply changes through controlled server 
+           + restarts.
+         6 +  
+         7 +  ## Objective
+         8 +  
+         9 +  Enable users to:
+        10 +  - View and select from available AI models
+        11 +  - Change models without manual file editing
+        12 +  - Manage API keys securely within the application
+        13 +  - Maintain configuration flexibility (programmatic 
+           + overrides + optional opencode.json)
+        14 +  
+        15 +  ## Systems Affected
+        16 +  
+        17 +  ### 1. **Toji Core (`src/main/toji/`)**
+        18 +  - Add configuration retrieval methods using SDK's 
+           + `client.config` API
+        19 +  - Implement model switching with server restart 
+           + orchestration
+        20 +  - Preserve existing multi-server architecture
+        21 +  
+        22 +  ### 2. **Configuration System (`src/main/config/`)**
+        23 +  - Extend ConfigProvider with encrypted API key storage
+        24 +  - Mirror Discord token approach using electron-store
+        25 +  - Support arbitrary provider API keys
+        26 +  
+        27 +  ### 3. **Server Management (`src/main/toji/server.ts`, 
+           + `opencode-server-patch.ts`)**
+        28 +  - Accept configuration objects during server creation
+        29 +  - Inject API keys into environment variables at spawn 
+           + time
+        30 +  - Maintain existing per-directory server isolation
+        31 +  
+        32 +  ### 4. **IPC Communication (`src/main/handlers/`)**
+        33 +  - Expose config operations to renderer process
+        34 +  - Provide type-safe handlers for model switching
+        35 +  - Emit events for UI state synchronization
+        36 +  
+        37 +  ### 5. **Default Configuration 
+           + (`src/main/toji/config.ts`)**
+        38 +  - Update default model from `opencode/grok-code` to 
+           + `xai/grok-code`
+        39 +  - Maintain minimal configuration philosophy
+        40 +  - Support for future Code Supernova integration
+        41 +  
+        42 +  ## Technical Approach
+        43 +  
+        44 +  ### Configuration Precedence
+        45 +  1. **Programmatic config** (via OPENCODE_CONFIG_CONTENT) 
+           + - Highest priority
+        46 +  2. **Project opencode.json** - User-managed, optional
+        47 +  3. **Global config** - Fallback defaults
+        48 +  
+        49 +  ### Key Design Decisions
+        50 +  - **Session Loss Accepted**: Server restarts will clear 
+           + active sessions (documented limitation)
+        51 +  - **Config Merging**: Preserve existing settings when 
+           + changing only the model
+        52 +  - **API Key Injection**: Use environment variables 
+           + matching OpenCode's conventions
+        53 +  - **No File Management**: Users retain control of 
+           + opencode.json files
+        54 +  
+        55 +  ### Provider-to-Environment Mapping
+        56 +  ```
+        57 +  anthropic → ANTHROPIC_API_KEY
+        58 +  openai → OPENAI_API_KEY
+        59 +  google → GOOGLE_API_KEY
+        60 +  xai → XAI_API_KEY
+        61 +  opencode → OPENCODE_API_KEY
+        62 +  ```
+        63 +  
+        64 +  ## Implementation Phases
+        65 +  
+        66 +  ### Phase 1: Core Infrastructure (This PR)
+        67 +  - Configuration retrieval from running servers
+        68 +  - Model switching with server restart
+        69 +  - API key secure storage
+        70 +  - IPC handler setup
+        71 +  
+        72 +  ### Phase 2: UI Components (Next PR)
+        73 +  - Model selector dropdown
+        74 +  - API key configuration panel
+        75 +  - Loading states and notifications
+        76 +  - Provider availability indicators
+        77 +  
+        78 +  ## Benefits
+        79 +  
+        80 +  1. **Improved Developer Experience**: Switch models 
+           + instantly based on task requirements
+        81 +  2. **Security**: API keys stored encrypted, not in plain 
+           + text files
+        82 +  3. **Flexibility**: Supports both programmatic and 
+           + file-based configuration
+        83 +  4. **Foundation**: Establishes pattern for future 
+           + configuration options
+        84 +  
+        85 +  ## Risks & Mitigations
+        86 +  
+        87 +  - **Risk**: Session loss on restart
+        88 +    - **Mitigation**: Clear documentation, UI warning
+        89 +  
+        90 +  - **Risk**: Port conflicts during restart
+        91 +    - **Mitigation**: 500ms delay between stop/start
+        92 +  
+        93 +  - **Risk**: Unknown model identifiers
+        94 +    - **Mitigation**: Validate against provider list from 
+           + SDK
+        95 +  
+        96 +  ## Success Criteria
+        97 +  
+        98 +  - Users can switch between models without editing files
+        99 +  - API keys are securely stored and automatically injected
+       100 +  - System maintains backward compatibility with existing 
+           + opencode.json files
+       101 +  - Configuration changes apply immediately with minimal 
+           + disruption
+       102 +  
+       103 +  ## Future Considerations
+       104 +  
+       105 +  - Session persistence across restarts
+       106 +  - Bulk configuration updates
+       107 +  - Per-project model preferences
+       108 +  - Integration with Code Supernova when officially 
+           + supported
+       109 +  
+       110 +  ---
+       111 +  
+       112 +  # Previous: Toji Discord Bot - Project-Centric Design
+       113 +  
+       114    ## Vision
+       115    
+       116    Transform Discord into a lightweight project management 
+             interface for Toji, where Discord's native UI elements 
+             (categories, channels, topics) serve as the project 
+             manager. No complex session management - just projects and
+              conversations.
+     ...
+       246    
+       247    ---
+       248    
+       249 -  _This design leverages Discord's native UI to create a 
+           -  simple, visual project management system that requires 
+           -  minimal code while providing maximum clarity._
+       249 +  _This design leverages Discord's native UI to create a 
+           +  simple, visual project management system that requires 
+           +  minimal code while providing maximum clarity._
+       250   \ No newline at end of file
+
+● Done! I've added the executive summary for the Dynamic Model
+  Configuration System to the top of NEXT.md. It provides a technical
+  overview of:
+
+  - The objective and systems affected
+  - Configuration precedence and design decisions
+  - Provider-to-environment variable mapping
+  - Implementation phases (core infrastructure then UI)
+  - Benefits, risks, and success criteria
+
+  The summary focuses on the technical architecture without including any
+  code, making it a clear roadmap for implementing the model switching
+  feature.
+
+> /context 
+  ⎿  Context Usage
+                claude-opus-4-1-20250805 • 105k/200k tokens (52%)
+      ⛁ ⛀ ⛁ ⛁ 
+      ⛁ ⛁ ⛁ ⛁   ⛁ System prompt: 3.3k tokens (1.6%)
+      ⛁ ⛁ ⛁ ⛶   ⛁ System tools: 12.0k tokens (6.0%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 1.6k tokens (0.8%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Messages: 87.9k tokens (43.9%)
+                ⛶ Free space: 95.3k (47.7%)
+
+     emory files · /memory
+      Project (C:\Users\donth\toji3\CLAUDE.md): 1.6k tokens
+
+     lashCommand Tool · 0 commands
+      Total: 574 tokens           Context Usage
+                claude-opus-4-1-20250805 • 105k/200k tokens (52%)
+      ⛁ ⛀ ⛁ ⛁ 
+      ⛁ ⛁ ⛁ ⛁   ⛁ System prompt: 3.3k tokens (1.6%)
+      ⛁ ⛁ ⛁ ⛶   ⛁ System tools: 12.0k tokens (6.0%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 1.6k tokens (0.8%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Messages: 87.9k tokens (43.9%)
+                ⛶ Free space: 95.3k (47.7%)
+
+     emory files · /memory
+      Project (C:\Users\donth\toji3\CLAUDE.md): 1.6k tokens
+
+     lashCommand Tool · 0 commands
+      Total: 574 tokens           Context Usage
+                claude-opus-4-1-20250805 • 105k/200k tokens (52%)
+      ⛁ ⛀ ⛁ ⛁ 
+      ⛁ ⛁ ⛁ ⛁   ⛁ System prompt: 3.3k tokens (1.6%)
+      ⛁ ⛁ ⛁ ⛶   ⛁ System tools: 12.0k tokens (6.0%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Memory files: 1.6k tokens (0.8%)
+      ⛶ ⛶ ⛶ ⛶   ⛁ Messages: 87.9k tokens (43.9%)
+                ⛶ Free space: 95.3k (47.7%)
+
+     emory files · /memory
+      Project (C:\Users\donth\toji3\CLAUDE.md): 1.6k tokens
+
+     lashCommand Tool · 0 commands
+      Total: 574 tokens
+
+> Alright you may proceed with the implementation. Ultrathink and when you
+ encounter gaps in our planning assume the role of the user and think, 
+what would they want? good luck.
+
+✻ Thinking…
+
+  The user is giving me the green light to proceed with the implementation of 
+  the dynamic model configuration system. They want me to "ultrathink" and 
+  fill in gaps by thinking about what they would want. Let me review the plan 
+  and start implementing systematically.
+
+  Based on our discussion, the implementation should include:
+
+  1. Core Toji methods for config retrieval and model switching
+  2. IPC handlers for the renderer to use
+  3. ConfigProvider extensions for API key storage
+  4. Server spawn updates to inject API keys
+  5. Update default model to xai/grok-code
+
+  Let me start with a todo list and then work through the implementation 
+  methodically.
+
+  Key considerations:
+  - The user wants a simple MVP that focuses on model switching
+  - We discovered sessions will be lost on restart (accepted limitation)
+  - We need to preserve other config settings when changing models
+  - API keys should be stored encrypted like Discord token
+  - We need proper provider-to-env-var mapping
+
+  Let me begin the implementation.
+
+✻ Thinking…
+
+  Let me start with the first task - updating the default model config.
+
+✻ Thinking…
+
+  Let me start by updating the default model config.
+
+● Update(src\main\toji\config.ts)
+  ⎿  Updated src\main\toji\config.ts with 1 addition and 1 removal    
+       12    }
+       13    
+       14    export const defaultOpencodeConfig: OpencodeConfig = {
+       15 -    model: 'opencode/grok-code'
+       15 +    model: 'xai/grok-code' // Free model from xAI (limited 
+          + time)
+       16      // Minimal config - only model is required
+       17    }
+
+✻ Thinking…
+
+  Good, now let me move to the next task - adding config methods to Toji core.
+   I need to:
+  1. Import the Config type from SDK
+  2. Add getServerConfig method
+  3. Add getAvailableProviders method
+  4. Add changeModel method
+
+✻ Thinking…
+
+  Now let me add the config methods to the Toji class. First, I need to add 
+  the Config import, then add the methods.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 1 addition and 1 removal     
+       1    // Minimal Toji implementation with multi-server OpenCode 
+           SDK usage
+       2    import { createOpencodeClient } from '@opencode-ai/sdk'
+       3 -  import type { OpencodeClient, Part, Message, Project 
+         -  } from '@opencode-ai/sdk'
+       3 +  import type { OpencodeClient, Part, Message, Project, 
+         +  Config } from '@opencode-ai/sdk'
+       4    import type { OpenCodeService } from 
+           '../services/opencode-service'
+       5    import type { ConfigProvider } from 
+           '../config/ConfigProvider'
+       6    import { ProjectManager } from './project'
+
+✻ Thinking…
+
+  Now I need to add the config methods to the Toji class. Let me add them 
+  after the getAllServers method at the end of the class.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 108 additions                 
+       638      getAllServers(): Array<{ directory: string; port: 
+             number; url: string; isHealthy: boolean }> {
+       639        return this.server.getAllServers()
+       640      }
+       641 +  
+       642 +    // ==========================================
+       643 +    // Configuration Management
+       644 +    // ==========================================
+       645 +  
+       646 +    /**
+       647 +     * Get the current server configuration
+       648 +     * Retrieves the active configuration from the running 
+           + OpenCode server
+       649 +     */
+       650 +    async getServerConfig(): Promise<Config | null> {
+       651 +      const client = this.getClient()
+       652 +      if (!client) {
+       653 +        log('No client connected, cannot get server 
+           + config')
+       654 +        return null
+       655 +      }
+       656 +  
+       657 +      try {
+       658 +        // Use the SDK's built-in config.get() method
+       659 +        const config = await client.config.get()
+       660 +        log('Retrieved server config: model=%s', 
+           + config.model)
+       661 +        return config
+       662 +      } catch (error) {
+       663 +        log('ERROR: Failed to get server config: %o', 
+           + error)
+       664 +        return null
+       665 +      }
+       666 +    }
+       667 +  
+       668 +    /**
+       669 +     * Get available providers and models from the server
+       670 +     * Returns the list of all available AI providers and 
+           + their models
+       671 +     */
+       672 +    async getAvailableProviders(): Promise<{
+       673 +      providers: Array<unknown>
+       674 +      default: Record<string, string>
+       675 +    } | null> {
+       676 +      const client = this.getClient()
+       677 +      if (!client) {
+       678 +        log('No client connected, cannot get providers')
+       679 +        return null
+       680 +      }
+       681 +  
+       682 +      try {
+       683 +        // Use the SDK's config.providers() method
+       684 +        const result = await client.config.providers()
+       685 +        log('Retrieved %d providers from server', 
+           + result.providers?.length || 0)
+       686 +        return result
+       687 +      } catch (error) {
+       688 +        log('ERROR: Failed to get providers: %o', error)
+       689 +        return null
+       690 +      }
+       691 +    }
+       692 +  
+       693 +    /**
+       694 +     * Change the AI model by restarting the server with 
+           + new configuration
+       695 +     * This will lose the current session (accepted 
+           + limitation)
+       696 +     */
+       697 +    async changeModel(newModel: string, preserveConfig = 
+           + true): Promise<void> {
+       698 +      const directory = this.currentProjectDirectory
+       699 +      if (!directory) {
+       700 +        throw new Error('No project directory set')
+       701 +      }
+       702 +  
+       703 +      log('Changing model to %s for directory %s', 
+           + newModel, directory)
+       704 +  
+       705 +      // Store current session ID for logging (sessions 
+           + won't persist)
+       706 +      const currentSessionId = this.getCurrentSessionId()
+       707 +      if (currentSessionId) {
+       708 +        log('Note: Current session %s will be lost during 
+           + restart', currentSessionId)
+       709 +      }
+       710 +  
+       711 +      // Get current config if we want to preserve other 
+           + settings
+       712 +      let mergedConfig: Partial<Config> = { model: newModel
+           +  }
+       713 +      if (preserveConfig) {
+       714 +        const currentConfig = await this.getServerConfig()
+       715 +        if (currentConfig) {
+       716 +          mergedConfig = {
+       717 +            ...currentConfig,
+       718 +            model: newModel
+       719 +          }
+       720 +          log('Preserving existing config settings during 
+           + model change')
+       721 +        }
+       722 +      }
+       723 +  
+       724 +      // Stop the current server
+       725 +      await this.server.stopServerForDirectory(directory)
+       726 +  
+       727 +      // Small delay to ensure port is freed
+       728 +      await new Promise((resolve) => setTimeout(resolve, 
+           + 500))
+       729 +  
+       730 +      // Start server with new configuration
+       731 +      log('Starting server with new model: %s', newModel)
+       732 +      await this.server.getOrCreateServer(directory, 
+           + mergedConfig)
+       733 +  
+       734 +      // Reconnect client
+       735 +      await this.connectClient(directory)
+       736 +  
+       737 +      // Emit model changed event to notify UI
+       738 +      const mainWindow = BrowserWindow.getAllWindows()[0]
+       739 +      if (mainWindow) {
+       740 +        mainWindow.webContents.send('model:changed', {
+       741 +          model: newModel,
+       742 +          projectPath: directory
+       743 +        })
+       744 +        log('Emitted model:changed event for model: %s', 
+           + newModel)
+       745 +      }
+       746 +  
+       747 +      log('Model successfully changed to %s', newModel)
+       748 +    }
+       749    }
+       750    
+       751    export default Toji
+
+✻ Thinking…
+
+  Good! Now I need to extend the ConfigProvider to handle API keys. Let me add
+   those methods.
+
+✻ Thinking…
+
+  Let me extend the ConfigProvider class to handle API keys. First I need to 
+  update the AppConfig interface to include apiKeys, then add the methods.
+
+● Update(src\main\config\ConfigProvider.ts)
+  ⎿  Updated src\main\config\ConfigProvider.ts with 9 additions   
+       10        current?: string // Currently active project path
+       11        activeSessions: Record<string, string> // Active 
+            session ID per project path
+       12      }
+       13 +    apiKeys?: {
+       14 +      anthropic?: string
+       15 +      openai?: string
+       16 +      google?: string
+       17 +      xai?: string
+       18 +      opencode?: string
+       19 +      // Support arbitrary providers
+       20 +      [provider: string]: string | undefined
+       21 +    }
+       22    }
+       23    
+       24    export class ConfigProvider {
+
+✻ Thinking…
+
+  Now I need to add the API key management methods to the ConfigProvider 
+  class. Let me add them after the session management section.
+
+● Update(src\main\config\ConfigProvider.ts)
+  ⎿  Updated src\main\config\ConfigProvider.ts with 91 additions       
+       140        activeSessions[normalizedPath] = sessionId
+       141        this.store.set('projects.activeSessions', 
+             activeSessions)
+       142      }
+       143 +  
+       144 +    // ==========================================
+       145 +    // API Key Management
+       146 +    // ==========================================
+       147 +  
+       148 +    /**
+       149 +     * Provider to environment variable mapping
+       150 +     */
+       151 +    static readonly API_KEY_ENV_VARS: Record<string, 
+           + string> = {
+       152 +      anthropic: 'ANTHROPIC_API_KEY',
+       153 +      openai: 'OPENAI_API_KEY',
+       154 +      google: 'GOOGLE_API_KEY',
+       155 +      xai: 'XAI_API_KEY',
+       156 +      opencode: 'OPENCODE_API_KEY'
+       157 +      // Add more providers as needed
+       158 +    }
+       159 +  
+       160 +    /**
+       161 +     * Set API key for a provider (stored encrypted)
+       162 +     */
+       163 +    setApiKey(provider: string, key: string): void {
+       164 +      const apiKeys = this.store.get('apiKeys', {})
+       165 +      apiKeys[provider.toLowerCase()] = key
+       166 +      this.store.set('apiKeys', apiKeys)
+       167 +    }
+       168 +  
+       169 +    /**
+       170 +     * Get API key for a provider
+       171 +     */
+       172 +    getApiKey(provider: string): string | undefined {
+       173 +      const apiKeys = this.store.get('apiKeys', {})
+       174 +      return apiKeys[provider.toLowerCase()]
+       175 +    }
+       176 +  
+       177 +    /**
+       178 +     * Get all configured API keys
+       179 +     * Returns a map of provider to key
+       180 +     */
+       181 +    getAllApiKeys(): Record<string, string> {
+       182 +      const apiKeys = this.store.get('apiKeys', {})
+       183 +      // Filter out undefined values
+       184 +      const result: Record<string, string> = {}
+       185 +      for (const [provider, key] of 
+           + Object.entries(apiKeys)) {
+       186 +        if (key) {
+       187 +          result[provider] = key
+       188 +        }
+       189 +      }
+       190 +      return result
+       191 +    }
+       192 +  
+       193 +    /**
+       194 +     * Check if a provider has an API key configured
+       195 +     */
+       196 +    hasApiKey(provider: string): boolean {
+       197 +      return !!this.getApiKey(provider)
+       198 +    }
+       199 +  
+       200 +    /**
+       201 +     * Get list of providers that have API keys configured
+       202 +     */
+       203 +    getConfiguredProviders(): string[] {
+       204 +      const apiKeys = this.store.get('apiKeys', {})
+       205 +      return Object.keys(apiKeys).filter((provider) => 
+           + !!apiKeys[provider])
+       206 +    }
+       207 +  
+       208 +    /**
+       209 +     * Clear API key for a provider
+       210 +     */
+       211 +    clearApiKey(provider: string): void {
+       212 +      const apiKeys = this.store.get('apiKeys', {})
+       213 +      delete apiKeys[provider.toLowerCase()]
+       214 +      this.store.set('apiKeys', apiKeys)
+       215 +    }
+       216 +  
+       217 +    /**
+       218 +     * Get environment variables for all configured API 
+           + keys
+       219 +     * Returns a map ready to merge with process.env
+       220 +     */
+       221 +    getApiKeyEnvironmentVariables(): Record<string, string>
+           +  {
+       222 +      const envVars: Record<string, string> = {}
+       223 +      const apiKeys = this.getAllApiKeys()
+       224 +  
+       225 +      for (const [provider, key] of 
+           + Object.entries(apiKeys)) {
+       226 +        const envVarName = 
+           + ConfigProvider.API_KEY_ENV_VARS[provider.toLowerCase()]
+       227 +        if (envVarName && key) {
+       228 +          envVars[envVarName] = key
+       229 +        }
+       230 +      }
+       231 +  
+       232 +      return envVars
+       233 +    }
+       234    }
+
+✻ Thinking…
+
+  Good! Now I need to update the ServerManager to accept config and API keys. 
+  Let me update the getOrCreateServer method and also need to update Toji's 
+  changeModel to pass the API keys.
+
+✻ Thinking…
+
+  First, I need to update the ServerOptions interface in 
+  opencode-server-patch.ts to include apiKeys, then update the spawn call to 
+  inject them into the environment.
+
+✻ Thinking…
+
+  Let me update the server spawn first to accept and inject API keys.
+
+● Update(src\main\toji\opencode-server-patch.ts)
+  ⎿  Updated src\main\toji\opencode-server-patch.ts with 1 addition   
+       11      signal?: AbortSignal
+       12      config?: Config
+       13      cwd?: string // Add the missing cwd option
+       14 +    apiKeys?: Record<string, string> // API keys to inject 
+          + into environment
+       15    }
+       16    
+       17    export async function 
+            createOpencodeServerWithCwd(options?: ServerOptions): 
+            Promise<{
+
+✻ Thinking…
+
+  Now I need to update the spawn call to inject the API keys into the 
+  environment.
+
+● Update(src\main\toji\opencode-server-patch.ts)
+  ⎿  Updated src\main\toji\opencode-server-patch.ts with 3 additions and 
+      removal
+       40        signal: opts.signal,
+       41        env: {
+       42          ...process.env,
+       43 -        OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config 
+          -  ?? {})
+       43 +        OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config 
+          +  ?? {}),
+       44 +        // Inject API keys from the apiKeys parameter
+       45 +        ...(opts.apiKeys || {})
+       46        }
+       47      })
+       48    
+
+✻ Thinking…
+
+  Now I need to update the ServerManager to accept apiKeys parameter and pass 
+  it through.
+
+✻ Thinking…
+
+  Now let me update the ServerManager's getOrCreateServer method to accept 
+  apiKeys and pass them to createOpencodeServerWithCwd.
+
+● Update(src\main\toji\server.ts)
+  ⎿  Updated src\main\toji\server.ts with 5 additions and 1 removal    
+       29       * Get or create a server for the specified directory
+       30       * Reuses existing server if one is already running for 
+            that directory
+       31       */
+       32 -    async getOrCreateServer(directory: string, config?: 
+          - Config): Promise<ServerInstance> {
+       32 +    async getOrCreateServer(
+       33 +      directory: string,
+       34 +      config?: Config,
+       35 +      apiKeys?: Record<string, string>
+       36 +    ): Promise<ServerInstance> {
+       37        const targetDirectory = normalizePath(directory || 
+            process.cwd())
+       38        log('Getting or creating server for directory: %s', 
+            targetDirectory)
+       39    
+
+✻ Thinking…
+
+  Now I need to update the part where the server is created to pass the 
+  apiKeys parameter.
+
+● Update(src\main\toji\server.ts)
+  ⎿  Updated src\main\toji\server.ts with 2 additions and 1 removal
+       78          port,
+       79          timeout: 10000,
+       80          config,
+       81 -        cwd: targetDirectory
+          -   // Spawn FROM the target directory
+       81 +        cwd: targetDirectory,
+          +   // Spawn FROM the target directory
+       82 +        apiKeys // Pass API keys to be injected into 
+          + environment
+       83        }
+       84    
+       85        try {
+
+✻ Thinking…
+
+  Now I need to update the Toji's changeModel method to get and pass the API 
+  keys. Let me modify it to use the ConfigProvider's API keys.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 9 additions and 2 removals  
+       727        // Small delay to ensure port is freed
+       728        await new Promise((resolve) => setTimeout(resolve, 
+             500))
+       729    
+       730 -      // Start server with new configuration
+       730 +      // Get API keys from config provider if available
+       731 +      let apiKeyEnvVars: Record<string, string> = {}
+       732 +      if (this._config) {
+       733 +        apiKeyEnvVars = 
+           + this._config.getApiKeyEnvironmentVariables()
+       734 +        log('Injecting %d API keys from config', 
+           + Object.keys(apiKeyEnvVars).length)
+       735 +      }
+       736 +  
+       737 +      // Start server with new configuration and API keys
+       738        log('Starting server with new model: %s', newModel)
+       739 -      await this.server.getOrCreateServer(directory, 
+           -  mergedConfig)
+       739 +      await this.server.getOrCreateServer(directory, 
+           +  mergedConfig, apiKeyEnvVars)
+       740    
+       741        // Reconnect client
+       742        await this.connectClient(directory)
+
+✻ Thinking…
+
+  Good! Now I also need to update other places where getOrCreateServer is 
+  called to pass API keys. Let me check the connectClient method and other 
+  places. First, let me also update the switchToProject method.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 7 additions and 1 removal     
+       283        log('Switching to project: %s', projectPath)
+       284    
+       285        try {
+       286 +        // Get API keys for the server
+       287 +        let apiKeyEnvVars: Record<string, string> = {}
+       288 +        if (this._config) {
+       289 +          apiKeyEnvVars = 
+           + this._config.getApiKeyEnvironmentVariables()
+       290 +        }
+       291 +  
+       292          // Get or create server for this project directory
+       293          log('Getting or creating server for project: %s', 
+             projectPath)
+       294 -        const serverInstance = await 
+           -  this.server.getOrCreateServer(projectPath)
+       294 +        const serverInstance = await 
+           +  this.server.getOrCreateServer(projectPath
+           +  , undefined, apiKeyEnvVars)
+       295          log('Server ready on port %d for %s', 
+             serverInstance.port, projectPath)
+       296    
+       297          // Update the project directory and process.chdir()
+
+✻ Thinking…
+
+  Let me also update the connectClient method and the initializeProject 
+  method.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 7 additions and 1 removal     
+       51        const targetDirectory = directory || process.cwd()
+       52        logClient('Connecting client for directory: %s', 
+            targetDirectory)
+       53    
+       54 +      // Get API keys for the server
+       55 +      let apiKeyEnvVars: Record<string, string> = {}
+       56 +      if (this._config) {
+       57 +        apiKeyEnvVars = 
+          + this._config.getApiKeyEnvironmentVariables()
+       58 +      }
+       59 +  
+       60        // Get or create server for this directory
+       61 -      const serverInstance = await 
+          -  this.server.getOrCreateServer(targetDirectory)
+       61 +      const serverInstance = await 
+          +  this.server.getOrCreateServer(targetDirectory
+          +  , undefined, apiKeyEnvVars)
+       62        const serverUrl = serverInstance.server.url
+       63    
+       64        logClient('Connecting to server URL: %s for directory:
+             %s', serverUrl, targetDirectory)
+
+✻ Thinking…
+
+  Let me also update the initializeProject method where it restarts the server
+   after initialization.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 11 additions and 1 removal    
+       623          // Small delay for cleanup
+       624          await new Promise((resolve) => setTimeout(resolve, 
+             1000))
+       625    
+       626 +        // Get API keys for the new server
+       627 +        let apiKeyEnvVars: Record<string, string> = {}
+       628 +        if (this._config) {
+       629 +          apiKeyEnvVars = 
+           + this._config.getApiKeyEnvironmentVariables()
+       630 +        }
+       631 +  
+       632          // Start new server (will now recognize the 
+             project)
+       633 -        const serverInstance = await 
+           -  this.server.getOrCreateServer(
+           -  this.currentProjectDirectory)
+       633 +        const serverInstance = await 
+           +  this.server.getOrCreateServer(
+       634 +          this.currentProjectDirectory,
+       635 +          undefined,
+       636 +          apiKeyEnvVars
+       637 +        )
+       638    
+       639          // Reconnect client
+       640          await 
+             this.connectClient(this.currentProjectDirectory)
+
+✻ Thinking…
+
+  Good! Now I need to create the IPC handlers for config operations. Let me 
+  update the todo list and then add the handlers.
+
+✻ Thinking…
+
+  Now I need to add IPC handlers for the config operations. Let me add them to
+   the toji.handlers.ts file.
+
+● Update(src\main\handlers\toji.handlers.ts)
+  ⎿  Error editing file
+
+✻ Thinking…
+
+  Let me check what's at the end of the toji.handlers.ts file to find the 
+  right place to add the handlers.
+
+● Read(src\main\handlers\toji.handlers.ts)
+  ⎿  Read 19 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Now I'll add the config handlers before the closing brace.
+
+● Update(src\main\handlers\toji.handlers.ts)
+  ⎿  Updated src\main\handlers\toji.handlers.ts with 42 additions     
+       229          return false
+       230        }
+       231      })
+       232 +  
+       233 +    // ==========================================
+       234 +    // Configuration Management
+       235 +    // ==========================================
+       236 +  
+       237 +    // Get server configuration
+       238 +    ipcMain.handle('toji:getServerConfig', async () => {
+       239 +      try {
+       240 +        const config = await toji.getServerConfig()
+       241 +        return config
+       242 +      } catch (error) {
+       243 +        console.error('Get server config error:', error)
+       244 +        return null
+       245 +      }
+       246 +    })
+       247 +  
+       248 +    // Get available providers and models
+       249 +    ipcMain.handle('toji:getProviders', async () => {
+       250 +      try {
+       251 +        const providers = await 
+           + toji.getAvailableProviders()
+       252 +        return providers || { providers: [], default: {} }
+       253 +      } catch (error) {
+       254 +        console.error('Get providers error:', error)
+       255 +        return { providers: [], default: {} }
+       256 +      }
+       257 +    })
+       258 +  
+       259 +    // Change model with server restart
+       260 +    ipcMain.handle('toji:changeModel', async (_, model: 
+           + string, preserveConfig = true) => {
+       261 +      try {
+       262 +        // Validate model format
+       263 +        if (!model || !model.includes('/')) {
+       264 +          throw new Error('Invalid model format. Expected 
+           + format: provider/model')
+       265 +        }
+       266 +  
+       267 +        await toji.changeModel(model, preserveConfig)
+       268 +        return { success: true, model }
+       269 +      } catch (error) {
+       270 +        console.error('Change model error:', error)
+       271 +        throw error
+       272 +      }
+       273 +    })
+       274    }
+
+✻ Thinking…
+
+  Great! Now I should also add IPC handlers for API key management. Let me add
+   those handlers as well since they're essential for the config system.
+
+● Update(src\main\handlers\toji.handlers.ts)
+  ⎿  Updated src\main\handlers\toji.handlers.ts with 66 additions      
+       272        }
+       273      })
+       274    }
+       275 +  
+       276 +  // Register API key management handlers
+       277 +  export function registerApiKeyHandlers(config: 
+           + ConfigProvider | null): void {
+       278 +    if (!config) {
+       279 +      console.error('Config provider not initialized for 
+           + API key handlers')
+       280 +      return
+       281 +    }
+       282 +  
+       283 +    // Set API key for a provider
+       284 +    ipcMain.handle('config:setApiKey', async (_, provider: 
+           + string, key: string) => {
+       285 +      try {
+       286 +        config.setApiKey(provider, key)
+       287 +        return { success: true }
+       288 +      } catch (error) {
+       289 +        console.error('Set API key error:', error)
+       290 +        throw error
+       291 +      }
+       292 +    })
+       293 +  
+       294 +    // Get API key for a provider (returns masked for 
+           + security)
+       295 +    ipcMain.handle('config:getApiKey', async (_, provider: 
+           + string) => {
+       296 +      try {
+       297 +        const key = config.getApiKey(provider)
+       298 +        if (!key) return null
+       299 +        // Mask the key for security (show only first 4 and
+           +  last 4 chars)
+       300 +        if (key.length > 8) {
+       301 +          return key.substring(0, 4) + '...' + 
+           + key.substring(key.length - 4)
+       302 +        }
+       303 +        return '****'
+       304 +      } catch (error) {
+       305 +        console.error('Get API key error:', error)
+       306 +        return null
+       307 +      }
+       308 +    })
+       309 +  
+       310 +    // Check if provider has API key
+       311 +    ipcMain.handle('config:hasApiKey', async (_, provider: 
+           + string) => {
+       312 +      try {
+       313 +        return config.hasApiKey(provider)
+       314 +      } catch (error) {
+       315 +        console.error('Has API key error:', error)
+       316 +        return false
+       317 +      }
+       318 +    })
+       319 +  
+       320 +    // Get list of configured providers
+       321 +    ipcMain.handle('config:getConfiguredProviders', async 
+           + () => {
+       322 +      try {
+       323 +        return config.getConfiguredProviders()
+       324 +      } catch (error) {
+       325 +        console.error('Get configured providers error:', 
+           + error)
+       326 +        return []
+       327 +      }
+       328 +    })
+       329 +  
+       330 +    // Clear API key for a provider
+       331 +    ipcMain.handle('config:clearApiKey', async (_, 
+           + provider: string) => {
+       332 +      try {
+       333 +        config.clearApiKey(provider)
+       334 +        return { success: true }
+       335 +      } catch (error) {
+       336 +        console.error('Clear API key error:', error)
+       337 +        throw error
+       338 +      }
+       339 +    })
+       340 +  }
+
+✻ Thinking…
+
+  Now I need to add the import for ConfigProvider at the top of the file.
+
+● Update(src\main\handlers\toji.handlers.ts)
+  ⎿  Updated src\main\handlers\toji.handlers.ts with 1 addition     
+       2    import { ipcMain } from 'electron'
+       3    import type { Toji } from '../toji'
+       4    import type { OpencodeConfig } from '../toji/config'
+       5 +  import type { ConfigProvider } from 
+         + '../config/ConfigProvider'
+       6    
+       7    export function registerTojiHandlers(toji: Toji): void {
+       8      // Check if Toji is ready
+
+✻ Thinking…
+
+  Now I need to make sure that the registerApiKeyHandlers function is called 
+  in the main index.ts file. Let me check where handlers are registered.
+
+● Read(src\main\index.ts)
+  ⎿  Read 40 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Now I need to add the registerApiKeyHandlers call and import it.
+
+● Update(src\main\index.ts)
+  ⎿  Updated src\main\index.ts with 1 addition                    
+       169      registerDiscordHandlers(discordService, config)
+       170      registerBinaryHandlers(openCodeService)
+       171      registerLoggerHandlers()
+       172 +    registerApiKeyHandlers(config)
+       173    
+       174      // Register dialog handler
+       175      ipcMain.handle('dialog:showOpenDialog', async (_, 
+             options) => {
+
+✻ Thinking…
+
+  Now I need to add the import for registerApiKeyHandlers at the top of the 
+  main index.ts file.
+
+● Update(src\main\index.ts)
+  ⎿  Error editing file
+
+✻ Thinking…
+
+  Let me check the imports at the top of the file.
+
+● Read(src\main\index.ts)
+  ⎿  Read 30 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  I see, they're importing from './handlers' barrel file. Let me check that 
+  file to see how exports are organized.
+
+● Read(src\main\handlers\index.ts)
+  ⎿  Read 8 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  I need to add the export for registerApiKeyHandlers to this barrel file.
+
+● Update(src\main\handlers\index.ts)
+  ⎿  Updated src\main\handlers\index.ts with 1 addition and 1 removal 
+       1    // Export all handler modules
+       2 -  export { registerTojiHandlers } from './toji.handlers'
+       2 +  export { registerTojiHandlers, registerApiKeyHandlers 
+         +  } from './toji.handlers'
+       3    export { registerProjectHandlers } from 
+           './project.handlers'
+       4    export { registerWindowHandlers } from './window.handlers'
+       5    export { registerDiscordHandlers } from 
+           './discord.handlers'
+
+✻ Thinking…
+
+  Now I need to update the import statement in main/index.ts to include 
+  registerApiKeyHandlers.
+
+● Update(src\main\index.ts)
+  ⎿  Updated src\main\index.ts with 1 addition
+       20    // Import modular handlers
+       21    import {
+       22      registerTojiHandlers,
+       23 +    registerApiKeyHandlers,
+       24      registerProjectHandlers,
+       25      registerWindowHandlers,
+       26      registerDiscordHandlers,
+
+✻ Thinking…
+
+  Perfect! Now let me update the todo list and test the implementation.
+
+✻ Thinking…
+
+  Now let me run a typecheck to make sure everything compiles correctly.
+
+● Bash(npm run typecheck)
+  ⎿  Error: > toji3@1.0.0 typecheck
+     > npm run typecheck:node && npm run typecheck:web
+
+
+     > toji3@1.0.0 typecheck:node
+     > tsc --noEmit -p tsconfig.node.json --composite false
+
+     src/main/toji/index.ts(682,55): error TS2339: Property 'model' does not 
+     exist on type '({ data: undefined; error: unknown; } | { data: Config; 
+     error: undefined; }) & { request: Request; response: Response; }'.
+       Property 'model' does not exist on type '{ data: undefined; error: 
+     unknown; } & { request: Request; response: Response; }'.
+     src/main/toji/index.ts(683,7): error TS2322: Type '({ data: undefined; 
+     error: unknown; } | { data: Config; error: undefined; }) & { request: 
+     Request; response: Response; }' is not assignable to type 'Config | null'.
+
+     … +5 lines (ctrl+o to see all)
+
+✻ Thinking…
+
+  I see the issue. The SDK client methods return a wrapped response with data 
+  and error properties. Let me fix this.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 5 additions and 3 removals    
+       678    
+       679        try {
+       680          // Use the SDK's built-in config.get() method
+       681 -        const config = await client.config.get()
+       682 -        log('Retrieved server config: model=%s', 
+           - config.model)
+       683 -        return config
+       681 +        const response = await client.config.get()
+       682 +        // Extract data from response wrapper
+       683 +        const config = 'data' in response ? response.data :
+           +  response
+       684 +        log('Retrieved server config: model=%s', 
+           + config?.model)
+       685 +        return config || null
+       686        } catch (error) {
+       687          log('ERROR: Failed to get server config: %o', 
+             error)
+       688          return null
+
+✻ Thinking…
+
+  Now let me fix the getAvailableProviders method as well.
+
+● Update(src\main\toji\index.ts)
+  ⎿  Updated src\main\toji\index.ts with 5 additions and 3 removals    
+       705    
+       706        try {
+       707          // Use the SDK's config.providers() method
+       708 -        const result = await client.config.providers()
+       709 -        log('Retrieved %d providers from server', 
+           - result.providers?.length || 0)
+       710 -        return result
+       708 +        const response = await client.config.providers()
+       709 +        // Extract data from response wrapper
+       710 +        const result = 'data' in response ? response.data :
+           +  response
+       711 +        log('Retrieved %d providers from server', 
+           + result?.providers?.length || 0)
+       712 +        return result || null
+       713        } catch (error) {
+       714          log('ERROR: Failed to get providers: %o', error)
+       715          return null
+
+✻ Thinking…
+
+  Let me run typecheck again to see if this fixes the issue.
+
+● Bash(npm run typecheck)
+  ⎿  > toji3@1.0.0 typecheck                          
+     > npm run typecheck:node && npm run typecheck:web
+     … +7 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Great! The typecheck passes now. Let me also run the linter to make sure 
+  everything is clean.
+
+● Bash(npm run lint)
+  ⎿  > toji3@1.0.0 lint            
+     > eslint --cache .
+     … +23 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Let me fix the formatting issues in our new code.
+
+● Bash(npm run format)
+  ⎿  > toji3@1.0.0 format           
+     > prettier --write .
+     … +129 lines (ctrl+o to expand)
+
+✻ Thinking…
+
+  Good! The formatting is done. Now let me check one of the dev servers to see
+   if the app is running and if there are any errors.
+
+● BashOutput(Reading shell output)
+  ⎿  > toji3@1.0.0 dev                                                   
+     > electron-vite dev
+     … +175 lines (ctrl+o to expand)
+  ⎿ List sessions error: Error: Failed to list sessions: No response data
+        at SessionManager.listSessions (C:\Users\donth\toji3\out\main\ind
+    ex.js:1774:15)
+    … +77 lines (ctrl+o to expand)
+
+
+
+✻ Thinking…
+
+  The server is killed. Let me check one of the other running servers.
+  ⎿  Interrupted · What should Claude do instead?
+
+
+
+
