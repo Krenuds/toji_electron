@@ -7,6 +7,7 @@ import { ProjectManager } from './project'
 import { ServerManager } from './server'
 import { SessionManager } from './sessions'
 import { ProjectInitializer } from './project-initializer'
+import { ConfigManager } from './config-manager'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus } from './types'
 import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
@@ -30,6 +31,7 @@ export class Toji {
   public readonly server: ServerManager
   public readonly sessions: SessionManager
   public readonly projectInitializer: ProjectInitializer
+  public readonly configManager: ConfigManager
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     log('Initializing Toji with OpenCode service')
@@ -39,6 +41,14 @@ export class Toji {
     this.sessions = new SessionManager()
     this.project = new ProjectManager(() => this.getClient())
     this.projectInitializer = new ProjectInitializer()
+    this.configManager = new ConfigManager(
+      () => this.getClient(),
+      () => this.currentProjectDirectory,
+      async (config, dir) => {
+        await this.server.restart(config, dir)
+      },
+      (dir) => this.connectClient(dir)
+    )
     log('Toji initialized successfully')
   }
 
@@ -641,93 +651,27 @@ export class Toji {
 
   // Get current project's configuration from OpenCode
   async getProjectConfig(): Promise<any> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
-
-    try {
-      const config = await client.config.get()
-      log('Retrieved project config: %o', config)
-      return config
-    } catch (error) {
-      log('ERROR: Failed to get project config: %o', error)
-      throw error
-    }
+    return this.configManager.getProjectConfig()
   }
 
   // Update project configuration and restart server
   async updateProjectConfig(config: OpencodeConfig): Promise<void> {
-    if (!this.currentProjectDirectory) {
-      throw new Error('No current project directory')
-    }
-
-    log('Updating project config for: %s', this.currentProjectDirectory)
-    log('New config: %o', config)
-
-    try {
-      // Restart server with new config
-      await this.server.restart(config, this.currentProjectDirectory)
-      log('Server restarted with new config')
-
-      // Reconnect client
-      await this.connectClient(this.currentProjectDirectory)
-      log('Client reconnected successfully')
-    } catch (error) {
-      log('ERROR: Failed to update project config: %o', error)
-      throw error
-    }
+    return this.configManager.updateProjectConfig(config)
   }
 
   // Get current permissions from project configuration
   async getPermissions(): Promise<PermissionConfig> {
-    const config = await this.getProjectConfig()
-    log('Retrieved permissions from config: %o', config.permission)
-
-    // Return permission object with defaults if not set
-    return {
-      edit: config.permission?.edit || 'allow',
-      bash: config.permission?.bash || 'allow',
-      webfetch: config.permission?.webfetch || 'allow'
-    }
+    return this.configManager.getPermissions()
   }
 
   // Update permissions by merging with existing configuration
   async updatePermissions(permissions: Partial<PermissionConfig>): Promise<void> {
-    log('Updating permissions: %o', permissions)
-
-    try {
-      // Get current full config
-      const currentConfig = await this.getProjectConfig()
-
-      // Merge permissions with existing config
-      const updatedConfig: OpencodeConfig = {
-        ...currentConfig,
-        permission: {
-          ...currentConfig.permission,
-          ...permissions
-        }
-      }
-
-      // Update the full config (will restart server)
-      await this.updateProjectConfig(updatedConfig)
-      log('Permissions updated successfully')
-    } catch (error) {
-      log('ERROR: Failed to update permissions: %o', error)
-      throw error
-    }
+    return this.configManager.updatePermissions(permissions)
   }
 
   // Set a single permission (convenience method)
   async setPermission(type: PermissionType, level: PermissionLevel): Promise<void> {
-    log('Setting permission: %s = %s', type, level)
-
-    // For bash, we use simple string form (not complex object)
-    const permissions: Partial<PermissionConfig> = {
-      [type]: level
-    }
-
-    await this.updatePermissions(permissions)
+    return this.configManager.setPermission(type, level)
   }
 }
 
