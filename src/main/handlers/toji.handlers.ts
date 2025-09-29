@@ -1,7 +1,12 @@
 // Core Toji handlers for IPC
 import { ipcMain } from 'electron'
 import type { Toji } from '../toji'
-import type { OpencodeConfig } from '../toji/config'
+import type {
+  OpencodeConfig,
+  PermissionConfig,
+  PermissionType,
+  PermissionLevel
+} from '../toji/config'
 
 export function registerTojiHandlers(toji: Toji): void {
   // Check if Toji is ready
@@ -253,6 +258,47 @@ export function registerTojiHandlers(toji: Toji): void {
       return { success: true }
     } catch (error) {
       console.error('Update config error:', error)
+      throw error
+    }
+  })
+
+  // Get current permissions
+  ipcMain.handle('toji:getPermissions', async () => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      return await toji.getPermissions()
+    } catch (error) {
+      console.error('Get permissions error:', error)
+      throw error
+    }
+  })
+
+  // Update permissions (merges with existing config)
+  ipcMain.handle('toji:updatePermissions', async (_, permissions: Partial<PermissionConfig>) => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      await toji.updatePermissions(permissions)
+      return { success: true }
+    } catch (error) {
+      console.error('Update permissions error:', error)
+      throw error
+    }
+  })
+
+  // Set a single permission
+  ipcMain.handle('toji:setPermission', async (_, type: PermissionType, level: PermissionLevel) => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      await toji.setPermission(type, level)
+      return { success: true }
+    } catch (error) {
+      console.error('Set permission error:', error)
       throw error
     }
   })

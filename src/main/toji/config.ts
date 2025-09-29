@@ -1,17 +1,19 @@
 // Default configuration for OpenCode SDK servers
+// Uses types from @opencode-ai/sdk for full type safety
 
-// Valid OpenCode configuration based on the official Config API
-// See: https://github.com/sst/opencode/blob/dev/packages/sdk/js/src/gen/types.gen.ts
-export interface OpencodeConfig {
-  model?: string // Primary model in "provider/model" format
-  small_model?: string // Smaller model for tasks like title generation
-  instructions?: string[] // Additional instruction files
-  share?: 'manual' | 'auto' | 'disabled' // Control sharing behavior
-  autoupdate?: boolean // Automatically update to latest version
-  // Note: "rules" and "project" are NOT valid fields
-}
+import type { Config } from '@opencode-ai/sdk'
 
-export const defaultOpencodeConfig: OpencodeConfig = {
+// Re-export SDK Config type as OpencodeConfig for convenience
+export type { Config as OpencodeConfig }
+
+// Helper type aliases for permission management
+export type PermissionLevel = 'ask' | 'allow' | 'deny'
+export type PermissionType = 'edit' | 'bash' | 'webfetch'
+
+// Type for the permission configuration object
+export type PermissionConfig = NonNullable<Config['permission']>
+
+export const defaultOpencodeConfig: Config = {
   model: 'opencode/grok-code'
   // Minimal config - only model is required
 }
