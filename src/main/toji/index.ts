@@ -1,5 +1,4 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
-import { createOpencodeClient } from '@opencode-ai/sdk'
 import type { OpencodeClient, Part, Message, Project } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
@@ -8,19 +7,18 @@ import { ServerManager } from './server'
 import { SessionManager } from './sessions'
 import { ProjectInitializer } from './project-initializer'
 import { ConfigManager } from './config-manager'
+import { ClientManager } from './client-manager'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus } from './types'
 import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 import { BrowserWindow } from 'electron'
-import { normalizePath } from '../utils/path'
 
 const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
 const logChat = createFileDebugLogger('toji:chat')
 
 export class Toji {
-  private clients: Map<string, OpencodeClient> = new Map()
   private currentProjectDirectory?: string
   private currentProjectId?: string
   private _config?: ConfigProvider
@@ -32,6 +30,7 @@ export class Toji {
   public readonly sessions: SessionManager
   public readonly projectInitializer: ProjectInitializer
   public readonly configManager: ConfigManager
+  public readonly clientManager: ClientManager
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     log('Initializing Toji with OpenCode service')
@@ -39,6 +38,7 @@ export class Toji {
     // Initialize modules
     this.server = new ServerManager(opencodeService)
     this.sessions = new SessionManager()
+    this.clientManager = new ClientManager(this.server)
     this.project = new ProjectManager(() => this.getClient())
     this.projectInitializer = new ProjectInitializer()
     this.configManager = new ConfigManager(
@@ -61,38 +61,20 @@ export class Toji {
     const targetDirectory = directory || process.cwd()
     logClient('Connecting client for directory: %s', targetDirectory)
 
-    // Get or create server for this directory
-    const serverInstance = await this.server.getOrCreateServer(targetDirectory)
-    const serverUrl = serverInstance.server.url
-
-    logClient('Connecting to server URL: %s for directory: %s', serverUrl, targetDirectory)
-
-    // Create client for this directory if not exists
-    const normalized = normalizePath(targetDirectory)
-    if (!this.clients.has(normalized)) {
-      const client = createOpencodeClient({
-        baseUrl: serverUrl,
-        responseStyle: 'data' // Get data directly without wrapper
-      })
-      this.clients.set(normalized, client)
-      logClient('Client created and connected for %s', normalized)
-    } else {
-      logClient('Reusing existing client for %s', normalized)
-    }
+    // Connect client through ClientManager
+    await this.clientManager.connectClient(targetDirectory)
 
     // Set current directory
     this.currentProjectDirectory = targetDirectory
     logClient('Current project directory set to: %s', this.currentProjectDirectory)
 
-    // Update project manager with new client
-    this.project = new ProjectManager(() => this.getClient())
+    // Note: ProjectManager already uses getClient() callback, no need to recreate it
   }
 
   // Get client for current or specific directory
   private getClient(directory?: string): OpencodeClient | undefined {
     const targetDir = directory || this.currentProjectDirectory || process.cwd()
-    const normalized = normalizePath(targetDir)
-    return this.clients.get(normalized)
+    return this.clientManager.getClient(targetDir)
   }
 
   // Change working directory (for project context)
@@ -397,10 +379,8 @@ export class Toji {
     // Clear active session
     this.sessions.setActiveSession('', projectToClose)
 
-    // Remove client from map
-    const normalized = normalizePath(projectToClose)
-    this.clients.delete(normalized)
-    log('Removed client for %s', normalized)
+    // Remove client through ClientManager
+    this.clientManager.removeClient(projectToClose)
 
     // Stop the server for this directory
     await this.server.stopServerForDirectory(projectToClose)

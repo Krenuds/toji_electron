@@ -12,13 +12,14 @@ When we started looking at how configuration flows through Toji3, we found somet
 
 ```typescript
 // src/main/index.ts:136
-await toji.server.start(undefined, lastProject)  // ← undefined config!
+await toji.server.start(undefined, lastProject) // ← undefined config!
 
 // src/main/toji/server.ts:424
-OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})  // ← always "{}"
+OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {}) // ← always "{}"
 ```
 
 The OpenCode binary was falling back to its own configuration hierarchy:
+
 1. Check for `opencode.json` in project directory
 2. Use global config at `~/.config/opencode/opencode.json`
 3. Use internal defaults
@@ -32,18 +33,20 @@ The breakthrough came when we checked the OpenCode SDK's type definitions. The `
 ```typescript
 // From node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts
 export type Config = {
-  model?: string;
-  small_model?: string;
-  instructions?: Array<string>;
-  share?: 'manual' | 'auto' | 'disabled';
-  autoupdate?: boolean;
+  model?: string
+  small_model?: string
+  instructions?: Array<string>
+  share?: 'manual' | 'auto' | 'disabled'
+  autoupdate?: boolean
   permission?: {
-    edit?: "ask" | "allow" | "deny";
-    bash?: ("ask" | "allow" | "deny") | {
-      [key: string]: "ask" | "allow" | "deny";
-    };
-    webfetch?: "ask" | "allow" | "deny";
-  };
+    edit?: 'ask' | 'allow' | 'deny'
+    bash?:
+      | ('ask' | 'allow' | 'deny')
+      | {
+          [key: string]: 'ask' | 'allow' | 'deny'
+        }
+    webfetch?: 'ask' | 'allow' | 'deny'
+  }
   // ... plus theme, keybinds, formatters, lsp, mcp, agents, etc.
 }
 ```
@@ -64,13 +67,14 @@ OpenCode controls AI agent behavior through three permission categories:
 2. **`permission.bash`** - Controls shell command execution
    - Simple form: `"allow" | "ask" | "deny"`
    - Granular form: Pattern-based rules
+
    ```json
    {
      "bash": {
        "git status": "allow",
        "git push": "ask",
        "terraform *": "deny",
-       "*": "ask"  // default for unmatched commands
+       "*": "ask" // default for unmatched commands
      }
    }
    ```
@@ -87,13 +91,13 @@ OpenCode controls AI agent behavior through three permission categories:
 ```json
 {
   "permission": {
-    "edit": "ask",      // Global: ask before all edits
+    "edit": "ask", // Global: ask before all edits
     "bash": "allow"
   },
   "agent": {
     "plan": {
       "permission": {
-        "edit": "deny"  // Planning agent can't edit files at all
+        "edit": "deny" // Planning agent can't edit files at all
       }
     }
   }
@@ -109,11 +113,13 @@ Agent-level permissions **merge over** global settings, not replace them.
 Following Toji3's architecture principles, all business logic lives in the backend:
 
 **Main Process (Backend)**
+
 - `src/main/toji/config.ts` - Type definitions (using SDK types)
 - `src/main/toji/index.ts` - Business logic methods
 - `src/main/handlers/toji.handlers.ts` - IPC handlers
 
 **Plugins (Frontend)**
+
 - Electron UI - Will render routing matrix with radio buttons
 - Discord Bot - Will provide text-based permission commands
 - Both call the **same IPC handlers** - no duplicate logic
@@ -152,6 +158,7 @@ async setPermission(type: PermissionType, level: PermissionLevel): Promise<void>
 ```
 
 **How it works:**
+
 1. `getProjectConfig()` calls `client.config.get()` to retrieve current config from OpenCode
 2. `updateProjectConfig()` restarts the server with new config via `OPENCODE_CONFIG_CONTENT` env var
 3. Permission methods are convenience wrappers that merge changes with existing config
@@ -167,6 +174,7 @@ ipcMain.handle('toji:setPermission', ...)
 ```
 
 Each handler:
+
 - Checks if `toji.isReady()` (has active project)
 - Calls corresponding Toji method
 - Returns result or throws error
@@ -188,10 +196,10 @@ When Toji3 calls `server.restart(config)`, here's what happens:
 ```typescript
 // src/main/toji/server.ts:419-426
 const proc = spawn(binaryPath, ['serve', '--hostname=...', '--port=...'], {
-  cwd: opts.cwd,  // Project directory
+  cwd: opts.cwd, // Project directory
   env: {
     ...process.env,
-    OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})  // ← Config passed here
+    OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {}) // ← Config passed here
   }
 })
 ```
@@ -201,12 +209,14 @@ The OpenCode binary reads `OPENCODE_CONFIG_CONTENT` on startup and merges it wit
 ## Why This Matters
 
 ### Before This Session
+
 - No programmatic config control
 - Relied entirely on OpenCode finding `opencode.json` files
 - No way to change settings without restarting app
 - Custom config types that didn't match SDK reality
 
 ### After This Session
+
 - Full runtime configuration management
 - Type-safe using SDK's native types
 - Can query current config from OpenCode
@@ -219,11 +229,13 @@ The OpenCode binary reads `OPENCODE_CONFIG_CONTENT` on startup and merges it wit
 During research, we identified configuration options that **don't require API keys** - perfect for testing:
 
 **Simplest:**
+
 1. `autoupdate: boolean` - Control automatic updates
 2. `share: "manual" | "auto" | "disabled"` - Session sharing behavior
 3. `permission.edit: "ask" | "allow" | "deny"` - File editing permissions
 
 **More Complex:**
+
 - `instructions: string[]` - Additional instruction files
 - `permission.bash` - Granular command patterns
 - Per-agent configurations
@@ -233,6 +245,7 @@ During research, we identified configuration options that **don't require API ke
 ### Immediate: UI Implementation
 
 **Electron UI** - Routing matrix component:
+
 ```
              Allow    Ask    Deny
 Edit          ( )     (•)    ( )
@@ -241,11 +254,13 @@ WebFetch      ( )     (•)    ( )
 ```
 
 Using Chakra UI v3 components with:
+
 - Custom hook `usePermissions()` to call IPC handlers
 - Radio button group for each permission type
 - Real-time updates (server restart on change)
 
 **Discord Bot** - Text commands:
+
 ```
 /permissions view
 /permissions set edit ask
@@ -257,16 +272,19 @@ Same IPC handlers, different presentation.
 ### Future Enhancements
 
 **Model Management**
+
 - Query available models: `client.config.providers()`
 - Switch models without app restart
 - Per-project model preferences
 
 **Advanced Permissions**
+
 - Granular bash command patterns
 - Per-agent permission overrides
 - Permission presets (strict/balanced/permissive)
 
 **Configuration Profiles**
+
 - Save/load configuration presets
 - Project templates with default configs
 - Team-shared configurations
@@ -299,6 +317,7 @@ This will be a "Phase 2" feature with a dedicated rule editor UI.
 ### SDK Type Alignment
 
 By using the SDK's native `Config` type, we get:
+
 - Automatic updates when SDK updates
 - IntelliSense for all config options
 - Type safety across the entire stack
@@ -311,6 +330,7 @@ This was a key architectural decision that saved us from future maintenance head
 This session established the foundation for configuration management in Toji3. The backend API is complete, type-safe, and ready for both UI and Discord implementations. The permission system is our first use case, but the infrastructure supports **any** OpenCode configuration option.
 
 The architecture maintains Toji3's principles:
+
 - Backend owns business logic
 - Plugins are thin presentation layers
 - Type safety throughout
