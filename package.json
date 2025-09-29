@@ -4,7 +4,7 @@
   "description": "AI-Powered Development Desktop Application with OpenCode Integration",
   "main": "./out/main/index.js",
   "author": "Toji Development Team",
-  "homepage": "https://github.com/yourusername/toji3",
+  "homepage": "https://github.com/krenuds/toji3",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

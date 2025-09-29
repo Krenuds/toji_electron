@@ -638,6 +638,46 @@ export class Toji {
   getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
     return this.server.getAllServers()
   }
+
+  // Get current project's configuration from OpenCode
+  async getProjectConfig(): Promise<any> {
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    try {
+      const config = await client.config.get()
+      log('Retrieved project config: %o', config)
+      return config
+    } catch (error) {
+      log('ERROR: Failed to get project config: %o', error)
+      throw error
+    }
+  }
+
+  // Update project configuration and restart server
+  async updateProjectConfig(config: OpencodeConfig): Promise<void> {
+    if (!this.currentProjectDirectory) {
+      throw new Error('No current project directory')
+    }
+
+    log('Updating project config for: %s', this.currentProjectDirectory)
+    log('New config: %o', config)
+
+    try {
+      // Restart server with new config
+      await this.server.restart(config, this.currentProjectDirectory)
+      log('Server restarted with new config')
+
+      // Reconnect client
+      await this.connectClient(this.currentProjectDirectory)
+      log('Client reconnected successfully')
+    } catch (error) {
+      log('ERROR: Failed to update project config: %o', error)
+      throw error
+    }
+  }
 }
 
 export default Toji

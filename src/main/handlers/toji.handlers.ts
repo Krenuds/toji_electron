@@ -229,4 +229,31 @@ export function registerTojiHandlers(toji: Toji): void {
       return false
     }
   })
+
+  // Get current project configuration
+  ipcMain.handle('toji:getConfig', async () => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      return await toji.getProjectConfig()
+    } catch (error) {
+      console.error('Get config error:', error)
+      throw error
+    }
+  })
+
+  // Update project configuration and restart server
+  ipcMain.handle('toji:updateConfig', async (_, config: Record<string, unknown>) => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      await toji.updateProjectConfig(config as OpencodeConfig)
+      return { success: true }
+    } catch (error) {
+      console.error('Update config error:', error)
+      throw error
+    }
+  })
 }

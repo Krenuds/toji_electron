@@ -416,14 +416,18 @@ export class ServerManager {
       throw new Error(`OpenCode binary not found at ${binaryPath}. Please ensure it is installed.`)
     }
 
-    const proc = spawn(binaryPath, ['serve', `--hostname=${opts.hostname}`, `--port=${opts.port}`], {
-      cwd: opts.cwd, // Critical: Set the working directory for multi-project support
-      signal: opts.signal,
-      env: {
-        ...process.env,
-        OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})
+    const proc = spawn(
+      binaryPath,
+      ['serve', `--hostname=${opts.hostname}`, `--port=${opts.port}`],
+      {
+        cwd: opts.cwd, // Critical: Set the working directory for multi-project support
+        signal: opts.signal,
+        env: {
+          ...process.env,
+          OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})
+        }
       }
-    })
+    )
 
     const url = await new Promise<string>((resolve, reject) => {
       const id = setTimeout(() => {

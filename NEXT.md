@@ -12,6 +12,7 @@ Toji3 now runs **multiple OpenCode servers simultaneously** - one per project di
 The `ServerManager` class orchestrates a pool of up to 10 OpenCode servers. Each server runs from its specific project directory, which is critical because OpenCode needs to understand the project context (git repo, config files, etc).
 
 When you switch to a project:
+
 1. ServerManager checks if a server already exists for that directory
 2. If yes, it reuses it (instant switch)
 3. If no, it spawns a new server from that directory
@@ -19,6 +20,7 @@ When you switch to a project:
 
 **Server Spawning**
 The spawning logic lives directly in ServerManager as a private method. It:
+
 - Uses the full binary path from our shared utilities
 - Sets the working directory (cwd) to the project folder
 - Monitors stdout for "opencode server listening" to know when ready
@@ -26,6 +28,7 @@ The spawning logic lives directly in ServerManager as a private method. It:
 
 **Binary Management**
 The OpenCode binary installation is handled separately by `OpenCodeService`. It:
+
 - Downloads the binary from GitHub releases if missing
 - Stores it in `~/.local/share/opencode/bin/`
 - Provides binary status to the UI
@@ -33,6 +36,7 @@ The OpenCode binary installation is handled separately by `OpenCodeService`. It:
 ### Architecture Clarity
 
 We have three distinct layers:
+
 1. **Binary Management** (`services/opencode-service.ts`) - Downloads and verifies the OpenCode executable
 2. **Server Pool** (`toji/server.ts`) - Manages multiple server instances, spawning, health checks
 3. **Client Connection** (`toji/index.ts`) - Connects SDK clients to the appropriate server
@@ -60,6 +64,7 @@ Every 30 seconds, ServerManager pings each server. If a server dies, it's marked
 ### Working With This System
 
 When debugging server issues:
+
 1. Check the logs at `AppData/Roaming/toji3/logs/`
 2. Look for `toji:server` entries for spawning/stopping
 3. Health check failures are normal for stopped servers
@@ -70,6 +75,7 @@ The system is resilient - it handles binary missing, ports busy, servers dying, 
 ### Next Steps & Improvements
 
 The foundation is solid. Potential enhancements:
+
 - Dynamic port allocation beyond the fixed range
 - Configurable max server limit
 - Warm-start servers for frequently used projects
