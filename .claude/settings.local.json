@@ -49,7 +49,9 @@
       "Bash(select:*)",
       "Bash(git diff-tree:*)",
       "Bash(del \"C:\\Users\\donth\\toji3\\src\\plugins\\discord\\modules\\ChatModule.ts\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(del \"C:\\Users\\donth\\toji3\\src\\main\\toji\\opencode-server-patch.ts\")",
+      "Bash(npm run typecheck:node:*)"
     ],
     "deny": [],
     "ask": []

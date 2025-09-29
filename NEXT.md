@@ -1,249 +1,78 @@
-# Toji Discord Bot - Project-Centric Design
+# Toji3 Server Architecture - Handoff Notes
 
-## Vision
+## Current State: Multi-Server OpenCode Integration
 
-Transform Discord into a lightweight project management interface for Toji, where Discord's native UI elements (categories, channels, topics) serve as the project manager. No complex session management - just projects and conversations.
+### The Big Picture
 
-## Core Architecture
+Toji3 now runs **multiple OpenCode servers simultaneously** - one per project directory. When you switch between projects in the UI, you're not restarting servers, you're connecting to different ones that are already running. This makes project switching instant and maintains separate contexts for each project.
 
-### The "Toji Desktop" Category
+### How It Works
 
-A dedicated Discord category that serves as the project manager:
+**Server Management**
+The `ServerManager` class orchestrates a pool of up to 10 OpenCode servers. Each server runs from its specific project directory, which is critical because OpenCode needs to understand the project context (git repo, config files, etc).
 
-```
-📁 Toji Desktop
-  ├─ 🟢 test4           [ACTIVE PROJECT]
-  ├─ ⚪ my-app          [inactive]
-  ├─ ⚪ another-project [inactive]
-  └─ ➕ add-project     [special command channel]
-```
+When you switch to a project:
+1. ServerManager checks if a server already exists for that directory
+2. If yes, it reuses it (instant switch)
+3. If no, it spawns a new server from that directory
+4. If we hit the 10-server limit, it kills the least recently used one
 
-### Key Principles
+**Server Spawning**
+The spawning logic lives directly in ServerManager as a private method. It:
+- Uses the full binary path from our shared utilities
+- Sets the working directory (cwd) to the project folder
+- Monitors stdout for "opencode server listening" to know when ready
+- Handles timeouts, port conflicts, and permission errors gracefully
 
-1. **One Active Project** - Only one project can be active at a time (like Electron)
-2. **Channel = Project** - Each channel represents a project directory
-3. **Visual State** - Active project shown via emoji/topic/color
-4. **Auto-Switch** - Typing in a project channel activates it
-5. **No Sessions** - Just projects and their conversation history
+**Binary Management**
+The OpenCode binary installation is handled separately by `OpenCodeService`. It:
+- Downloads the binary from GitHub releases if missing
+- Stores it in `~/.local/share/opencode/bin/`
+- Provides binary status to the UI
 
-## Discord Commands
+### Architecture Clarity
 
-### Project Management
+We have three distinct layers:
+1. **Binary Management** (`services/opencode-service.ts`) - Downloads and verifies the OpenCode executable
+2. **Server Pool** (`toji/server.ts`) - Manages multiple server instances, spawning, health checks
+3. **Client Connection** (`toji/index.ts`) - Connects SDK clients to the appropriate server
 
-- `/project list` - Show all available projects
-- `/project current` - Display the currently active project
-- `/project switch [name]` - Switch to a different project
-- `/project add [path]` - Add a new project (creates channel)
-- `/project remove [name]` - Remove a project (archives channel)
+Each layer has a single, clear responsibility. No overlap, no confusion.
 
-### Chat Commands
+### Key Design Decisions
 
-- `/chat [message]` - Send message to Toji in current project context
-- `/clear` - Clear conversation history in current project
-- `/status` - Check Toji and OpenCode connection status
-- `/help` - Show available commands
+**Why Multiple Servers?**
+OpenCode servers are lightweight but stateful. They maintain context about the project they're running from. By keeping servers alive per directory, we avoid expensive restarts and maintain project context.
 
-### Natural Interaction
+**Why CWD Matters**
+OpenCode discovers projects by looking at the current working directory. It needs to see the git repo, opencode.json config, and project files. That's why each server MUST be spawned with its project directory as the cwd.
 
-- **@Toji [message]** - Works anywhere, uses active project
-- **Direct messages in project channels** - Auto-activates and responds
+**Health Monitoring**
+Every 30 seconds, ServerManager pings each server. If a server dies, it's marked unhealthy and will be respawned on next use. The app also does aggressive cleanup on shutdown, killing all OpenCode processes.
 
-## Implementation Architecture
+### What's Clean Now
 
-### Client Management Strategy
+- **No more patches** - The spawning logic is a first-class citizen in ServerManager
+- **Shared utilities** - Binary paths are centralized in `utils/path.ts`
+- **Clear naming** - Each file name describes what it does
+- **No code duplication** - Each piece of logic lives in exactly one place
 
-```typescript
-// Hybrid approach: Share servers, independent clients
-class DiscordProjectManager {
-  private activeProject?: {
-    channelId: string
-    projectPath: string
-    client: OpencodeClient
-  }
+### Working With This System
 
-  private projects: Map<channelId, ProjectInfo> = new Map()
+When debugging server issues:
+1. Check the logs at `AppData/Roaming/toji3/logs/`
+2. Look for `toji:server` entries for spawning/stopping
+3. Health check failures are normal for stopped servers
+4. Port 4096-4106 are reserved for OpenCode servers
 
-  async switchProject(channelId: string) {
-    // Get project info
-    const project = this.projects.get(channelId)
+The system is resilient - it handles binary missing, ports busy, servers dying, and other edge cases. The multi-server architecture means users never wait for server restarts when switching projects.
 
-    // Get or create server from Toji
-    const server = await this.toji.server.getOrCreateServer(project.path)
+### Next Steps & Improvements
 
-    // Create dedicated Discord client for this project
-    const client = createOpencodeClient({
-      baseUrl: server.url,
-      responseStyle: 'data'
-    })
+The foundation is solid. Potential enhancements:
+- Dynamic port allocation beyond the fixed range
+- Configurable max server limit
+- Warm-start servers for frequently used projects
+- Server resource monitoring and auto-cleanup
 
-    // Update active project
-    this.activeProject = { channelId, projectPath: project.path, client }
-
-    // Update Discord UI
-    await this.updateChannelIndicators()
-  }
-}
-```
-
-### Message Flow
-
-```
-User Message → Project Channel → Auto-Switch → OpenCode Client → Response
-                     ↓                              ↓
-              [Makes Active]              [Project-Specific Server]
-```
-
-### Channel Structure
-
-```typescript
-interface ProjectChannel {
-  name: string // Clean project name
-  channelId: string // Discord channel ID
-  projectPath: string // Absolute path on disk
-  serverPort: number // OpenCode server port
-  isActive: boolean // Visual indicator state
-}
-```
-
-## User Experience Flow
-
-### First Time Setup
-
-1. Bot joins server
-2. Creates "Toji Desktop" category automatically
-3. Creates "➕ add-project" channel
-4. Waits for user to add projects
-
-### Adding a Project
-
-1. User types path in "add-project" channel
-2. Bot validates path exists
-3. Creates new channel with project name
-4. Starts OpenCode server for that path
-5. Makes it the active project
-
-### Working with Projects
-
-1. User clicks on project channel (e.g., "test4")
-2. Channel becomes active (visual indicator changes)
-3. All messages in channel go to that project's context
-4. User can freely switch by clicking different channels
-5. `/chat` works from anywhere using active project
-
-### Visual Feedback
-
-- **Active Project**: 🟢 prefix or green topic
-- **Inactive Projects**: ⚪ or no prefix
-- **Channel Topics**: Show project path and status
-- **Bot Status**: Shows current active project
-
-## Technical Implementation
-
-### Phase 1: Core Structure (MVP)
-
-1. Create category management
-2. Implement project-to-channel mapping
-3. Add active project tracking
-4. Handle messages in project channels
-
-### Phase 2: Project Commands
-
-5. Implement `/project` command suite
-6. Add project addition/removal
-7. Create visual status indicators
-8. Handle project switching
-
-### Phase 3: Polish
-
-9. Add project validation
-10. Implement error recovery
-11. Add persistence across restarts
-12. Create help documentation
-
-## Benefits of This Approach
-
-### Simplicity
-
-- No session management complexity
-- Clear visual project organization
-- Intuitive Discord-native interface
-- One active context at a time
-
-### Scalability
-
-- Each project has dedicated client
-- Shared server infrastructure
-- Clean separation of concerns
-- Easy to add new projects
-
-### User Experience
-
-- Visual project management
-- Quick project switching
-- Natural Discord interaction
-- Persistent conversation history per project
-
-## State Management
-
-### What to Persist
-
-```typescript
-interface DiscordBotState {
-  activeProjectChannelId?: string
-  projects: {
-    [channelId: string]: {
-      name: string
-      path: string
-      serverPort?: number
-    }
-  }
-}
-```
-
-### On Bot Restart
-
-1. Restore "Toji Desktop" category
-2. Recreate project channels from state
-3. Reconnect to OpenCode servers
-4. Restore active project indicator
-
-## Error Handling
-
-### Common Scenarios
-
-- **Project path not found**: Offer to remove channel
-- **Server connection failed**: Show status in channel topic
-- **No active project**: Prompt user to select one
-- **Channel deleted**: Clean up project mapping
-
-## Success Metrics
-
-A properly implemented Discord bot will:
-
-1. Create and manage "Toji Desktop" category automatically
-2. Map channels to projects with visual indicators
-3. Switch projects by channel interaction
-4. Maintain one active project at a time
-5. Provide clear visual feedback
-6. Handle errors gracefully
-7. Persist state across restarts
-
-## Next Steps
-
-1. **Implement category manager** - Create and maintain "Toji Desktop"
-2. **Build project-channel mapping** - Link channels to project paths
-3. **Add active project tracking** - Single active project with indicators
-4. **Create project commands** - `/project` suite for management
-5. **Test with real Discord** - Verify UX and performance
-
-## Notes
-
-- This is significantly simpler than Electron's session management
-- Discord's UI becomes our file manager
-- Each channel maintains its own conversation history
-- Projects are persistent, conversations are clearable
-- The bot should feel like a natural Discord experience
-
----
-
-_This design leverages Discord's native UI to create a simple, visual project management system that requires minimal code while providing maximum clarity._
+The architecture is ready for these without major refactoring. The clean separation of concerns means changes stay localized to their relevant components.

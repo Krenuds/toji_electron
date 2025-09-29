@@ -4,36 +4,28 @@ import { chmod } from 'fs/promises'
 import { createWriteStream } from 'fs'
 import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
-import { homedir } from 'os'
+import { getOpenCodeBinaryPath, getOpenCodeBinDir } from '../utils/path'
 
 export class OpenCodeService {
   private binDir: string
 
   constructor() {
     // Use OpenCode's standard binary location
-    this.binDir = join(homedir(), '.local', 'share', 'opencode', 'bin')
-    this.setupEnvironment()
+    this.binDir = getOpenCodeBinDir()
+    this.ensureBinaryDirectory()
   }
 
-  private setupEnvironment(): void {
-    // Create OpenCode's standard binary directory
+  private ensureBinaryDirectory(): void {
+    // Create OpenCode's standard binary directory if it doesn't exist
     if (!existsSync(this.binDir)) {
       mkdirSync(this.binDir, { recursive: true })
-    }
-
-    // Add OpenCode's standard bin directory to PATH
-    const currentPath = process.env.PATH || ''
-    const pathSeparator = process.platform === 'win32' ? ';' : ':'
-    if (!currentPath.includes(this.binDir)) {
-      process.env.PATH = this.binDir + pathSeparator + currentPath
     }
   }
 
   async downloadBinary(): Promise<void> {
     const platform = process.platform
     const arch = process.arch
-    const binaryName = platform === 'win32' ? 'opencode.exe' : 'opencode'
-    const binaryPath = join(this.binDir, binaryName)
+    const binaryPath = getOpenCodeBinaryPath()
 
     const platformMap: Record<string, string> = {
       win32: 'windows',
@@ -99,8 +91,7 @@ export class OpenCodeService {
   }
 
   async ensureBinary(): Promise<void> {
-    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
-    const binaryPath = join(this.binDir, binaryName)
+    const binaryPath = getOpenCodeBinaryPath()
 
     if (!existsSync(binaryPath)) {
       await this.downloadBinary()
@@ -112,8 +103,7 @@ export class OpenCodeService {
     installed: boolean
     lastChecked: Date
   } {
-    const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
-    const binaryPath = join(this.binDir, binaryName)
+    const binaryPath = getOpenCodeBinaryPath()
 
     return {
       path: binaryPath,

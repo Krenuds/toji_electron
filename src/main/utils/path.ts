@@ -1,4 +1,21 @@
 import * as path from 'path'
+import { homedir } from 'os'
+import { join } from 'path'
+
+/**
+ * Get the full path to the OpenCode binary
+ */
+export function getOpenCodeBinaryPath(): string {
+  const binaryName = process.platform === 'win32' ? 'opencode.exe' : 'opencode'
+  return join(homedir(), '.local', 'share', 'opencode', 'bin', binaryName)
+}
+
+/**
+ * Get the OpenCode bin directory path
+ */
+export function getOpenCodeBinDir(): string {
+  return join(homedir(), '.local', 'share', 'opencode', 'bin')
+}
 
 /**
  * Normalize paths for consistent comparison across Windows and Unix systems
