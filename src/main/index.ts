@@ -20,6 +20,7 @@ const logCleanup = createFileDebugLogger('toji:cleanup')
 // Import modular handlers
 import {
   registerTojiHandlers,
+  registerTojiEventForwarding,
   registerProjectHandlers,
   registerWindowHandlers,
   registerDiscordHandlers,
@@ -169,6 +170,9 @@ app.whenReady().then(async () => {
   registerDiscordHandlers(discordService, config)
   registerBinaryHandlers(openCodeService)
   registerLoggerHandlers()
+
+  // Register Toji event forwarding (bridge business logic events to renderer)
+  registerTojiEventForwarding(toji)
 
   // Register dialog handler
   ipcMain.handle('dialog:showOpenDialog', async (_, options) => {

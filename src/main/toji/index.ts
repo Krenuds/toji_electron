@@ -1,4 +1,5 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
+import { EventEmitter } from 'events'
 import type { OpencodeClient, Part, Message, Project } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
@@ -12,13 +13,37 @@ import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus } from './types'
 import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
 import { createFileDebugLogger } from '../utils/logger'
-import { BrowserWindow } from 'electron'
 
 const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
 const logChat = createFileDebugLogger('toji:chat')
 
-export class Toji {
+// Define typed events emitted by Toji
+interface TojiEvents {
+  'project:opened': { path: string; name: string }
+  'project:closed': { path: string }
+}
+
+export class Toji extends EventEmitter {
+  // Type-safe emit method
+  emit<K extends keyof TojiEvents>(event: K, data: TojiEvents[K]): boolean {
+    return super.emit(event, data)
+  }
+
+  // Type-safe on method
+  on<K extends keyof TojiEvents>(event: K, listener: (data: TojiEvents[K]) => void): this {
+    return super.on(event, listener)
+  }
+
+  // Type-safe once method
+  once<K extends keyof TojiEvents>(event: K, listener: (data: TojiEvents[K]) => void): this {
+    return super.once(event, listener)
+  }
+
+  // Type-safe off method
+  off<K extends keyof TojiEvents>(event: K, listener: (data: TojiEvents[K]) => void): this {
+    return super.off(event, listener)
+  }
   private currentProjectDirectory?: string
   private currentProjectId?: string
   private _config?: ConfigProvider
@@ -33,6 +58,7 @@ export class Toji {
   public readonly clientManager: ClientManager
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
+    super() // Initialize EventEmitter
     log('Initializing Toji with OpenCode service')
     this._config = config
     // Initialize modules
@@ -105,16 +131,13 @@ export class Toji {
       logClient('Saved current project to config')
     }
 
-    // Emit project opened event to notify frontend
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    if (mainWindow) {
-      const projectName = directory.split(/[\\/]/).pop() || directory
-      mainWindow.webContents.send('project:opened', {
-        path: directory,
-        name: projectName
-      })
-      logClient('Emitted project:opened event for: %s', projectName)
-    }
+    // Emit project opened event
+    const projectName = directory.split(/[\\/]/).pop() || directory
+    this.emit('project:opened', {
+      path: directory,
+      name: projectName
+    })
+    logClient('Emitted project:opened event for: %s', projectName)
   }
 
   // Check if ready
@@ -418,14 +441,11 @@ export class Toji {
       // Don't throw here - we've at least closed the project
     }
 
-    // Emit project closed event to notify frontend
-    const mainWindow = BrowserWindow.getAllWindows()[0]
-    if (mainWindow) {
-      mainWindow.webContents.send('project:closed', {
-        path: projectToClose
-      })
-      log('Emitted project:closed event for: %s', projectToClose)
-    }
+    // Emit project closed event
+    this.emit('project:closed', {
+      path: projectToClose
+    })
+    log('Emitted project:closed event for: %s', projectToClose)
   }
 
   // Session management methods for IPC
