@@ -42,11 +42,7 @@ export function SettingsDrawer({
   const [saving, setSaving] = useState(false)
 
   // Load available models from OpenCode SDK
-  const {
-    models: availableModels,
-    loading: modelsLoading,
-    error: modelsError
-  } = useAvailableModels()
+  const { models: availableModels, loading: modelsLoading } = useAvailableModels()
 
   const isProjectMode = mode === 'project'
   const [permissions, setPermissions] = useState<LocalPermissionConfig>({
@@ -62,12 +58,8 @@ export function SettingsDrawer({
   const loadPermissions = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
-      // Stub: Project-specific permissions will be implemented later
-      if (isProjectMode && projectPath) {
-        // TODO: Implement project-specific permission loading
-        console.log(`Loading project permissions for: ${projectPath}`)
-        // For now, use defaults
-      } else if (!isProjectMode && window.api?.toji?.getPermissions) {
+      // ConfigManager automatically handles project vs global based on current directory
+      if (window.api?.toji?.getPermissions) {
         const currentPermissions = await window.api.toji.getPermissions()
         setPermissions({
           edit: currentPermissions.edit || 'ask',
@@ -75,39 +67,30 @@ export function SettingsDrawer({
           webfetch: currentPermissions.webfetch || 'ask'
         })
       }
-    } catch (error) {
-      console.error(`Failed to load ${mode} permissions:`, error)
-      // Use defaults on error
+    } catch {
+      // Use defaults on error - no need for console.error as this has proper logging in backend
     } finally {
       setLoading(false)
     }
-  }, [isProjectMode, projectPath, mode])
+  }, [])
 
   const loadModelSettings = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
-      if (isProjectMode && window.api?.toji?.getModelConfig) {
-        // Load project-specific model configuration
+      // ConfigManager automatically determines project vs global context
+      if (window.api?.toji?.getModelConfig) {
         const currentModels = await window.api.toji.getModelConfig()
         setModels({
           model: currentModels.model || 'opencode/grok-code-fast-1',
           small_model: currentModels.small_model || ''
         })
-      } else if (!isProjectMode && window.api?.toji?.getDefaultModel) {
-        // Load global default model configuration
-        const defaultModels = await window.api.toji.getDefaultModel()
-        setModels({
-          model: defaultModels.model || 'opencode/grok-code-fast-1',
-          small_model: defaultModels.small_model || ''
-        })
       }
-    } catch (error) {
-      console.error(`Failed to load ${mode} model settings:`, error)
-      // Keep existing default values on error
+    } catch {
+      // Keep existing default values on error - backend handles logging
     } finally {
       setLoading(false)
     }
-  }, [isProjectMode, mode])
+  }, [])
 
   // Load current permissions and models when drawer opens
   useEffect(() => {
@@ -120,26 +103,19 @@ export function SettingsDrawer({
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     try {
-      // Save permissions
-      if (isProjectMode && projectPath) {
-        // TODO: Implement project-specific permission saving
-        console.log(`Saving project permissions for: ${projectPath}`, permissions)
-      } else if (!isProjectMode && window.api?.toji?.updatePermissions) {
+      // Save permissions - ConfigManager handles project vs global context automatically
+      if (window.api?.toji?.updatePermissions) {
         await window.api.toji.updatePermissions(permissions)
       }
 
-      // Save model configuration
-      if (isProjectMode && window.api?.toji?.updateModelConfig) {
-        // Save project-specific model configuration
+      // Save model configuration - ConfigManager handles context automatically
+      if (window.api?.toji?.updateModelConfig) {
         await window.api.toji.updateModelConfig(models)
-      } else if (!isProjectMode && window.api?.toji?.updateDefaultModel) {
-        // Save global default model configuration
-        await window.api.toji.updateDefaultModel(models)
       }
 
       onClose()
-    } catch (error) {
-      console.error(`Failed to save ${mode} settings:`, error)
+    } catch {
+      // Backend handles error logging with proper context
     } finally {
       setSaving(false)
     }
@@ -174,9 +150,7 @@ export function SettingsDrawer({
     }
 
     // Show error state if models failed to load (fallbacks are still available)
-    if (modelsError) {
-      console.warn('Model loading error (using fallbacks):', modelsError)
-    }
+    // Error logging handled by useAvailableModels hook
 
     const modelTypes = [
       {

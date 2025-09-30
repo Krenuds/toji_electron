@@ -364,22 +364,4 @@ export function registerTojiHandlers(toji: Toji): void {
       throw error
     }
   })
-
-  ipcMain.handle('toji:getDefaultModel', async () => {
-    try {
-      return await toji.getDefaultModel()
-    } catch (error) {
-      console.error('IPC: Get default model error:', error)
-      throw error
-    }
-  })
-
-  ipcMain.handle('toji:updateDefaultModel', async (_, selection: Partial<ModelConfig>) => {
-    try {
-      return await toji.updateDefaultModel(selection)
-    } catch (error) {
-      console.error('IPC: Update default model error:', error)
-      throw error
-    }
-  })
 }

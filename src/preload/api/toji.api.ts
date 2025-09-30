@@ -136,9 +136,6 @@ export const tojiAPI = {
   getModelConfig: (): Promise<ModelConfig> => ipcRenderer.invoke('toji:getModelConfig'),
   updateModelConfig: (selection: Partial<ModelConfig>): Promise<{ success: boolean }> =>
     ipcRenderer.invoke('toji:updateModelConfig', selection),
-  getDefaultModel: (): Promise<ModelConfig> => ipcRenderer.invoke('toji:getDefaultModel'),
-  updateDefaultModel: (selection: Partial<ModelConfig>): Promise<ModelConfig> =>
-    ipcRenderer.invoke('toji:updateDefaultModel', selection),
 
   // Check if git is available
   checkGitAvailable: (): Promise<boolean> => ipcRenderer.invoke('toji:checkGitAvailable')

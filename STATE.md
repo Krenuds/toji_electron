@@ -13,7 +13,7 @@ The Toji3 configuration system is **PRODUCTION READY** ✅. After comprehensive 
 ### A) OpenCode.json Configuration Management - **PRODUCTION READY** ✅
 
 **Persistence Strategy**: Hybrid approach successfully implemented:
-- **Primary Storage**: `opencode.json` files in project root directories  
+- **Primary Storage**: `opencode.json` files in project root directories
 - **Runtime Application**: `OPENCODE_CONFIG_CONTENT` environment variable
 - **Auto-creation**: Creates config files if missing
 - **Merge Strategy**: Preserves existing settings, only updates changed values
@@ -27,7 +27,7 @@ The Toji3 configuration system is **PRODUCTION READY** ✅. After comprehensive 
 // ✅ ALL IMPLEMENTED AND WORKING
 Backend (ConfigManager):
 ├── getPermissions() / updatePermissions()      ✅ COMPLETE
-├── getModelConfig() / updateModelConfig()      ✅ COMPLETE  
+├── getModelConfig() / updateModelConfig()      ✅ COMPLETE
 ├── opencode.json persistence                   ✅ COMPLETE
 └── Server restart integration                  ✅ COMPLETE
 
@@ -190,7 +190,7 @@ class ConfigManager {
 **What was verified this session**:
 
 - ✅ **Full Stack Integration**: Backend → IPC → Preload → Frontend working perfectly
-- ✅ **OpenCode.json Persistence**: Files created automatically, configurations persist across restarts  
+- ✅ **OpenCode.json Persistence**: Files created automatically, configurations persist across restarts
 - ✅ **Permission Management**: 3x3 matrix (Edit/Bash/Webfetch × Allow/Ask/Deny) fully functional
 - ✅ **Model Configuration**: Primary + Small model system aligned with OpenCode SDK 0.9.6
 - ✅ **Dynamic Model Loading**: Real-time model fetching from OpenCode providers
@@ -202,7 +202,7 @@ class ConfigManager {
 
 1. **User Testing & Validation**
    - Test configuration persistence across app restarts
-   - Verify different project configurations work independently  
+   - Verify different project configurations work independently
    - Test error scenarios and recovery
 
 2. **Documentation & Knowledge Transfer**
@@ -273,17 +273,14 @@ async updateDefaultPermissions(permissions: Partial<PermissionConfig>): Promise<
 #### API Structure (Current Status)
 
 ```typescript
-// Global Settings
-window.api.toji.getPermissions() → LocalPermissionConfig
-window.api.toji.updatePermissions(permissions) → void
+// Unified Configuration API - ConfigManager handles project vs global automatically
+window.api.toji.getPermissions() → LocalPermissionConfig      // ✅ Working
+window.api.toji.updatePermissions(permissions) → void         // ✅ Working
 
-// Project Settings (TODO)
-window.api.toji.getProjectPermissions(path) → LocalPermissionConfig
-window.api.toji.updateProjectPermissions(path, permissions) → void
+window.api.toji.getModelConfig() → LocalModelConfig           // ✅ Working  
+window.api.toji.updateModelConfig(models) → void             // ✅ Working
 
-// Model Configuration (TODO)
-window.api.toji.getModels() → LocalModelConfig
-window.api.toji.setModels(models) → void
+// Note: No separate project/global APIs needed - ConfigManager handles context automatically
 ```
 
 #### Data Management Strategy

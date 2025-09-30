@@ -92,7 +92,7 @@ Every feature must pass through:
 ### Configuration Hierarchy
 
 1. Default SDK configuration
-2. opencode.json file configuration  
+2. opencode.json file configuration
 3. Runtime configuration overrides
 
 ### Configuration Management (PRODUCTION READY ✅)
@@ -102,14 +102,15 @@ Toji3 implements a hybrid configuration system that provides both persistence an
 - **Primary Storage**: `opencode.json` files in project root directories
 - **Runtime Application**: `OPENCODE_CONFIG_CONTENT` environment variable for immediate server restart
 - **Auto-Creation**: Missing config files are created automatically
-- **Merge Strategy**: Preserves existing settings, updates only changed values  
+- **Merge Strategy**: Preserves existing settings, updates only changed values
 - **Type Safety**: Full TypeScript coverage across configuration operations
 
 **Implementation Stack**:
+
 ```typescript
 // Backend: ConfigManager handles all operations
 await configManager.getPermissions()      // ✅ Working
-await configManager.updatePermissions()   // ✅ Working  
+await configManager.updatePermissions()   // ✅ Working
 await configManager.getModelConfig()      // ✅ Working
 await configManager.updateModelConfig()   // ✅ Working
 
@@ -118,6 +119,7 @@ await configManager.updateModelConfig()   // ✅ Working
 ```
 
 **Configuration Types Supported**:
+
 - **Permissions**: Edit/Bash/Webfetch × Allow/Ask/Deny matrix
 - **Models**: Primary model + optional small model (aligned with OpenCode SDK)
 - **Project-Specific**: Per-project opencode.json files

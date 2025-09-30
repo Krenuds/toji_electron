@@ -18,7 +18,6 @@ import type {
   PermissionLevel,
   ModelConfig
 } from './config'
-import { defaultOpencodeConfig } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:core')
@@ -29,11 +28,6 @@ const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
   edit: 'ask',
   bash: 'ask',
   webfetch: 'ask'
-}
-
-const DEFAULT_MODEL_SELECTION: ModelConfig = {
-  model: defaultOpencodeConfig.model ?? 'opencode/grok-code',
-  ...(defaultOpencodeConfig.small_model ? { small_model: defaultOpencodeConfig.small_model } : {})
 }
 
 type ConfigProvidersResponse = {
@@ -759,40 +753,6 @@ export class Toji extends EventEmitter {
       throw new Error('Config provider not initialized')
     }
     return config.setDefaultOpencodePermissions(permissions)
-  }
-
-  // Default model template used when no project config is available
-  async getDefaultModel(): Promise<ModelConfig> {
-    log('Getting global default model configuration')
-    const config = this._config
-    if (!config) {
-      log('No config provider available, returning default model')
-      return DEFAULT_MODEL_SELECTION
-    }
-    try {
-      const defaultModel = config.getDefaultOpencodeModel()
-      log('Retrieved global default model: %o', defaultModel)
-      return defaultModel
-    } catch (error) {
-      log('ERROR: Failed to get default model: %o', error)
-      throw error
-    }
-  }
-
-  async updateDefaultModel(selection: Partial<ModelConfig>): Promise<ModelConfig> {
-    log('Updating global default model configuration: %o', selection)
-    const config = this._config
-    if (!config) {
-      throw new Error('Config provider not initialized')
-    }
-    try {
-      const updatedModel = config.setDefaultOpencodeModel(selection)
-      log('Global default model updated successfully: %o', updatedModel)
-      return updatedModel
-    } catch (error) {
-      log('ERROR: Failed to update default model: %o', error)
-      throw error
-    }
   }
 }
 
