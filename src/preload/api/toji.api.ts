@@ -2,6 +2,7 @@
 import { ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { Message, Part } from '@opencode-ai/sdk'
 import type { Session, ServerStatus } from '../../main/toji/types'
+import type { PermissionConfig, PermissionLevel, PermissionType } from '../../main/toji/config'
 
 export const tojiAPI = {
   // Check if Toji is ready
@@ -111,6 +112,17 @@ export const tojiAPI = {
     projectPath?: string
     rollbackPerformed?: boolean
   }> => ipcRenderer.invoke('toji:initializeProject', config),
+
+  // Permission management
+  getPermissions: (): Promise<PermissionConfig> => ipcRenderer.invoke('toji:getPermissions'),
+  updatePermissions: (permissions: Partial<PermissionConfig>): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('toji:updatePermissions', permissions),
+  setPermission: (type: PermissionType, level: PermissionLevel): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('toji:setPermission', type, level),
+  getDefaultPermissions: (): Promise<PermissionConfig> =>
+    ipcRenderer.invoke('toji:getDefaultPermissions'),
+  updateDefaultPermissions: (permissions: Partial<PermissionConfig>): Promise<PermissionConfig> =>
+    ipcRenderer.invoke('toji:updateDefaultPermissions', permissions),
 
   // Check if git is available
   checkGitAvailable: (): Promise<boolean> => ipcRenderer.invoke('toji:checkGitAvailable')

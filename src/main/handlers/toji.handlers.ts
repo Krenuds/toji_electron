@@ -302,4 +302,27 @@ export function registerTojiHandlers(toji: Toji): void {
       throw error
     }
   })
+
+  // Get default permissions template for new projects
+  ipcMain.handle('toji:getDefaultPermissions', async () => {
+    try {
+      return await toji.getDefaultPermissions()
+    } catch (error) {
+      console.error('Get default permissions error:', error)
+      throw error
+    }
+  })
+
+  // Update default permissions template stored locally
+  ipcMain.handle(
+    'toji:updateDefaultPermissions',
+    async (_, permissions: Partial<PermissionConfig>) => {
+      try {
+        return await toji.updateDefaultPermissions(permissions)
+      } catch (error) {
+        console.error('Update default permissions error:', error)
+        throw error
+      }
+    }
+  )
 }

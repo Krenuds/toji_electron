@@ -1,5 +1,6 @@
 import Store from 'electron-store'
 import path from 'path'
+import type { PermissionConfig } from '../toji/config'
 
 interface AppConfig {
   discord?: {
@@ -10,6 +11,17 @@ interface AppConfig {
     current?: string // Currently active project path
     activeSessions: Record<string, string> // Active session ID per project path
   }
+  opencode?: {
+    defaults?: {
+      permissions?: PermissionConfig
+    }
+  }
+}
+
+const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
+  edit: 'ask',
+  bash: 'ask',
+  webfetch: 'ask'
 }
 
 export class ConfigProvider {
@@ -21,6 +33,11 @@ export class ConfigProvider {
         projects: {
           recent: [],
           activeSessions: {}
+        },
+        opencode: {
+          defaults: {
+            permissions: DEFAULT_PERMISSION_TEMPLATE
+          }
         }
       },
       // Enable encryption for sensitive data like Discord token
@@ -36,6 +53,34 @@ export class ConfigProvider {
     // Use current working directory as default
     // This provides a sensible fallback that always exists
     return process.cwd()
+  }
+
+  // ==========================================
+  // OpenCode Default Permissions Management
+  // ==========================================
+
+  getDefaultOpencodePermissions(): PermissionConfig {
+    const permissions = this.store.get('opencode.defaults.permissions')
+    if (!permissions) {
+      this.store.set('opencode.defaults.permissions', DEFAULT_PERMISSION_TEMPLATE)
+      return DEFAULT_PERMISSION_TEMPLATE
+    }
+    return {
+      edit: permissions.edit ?? 'ask',
+      bash: permissions.bash ?? 'ask',
+      webfetch: permissions.webfetch ?? 'ask'
+    }
+  }
+
+  setDefaultOpencodePermissions(permissions: Partial<PermissionConfig>): PermissionConfig {
+    const current = this.getDefaultOpencodePermissions()
+    const updated: PermissionConfig = {
+      edit: permissions.edit ?? current.edit,
+      bash: permissions.bash ?? current.bash,
+      webfetch: permissions.webfetch ?? current.webfetch
+    }
+    this.store.set('opencode.defaults.permissions', updated)
+    return updated
   }
 
   /**

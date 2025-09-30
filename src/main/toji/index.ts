@@ -18,6 +18,12 @@ const log = createFileDebugLogger('toji:core')
 const logClient = createFileDebugLogger('toji:client')
 const logChat = createFileDebugLogger('toji:chat')
 
+const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
+  edit: 'ask',
+  bash: 'ask',
+  webfetch: 'ask'
+}
+
 // Define typed events emitted by Toji
 interface TojiEvents {
   'project:opened': { path: string; name: string }
@@ -670,6 +676,26 @@ export class Toji extends EventEmitter {
   // Set a single permission (convenience method)
   async setPermission(type: PermissionType, level: PermissionLevel): Promise<void> {
     return this.configManager.setPermission(type, level)
+  }
+
+  // Get default permissions template used for new projects
+  async getDefaultPermissions(): Promise<PermissionConfig> {
+    const config = this._config
+    if (!config) {
+      return DEFAULT_PERMISSION_TEMPLATE
+    }
+    return config.getDefaultOpencodePermissions()
+  }
+
+  // Update default permissions template and return the result
+  async updateDefaultPermissions(
+    permissions: Partial<PermissionConfig>
+  ): Promise<PermissionConfig> {
+    const config = this._config
+    if (!config) {
+      throw new Error('Config provider not initialized')
+    }
+    return config.setDefaultOpencodePermissions(permissions)
   }
 }
 
