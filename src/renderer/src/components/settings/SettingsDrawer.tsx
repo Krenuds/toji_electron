@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Drawer, VStack, HStack, Text, Button, Separator, Spinner, Box } from '@chakra-ui/react'
+import {
+  Drawer,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  Separator,
+  Spinner,
+  Box,
+  Field
+} from '@chakra-ui/react'
 import { LuX, LuSave, LuRotateCcw } from 'react-icons/lu'
 
 // Define types locally since we can't import from preload directly
@@ -7,6 +17,12 @@ interface LocalPermissionConfig {
   edit?: 'allow' | 'ask' | 'deny'
   bash?: 'allow' | 'ask' | 'deny'
   webfetch?: 'allow' | 'ask' | 'deny'
+}
+
+interface LocalModelConfig {
+  plan?: string
+  write?: string
+  chat?: string
 }
 
 interface SettingsDrawerProps {
@@ -21,6 +37,11 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
     edit: 'ask',
     bash: 'ask',
     webfetch: 'ask'
+  })
+  const [models, setModels] = useState<LocalModelConfig>({
+    plan: 'opencode/grok-code',
+    write: 'opencode/grok-code',
+    chat: 'opencode/grok-code'
   })
 
   // Load current permissions when drawer opens
@@ -75,6 +96,81 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
       bash: 'ask',
       webfetch: 'ask'
     })
+    setModels({
+      plan: 'opencode/grok-code',
+      write: 'opencode/grok-code',
+      chat: 'opencode/grok-code'
+    })
+  }
+
+  const renderModelSelection = (): React.JSX.Element => {
+    const availableModels = [
+      { value: 'opencode/grok-code', label: 'Grok Code (Default)' },
+      { value: 'opencode/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
+      { value: 'opencode/gpt-4o', label: 'GPT-4o' },
+      { value: 'opencode/gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+      { value: 'opencode/llama-3.1-70b', label: 'Llama 3.1 70B' }
+    ]
+
+    const modelTypes = [
+      {
+        key: 'plan' as const,
+        label: 'Plan',
+        description: 'Model used for project planning and architecture decisions'
+      },
+      {
+        key: 'write' as const,
+        label: 'Write',
+        description: 'Model used for code generation and implementation'
+      },
+      {
+        key: 'chat' as const,
+        label: 'Chat',
+        description: 'Model used for interactive conversations and Q&A'
+      }
+    ]
+
+    return (
+      <VStack align="stretch" gap={4}>
+        {modelTypes.map((modelType) => (
+          <Box key={modelType.key}>
+            <Text color="app.light" fontSize="sm" fontWeight="medium" mb={1}>
+              {modelType.label}
+            </Text>
+            <Text color="app.text" fontSize="xs" mb={3}>
+              {modelType.description}
+            </Text>
+            <Field.Root>
+              <select
+                value={models[modelType.key] || 'opencode/grok-code'}
+                onChange={(e) => {
+                  setModels((prev) => ({
+                    ...prev,
+                    [modelType.key]: e.target.value
+                  }))
+                }}
+                style={{
+                  background: 'var(--chakra-colors-app-dark)',
+                  border: '1px solid var(--chakra-colors-app-border)',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  color: 'var(--chakra-colors-app-light)',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              >
+                {availableModels.map((model) => (
+                  <option key={model.value} value={model.value}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+            </Field.Root>
+          </Box>
+        ))}
+      </VStack>
+    )
   }
 
   const renderRoutingMatrix = (): React.JSX.Element => {
@@ -229,12 +325,19 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
 
               <Separator borderColor="app.border" />
 
-              {/* Future settings sections can go here */}
-              <Box>
-                <Text color="app.text" fontSize="sm" textAlign="center" py={4}>
-                  More settings coming soon...
-                </Text>
-              </Box>
+              {/* Model Selection Section */}
+              <VStack align="stretch" gap={4}>
+                <Box>
+                  <Text color="app.light" fontSize="md" fontWeight="medium" mb={1}>
+                    Model Selection
+                  </Text>
+                  <Text color="app.text" fontSize="sm">
+                    Choose different AI models for specific tasks
+                  </Text>
+                </Box>
+
+                {renderModelSelection()}
+              </VStack>
             </VStack>
           </Drawer.Body>
 
