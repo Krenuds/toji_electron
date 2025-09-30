@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Drawer,
   VStack,
@@ -28,11 +28,20 @@ interface LocalModelConfig {
 interface SettingsDrawerProps {
   isOpen: boolean
   onClose: () => void
+  mode?: 'default' | 'project'
+  projectPath?: string
 }
 
-export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.JSX.Element {
+export function SettingsDrawer({
+  isOpen,
+  onClose,
+  mode = 'default',
+  projectPath
+}: SettingsDrawerProps): React.JSX.Element {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const isProjectMode = mode === 'project'
   const [permissions, setPermissions] = useState<LocalPermissionConfig>({
     edit: 'ask',
     bash: 'ask',
@@ -44,18 +53,15 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
     chat: 'opencode/grok-code'
   })
 
-  // Load current permissions when drawer opens
-  useEffect(() => {
-    if (isOpen) {
-      loadPermissions()
-    }
-  }, [isOpen])
-
-  const loadPermissions = async (): Promise<void> => {
+  const loadPermissions = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
-      // Check if we have the API available - this might not be implemented yet
-      if (window.api?.toji?.getPermissions) {
+      // Stub: Project-specific permissions will be implemented later
+      if (isProjectMode && projectPath) {
+        // TODO: Implement project-specific permission loading
+        console.log(`Loading project permissions for: ${projectPath}`)
+        // For now, use defaults
+      } else if (!isProjectMode && window.api?.toji?.getPermissions) {
         const currentPermissions = await window.api.toji.getPermissions()
         setPermissions({
           edit: currentPermissions.edit || 'ask',
@@ -64,27 +70,38 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
         })
       }
     } catch (error) {
-      console.error('Failed to load permissions:', error)
+      console.error(`Failed to load ${mode} permissions:`, error)
       // Use defaults on error
     } finally {
       setLoading(false)
     }
-  }
+  }, [isProjectMode, projectPath, mode])
+
+  // Load current permissions when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      loadPermissions()
+    }
+  }, [isOpen, loadPermissions])
 
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     try {
-      // Check if we have the API available
-      if (window.api?.toji?.updatePermissions) {
+      // Stub: Project-specific permissions will be implemented later
+      if (isProjectMode && projectPath) {
+        // TODO: Implement project-specific permission saving
+        console.log(`Saving project permissions for: ${projectPath}`, permissions)
+        onClose()
+      } else if (!isProjectMode && window.api?.toji?.updatePermissions) {
         await window.api.toji.updatePermissions(permissions)
         onClose()
       } else {
-        console.log('Permissions updated (API not available):', permissions)
+        console.log(`${mode} permissions updated (API not available):`, permissions)
         // For now, just close the drawer
         onClose()
       }
     } catch (error) {
-      console.error('Failed to save permissions:', error)
+      console.error(`Failed to save ${mode} permissions:`, error)
     } finally {
       setSaving(false)
     }
@@ -274,7 +291,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
     <Drawer.Root
       open={isOpen}
       onOpenChange={({ open }) => !open && onClose()}
-      placement="end"
+      placement="start"
       size="md"
     >
       <Drawer.Backdrop />
@@ -284,11 +301,18 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
             <HStack justify="space-between" align="center">
               <VStack align="start" gap={0}>
                 <Drawer.Title color="app.light" fontSize="lg" fontWeight="bold">
-                  Settings
+                  {isProjectMode ? 'Project Settings' : 'Default Settings'}
                 </Drawer.Title>
                 <Text color="app.text" fontSize="sm">
-                  Configure default permissions and preferences
+                  {isProjectMode
+                    ? `Configure permissions and preferences for this project`
+                    : 'Configure default permissions and preferences for new projects'}
                 </Text>
+                {isProjectMode && projectPath && (
+                  <Text color="app.text" fontSize="xs" mt={1}>
+                    Project: {projectPath.split(/[/\\]/).pop()}
+                  </Text>
+                )}
               </VStack>
               <Drawer.CloseTrigger asChild>
                 <Button variant="ghost" size="sm" color="app.text">
@@ -304,10 +328,12 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
               <VStack align="stretch" gap={4}>
                 <Box>
                   <Text color="app.light" fontSize="md" fontWeight="medium" mb={1}>
-                    Default Permissions
+                    {isProjectMode ? 'Project Permissions' : 'Default Permissions'}
                   </Text>
                   <Text color="app.text" fontSize="sm">
-                    Control how Toji handles different types of operations by default
+                    {isProjectMode
+                      ? 'Control how Toji handles operations in this specific project'
+                      : 'Control how Toji handles different types of operations by default'}
                   </Text>
                 </Box>
 

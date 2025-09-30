@@ -11,7 +11,7 @@ Please review each topic below and mark the option(s) that best match your expec
 ## 2. Settings Surface Style (pick one)
 
 - [ ] Centered modal dialog (blocks the main content)
-- [x ] Right-side drawer that keeps chat visible
+- [x ] Left-side drawer DEFAULT settings that keeps chat visible
 - [ ] Dedicated full-page view reachable from the gear icon
 
 ## 3. Scope of the First Release (choose all that apply)

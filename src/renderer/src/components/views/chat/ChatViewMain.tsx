@@ -11,11 +11,13 @@ import {
   Spinner,
   Center
 } from '@chakra-ui/react'
-import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo, LuX } from 'react-icons/lu'
+import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo, LuX, LuSettings } from 'react-icons/lu'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
+import { SettingsDrawer } from '../../settings/SettingsDrawer'
 
 export function ChatViewMain(): React.JSX.Element {
   const [messageInput, setMessageInput] = useState('')
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -267,23 +269,42 @@ export function ChatViewMain(): React.JSX.Element {
               </Button>
             )}
             {currentProject && (
-              <Badge
-                size="sm"
-                colorPalette="gray"
-                variant="subtle"
-                cursor="pointer"
-                onClick={closeProject}
-                _hover={{
-                  bg: 'gray.600',
-                  color: 'white'
-                }}
-                title="Close project and stop server"
-              >
-                <HStack gap={1}>
-                  <LuX size={12} />
-                  <Text>Close Project</Text>
-                </HStack>
-              </Badge>
+              <>
+                <Badge
+                  size="sm"
+                  colorPalette="blue"
+                  variant="subtle"
+                  cursor="pointer"
+                  onClick={() => setIsProjectSettingsOpen(true)}
+                  _hover={{
+                    bg: 'blue.600',
+                    color: 'white'
+                  }}
+                  title="Project-specific settings"
+                >
+                  <HStack gap={1}>
+                    <LuSettings size={12} />
+                    <Text>Project Settings</Text>
+                  </HStack>
+                </Badge>
+                <Badge
+                  size="sm"
+                  colorPalette="gray"
+                  variant="subtle"
+                  cursor="pointer"
+                  onClick={closeProject}
+                  _hover={{
+                    bg: 'gray.600',
+                    color: 'white'
+                  }}
+                  title="Close project and stop server"
+                >
+                  <HStack gap={1}>
+                    <LuX size={12} />
+                    <Text>Close Project</Text>
+                  </HStack>
+                </Badge>
+              </>
             )}
             {messageError && (
               <Button
@@ -389,6 +410,14 @@ export function ChatViewMain(): React.JSX.Element {
           </Text>
         </Card.Body>
       </Card.Root>
+
+      {/* Project Settings Drawer */}
+      <SettingsDrawer
+        isOpen={isProjectSettingsOpen}
+        onClose={() => setIsProjectSettingsOpen(false)}
+        mode="project"
+        projectPath={currentProject?.path}
+      />
     </VStack>
   )
 }
