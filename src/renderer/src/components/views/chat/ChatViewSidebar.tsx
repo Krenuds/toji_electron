@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Box, VStack, HStack, Text, Button, Separator, Spinner, IconButton } from '@chakra-ui/react'
-import { LuTrash2, LuRefreshCw, LuPlus, LuCheck, LuInfo } from 'react-icons/lu'
+import { LuTrash2, LuRefreshCw, LuPlus, LuCheck, LuInfo, LuSettings } from 'react-icons/lu'
 import { SidebarContainer } from '../../SidebarContainer'
 import { SidebarHeader } from '../../shared/SidebarHeader'
 import { SidebarSection } from '../../shared/SidebarSection'
@@ -187,7 +187,24 @@ export function ChatViewSidebar(): React.JSX.Element {
   return (
     <SidebarContainer>
       <VStack align="stretch" gap={4} minW="0">
-        <SidebarHeader title="Chat with Toji" subtitle="AI-powered coding assistant" />
+        <SidebarHeader
+          title="Chat with Toji"
+          subtitle="AI-powered coding assistant"
+          action={
+            <IconButton
+              aria-label="Open settings"
+              size="sm"
+              variant="ghost"
+              color="app.light"
+              _hover={{ bg: 'transparent', color: 'app.accent' }}
+              _active={{ bg: 'transparent', color: 'app.accent' }}
+              _focusVisible={{ boxShadow: '0 0 0 2px var(--chakra-colors-app-accent)' }}
+              borderRadius="md"
+            >
+              <LuSettings size={16} />
+            </IconButton>
+          }
+        />
 
         <Separator borderColor="app.border" />
 
