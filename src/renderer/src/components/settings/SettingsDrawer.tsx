@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Drawer,
-  VStack,
-  HStack,
-  Text,
-  Button,
-  Separator,
-  Spinner,
-  Card,
-  RadioGroup,
-  Box
-} from '@chakra-ui/react'
+import { Drawer, VStack, HStack, Text, Button, Separator, Spinner, Box } from '@chakra-ui/react'
 import { LuX, LuSave, LuRotateCcw } from 'react-icons/lu'
 
 // Define types locally since we can't import from preload directly
@@ -88,57 +77,100 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
     })
   }
 
-  const renderPermissionRow = (
-    type: 'edit' | 'bash' | 'webfetch',
-    label: string,
-    description: string
-  ): React.JSX.Element => {
+  const renderRoutingMatrix = (): React.JSX.Element => {
+    const permissionTypes = [
+      { key: 'edit' as const, label: 'File Editing' },
+      { key: 'bash' as const, label: 'Shell Commands' },
+      { key: 'webfetch' as const, label: 'Web Requests' }
+    ]
+
+    const permissionLevels = [
+      { value: 'allow' as const, label: 'Allow' },
+      { value: 'ask' as const, label: 'Ask' },
+      { value: 'deny' as const, label: 'Deny' }
+    ]
+
     return (
-      <Card.Root key={type} bg="app.dark" border="1px solid" borderColor="app.border">
-        <Card.Body p={4}>
-          <VStack align="stretch" gap={3}>
-            <Box>
+      <Box
+        bg="app.dark"
+        border="1px solid"
+        borderColor="app.border"
+        borderRadius="md"
+        overflow="hidden"
+      >
+        {/* Header Row */}
+        <HStack
+          bg="app.medium"
+          borderBottom="1px solid"
+          borderColor="app.border"
+          px={4}
+          py={3}
+          gap={0}
+        >
+          <Box w="140px" flexShrink={0}>
+            <Text color="app.light" fontSize="sm" fontWeight="medium">
+              Permission
+            </Text>
+          </Box>
+          {permissionLevels.map((level) => (
+            <Box key={level.value} flex={1} textAlign="center">
               <Text color="app.light" fontSize="sm" fontWeight="medium">
-                {label}
-              </Text>
-              <Text color="app.text" fontSize="xs">
-                {description}
+                {level.label}
               </Text>
             </Box>
+          ))}
+        </HStack>
 
-            <RadioGroup.Root
-              value={permissions[type] || 'ask'}
-              onValueChange={(details) => {
-                setPermissions((prev) => ({
-                  ...prev,
-                  [type]: details.value as 'allow' | 'ask' | 'deny'
-                }))
-              }}
-            >
-              <HStack gap={6}>
-                <RadioGroup.Item value="allow">
-                  <RadioGroup.ItemControl />
-                  <RadioGroup.ItemText color="green.400" fontSize="sm">
-                    Allow
-                  </RadioGroup.ItemText>
-                </RadioGroup.Item>
-                <RadioGroup.Item value="ask">
-                  <RadioGroup.ItemControl />
-                  <RadioGroup.ItemText color="yellow.400" fontSize="sm">
-                    Ask
-                  </RadioGroup.ItemText>
-                </RadioGroup.Item>
-                <RadioGroup.Item value="deny">
-                  <RadioGroup.ItemControl />
-                  <RadioGroup.ItemText color="red.400" fontSize="sm">
-                    Deny
-                  </RadioGroup.ItemText>
-                </RadioGroup.Item>
-              </HStack>
-            </RadioGroup.Root>
-          </VStack>
-        </Card.Body>
-      </Card.Root>
+        {/* Permission Rows */}
+        {permissionTypes.map((permType, index) => (
+          <HStack
+            key={permType.key}
+            px={4}
+            py={3}
+            gap={0}
+            borderBottom={index < permissionTypes.length - 1 ? '1px solid' : 'none'}
+            borderColor="app.border"
+            _hover={{ bg: 'rgba(255,255,255,0.02)' }}
+          >
+            <Box w="140px" flexShrink={0}>
+              <Text color="app.light" fontSize="sm">
+                {permType.label}
+              </Text>
+            </Box>
+            {permissionLevels.map((level) => (
+              <Box key={level.value} flex={1} display="flex" justifyContent="center">
+                <Box
+                  as="button"
+                  onClick={() => {
+                    setPermissions((prev) => ({
+                      ...prev,
+                      [permType.key]: level.value
+                    }))
+                  }}
+                  w="20px"
+                  h="20px"
+                  borderRadius="50%"
+                  border="2px solid"
+                  borderColor={
+                    permissions[permType.key] === level.value ? 'green.500' : 'app.border'
+                  }
+                  bg={permissions[permType.key] === level.value ? 'green.500' : 'transparent'}
+                  cursor="pointer"
+                  _hover={{
+                    borderColor:
+                      permissions[permType.key] === level.value ? 'green.400' : 'app.accent'
+                  }}
+                  transition="all 0.2s"
+                >
+                  {permissions[permType.key] === level.value && (
+                    <Box w="8px" h="8px" bg="app.dark" borderRadius="50%" mx="auto" my="auto" />
+                  )}
+                </Box>
+              </Box>
+            ))}
+          </HStack>
+        ))}
+      </Box>
     )
   }
 
@@ -191,23 +223,7 @@ export function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps): React.
                     </Text>
                   </HStack>
                 ) : (
-                  <VStack gap={3} align="stretch">
-                    {renderPermissionRow(
-                      'edit',
-                      'File Editing',
-                      'Allow Toji to create, modify, or delete files in your project'
-                    )}
-                    {renderPermissionRow(
-                      'bash',
-                      'Shell Commands',
-                      'Allow Toji to execute terminal commands and scripts'
-                    )}
-                    {renderPermissionRow(
-                      'webfetch',
-                      'Web Requests',
-                      'Allow Toji to fetch content from the internet for context'
-                    )}
-                  </VStack>
+                  renderRoutingMatrix()
                 )}
               </VStack>
 
