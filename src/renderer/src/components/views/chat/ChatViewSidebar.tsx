@@ -7,6 +7,7 @@ import { SidebarSection } from '../../shared/SidebarSection'
 import { Tooltip } from '../../shared/Tooltip'
 // import { StatusBadge } from '../../StatusBadge' // Not currently used
 import { ProjectList } from './ProjectList'
+import { SettingsDrawer } from '../../settings/SettingsDrawer'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 import type { Session } from '../../../../../preload/index.d'
 
@@ -27,6 +28,7 @@ export function ChatViewSidebar(): React.JSX.Element {
 
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   // const [workingDirectory, setWorkingDirectory] = useState<string | undefined>() // Not currently used
 
   // Fetch working directory on mount and when project changes
@@ -195,7 +197,6 @@ export function ChatViewSidebar(): React.JSX.Element {
             <Tooltip
               content="Default settings"
               openDelay={150}
-              showArrow
               portalled={false}
               contentProps={{
                 bg: 'app.dark',
@@ -215,6 +216,7 @@ export function ChatViewSidebar(): React.JSX.Element {
                 _active={{ bg: 'transparent', color: 'app.accent' }}
                 _focusVisible={{ boxShadow: '0 0 0 2px var(--chakra-colors-app-accent)' }}
                 borderRadius="md"
+                onClick={() => setIsSettingsOpen(true)}
               >
                 <LuSettings size={16} />
               </IconButton>
@@ -334,6 +336,9 @@ export function ChatViewSidebar(): React.JSX.Element {
           </VStack>
         </SidebarSection>
       </VStack>
+
+      {/* Settings Drawer */}
+      <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </SidebarContainer>
   )
 }
