@@ -1,3 +1,5 @@
+import type { Session as OpencodeSession } from '@opencode-ai/sdk'
+
 // Minimal types for Toji
 
 export interface TojiConfig {
@@ -12,21 +14,15 @@ export interface TojiConfig {
   }
 }
 
-// Stub types for frontend - will be properly implemented later
-export interface Session {
-  id: string
-  title?: string
-  projectPath?: string // The project directory this session belongs to
+// SDK-backed session with UI metadata
+export type Session = OpencodeSession & {
+  projectPath?: string
+  lastActive?: Date
   created?: Date
   updated?: Date
-  version?: string
-  projectID?: string
-  directory?: string
-  time?: {
-    created?: string
-    updated?: string
-  }
 }
+
+export type { Session as OpencodeSession } from '@opencode-ai/sdk'
 
 export interface ProjectInfo {
   path: string

@@ -15,16 +15,18 @@ export class ConfigManager {
   ) {}
 
   // Get current project's configuration from OpenCode
-  async getProjectConfig(): Promise<any> {
+  async getProjectConfig(): Promise<OpencodeConfig> {
     const client = this.getClient()
     if (!client) {
       throw new Error('Client not connected to server')
     }
 
     try {
-      const config = await client.config.get()
+      const response = await client.config.get()
+      // SDK returns response wrapper, extract data
+      const config = 'data' in response ? response.data : response
       log('Retrieved project config: %o', config)
-      return config
+      return config as OpencodeConfig
     } catch (error) {
       log('ERROR: Failed to get project config: %o', error)
       throw error

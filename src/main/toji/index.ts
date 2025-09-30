@@ -10,7 +10,7 @@ import { ProjectInitializer } from './project-initializer'
 import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type { ServerStatus } from './types'
+import type { ServerStatus, Session } from './types'
 import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 
@@ -449,7 +449,7 @@ export class Toji extends EventEmitter {
   }
 
   // Session management methods for IPC
-  async listSessions(): Promise<Array<{ id: string; title?: string; projectPath?: string }>> {
+  async listSessions(): Promise<Session[]> {
     const client = this.getClient()
     if (!client) {
       throw new Error('Client not connected to server')
@@ -459,9 +459,7 @@ export class Toji extends EventEmitter {
     return sessions
   }
 
-  async createSession(
-    title?: string
-  ): Promise<{ id: string; title?: string; projectPath?: string }> {
+  async createSession(title?: string): Promise<Session> {
     const client = this.getClient()
     if (!client) {
       throw new Error('Client not connected to server')
@@ -650,7 +648,7 @@ export class Toji extends EventEmitter {
   }
 
   // Get current project's configuration from OpenCode
-  async getProjectConfig(): Promise<any> {
+  async getProjectConfig(): Promise<OpencodeConfig> {
     return this.configManager.getProjectConfig()
   }
 
