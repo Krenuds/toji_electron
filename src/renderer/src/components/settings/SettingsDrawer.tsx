@@ -21,9 +21,8 @@ interface LocalPermissionConfig {
 }
 
 interface LocalModelConfig {
-  plan?: string
-  write?: string
-  chat?: string
+  model?: string
+  small_model?: string
 }
 
 interface SettingsDrawerProps {
@@ -56,9 +55,8 @@ export function SettingsDrawer({
     webfetch: 'ask'
   })
   const [models, setModels] = useState<LocalModelConfig>({
-    plan: 'opencode/grok-code-fast-1',
-    write: 'opencode/grok-code-fast-1',
-    chat: 'opencode/grok-code-fast-1'
+    model: 'opencode/grok-code-fast-1',
+    small_model: ''
   })
 
   const loadPermissions = useCallback(async (): Promise<void> => {
@@ -85,31 +83,63 @@ export function SettingsDrawer({
     }
   }, [isProjectMode, projectPath, mode])
 
-  // Load current permissions when drawer opens
+  const loadModelSettings = useCallback(async (): Promise<void> => {
+    setLoading(true)
+    try {
+      if (isProjectMode && window.api?.toji?.getModelConfig) {
+        // Load project-specific model configuration
+        const currentModels = await window.api.toji.getModelConfig()
+        setModels({
+          model: currentModels.model || 'opencode/grok-code-fast-1',
+          small_model: currentModels.small_model || ''
+        })
+      } else if (!isProjectMode && window.api?.toji?.getDefaultModel) {
+        // Load global default model configuration
+        const defaultModels = await window.api.toji.getDefaultModel()
+        setModels({
+          model: defaultModels.model || 'opencode/grok-code-fast-1',
+          small_model: defaultModels.small_model || ''
+        })
+      }
+    } catch (error) {
+      console.error(`Failed to load ${mode} model settings:`, error)
+      // Keep existing default values on error
+    } finally {
+      setLoading(false)
+    }
+  }, [isProjectMode, mode])
+
+  // Load current permissions and models when drawer opens
   useEffect(() => {
     if (isOpen) {
       loadPermissions()
+      loadModelSettings()
     }
-  }, [isOpen, loadPermissions])
+  }, [isOpen, loadPermissions, loadModelSettings])
 
   const handleSave = async (): Promise<void> => {
     setSaving(true)
     try {
-      // Stub: Project-specific permissions will be implemented later
+      // Save permissions
       if (isProjectMode && projectPath) {
         // TODO: Implement project-specific permission saving
         console.log(`Saving project permissions for: ${projectPath}`, permissions)
-        onClose()
       } else if (!isProjectMode && window.api?.toji?.updatePermissions) {
         await window.api.toji.updatePermissions(permissions)
-        onClose()
-      } else {
-        console.log(`${mode} permissions updated (API not available):`, permissions)
-        // For now, just close the drawer
-        onClose()
       }
+
+      // Save model configuration
+      if (isProjectMode && window.api?.toji?.updateModelConfig) {
+        // Save project-specific model configuration
+        await window.api.toji.updateModelConfig(models)
+      } else if (!isProjectMode && window.api?.toji?.updateDefaultModel) {
+        // Save global default model configuration
+        await window.api.toji.updateDefaultModel(models)
+      }
+
+      onClose()
     } catch (error) {
-      console.error(`Failed to save ${mode} permissions:`, error)
+      console.error(`Failed to save ${mode} settings:`, error)
     } finally {
       setSaving(false)
     }
@@ -125,9 +155,8 @@ export function SettingsDrawer({
     const defaultModel =
       availableModels.length > 0 ? availableModels[0].value : 'opencode/grok-code-fast-1'
     setModels({
-      plan: defaultModel,
-      write: defaultModel,
-      chat: defaultModel
+      model: defaultModel,
+      small_model: ''
     })
   }
 
@@ -151,19 +180,16 @@ export function SettingsDrawer({
 
     const modelTypes = [
       {
-        key: 'plan' as const,
-        label: 'Plan',
-        description: 'Model used for project planning and architecture decisions'
+        key: 'model' as const,
+        label: 'Primary Model',
+        description: 'Main model used for most AI operations and conversations',
+        required: true
       },
       {
-        key: 'write' as const,
-        label: 'Write',
-        description: 'Model used for code generation and implementation'
-      },
-      {
-        key: 'chat' as const,
-        label: 'Chat',
-        description: 'Model used for interactive conversations and Q&A'
+        key: 'small_model' as const,
+        label: 'Small Model (Optional)',
+        description: 'Lightweight model for simple tasks like title generation',
+        required: false
       }
     ]
 
@@ -181,9 +207,11 @@ export function SettingsDrawer({
               <select
                 value={
                   models[modelType.key] ||
-                  (availableModels.length > 0
+                  (modelType.required && availableModels.length > 0
                     ? availableModels[0].value
-                    : 'opencode/grok-code-fast-1')
+                    : modelType.required
+                      ? 'opencode/grok-code-fast-1'
+                      : '')
                 }
                 onChange={(e) => {
                   setModels((prev) => ({
@@ -202,6 +230,7 @@ export function SettingsDrawer({
                   width: '100%'
                 }}
               >
+                {!modelType.required && <option value="">None (use primary model)</option>}
                 {availableModels.map((model) => (
                   <option key={model.value} value={model.value}>
                     {model.label}

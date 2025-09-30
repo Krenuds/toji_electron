@@ -1,12 +1,12 @@
 # Configuration System Implementation State
 
-**Current Status**: Dynamic Model Integration Complete
+**Current Status**: Model Configuration Aligned with OpenCode Architecture
 **Last Updated**: September 30, 2025
-**Session Focus**: Dynamic OpenCode Provider Integration with Fallback Models
+**Session Focus**: Simplified Model Selection to Match OpenCode's Actual Design
 
 ## 🎯 Implementation Overview
 
-The Toji3 configuration system has been fully implemented on the frontend with a reusable settings drawer that supports both global default settings and project-specific overrides. The architecture follows the Toji3 design principles with complete separation between presentation and business logic.
+The Toji3 configuration system has been fully implemented and aligned with OpenCode's actual architecture. The frontend now uses OpenCode's real 2-model system (primary + small) instead of the previous incorrect 3-model system (Plan/Write/Chat). This provides accurate configuration that matches how OpenCode actually works.
 
 ## 📊 Current Architecture
 
@@ -53,12 +53,13 @@ Frontend (Renderer)         IPC Boundary              Backend (Main Process)
 - **Interaction**: Direct onClick handlers, hover effects
 - **Layout**: Fixed-width columns, semantic table structure
 
-#### 3. Model Selection Interface
+#### 3. Model Selection Interface - **CORRECTED**
 
-- **Categories**: Plan, Write, Chat (each with descriptive labels)
-- **Models**: 5 OpenCode options (Grok, Claude 3.5, GPT-4o, Gemini 1.5, Llama 3.1)
-- **UI**: Native HTML selects with Chakra theming
-- **Integration**: Included in reset functionality
+- **Architecture**: Primary Model + Small Model (matches OpenCode's actual design)
+- **Primary Model**: Main model for most AI operations and conversations
+- **Small Model**: Optional lightweight model for simple tasks like title generation
+- **UI**: Native HTML selects with Chakra theming and proper labeling
+- **Integration**: Complete loading and saving functionality
 
 #### 5. Dynamic Model Integration
 
