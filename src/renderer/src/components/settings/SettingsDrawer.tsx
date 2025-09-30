@@ -11,6 +11,7 @@ import {
   Field
 } from '@chakra-ui/react'
 import { LuX, LuSave, LuRotateCcw } from 'react-icons/lu'
+import { useAvailableModels } from '../../hooks/useAvailableModels'
 
 // Define types locally since we can't import from preload directly
 interface LocalPermissionConfig {
@@ -41,6 +42,13 @@ export function SettingsDrawer({
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  // Load available models from OpenCode SDK
+  const {
+    models: availableModels,
+    loading: modelsLoading,
+    error: modelsError
+  } = useAvailableModels()
+
   const isProjectMode = mode === 'project'
   const [permissions, setPermissions] = useState<LocalPermissionConfig>({
     edit: 'ask',
@@ -48,9 +56,9 @@ export function SettingsDrawer({
     webfetch: 'ask'
   })
   const [models, setModels] = useState<LocalModelConfig>({
-    plan: 'opencode/grok-code',
-    write: 'opencode/grok-code',
-    chat: 'opencode/grok-code'
+    plan: 'opencode/grok-code-fast-1',
+    write: 'opencode/grok-code-fast-1',
+    chat: 'opencode/grok-code-fast-1'
   })
 
   const loadPermissions = useCallback(async (): Promise<void> => {
@@ -113,21 +121,33 @@ export function SettingsDrawer({
       bash: 'ask',
       webfetch: 'ask'
     })
+    // Reset to first available model or fallback
+    const defaultModel =
+      availableModels.length > 0 ? availableModels[0].value : 'opencode/grok-code-fast-1'
     setModels({
-      plan: 'opencode/grok-code',
-      write: 'opencode/grok-code',
-      chat: 'opencode/grok-code'
+      plan: defaultModel,
+      write: defaultModel,
+      chat: defaultModel
     })
   }
 
   const renderModelSelection = (): React.JSX.Element => {
-    const availableModels = [
-      { value: 'opencode/grok-code', label: 'Grok Code (Default)' },
-      { value: 'opencode/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-      { value: 'opencode/gpt-4o', label: 'GPT-4o' },
-      { value: 'opencode/gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-      { value: 'opencode/llama-3.1-70b', label: 'Llama 3.1 70B' }
-    ]
+    // Show loading state while models are being fetched
+    if (modelsLoading) {
+      return (
+        <Box textAlign="center" py={4}>
+          <Spinner size="sm" color="app.accent" />
+          <Text color="app.text" fontSize="sm" mt={2}>
+            Loading available models...
+          </Text>
+        </Box>
+      )
+    }
+
+    // Show error state if models failed to load (fallbacks are still available)
+    if (modelsError) {
+      console.warn('Model loading error (using fallbacks):', modelsError)
+    }
 
     const modelTypes = [
       {
@@ -159,7 +179,12 @@ export function SettingsDrawer({
             </Text>
             <Field.Root>
               <select
-                value={models[modelType.key] || 'opencode/grok-code'}
+                value={
+                  models[modelType.key] ||
+                  (availableModels.length > 0
+                    ? availableModels[0].value
+                    : 'opencode/grok-code-fast-1')
+                }
                 onChange={(e) => {
                   setModels((prev) => ({
                     ...prev,
