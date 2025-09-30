@@ -9,6 +9,9 @@ import type {
   ModelConfig
 } from './config'
 import { createFileDebugLogger } from '../utils/logger'
+import { writeFile, readFile } from 'fs/promises'
+import { join } from 'path'
+import { existsSync } from 'fs'
 
 const log = createFileDebugLogger('toji:config-manager')
 
@@ -39,6 +42,25 @@ export class ConfigManager {
     }
   }
 
+  // Ensure project has opencode.json file for persistence
+  private async ensureConfigFile(directory: string): Promise<void> {
+    const configPath = join(directory, 'opencode.json')
+    if (!existsSync(configPath)) {
+      log('No opencode.json found, creating default config file')
+
+      // Get current runtime config to preserve it
+      try {
+        const currentConfig = await this.getProjectConfig()
+        await writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8')
+        log('Created opencode.json with current runtime config')
+      } catch (error) {
+        log('WARNING: Could not get current config, creating minimal file: %o', error)
+        await writeFile(configPath, JSON.stringify({}, null, 2), 'utf-8')
+        log('Created minimal opencode.json file')
+      }
+    }
+  }
+
   // Update project configuration and restart server
   async updateProjectConfig(config: OpencodeConfig): Promise<void> {
     const currentDir = this.getCurrentDirectory()
@@ -50,6 +72,13 @@ export class ConfigManager {
     log('New config: %o', config)
 
     try {
+      // Ensure the project has an opencode.json file
+      await this.ensureConfigFile(currentDir)
+
+      // CRITICAL: Persist configuration to opencode.json file for app restart persistence
+      await this.persistConfigToFile(currentDir, config)
+      log('Configuration persisted to opencode.json')
+
       // Restart server with new config
       await this.serverRestart(config, currentDir)
       log('Server restarted with new config')
@@ -59,6 +88,39 @@ export class ConfigManager {
       log('Client reconnected successfully')
     } catch (error) {
       log('ERROR: Failed to update project config: %o', error)
+      throw error
+    }
+  }
+
+  // Persist configuration to opencode.json file for permanent storage
+  private async persistConfigToFile(directory: string, config: OpencodeConfig): Promise<void> {
+    const configPath = join(directory, 'opencode.json')
+    log('Persisting config to file: %s', configPath)
+
+    try {
+      // Read existing config if it exists
+      let existingConfig: Partial<OpencodeConfig> = {}
+      if (existsSync(configPath)) {
+        try {
+          const existingContent = await readFile(configPath, 'utf-8')
+          existingConfig = JSON.parse(existingContent)
+          log('Loaded existing config from file')
+        } catch (error) {
+          log('WARNING: Could not parse existing config file, creating new: %o', error)
+        }
+      }
+
+      // Merge with existing configuration to preserve other settings
+      const mergedConfig = {
+        ...existingConfig,
+        ...config
+      }
+
+      // Write updated configuration to file
+      await writeFile(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8')
+      log('Configuration successfully written to: %s', configPath)
+    } catch (error) {
+      log('ERROR: Failed to persist config to file: %o', error)
       throw error
     }
   }

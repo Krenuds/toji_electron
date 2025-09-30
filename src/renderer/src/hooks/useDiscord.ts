@@ -24,12 +24,6 @@ export function useDiscord(): UseDiscordReturn {
   const [hasToken, setHasToken] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Check for token on mount
-  useEffect(() => {
-    checkToken()
-    refreshStatus()
-  }, [])
-
   const checkToken = async (): Promise<void> => {
     try {
       const tokenExists = await window.api.discord.hasToken()
@@ -40,7 +34,7 @@ export function useDiscord(): UseDiscordReturn {
     }
   }
 
-  const refreshStatus = async (): Promise<void> => {
+  const refreshStatus = useCallback(async (): Promise<void> => {
     try {
       // Check both token and status when refreshing
       await checkToken()
@@ -50,7 +44,13 @@ export function useDiscord(): UseDiscordReturn {
       console.error('Failed to get Discord status:', err)
       setStatus({ connected: false })
     }
-  }
+  }, [])
+
+  // Check for token on mount
+  useEffect(() => {
+    checkToken()
+    refreshStatus()
+  }, [refreshStatus])
 
   const connect = useCallback(async () => {
     if (isConnecting) return
@@ -70,7 +70,7 @@ export function useDiscord(): UseDiscordReturn {
     } finally {
       setIsConnecting(false)
     }
-  }, [isConnecting])
+  }, [isConnecting, refreshStatus])
 
   const disconnect = useCallback(async () => {
     try {
@@ -98,7 +98,7 @@ export function useDiscord(): UseDiscordReturn {
       return () => clearInterval(interval)
     }
     return undefined
-  }, [status.connected])
+  }, [status.connected, refreshStatus])
 
   return {
     status,
