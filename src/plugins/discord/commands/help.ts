@@ -17,18 +17,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         inline: false
       },
       {
-        name: '💬 /chat [message]',
-        value: 'Send a message directly using the slash command',
-        inline: false
-      },
-      {
         name: '❓ /help',
         value: 'Show this help message',
-        inline: false
-      },
-      {
-        name: '📊 /status',
-        value: 'Check Toji and OpenCode connection status',
         inline: false
       },
       {
@@ -37,18 +27,14 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         inline: false
       },
       {
-        name: '🎯 /init',
-        value: 'Initialize Discord channels from saved state',
-        inline: false
-      },
-      {
-        name: '🔄 /refresh',
-        value: 'Refresh and sync Discord channels with state',
+        name: '🚀 /init',
+        value:
+          'Rebuild all Discord channels from scratch (deletes all channels in Toji Desktop category and recreates from current Toji projects)',
         inline: false
       },
       {
         name: '📂 /project [subcommand]',
-        value: 'Project management (list, add, remove, switch)',
+        value: 'Project management (list, add - coming soon)',
         inline: false
       }
     ],

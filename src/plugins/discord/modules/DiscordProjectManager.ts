@@ -51,10 +51,10 @@ export class DiscordProjectManager implements DiscordModule {
   }
 
   /**
-   * Load saved state and sync with Discord channels
+   * Load saved state from disk
    */
   async loadAndSyncState(): Promise<void> {
-    log('Loading and syncing state with Discord')
+    log('Loading saved state')
 
     const state = await loadState()
 
@@ -68,22 +68,14 @@ export class DiscordProjectManager implements DiscordModule {
       })
     }
 
-    // If state is empty, auto-import all Toji projects
-    if (this.projectChannels.size === 0) {
-      log('No projects in state, auto-importing from Toji')
-      await this.autoImportTojiProjects()
-    } else {
-      // Sync with Discord channels
-      await this.syncWithDiscord()
-    }
-
     // Restore active project if it exists
     if (state.activeProjectChannelId && this.projectChannels.has(state.activeProjectChannelId)) {
       this.activeChannelId = state.activeProjectChannelId
-      // No visual indicators needed - we auto-switch based on channel context
     }
 
-    log('State loaded and synced: %d projects', this.projectChannels.size)
+    log('State loaded: %d projects', this.projectChannels.size)
+
+    // Note: No auto-sync or auto-import. Use /init to rebuild channels.
   }
 
   /**
@@ -133,8 +125,7 @@ export class DiscordProjectManager implements DiscordModule {
     for (const channel of existingChannels) {
       if (!this.projectChannels.has(channel.id)) {
         log('Orphaned channel found: %s (%s)', channel.name, channel.id)
-        // We'll keep orphaned channels but log them
-        // User can manually remove with /refresh --clean
+        // We'll keep orphaned channels but log them for manual cleanup
       }
     }
 
@@ -145,7 +136,7 @@ export class DiscordProjectManager implements DiscordModule {
   }
 
   /**
-   * Initialize Discord channels from scratch
+   * Initialize Discord channels from scratch - complete rebuild
    */
   async initializeChannels(): Promise<void> {
     if (!this.client) {
@@ -153,33 +144,50 @@ export class DiscordProjectManager implements DiscordModule {
       return
     }
 
-    log('Initializing Discord channels from current state')
+    log('Rebuilding Discord channels from Toji projects')
 
-    // Ensure category exists
-    const category = await this.categoryManager.getOrCreateCategory()
+    // Step 1: Clear all existing channels and state
+    await this.categoryManager.deleteAllProjectChannels()
+    this.projectChannels.clear()
+    this.activeChannelId = undefined
 
-    // Clear all existing project channels
-    const existingChannels = await this.categoryManager.getProjectChannels(category.guild)
-    for (const channel of existingChannels) {
-      log('Removing existing channel: %s', channel.name)
-      await channel.delete('Reinitializing project channels')
+    // Step 2: Get all available projects from Toji
+    const tojiProjects = await this.toji.getAvailableProjects()
+    log('Found %d projects in Toji to rebuild', tojiProjects.length)
+
+    // Step 3: Create channels for each Toji project
+    for (const project of tojiProjects) {
+      try {
+        const name = project.worktree.split(/[/\\\\]/).pop() || 'unnamed-project'
+
+        // Skip invalid project names
+        if (!name || name === '/' || name.length < 2) {
+          log('Skipping invalid project: %s', project.worktree)
+          continue
+        }
+
+        const channelName = name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+        const channel = await this.categoryManager.createProjectChannel(channelName)
+
+        // Store mapping
+        const projectInfo: ProjectChannel = {
+          channelId: channel.id,
+          projectPath: project.worktree,
+          projectName: name,
+          isActive: false
+        }
+        this.projectChannels.set(channel.id, projectInfo)
+
+        log('Created channel for project: %s -> %s', name, channel.id)
+      } catch (error) {
+        log('ERROR: Failed to create channel for project %s: %o', project.worktree, error)
+      }
     }
 
-    // Create channels for all projects in state
-    for (const project of this.projectChannels.values()) {
-      log('Creating channel for project: %s', project.projectName)
-      const channel = await this.categoryManager.createProjectChannel(project.projectName)
-
-      // Update channel ID in our mapping
-      project.channelId = channel.id
-    }
-
-    // No visual indicators needed - we auto-switch based on channel context
-
-    // Save state
+    // Step 4: Save the new state
     await this.persistState()
 
-    log('Initialization complete')
+    log('Channel rebuild complete: %d channels created', this.projectChannels.size)
   }
 
   /**
@@ -371,58 +379,6 @@ export class DiscordProjectManager implements DiscordModule {
       }
     }
     return state
-  }
-
-  /**
-   * Auto-import all Toji projects on first startup
-   */
-  private async autoImportTojiProjects(): Promise<void> {
-    try {
-      const tojiProjects = await this.toji.getAvailableProjects()
-
-      if (tojiProjects.length === 0) {
-        log('No projects found in Toji to import')
-        return
-      }
-
-      log('Auto-importing %d Toji projects', tojiProjects.length)
-
-      for (const project of tojiProjects) {
-        try {
-          const name = project.worktree.split(/[/\\]/).pop() || project.worktree
-
-          // Skip invalid project names
-          if (!name || name === '/' || name.length < 2) {
-            log('Skipping invalid project: %s', project.worktree)
-            continue
-          }
-
-          const channel = await this.categoryManager.createProjectChannel(name)
-
-          // Store mapping
-          const projectInfo: ProjectChannel = {
-            channelId: channel.id,
-            projectPath: project.worktree,
-            projectName: name,
-            isActive: false
-          }
-          this.projectChannels.set(channel.id, projectInfo)
-
-          log('Auto-imported project: %s (%s)', name, project.worktree)
-        } catch (error) {
-          log('ERROR: Failed to auto-import project %s: %o', project.worktree, error)
-        }
-      }
-
-      // Save state after import
-      await this.persistState()
-
-      // No visual indicators needed - we auto-switch based on channel context
-
-      log('Auto-import complete: %d projects imported', this.projectChannels.size)
-    } catch (error) {
-      log('ERROR: Failed to auto-import projects: %o', error)
-    }
   }
 
   /**

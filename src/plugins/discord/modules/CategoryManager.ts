@@ -136,6 +136,27 @@ export class CategoryManager {
   }
 
   /**
+   * Delete all project channels in the category
+   */
+  async deleteAllProjectChannels(): Promise<number> {
+    const channels = await this.getProjectChannels()
+    let deletedCount = 0
+
+    for (const channel of channels) {
+      try {
+        await channel.delete('Rebuilding Toji Desktop channels')
+        deletedCount++
+        log('Deleted channel: %s', channel.name)
+      } catch (error) {
+        log('ERROR: Failed to delete channel %s: %o', channel.name, error)
+      }
+    }
+
+    log('Deleted %d project channels', deletedCount)
+    return deletedCount
+  }
+
+  /**
    * Update all channel positions to maintain order
    */
   async updateChannelOrder(activeChannelId?: string): Promise<void> {

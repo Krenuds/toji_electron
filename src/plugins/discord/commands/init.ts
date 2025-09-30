@@ -5,17 +5,11 @@ import { DISCORD_COLORS } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('init')
-  .setDescription('Initialize Discord project channels from saved state')
-  .addBooleanOption((option) =>
-    option
-      .setName('clear')
-      .setDescription('Clear all existing channels before initializing')
-      .setRequired(false)
-  )
+  .setDescription('Rebuild all Discord project channels from scratch')
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
-  _toji: Toji,
+  toji: Toji,
   projectManager?: DiscordProjectManager
 ): Promise<void> {
   if (!projectManager) {
@@ -29,60 +23,45 @@ export async function execute(
   await interaction.deferReply({ ephemeral: true })
 
   try {
-    const clearExisting = interaction.options.getBoolean('clear') || false
+    // Get count of current Toji projects before rebuild
+    const tojiProjects = await toji.getAvailableProjects()
 
-    if (clearExisting) {
-      // Full reinitialization
-      await projectManager.initializeChannels()
+    // Perform complete rebuild
+    await projectManager.initializeChannels()
 
-      const embed = {
-        color: DISCORD_COLORS.SUCCESS,
-        title: '✅ Channels Reinitialized',
-        description: 'All Discord channels have been recreated from saved state.',
-        fields: [
-          {
-            name: 'Projects',
-            value: `${projectManager.getProjects().length} channels created`,
-            inline: true
-          }
-        ],
-        footer: {
-          text: 'Channels are now synced with saved state'
+    const createdCount = projectManager.getProjects().length
+
+    const embed = {
+      color: DISCORD_COLORS.SUCCESS,
+      title: '🔄 Channels Rebuilt',
+      description:
+        'All Discord channels have been deleted and recreated from current Toji projects.',
+      fields: [
+        {
+          name: 'Toji Projects Found',
+          value: tojiProjects.length.toString(),
+          inline: true
         },
-        timestamp: new Date().toISOString()
-      }
-
-      await interaction.editReply({ embeds: [embed] })
-    } else {
-      // Just sync existing state
-      await projectManager.syncWithDiscord()
-
-      const embed = {
-        color: DISCORD_COLORS.SUCCESS,
-        title: '✅ Channels Synchronized',
-        description: 'Discord channels have been synced with saved state.',
-        fields: [
-          {
-            name: 'Projects',
-            value: `${projectManager.getProjects().length} projects tracked`,
-            inline: true
-          }
-        ],
-        footer: {
-          text: 'Missing channels were recreated'
-        },
-        timestamp: new Date().toISOString()
-      }
-
-      await interaction.editReply({ embeds: [embed] })
+        {
+          name: 'Channels Created',
+          value: createdCount.toString(),
+          inline: true
+        }
+      ],
+      footer: {
+        text: 'Fresh start complete! All channels are now in sync with Toji.'
+      },
+      timestamp: new Date().toISOString()
     }
+
+    await interaction.editReply({ embeds: [embed] })
   } catch (error) {
     const errorEmbed = {
       color: DISCORD_COLORS.ERROR,
-      title: '❌ Initialization Failed',
-      description: `Failed to initialize channels: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      title: '❌ Rebuild Failed',
+      description: `Failed to rebuild channels: ${error instanceof Error ? error.message : 'Unknown error'}`,
       footer: {
-        text: 'Please check bot permissions'
+        text: 'Please check bot permissions and try again'
       }
     }
 

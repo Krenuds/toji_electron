@@ -49,11 +49,11 @@ export function getErrorSuggestions(error: unknown): string[] {
   if (message.includes('No response data') || message.includes('ECONNREFUSED')) {
     suggestions.push('Select a project with `/project switch`')
     suggestions.push('Check if a project is active with `/project current`')
-    suggestions.push('Use `/status` to diagnose connection issues')
+    suggestions.push('Check your network connection and restart Toji')
     suggestions.push('Restart the Toji application if needed')
   } else if (message.includes('not ready')) {
     suggestions.push('Wait a moment for Toji to initialize')
-    suggestions.push('Use `/status` to check system health')
+    suggestions.push('Wait a moment and try again, or restart the application')
     suggestions.push('Select a project with `/project switch`')
   } else if (message.includes('session')) {
     suggestions.push('Use `/clear` to reset the conversation')
@@ -63,7 +63,7 @@ export function getErrorSuggestions(error: unknown): string[] {
     suggestions.push('Type in a project channel in the Toji Desktop category')
     suggestions.push('Use `/project list` to see available projects')
   } else {
-    suggestions.push('Use `/status` to check system health')
+    suggestions.push('Try restarting the application if issues persist')
     suggestions.push('Use `/clear` to reset the conversation')
     suggestions.push('Check `/help` for command usage')
   }

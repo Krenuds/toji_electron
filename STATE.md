@@ -277,7 +277,7 @@ async updateDefaultPermissions(permissions: Partial<PermissionConfig>): Promise<
 window.api.toji.getPermissions() → LocalPermissionConfig      // ✅ Working
 window.api.toji.updatePermissions(permissions) → void         // ✅ Working
 
-window.api.toji.getModelConfig() → LocalModelConfig           // ✅ Working  
+window.api.toji.getModelConfig() → LocalModelConfig           // ✅ Working
 window.api.toji.updateModelConfig(models) → void             // ✅ Working
 
 // Note: No separate project/global APIs needed - ConfigManager handles context automatically

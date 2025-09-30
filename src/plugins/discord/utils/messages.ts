@@ -99,11 +99,10 @@ export function formatErrorMessage(error: unknown, context: string): string {
   if (errorMessage.includes('No response data') || errorMessage.includes('ECONNREFUSED')) {
     helpfulMessage +=
       '**Issue:** OpenCode server not responding\n' +
-      '**Try:** Restarting Toji or using `/status` to check connection'
+      '**Try:** Restarting Toji or checking your connection'
   } else if (errorMessage.includes('not ready')) {
     helpfulMessage +=
-      '**Issue:** Toji is not ready yet\n' +
-      '**Try:** Wait a moment or use `/status` to check system health'
+      '**Issue:** Toji is not ready yet\n' + '**Try:** Wait a moment or restart the application'
   } else if (errorMessage.includes('session')) {
     helpfulMessage +=
       '**Issue:** Session problem detected\n' +
@@ -115,7 +114,7 @@ export function formatErrorMessage(error: unknown, context: string): string {
   } else {
     helpfulMessage +=
       `**Error:** ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}\n` +
-      '**Try:** Use `/status` or `/clear` commands'
+      '**Try:** Use `/clear` command or restart'
   }
 
   return helpfulMessage

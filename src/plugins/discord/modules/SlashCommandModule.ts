@@ -49,29 +49,14 @@ export class SlashCommandModule implements DiscordModule {
     try {
       // Import commands directly - this is the only way we load commands
       const helpCommand = await import('../commands/help')
-      const chatCommand = await import('../commands/chat')
-      const statusCommand = await import('../commands/status')
-      const clearCommand = await import('../commands/clear')
-      const projectCommand = await import('../commands/project')
       const initCommand = await import('../commands/init')
-      const refreshCommand = await import('../commands/refresh')
+      const projectCommand = await import('../commands/project')
+      const clearCommand = await import('../commands/clear')
 
-      const commands = [
-        helpCommand,
-        chatCommand,
-        statusCommand,
-        clearCommand,
-        projectCommand,
-        initCommand,
-        refreshCommand
-      ]
-
-      for (const command of commands) {
-        if ('data' in command && 'execute' in command) {
-          this.commands.set(command.data.name, command)
-          log(`Loaded command ${command.data.name}`)
-        }
-      }
+      this.commands.set('help', helpCommand)
+      this.commands.set('init', initCommand)
+      this.commands.set('project', projectCommand)
+      this.commands.set('clear', clearCommand)
 
       log(`Loaded ${this.commands.size} slash commands`)
     } catch (error) {

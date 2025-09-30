@@ -15,26 +15,15 @@ export async function deployCommands(
   clientId: string,
   guildId?: string
 ): Promise<void> {
-  const commands: RESTPostAPIApplicationCommandsJSONBody[] = []
-
   // Import all commands directly
   const helpCommand = await import('./commands/help')
-  const chatCommand = await import('./commands/chat')
-  const statusCommand = await import('./commands/status')
-  const clearCommand = await import('./commands/clear')
-  const projectCommand = await import('./commands/project')
   const initCommand = await import('./commands/init')
-  const refreshCommand = await import('./commands/refresh')
+  const projectCommand = await import('./commands/project')
+  const clearCommand = await import('./commands/clear')
 
-  const commandModules = [
-    helpCommand,
-    chatCommand,
-    statusCommand,
-    clearCommand,
-    projectCommand,
-    initCommand,
-    refreshCommand
-  ]
+  const commandModules = [helpCommand, initCommand, projectCommand, clearCommand]
+
+  const commands: RESTPostAPIApplicationCommandsJSONBody[] = []
 
   // Load command data
   for (const command of commandModules) {
