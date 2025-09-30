@@ -718,12 +718,27 @@ export class Toji extends EventEmitter {
 
   // Get current project model selection (primary + optional small model)
   async getModelConfig(): Promise<ModelConfig> {
-    return this.configManager.getModelConfig()
+    log('Getting current project model configuration')
+    try {
+      const config = await this.configManager.getModelConfig()
+      log('Retrieved project model config: %o', config)
+      return config
+    } catch (error) {
+      log('ERROR: Failed to get project model config: %o', error)
+      throw error
+    }
   }
 
   // Update project model selection and restart server
   async updateModelConfig(selection: Partial<ModelConfig>): Promise<void> {
-    return this.configManager.updateModelConfig(selection)
+    log('Updating project model configuration: %o', selection)
+    try {
+      await this.configManager.updateModelConfig(selection)
+      log('Project model configuration updated successfully')
+    } catch (error) {
+      log('ERROR: Failed to update project model config: %o', error)
+      throw error
+    }
   }
 
   // Get default permissions template used for new projects
@@ -748,19 +763,36 @@ export class Toji extends EventEmitter {
 
   // Default model template used when no project config is available
   async getDefaultModel(): Promise<ModelConfig> {
+    log('Getting global default model configuration')
     const config = this._config
     if (!config) {
+      log('No config provider available, returning default model')
       return DEFAULT_MODEL_SELECTION
     }
-    return config.getDefaultOpencodeModel()
+    try {
+      const defaultModel = config.getDefaultOpencodeModel()
+      log('Retrieved global default model: %o', defaultModel)
+      return defaultModel
+    } catch (error) {
+      log('ERROR: Failed to get default model: %o', error)
+      throw error
+    }
   }
 
   async updateDefaultModel(selection: Partial<ModelConfig>): Promise<ModelConfig> {
+    log('Updating global default model configuration: %o', selection)
     const config = this._config
     if (!config) {
       throw new Error('Config provider not initialized')
     }
-    return config.setDefaultOpencodeModel(selection)
+    try {
+      const updatedModel = config.setDefaultOpencodeModel(selection)
+      log('Global default model updated successfully: %o', updatedModel)
+      return updatedModel
+    } catch (error) {
+      log('ERROR: Failed to update default model: %o', error)
+      throw error
+    }
   }
 }
 

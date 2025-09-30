@@ -347,7 +347,7 @@ export function registerTojiHandlers(toji: Toji): void {
       }
       return await toji.getModelConfig()
     } catch (error) {
-      console.error('Get model config error:', error)
+      console.error('IPC: Get model config error:', error)
       throw error
     }
   })
@@ -360,7 +360,7 @@ export function registerTojiHandlers(toji: Toji): void {
       await toji.updateModelConfig(selection)
       return { success: true }
     } catch (error) {
-      console.error('Update model config error:', error)
+      console.error('IPC: Update model config error:', error)
       throw error
     }
   })
@@ -369,7 +369,7 @@ export function registerTojiHandlers(toji: Toji): void {
     try {
       return await toji.getDefaultModel()
     } catch (error) {
-      console.error('Get default model error:', error)
+      console.error('IPC: Get default model error:', error)
       throw error
     }
   })
@@ -378,7 +378,7 @@ export function registerTojiHandlers(toji: Toji): void {
     try {
       return await toji.updateDefaultModel(selection)
     } catch (error) {
-      console.error('Update default model error:', error)
+      console.error('IPC: Update default model error:', error)
       throw error
     }
   })

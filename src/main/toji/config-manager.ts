@@ -116,10 +116,18 @@ export class ConfigManager {
 
   // Get current model selection from project configuration
   async getModelConfig(): Promise<ModelConfig> {
-    const config = await this.getProjectConfig()
-    return {
-      model: config.model,
-      ...(config.small_model ? { small_model: config.small_model } : {})
+    log('Getting model config from project configuration')
+    try {
+      const config = await this.getProjectConfig()
+      const modelConfig = {
+        model: config.model,
+        ...(config.small_model ? { small_model: config.small_model } : {})
+      }
+      log('Retrieved model config: %o', modelConfig)
+      return modelConfig
+    } catch (error) {
+      log('ERROR: Failed to get model config: %o', error)
+      throw error
     }
   }
 
