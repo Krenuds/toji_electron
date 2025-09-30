@@ -5,7 +5,8 @@ import type {
   OpencodeConfig,
   PermissionConfig,
   PermissionType,
-  PermissionLevel
+  PermissionLevel,
+  ModelConfig
 } from '../toji/config'
 
 export function registerTojiHandlers(toji: Toji): void {
@@ -325,4 +326,60 @@ export function registerTojiHandlers(toji: Toji): void {
       }
     }
   )
+
+  // Model provider + selection management
+  ipcMain.handle('toji:getModelProviders', async () => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      return await toji.getModelProviders()
+    } catch (error) {
+      console.error('Get model providers error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:getModelConfig', async () => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      return await toji.getModelConfig()
+    } catch (error) {
+      console.error('Get model config error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:updateModelConfig', async (_, selection: Partial<ModelConfig>) => {
+    try {
+      if (!toji.isReady()) {
+        throw new Error('No project selected. Please open a project first.')
+      }
+      await toji.updateModelConfig(selection)
+      return { success: true }
+    } catch (error) {
+      console.error('Update model config error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:getDefaultModel', async () => {
+    try {
+      return await toji.getDefaultModel()
+    } catch (error) {
+      console.error('Get default model error:', error)
+      throw error
+    }
+  })
+
+  ipcMain.handle('toji:updateDefaultModel', async (_, selection: Partial<ModelConfig>) => {
+    try {
+      return await toji.updateDefaultModel(selection)
+    } catch (error) {
+      console.error('Update default model error:', error)
+      throw error
+    }
+  })
 }

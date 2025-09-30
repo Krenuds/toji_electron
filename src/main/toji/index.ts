@@ -1,6 +1,6 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
 import { EventEmitter } from 'events'
-import type { OpencodeClient, Part, Message, Project } from '@opencode-ai/sdk'
+import type { OpencodeClient, Part, Message, Project, Provider } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -11,7 +11,14 @@ import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus, Session } from './types'
-import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
+import type {
+  OpencodeConfig,
+  PermissionConfig,
+  PermissionType,
+  PermissionLevel,
+  ModelConfig
+} from './config'
+import { defaultOpencodeConfig } from './config'
 import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:core')
@@ -22,6 +29,16 @@ const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
   edit: 'ask',
   bash: 'ask',
   webfetch: 'ask'
+}
+
+const DEFAULT_MODEL_SELECTION: ModelConfig = {
+  model: defaultOpencodeConfig.model ?? 'opencode/grok-code',
+  ...(defaultOpencodeConfig.small_model ? { small_model: defaultOpencodeConfig.small_model } : {})
+}
+
+type ConfigProvidersResponse = {
+  providers: Provider[]
+  default: Record<string, string>
 }
 
 // Define typed events emitted by Toji
@@ -678,6 +695,37 @@ export class Toji extends EventEmitter {
     return this.configManager.setPermission(type, level)
   }
 
+  // Get available model providers from OpenCode
+  async getModelProviders(): Promise<ConfigProvidersResponse> {
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    const raw = await client.config.providers()
+    const response =
+      raw && typeof raw === 'object' && 'data' in raw
+        ? (raw as { data: ConfigProvidersResponse }).data
+        : (raw as ConfigProvidersResponse)
+
+    log('Retrieved %d model providers', response?.providers?.length ?? 0)
+
+    return {
+      providers: Array.isArray(response?.providers) ? response.providers : [],
+      default: response?.default ?? {}
+    }
+  }
+
+  // Get current project model selection (primary + optional small model)
+  async getModelConfig(): Promise<ModelConfig> {
+    return this.configManager.getModelConfig()
+  }
+
+  // Update project model selection and restart server
+  async updateModelConfig(selection: Partial<ModelConfig>): Promise<void> {
+    return this.configManager.updateModelConfig(selection)
+  }
+
   // Get default permissions template used for new projects
   async getDefaultPermissions(): Promise<PermissionConfig> {
     const config = this._config
@@ -696,6 +744,23 @@ export class Toji extends EventEmitter {
       throw new Error('Config provider not initialized')
     }
     return config.setDefaultOpencodePermissions(permissions)
+  }
+
+  // Default model template used when no project config is available
+  async getDefaultModel(): Promise<ModelConfig> {
+    const config = this._config
+    if (!config) {
+      return DEFAULT_MODEL_SELECTION
+    }
+    return config.getDefaultOpencodeModel()
+  }
+
+  async updateDefaultModel(selection: Partial<ModelConfig>): Promise<ModelConfig> {
+    const config = this._config
+    if (!config) {
+      throw new Error('Config provider not initialized')
+    }
+    return config.setDefaultOpencodeModel(selection)
   }
 }
 

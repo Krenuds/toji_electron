@@ -2,7 +2,13 @@
 import { ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { Message, Part } from '@opencode-ai/sdk'
 import type { Session, ServerStatus } from '../../main/toji/types'
-import type { PermissionConfig, PermissionLevel, PermissionType } from '../../main/toji/config'
+import type {
+  PermissionConfig,
+  PermissionLevel,
+  PermissionType,
+  ModelConfig
+} from '../../main/toji/config'
+import type { Provider } from '@opencode-ai/sdk'
 
 export const tojiAPI = {
   // Check if Toji is ready
@@ -123,6 +129,16 @@ export const tojiAPI = {
     ipcRenderer.invoke('toji:getDefaultPermissions'),
   updateDefaultPermissions: (permissions: Partial<PermissionConfig>): Promise<PermissionConfig> =>
     ipcRenderer.invoke('toji:updateDefaultPermissions', permissions),
+
+  // Model configuration
+  getModelProviders: (): Promise<{ providers: Provider[]; default: Record<string, string> }> =>
+    ipcRenderer.invoke('toji:getModelProviders'),
+  getModelConfig: (): Promise<ModelConfig> => ipcRenderer.invoke('toji:getModelConfig'),
+  updateModelConfig: (selection: Partial<ModelConfig>): Promise<{ success: boolean }> =>
+    ipcRenderer.invoke('toji:updateModelConfig', selection),
+  getDefaultModel: (): Promise<ModelConfig> => ipcRenderer.invoke('toji:getDefaultModel'),
+  updateDefaultModel: (selection: Partial<ModelConfig>): Promise<ModelConfig> =>
+    ipcRenderer.invoke('toji:updateDefaultModel', selection),
 
   // Check if git is available
   checkGitAvailable: (): Promise<boolean> => ipcRenderer.invoke('toji:checkGitAvailable')

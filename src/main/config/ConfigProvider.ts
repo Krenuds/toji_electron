@@ -1,6 +1,7 @@
 import Store from 'electron-store'
 import path from 'path'
-import type { PermissionConfig } from '../toji/config'
+import type { PermissionConfig, ModelConfig } from '../toji/config'
+import { defaultOpencodeConfig } from '../toji/config'
 
 interface AppConfig {
   discord?: {
@@ -14,6 +15,7 @@ interface AppConfig {
   opencode?: {
     defaults?: {
       permissions?: PermissionConfig
+      model?: ModelConfig
     }
   }
 }
@@ -22,6 +24,11 @@ const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
   edit: 'ask',
   bash: 'ask',
   webfetch: 'ask'
+}
+
+const DEFAULT_MODEL_SELECTION: ModelConfig = {
+  model: defaultOpencodeConfig.model ?? 'opencode/grok-code',
+  ...(defaultOpencodeConfig.small_model ? { small_model: defaultOpencodeConfig.small_model } : {})
 }
 
 export class ConfigProvider {
@@ -36,7 +43,8 @@ export class ConfigProvider {
         },
         opencode: {
           defaults: {
-            permissions: DEFAULT_PERMISSION_TEMPLATE
+            permissions: DEFAULT_PERMISSION_TEMPLATE,
+            model: DEFAULT_MODEL_SELECTION
           }
         }
       },
@@ -80,6 +88,41 @@ export class ConfigProvider {
       webfetch: permissions.webfetch ?? current.webfetch
     }
     this.store.set('opencode.defaults.permissions', updated)
+    return updated
+  }
+
+  // ==========================================
+  // OpenCode Default Model Management
+  // ==========================================
+
+  getDefaultOpencodeModel(): ModelConfig {
+    const model = this.store.get('opencode.defaults.model')
+    if (!model) {
+      this.store.set('opencode.defaults.model', DEFAULT_MODEL_SELECTION)
+      return DEFAULT_MODEL_SELECTION
+    }
+
+    return {
+      model: model.model ?? DEFAULT_MODEL_SELECTION.model,
+      ...(model.small_model ? { small_model: model.small_model } : {})
+    }
+  }
+
+  setDefaultOpencodeModel(selection: Partial<ModelConfig>): ModelConfig {
+    const current = this.getDefaultOpencodeModel()
+    const updated: ModelConfig = {
+      model: selection.model ?? current.model
+    }
+
+    if (selection.small_model !== undefined) {
+      if (selection.small_model) {
+        updated.small_model = selection.small_model
+      }
+    } else if (current.small_model) {
+      updated.small_model = current.small_model
+    }
+
+    this.store.set('opencode.defaults.model', updated)
     return updated
   }
 

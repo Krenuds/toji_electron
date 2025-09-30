@@ -23,7 +23,12 @@ declare global {
 // Export types from API modules
 export type { BinaryInfo, BinaryProgress } from './api/binary.api'
 export type { Project } from './api/project.api'
-export type { PermissionConfig, PermissionLevel, PermissionType } from '../main/toji/config'
+export type {
+  PermissionConfig,
+  PermissionLevel,
+  PermissionType,
+  ModelConfig
+} from '../main/toji/config'
 
 // Export stub types from main
 export type {

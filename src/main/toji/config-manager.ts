@@ -1,7 +1,13 @@
 // Manages OpenCode runtime configuration (NOT app state)
 // This is separate from ConfigProvider which handles app-level persistent state
 import type { OpencodeClient } from '@opencode-ai/sdk'
-import type { OpencodeConfig, PermissionConfig, PermissionType, PermissionLevel } from './config'
+import type {
+  OpencodeConfig,
+  PermissionConfig,
+  PermissionType,
+  PermissionLevel,
+  ModelConfig
+} from './config'
 import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:config-manager')
@@ -106,5 +112,41 @@ export class ConfigManager {
     }
 
     await this.updatePermissions(permissions)
+  }
+
+  // Get current model selection from project configuration
+  async getModelConfig(): Promise<ModelConfig> {
+    const config = await this.getProjectConfig()
+    return {
+      model: config.model,
+      ...(config.small_model ? { small_model: config.small_model } : {})
+    }
+  }
+
+  // Update model selection and restart server
+  async updateModelConfig(selection: Partial<ModelConfig>): Promise<void> {
+    log('Updating model selection: %o', selection)
+
+    try {
+      const currentConfig = await this.getProjectConfig()
+      const updatedConfig: OpencodeConfig = {
+        ...currentConfig,
+        ...(selection.model ? { model: selection.model } : {})
+      }
+
+      if (selection.small_model !== undefined) {
+        if (selection.small_model) {
+          updatedConfig.small_model = selection.small_model
+        } else {
+          delete updatedConfig.small_model
+        }
+      }
+
+      await this.updateProjectConfig(updatedConfig)
+      log('Model selection updated successfully')
+    } catch (error) {
+      log('ERROR: Failed to update model selection: %o', error)
+      throw error
+    }
   }
 }
