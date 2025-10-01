@@ -31,7 +31,7 @@ export const useCoreStatus = (): CoreStatus => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to check running status'
       setError(errorMessage)
-      console.error('Failed to check running status:', err)
+      // Backend handles error logging
       return false
     } finally {
       setIsLoading(false)
@@ -53,7 +53,7 @@ export const useCoreStatus = (): CoreStatus => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get current project'
       setError(errorMessage)
-      console.error('Failed to get current project:', err)
+      // Backend handles error logging
       return undefined
     } finally {
       setIsLoading(false)

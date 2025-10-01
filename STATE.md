@@ -11,6 +11,7 @@
 Successfully simplified and cleaned the Discord integration, removing complex and problematic commands while focusing on essential functionality:
 
 #### **Simplified Commands:**
+
 - **`/init`**: Complete rebuild (delete all channels + recreate from Toji projects)
 - **`/project list`**: Show available projects with status indicators
 - **`/project add`**: Stubbed for future implementation
@@ -19,6 +20,7 @@ Successfully simplified and cleaned the Discord integration, removing complex an
 - **Chat via @mention**: Natural conversation (no slash command needed)
 
 #### **Removed Complex Commands:**
+
 - ❌ `/refresh` - Complex sync logic that often failed
 - ❌ `/chat` - Non-existent command (only referenced)
 - ❌ `/status` - Non-existent command (only referenced)
@@ -28,8 +30,9 @@ Successfully simplified and cleaned the Discord integration, removing complex an
 - ❌ `/project import` - Complex bulk import logic
 
 #### **Benefits Achieved:**
+
 - 🎯 **Predictable Behavior**: `/init` does exactly one thing - complete rebuild
-- 🧹 **Reduced Complexity**: Eliminated 375+ lines of complex sync/state logic  
+- 🧹 **Reduced Complexity**: Eliminated 375+ lines of complex sync/state logic
 - 🚀 **Better UX**: Simple, focused commands with clear purposes
 - 🔧 **Maintainable**: Clean architecture with proper separation of concerns
 
@@ -42,6 +45,7 @@ The Toji3 configuration system is **PRODUCTION READY** ✅. After comprehensive 
 ### A) OpenCode.json Configuration Management - **PRODUCTION READY** ✅
 
 **Persistence Strategy**: Hybrid approach successfully implemented:
+
 - **Primary Storage**: `opencode.json` files in project root directories
 - **Runtime Application**: `OPENCODE_CONFIG_CONTENT` environment variable
 - **Auto-creation**: Creates config files if missing
@@ -82,7 +86,7 @@ Frontend (UI):
 
 ### Persistence Strategy (IMPLEMENTED)
 
-```
+```text
 Configuration Persistence Flow
 ├── Primary: opencode.json files (per-project)
 │   ├── Located in project root directories
@@ -102,7 +106,10 @@ Configuration Persistence Flow
 
 ### Component Structure
 
-```
+```text
+### Component Structure
+
+```text
 Settings System (IMPLEMENTED)
 ├── SettingsDrawer.tsx (corrected 2-model system)
 │   ├── Mode: 'default' | 'project'
@@ -117,7 +124,7 @@ Settings System (IMPLEMENTED)
 
 ### Data Flow Architecture
 
-```
+```text
 Frontend (Renderer)         IPC Boundary              Backend (Main Process)
 ├── SettingsDrawer          ←→ IPC Handlers            ├── ConfigManager ✅
 ├── Model Selection UI          (IMPLEMENTED)           ├── opencode.json Files ✅
@@ -219,7 +226,7 @@ class ConfigManager {
 **What was accomplished this session**:
 
 - ✅ **Command Simplification**: Reduced from 8 commands to 4 essential ones
-- ✅ **Removed Dead Code**: Eliminated non-existent `/chat` and `/status` commands  
+- ✅ **Removed Dead Code**: Eliminated non-existent `/chat` and `/status` commands
 - ✅ **Simplified `/init`**: Now does exactly one thing - complete rebuild from Toji projects
 - ✅ **Streamlined `/project`**: Only `list` and `add` (stubbed) subcommands remain
 - ✅ **Updated Documentation**: Comprehensive help text and error message updates
@@ -228,7 +235,7 @@ class ConfigManager {
 
 ### 🚀 RECOMMENDED NEXT STEPS
 
-1. **Complete Project Management** 
+1. **Complete Project Management**
    - Implement `/project add` functionality properly
    - Design better project discovery and validation
    - Consider project removal workflow (safer than slash commands)
@@ -258,7 +265,7 @@ class ConfigManager {
 - ✅ **Type Safety**: Complete TypeScript coverage across IPC boundary
 - ✅ **Architecture Compliance**: Follows Toji3 main-process-as-truth principles
 
-### 🚀 RECOMMENDED NEXT STEPS
+### 🎯 NEXT ACTIONS REQUIRED
 
 1. **User Testing & Validation**
    - Test configuration persistence across app restarts
@@ -563,7 +570,8 @@ window.api.toji.updateModelConfig(models) → void             // ✅ Working
 
 **Summary**: Both the **configuration system** and **Discord integration** are now production-ready. The configuration system provides a robust, reusable architecture with dynamic model loading from the OpenCode SDK. The Discord integration has been simplified to focus on essential functionality, eliminating complex and problematic commands while maintaining all core user workflows. Both systems follow Toji3's architectural principles and are ready for production use.
 
-**Current Status**: 
+**Current Status**:
+
 - **Configuration System**: PRODUCTION READY ✅ (Full-stack implementation complete)
 - **Discord Integration**: PRODUCTION READY ✅ (Simplified and focused command set)
 - **Next Focus**: Core Toji functionality improvements or project management enhancements

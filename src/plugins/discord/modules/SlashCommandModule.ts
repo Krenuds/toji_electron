@@ -1,6 +1,6 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
-import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
+import type { DiscordModule } from '../DiscordPlugin'
 import type { DiscordProjectManager } from './DiscordProjectManager'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 
@@ -34,8 +34,7 @@ export class SlashCommandModule implements DiscordModule {
   /**
    * Initialize the module with the parent plugin
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async initialize(_plugin: DiscordPlugin): Promise<void> {
+  async initialize(): Promise<void> {
     await this.loadCommands()
     log('Initialized')
   }

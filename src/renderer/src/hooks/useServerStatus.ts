@@ -29,8 +29,8 @@ export function useServerStatus(): UseServerStatusReturn {
     try {
       const serverStatus = await window.api.toji.getServerStatus()
       setStatus(serverStatus)
-    } catch (err) {
-      console.error('Failed to fetch server status:', err)
+    } catch {
+      // Backend handles error logging
     }
   }
 
@@ -43,7 +43,7 @@ export function useServerStatus(): UseServerStatusReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to start server'
       setError(message)
-      console.error('Failed to start server:', err)
+      // Backend handles error logging
     } finally {
       setLoading(false)
     }
@@ -58,7 +58,7 @@ export function useServerStatus(): UseServerStatusReturn {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to stop server'
       setError(message)
-      console.error('Failed to stop server:', err)
+      // Backend handles error logging
     } finally {
       setLoading(false)
     }

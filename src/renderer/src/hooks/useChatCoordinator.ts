@@ -139,8 +139,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
   const saveToCache = useCallback((key: string, value: unknown) => {
     try {
       localStorage.setItem(key, JSON.stringify(value))
-    } catch (error) {
-      console.error(`Failed to cache ${key}:`, error)
+    } catch {
+      // Cache errors are non-critical, backend handles error logging
     }
   }, [])
 
@@ -150,8 +150,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       const isRunning = await window.api.toji.isRunning()
       updateState({ serverStatus: isRunning ? 'online' : 'offline' })
       return isRunning
-    } catch (error) {
-      console.error('Failed to check server status:', error)
+    } catch {
+      // Backend handles error logging
       updateState({ serverStatus: 'offline' })
       return false
     }
@@ -162,8 +162,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     try {
       const projectList = await window.api.toji.getProjects()
       updateState({ projects: (projectList as unknown as Project[]) || [] })
-    } catch (error) {
-      console.error('Failed to load projects:', error)
+    } catch {
+      // Backend handles error logging
       updateState({ projectError: 'Failed to load projects' })
     }
   }, [updateState])
@@ -190,8 +190,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       }
 
       return sessions || []
-    } catch (error) {
-      console.error('[ChatCoordinator] Failed to load sessions:', error)
+    } catch {
+      // Backend handles error logging
       updateState({
         sessions: [],
         sessionError: 'Failed to load sessions'
@@ -247,10 +247,10 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
           updateState({ messages })
           saveToCache(CACHE_KEYS.CACHED_MESSAGES, messages)
         }
-      } catch (error) {
+      } catch {
         // Don't log errors for aborted requests
         if (!abortController.signal.aborted) {
-          console.error('[ChatCoordinator.loadMessages] Failed to load messages:', error)
+          // Backend handles error logging
           updateState({ messageError: 'Failed to load messages' })
         }
       } finally {
@@ -301,8 +301,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
       // Load all projects
       await loadProjects()
-    } catch (error) {
-      console.error('[ChatCoordinator] Failed to initialize:', error)
+    } catch {
+      // Backend handles error logging
     } finally {
       initializingRef.current = false
     }
@@ -415,16 +415,16 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
                 await window.api.toji.switchSession(newSession.id)
                 saveToCache(CACHE_KEYS.LAST_SESSION, newSession.id)
               }
-            } catch (error) {
-              console.error('[ChatCoordinator] Failed to auto-create session:', error)
+            } catch {
+              // Backend handles error logging
               // Continue without a session - user can create one manually
             }
           }
         } else {
           throw new Error('Failed to switch project')
         }
-      } catch (error) {
-        console.error('Failed to switch project:', error)
+      } catch {
+        // Backend handles error logging
         updateState({ projectError: 'Failed to switch project' })
       } finally {
         updateState({
@@ -456,8 +456,8 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       if (!result.canceled && result.filePaths[0]) {
         await switchProject(result.filePaths[0])
       }
-    } catch (error) {
-      console.error('Failed to open project:', error)
+    } catch {
+      // Backend handles error logging
       updateState({ projectError: 'Failed to open project dialog' })
     }
   }, [switchProject, updateState])

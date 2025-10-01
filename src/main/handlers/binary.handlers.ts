@@ -39,7 +39,7 @@ export function registerBinaryHandlers(openCodeService: OpenCodeService): void {
 
   // Get OpenCode logs - placeholder for now
   ipcMain.handle('api:get-opencode-logs', async () => {
-    // TODO: Implement when logging is available
+    // TODO: Implement structured log retrieval from OpenCode servers
     return 'Logs not available yet'
   })
 }

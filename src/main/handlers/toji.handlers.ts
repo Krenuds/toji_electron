@@ -135,18 +135,14 @@ export function registerTojiHandlers(toji: Toji): void {
   })
 
   // Project management handlers
-  ipcMain.handle(
-    'toji:switchProject',
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async (_, projectPath: string, _config?: Record<string, unknown>) => {
-      try {
-        return await toji.switchToProject(projectPath)
-      } catch (error) {
-        console.error('Switch project error:', error)
-        throw error
-      }
+  ipcMain.handle('toji:switchProject', async (_, projectPath: string) => {
+    try {
+      return await toji.switchToProject(projectPath)
+    } catch (error) {
+      console.error('Switch project error:', error)
+      throw error
     }
-  )
+  })
 
   ipcMain.handle('toji:getProjects', async () => {
     try {

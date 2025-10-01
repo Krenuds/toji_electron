@@ -292,8 +292,7 @@ export class Toji extends EventEmitter {
   }
 
   // Set global configuration
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setGlobalConfig(_config: OpencodeConfig): void {
+  setGlobalConfig(): void {
     // TODO: Implement global config if needed
     log('setGlobalConfig called but not implemented in simplified version')
   }

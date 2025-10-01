@@ -25,8 +25,8 @@ export function AppViewProvider({ children }: AppViewProviderProps): React.JSX.E
       try {
         const parsedState = JSON.parse(savedViewState)
         setViewStateData(parsedState)
-      } catch (error) {
-        console.error('Failed to parse saved view state:', error)
+      } catch {
+        // Backend handles error logging - continue with default state
       }
     }
   }, [])

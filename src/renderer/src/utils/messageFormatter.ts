@@ -51,8 +51,8 @@ export function formatMessagesFromSDK(sdkMessages: SDKMessageItem[]): ChatMessag
           content: content.trim(),
           timestamp
         }
-      } catch (error) {
-        console.error('Error formatting message:', error, messageItem)
+      } catch {
+        // Backend handles error logging - skip malformed messages
         return null
       }
     })

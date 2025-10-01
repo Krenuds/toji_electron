@@ -17,7 +17,7 @@ export interface DiscordPluginEvents {
 }
 
 export interface DiscordModule {
-  initialize(plugin: DiscordPlugin): void | Promise<void>
+  initialize(plugin?: DiscordPlugin): void | Promise<void>
   cleanup(): void
 }
 

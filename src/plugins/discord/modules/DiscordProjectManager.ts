@@ -1,6 +1,6 @@
 import type { Toji } from '../../../main/toji'
 import type { Client, TextChannel } from 'discord.js'
-import type { DiscordPlugin, DiscordModule } from '../DiscordPlugin'
+import type { DiscordModule } from '../DiscordPlugin'
 import { CategoryManager } from './CategoryManager'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import { loadState, saveState } from '../utils/state'
@@ -32,8 +32,7 @@ export class DiscordProjectManager implements DiscordModule {
   /**
    * Initialize the project manager with Discord plugin
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async initialize(_plugin: DiscordPlugin): Promise<void> {
+  async initialize(): Promise<void> {
     // We'll get the client from the plugin later when ready
     log('DiscordProjectManager initialized with plugin')
   }

@@ -28,9 +28,9 @@ export function useDiscord(): UseDiscordReturn {
     try {
       const tokenExists = await window.api.discord.hasToken()
       setHasToken(tokenExists)
-    } catch (err) {
-      console.error('Failed to check Discord token:', err)
-      setHasToken(false)
+    } catch {
+      // Backend handles error logging
+      setError('Failed to check Discord token')
     }
   }
 
@@ -40,8 +40,8 @@ export function useDiscord(): UseDiscordReturn {
       await checkToken()
       const discordStatus = await window.api.discord.getStatus()
       setStatus(discordStatus)
-    } catch (err) {
-      console.error('Failed to get Discord status:', err)
+    } catch {
+      // Backend handles error logging
       setStatus({ connected: false })
     }
   }, [])
@@ -65,7 +65,7 @@ export function useDiscord(): UseDiscordReturn {
       await refreshStatus()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect to Discord'
-      console.error('Discord connection error:', err)
+      // Backend handles error logging
       setError(errorMessage)
     } finally {
       setIsConnecting(false)
@@ -77,7 +77,7 @@ export function useDiscord(): UseDiscordReturn {
       await window.api.discord.disconnect()
       setStatus({ connected: false })
     } catch (err) {
-      console.error('Failed to disconnect Discord:', err)
+      // Backend handles error logging
       const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect'
       setError(errorMessage)
     }

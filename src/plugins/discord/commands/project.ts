@@ -48,7 +48,7 @@ export async function execute(
       break
 
     case 'add':
-      await handleAdd(interaction, projectManager)
+      await handleAdd(interaction)
       break
 
     default:
@@ -109,11 +109,7 @@ async function handleList(
   }
 }
 
-async function handleAdd(
-  interaction: ChatInputCommandInteraction,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _projectManager: DiscordProjectManager
-): Promise<void> {
+async function handleAdd(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply()
 
   const projectPath = interaction.options.getString('path', true)
