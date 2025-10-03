@@ -144,7 +144,6 @@ export class McpManager {
     const instance: McpServerInstance = {
       server,
       projectDirectory: normalized,
-      discordChannelId: options.discordChannelId,
       port
     }
 
