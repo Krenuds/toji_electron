@@ -61,7 +61,7 @@ export class McpManager {
     const config = {
       $schema: 'https://opencode.ai/config.json',
       mcp: {
-        'toji-discord': {
+        toji: {
           type: 'remote',
           url: `http://localhost:${mcpPort}/mcp`,
           enabled: true
@@ -97,7 +97,7 @@ export class McpManager {
 
     // Create MCP server instance
     const server = new McpServer({
-      name: 'toji-discord',
+      name: 'toji',
       version: '1.0.0'
     })
 
