@@ -18,6 +18,58 @@ Project Closes → MCP Server Shutdown → HTTP Server Closed
 
 ## Available Tools
 
+### `clear_and_start_session`
+
+Creates a new OpenCode session and sets it as active. This clears the conversation history while maintaining project context.
+
+**Inputs:**
+
+- `title` (optional): Custom title for the new session
+
+**Output:**
+
+```json
+{
+  "sessionId": "abc123...",
+  "sessionTitle": "Fresh Start - 2:30 PM",
+  "projectPath": "/path/to/project",
+  "message": "Successfully created and activated new session: ..."
+}
+```
+
+**Example Usage:**
+AI can call this to start fresh without losing project context.
+
+### `read_session_messages`
+
+Read messages from a specific session or search for sessions by title. Enables AI to gather context from previous conversations.
+
+**Inputs:**
+
+- `sessionId` (optional): Specific session ID to read
+- `searchTitle` (optional): Search term to find sessions by title (case-insensitive)
+- `limit` (optional): Maximum number of messages to return (default: 20)
+
+**Output:**
+
+```json
+{
+  "sessionId": "xyz789...",
+  "sessionTitle": "Discussion about Feature X",
+  "messageCount": 15,
+  "messages": [
+    {
+      "role": "user",
+      "content": "How do we implement X?",
+      "timestamp": "2025-10-03T14:30:00Z"
+    }
+  ]
+}
+```
+
+**Example Usage:**
+User asks "Which session were we talking about X?" - AI searches sessions with `searchTitle: "X"` and reads the messages to provide context.
+
 ### `discord_messages`
 
 Reads recent messages from a Discord channel.
@@ -96,13 +148,17 @@ setMyDependency(dep: MyType): void {
 ## Architecture
 
 ```text
+```text
 src/main/toji/mcp/
-├── index.ts              # Module exports
-├── types.ts              # TypeScript interfaces
-├── mcp-manager.ts        # Server lifecycle & HTTP endpoints
-├── README.md             # This file
+├── index.ts                # Module exports
+├── types.ts                # TypeScript interfaces
+├── mcp-manager.ts          # Server lifecycle & HTTP endpoints
+├── README.md               # This file
 └── tools/
-    └── discord-messages.ts   # Discord tool implementation
+    ├── clear-session.ts    # Clear and start new session
+    ├── read-session.ts     # Read messages from sessions
+    └── discord-messages.ts # Discord tool implementation
+```
 ```
 
 ## Dependencies

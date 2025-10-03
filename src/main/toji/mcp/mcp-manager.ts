@@ -3,8 +3,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import express from 'express'
 import type { Server } from 'http'
+import type { OpencodeClient } from '@opencode-ai/sdk'
 import type { McpServerInstance, McpServerOptions } from './types'
 import { registerDiscordMessageTool, type DiscordMessageFetcher } from './tools/discord-messages'
+import { registerClearSessionTool } from './tools/clear-session'
+import { registerReadSessionTool } from './tools/read-session'
+import type { SessionManager } from '../sessions'
 import { createFileDebugLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
 import { promises as fs } from 'fs'
@@ -19,10 +23,46 @@ export class McpManager {
   private servers: Map<string, McpServerInstance> = new Map()
   private httpServers: Map<string, Server> = new Map()
   private messageFetcher?: DiscordMessageFetcher
+  private getClientFn?: () => OpencodeClient | null
+  private getCurrentProjectPathFn?: () => string | undefined
+  private sessionManager?: SessionManager
   private portCounter = BASE_PORT
 
   constructor() {
     log('McpManager initialized')
+  }
+
+  /**
+   * Set OpenCode session dependencies for clear session tool
+   */
+  setSessionDependencies(
+    getClient: () => OpencodeClient | null,
+    getCurrentProjectPath: () => string | undefined,
+    sessionManager: SessionManager
+  ): void {
+    log('Session dependencies configured for MCP tools')
+    this.getClientFn = getClient
+    this.getCurrentProjectPathFn = getCurrentProjectPath
+    this.sessionManager = sessionManager
+
+    // Register session tools with all existing MCP servers
+    for (const [dir, instance] of this.servers.entries()) {
+      try {
+        registerClearSessionTool(instance.server, {
+          getClient,
+          getCurrentProjectPath,
+          sessionManager
+        })
+        registerReadSessionTool(instance.server, {
+          getClient,
+          getCurrentProjectPath,
+          sessionManager
+        })
+        log('Registered session tools for existing server: %s', dir)
+      } catch (error) {
+        log('Warning: Failed to register session tools for %s: %o', dir, error)
+      }
+    }
   }
 
   /**
@@ -100,6 +140,21 @@ export class McpManager {
       name: 'toji',
       version: '1.0.0'
     })
+
+    // Register session tools if dependencies available
+    if (this.getClientFn && this.getCurrentProjectPathFn && this.sessionManager) {
+      registerClearSessionTool(server, {
+        getClient: this.getClientFn,
+        getCurrentProjectPath: this.getCurrentProjectPathFn,
+        sessionManager: this.sessionManager
+      })
+      registerReadSessionTool(server, {
+        getClient: this.getClientFn,
+        getCurrentProjectPath: this.getCurrentProjectPathFn,
+        sessionManager: this.sessionManager
+      })
+      log('Registered session tools for new server: %s', normalized)
+    }
 
     // Register Discord message tool if fetcher is available
     if (this.messageFetcher) {

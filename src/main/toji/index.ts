@@ -96,6 +96,14 @@ export class Toji extends EventEmitter {
       },
       (dir) => this.connectClient(dir)
     )
+
+    // Configure MCP with session dependencies for tools like clear_and_start_session
+    this.mcp.setSessionDependencies(
+      () => this.getClient() || null,
+      () => this.currentProjectDirectory,
+      this.sessions
+    )
+
     log('Toji initialized successfully')
   }
 
