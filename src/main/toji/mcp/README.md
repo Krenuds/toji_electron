@@ -63,7 +63,7 @@ export function registerMyTool(server: McpServer, dependencies: any) {
     async ({ param }) => {
       // Implementation
       const result = doSomething(param)
-      
+
       return {
         content: [{ type: 'text', text: result }],
         structuredContent: { result }
