@@ -6,6 +6,7 @@ import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
 import { createFileDebugLogger } from '../../main/utils/logger'
 import { sendDiscordResponse } from './utils/messages'
+import { createDiscordMessageFetcher } from './utils/mcp-fetcher'
 
 const log = createFileDebugLogger('discord:plugin')
 
@@ -30,6 +31,7 @@ export class DiscordPlugin extends EventEmitter {
   private projectManager?: DiscordProjectManager
   private slashCommandModule?: SlashCommandModule
   private initialized = false
+  private messageFetcher?: ReturnType<typeof createDiscordMessageFetcher>
 
   constructor(
     private toji: Toji,
@@ -80,6 +82,11 @@ export class DiscordPlugin extends EventEmitter {
     if (message.author.bot) return
 
     log(`Handling message from ${message.author.tag} in channel ${message.channel.id}`)
+
+    // Update current channel for MCP context
+    if (this.messageFetcher) {
+      this.messageFetcher.setCurrentChannel(message.channel.id)
+    }
 
     // Check if message is in a project channel within Toji Desktop category
     if (this.projectManager) {
@@ -150,14 +157,23 @@ export class DiscordPlugin extends EventEmitter {
   }
 
   /**
-   * Handle ready event from DiscordService
+   * Handle Discord client ready event
    */
   async onReady(client: Client): Promise<void> {
-    log(`Bot ready as ${client.user?.tag}`)
+    log('Discord client is ready')
 
-    // Initialize project manager with client
+    // Initialize project manager with client if not already initialized
     if (this.projectManager) {
       await this.projectManager.initializeWithClient(client)
+    }
+
+    // Configure MCP Discord message fetcher
+    try {
+      this.messageFetcher = createDiscordMessageFetcher(client)
+      this.toji.setDiscordMessageFetcher(this.messageFetcher)
+      log('MCP Discord message fetcher configured')
+    } catch (error) {
+      log('Warning: Failed to configure MCP Discord fetcher: %o', error)
     }
 
     // Deploy slash commands if we have config

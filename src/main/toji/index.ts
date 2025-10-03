@@ -9,6 +9,8 @@ import { SessionManager } from './sessions'
 import { ProjectInitializer } from './project-initializer'
 import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
+import { McpManager } from './mcp'
+import type { DiscordMessageFetcher } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus, Session } from './types'
 import type {
@@ -73,6 +75,7 @@ export class Toji extends EventEmitter {
   public readonly projectInitializer: ProjectInitializer
   public readonly configManager: ConfigManager
   public readonly clientManager: ClientManager
+  public readonly mcp: McpManager
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     super() // Initialize EventEmitter
@@ -82,6 +85,7 @@ export class Toji extends EventEmitter {
     this.server = new ServerManager(opencodeService)
     this.sessions = new SessionManager()
     this.clientManager = new ClientManager(this.server)
+    this.mcp = new McpManager()
     this.project = new ProjectManager(() => this.getClient())
     this.projectInitializer = new ProjectInitializer()
     this.configManager = new ConfigManager(
@@ -95,6 +99,14 @@ export class Toji extends EventEmitter {
     log('Toji initialized successfully')
   }
 
+  /**
+   * Set the Discord message fetcher for MCP servers
+   */
+  setDiscordMessageFetcher(fetcher: DiscordMessageFetcher): void {
+    log('Configuring Discord message fetcher for MCP')
+    this.mcp.setDiscordMessageFetcher(fetcher)
+  }
+
   async getServerStatus(): Promise<ServerStatus> {
     return this.server.getStatus()
   }
@@ -104,7 +116,18 @@ export class Toji extends EventEmitter {
     const targetDirectory = directory || process.cwd()
     logClient('Connecting client for directory: %s', targetDirectory)
 
-    // Connect client through ClientManager
+    // Create MCP server FIRST so opencode.json is ready when OpenCode starts
+    try {
+      await this.mcp.createServerForProject({
+        projectDirectory: targetDirectory
+      })
+      log('MCP server created for project: %s', targetDirectory)
+    } catch (error) {
+      log('Warning: Failed to create MCP server: %o', error)
+      // Don't throw - MCP is optional functionality
+    }
+
+    // Connect client through ClientManager (this starts OpenCode server)
     await this.clientManager.connectClient(targetDirectory)
 
     // Set current directory
@@ -139,6 +162,17 @@ export class Toji extends EventEmitter {
     // Update the current project directory
     this.currentProjectDirectory = directory
     logClient('Project directory set to: %s', directory)
+
+    // Create MCP server for this project
+    try {
+      await this.mcp.createServerForProject({
+        projectDirectory: directory
+      })
+      log('MCP server created for project: %s', directory)
+    } catch (error) {
+      log('Warning: Failed to create MCP server: %o', error)
+      // Don't throw - MCP is optional functionality
+    }
 
     // Save as current project in config
     const config = this._config
@@ -420,6 +454,14 @@ export class Toji extends EventEmitter {
 
     // Remove client through ClientManager
     this.clientManager.removeClient(projectToClose)
+
+    // Close MCP server for this project
+    try {
+      await this.mcp.closeServer(projectToClose)
+      log('Closed MCP server for %s', projectToClose)
+    } catch (error) {
+      log('Warning: Failed to close MCP server: %o', error)
+    }
 
     // Stop the server for this directory
     await this.server.stopServerForDirectory(projectToClose)
