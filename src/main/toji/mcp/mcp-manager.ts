@@ -8,6 +8,7 @@ import type { McpServerInstance, McpServerOptions } from './types'
 import { registerDiscordMessageTool, type DiscordMessageFetcher } from './tools/discord-messages'
 import { registerClearSessionTool } from './tools/clear-session'
 import { registerReadSessionTool } from './tools/read-session'
+import { registerListSessionsTool } from './tools/list-sessions'
 import type { SessionManager } from '../sessions'
 import { createFileDebugLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
@@ -54,6 +55,11 @@ export class McpManager {
           sessionManager
         })
         registerReadSessionTool(instance.server, {
+          getClient,
+          getCurrentProjectPath,
+          sessionManager
+        })
+        registerListSessionsTool(instance.server, {
           getClient,
           getCurrentProjectPath,
           sessionManager
@@ -149,6 +155,11 @@ export class McpManager {
         sessionManager: this.sessionManager
       })
       registerReadSessionTool(server, {
+        getClient: this.getClientFn,
+        getCurrentProjectPath: this.getCurrentProjectPathFn,
+        sessionManager: this.sessionManager
+      })
+      registerListSessionsTool(server, {
         getClient: this.getClientFn,
         getCurrentProjectPath: this.getCurrentProjectPathFn,
         sessionManager: this.sessionManager

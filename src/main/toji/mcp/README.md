@@ -18,6 +18,36 @@ Project Closes → MCP Server Shutdown → HTTP Server Closed
 
 ## Available Tools
 
+### `list_sessions`
+
+List all available sessions in the current project with metadata. Provides AI with awareness of what sessions exist.
+
+**Inputs:**
+
+- `includeMessageCount` (optional): Include message count for each session (default: true)
+
+**Output:**
+
+```json
+{
+  "currentSessionId": "ses_abc123...",
+  "totalCount": 3,
+  "sessions": [
+    {
+      "id": "ses_abc123...",
+      "title": "Describing project",
+      "messageCount": 41,
+      "created": "2025-10-03T14:00:00Z",
+      "updated": "2025-10-03T15:30:00Z",
+      "lastActive": "2025-10-03T15:30:00Z"
+    }
+  ]
+}
+```
+
+**Example Usage:**
+AI calls this proactively to discover available sessions before user asks specific questions. Answers "How many sessions do we have?" or "What sessions exist?"
+
 ### `clear_and_start_session`
 
 Creates a new OpenCode session and sets it as active. This clears the conversation history while maintaining project context.
@@ -155,6 +185,7 @@ src/main/toji/mcp/
 ├── mcp-manager.ts          # Server lifecycle & HTTP endpoints
 ├── README.md               # This file
 └── tools/
+    ├── list-sessions.ts    # List all available sessions
     ├── clear-session.ts    # Clear and start new session
     ├── read-session.ts     # Read messages from sessions
     └── discord-messages.ts # Discord tool implementation
