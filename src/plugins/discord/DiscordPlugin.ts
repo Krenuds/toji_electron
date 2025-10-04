@@ -18,6 +18,7 @@ import { createDiscordFileUploader } from './utils/mcp-uploader'
 import { createDiscordChannelLister } from './utils/mcp-channel-lister'
 import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
+import { TTSService } from '../../main/services/tts-service'
 
 const log = createFileDebugLogger('discord:plugin')
 
@@ -42,6 +43,7 @@ export class DiscordPlugin extends EventEmitter {
   private projectManager?: DiscordProjectManager
   private slashCommandModule?: SlashCommandModule
   private voiceModule?: import('./voice/VoiceModule').VoiceModule
+  private ttsService?: TTSService
   private initialized = false
   private messageFetcher?: ReturnType<typeof createDiscordMessageFetcher>
   private fileUploader?: ReturnType<typeof createDiscordFileUploader>
@@ -51,9 +53,13 @@ export class DiscordPlugin extends EventEmitter {
 
   constructor(
     private toji: Toji,
-    private config?: { token?: string; clientId?: string; guildId?: string }
+    private config?: { token?: string; clientId?: string; guildId?: string; configProvider?: import('../../main/config/ConfigProvider').ConfigProvider }
   ) {
     super()
+    // Initialize TTS service if ConfigProvider is available
+    if (config?.configProvider) {
+      this.ttsService = new TTSService(config.configProvider)
+    }
   }
 
   /**
@@ -295,6 +301,22 @@ export class DiscordPlugin extends EventEmitter {
                 await progressMessage.delete()
               }
               await sendDiscordResponse(message, fullText)
+
+              // Play TTS if user is in a voice channel for this project
+              if (this.voiceModule && this.ttsService) {
+                try {
+                  const session = this.voiceModule.getUserSessionByChannel(message.channelId)
+                  if (session) {
+                    log('[TTS] Found voice session for channel, generating TTS...')
+                    const audioBuffer = await this.ttsService.textToSpeech(fullText)
+                    await this.voiceModule.playTTS(session.id, audioBuffer)
+                    log('[TTS] Successfully played response in voice channel')
+                  }
+                } catch (error) {
+                  log('[TTS] Failed to play voice response:', error)
+                  // Don't fail the whole interaction if TTS fails
+                }
+              }
             },
 
             onError: async (error) => {

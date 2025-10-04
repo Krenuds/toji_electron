@@ -82,7 +82,8 @@ export class DiscordService {
       this.plugin = new DiscordPlugin(this.toji, {
         token,
         clientId,
-        guildId
+        guildId,
+        configProvider: this.config
       })
 
       await this.plugin.initialize()
