@@ -45,6 +45,16 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         name: '📂 /project [subcommand]',
         value: 'Project management (list, add - coming soon)',
         inline: false
+      },
+      {
+        name: '⚙️ /admin [subcommand] (Owner Only)',
+        value: [
+          '**setup** - Create the Toji Admin role automatically',
+          '**status** - Check current permission setup',
+          '**grant @user** - Give bot access to a user',
+          '**revoke @user** - Remove bot access from a user'
+        ].join('\n'),
+        inline: false
       }
     ],
     footer: {
@@ -52,5 +62,12 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     }
   }
 
-  await interaction.reply({ embeds: [helpEmbed] })
+  const isOwner = interaction.guild && interaction.user.id === interaction.guild.ownerId
+
+  await interaction.reply({
+    embeds: [helpEmbed],
+    content: isOwner
+      ? '💡 **Tip:** Use `/admin setup` to automatically create the admin role and manage permissions!'
+      : undefined
+  })
 }

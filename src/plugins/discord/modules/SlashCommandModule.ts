@@ -53,11 +53,13 @@ export class SlashCommandModule implements DiscordModule {
       const initCommand = await import('../commands/init')
       const projectCommand = await import('../commands/project')
       const clearCommand = await import('../commands/clear')
+      const adminCommand = await import('../commands/admin')
 
       this.commands.set('help', helpCommand)
       this.commands.set('init', initCommand)
       this.commands.set('project', projectCommand)
       this.commands.set('clear', clearCommand)
+      this.commands.set('admin', adminCommand)
 
       log(`Loaded ${this.commands.size} slash commands`)
     } catch (error) {
@@ -98,8 +100,14 @@ export class SlashCommandModule implements DiscordModule {
         return
       }
 
+      // Skip permission check for admin command (it has its own owner-only check)
+      const skipPermissionCheck = interaction.commandName === 'admin'
+
       // Check permissions before executing command
-      if (!hasPermission(interaction, { adminRoleName: DEFAULT_ADMIN_ROLE_NAME })) {
+      if (
+        !skipPermissionCheck &&
+        !hasPermission(interaction, { adminRoleName: DEFAULT_ADMIN_ROLE_NAME })
+      ) {
         log(
           'Permission denied for user %s on command %s',
           interaction.user.tag,
