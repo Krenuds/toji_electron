@@ -1,20 +1,36 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { VStack, Text, Box, HStack, Badge } from '@chakra-ui/react'
-import { LuSlack, LuGithub } from 'react-icons/lu'
+import { LuSlack, LuGithub, LuKey } from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa6'
 import { SidebarCard } from '../../shared/SidebarCard'
 import { useDiscord } from '../../../hooks/useDiscord'
+import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
 
 interface Integration {
   id: string
   name: string
   icon: React.ReactElement
-  status: 'connected' | 'disconnected' | 'coming-soon'
+  status: 'connected' | 'disconnected' | 'coming-soon' | 'configured'
   color: string
+  count?: number
 }
 
 export function IntegrationsViewSidebar(): React.JSX.Element {
   const { status: discordStatus } = useDiscord()
+  const { getConfiguredProviders } = useOpencodeApiKeys()
+  const [providerCount, setProviderCount] = useState(0)
+
+  useEffect(() => {
+    const loadProviderCount = async (): Promise<void> => {
+      try {
+        const providers = await getConfiguredProviders()
+        setProviderCount(providers.length)
+      } catch (err) {
+        console.error('Failed to load provider count:', err)
+      }
+    }
+    loadProviderCount()
+  }, [getConfiguredProviders])
 
   const integrations: Integration[] = [
     {
@@ -23,6 +39,14 @@ export function IntegrationsViewSidebar(): React.JSX.Element {
       icon: <FaDiscord size={16} />,
       status: discordStatus.connected ? 'connected' : 'disconnected',
       color: '#5865F2'
+    },
+    {
+      id: 'opencode',
+      name: 'API Keys',
+      icon: <LuKey size={16} />,
+      status: providerCount > 0 ? 'configured' : 'disconnected',
+      color: 'purple.500',
+      count: providerCount
     },
     {
       id: 'slack',
@@ -77,6 +101,11 @@ export function IntegrationsViewSidebar(): React.JSX.Element {
               {integration.status === 'disconnected' && (
                 <Badge size="xs" colorPalette="gray" variant="subtle">
                   Disconnected
+                </Badge>
+              )}
+              {integration.status === 'configured' && integration.count !== undefined && (
+                <Badge size="xs" colorPalette="purple" variant="subtle">
+                  {integration.count} key{integration.count !== 1 ? 's' : ''}
                 </Badge>
               )}
               {integration.status === 'coming-soon' && (

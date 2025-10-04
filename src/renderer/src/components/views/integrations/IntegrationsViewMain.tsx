@@ -1,14 +1,50 @@
-import React, { useState } from 'react'
-import { Box, VStack, HStack, Text, Button, Card, Input, Badge, Spinner } from '@chakra-ui/react'
-import { LuPlug, LuPowerOff, LuTrash2, LuEye, LuEyeOff, LuExternalLink } from 'react-icons/lu'
+import React, { useState, useEffect } from 'react'
+import {
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Button,
+  Card,
+  Input,
+  Badge,
+  Spinner,
+  For
+} from '@chakra-ui/react'
+import {
+  LuPlug,
+  LuPowerOff,
+  LuTrash2,
+  LuEye,
+  LuEyeOff,
+  LuExternalLink,
+  LuKey,
+  LuRefreshCw
+} from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa6'
 import { useDiscord } from '../../../hooks/useDiscord'
+import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
 
 export function IntegrationsViewMain(): React.JSX.Element {
   const { status, hasToken, isConnecting, error, connect, disconnect, refreshStatus } = useDiscord()
   const [tokenInput, setTokenInput] = useState('')
   const [showToken, setShowToken] = useState(false)
   const [isSavingToken, setIsSavingToken] = useState(false)
+
+  // OpenCode API Key Management
+  const {
+    setApiKey,
+    clearApiKey,
+    getConfiguredProviders,
+    syncApiKeys,
+    isLoading: isApiKeyLoading,
+    error: apiKeyError
+  } = useOpencodeApiKeys()
+  const [providerId, setProviderId] = useState('zen')
+  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [configuredProviders, setConfiguredProviders] = useState<string[]>([])
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const handleSaveToken = async (): Promise<void> => {
     if (!tokenInput.trim()) return
@@ -41,6 +77,54 @@ export function IntegrationsViewMain(): React.JSX.Element {
   const handleDisconnect = async (): Promise<void> => {
     await disconnect()
   }
+
+  // OpenCode API Key handlers
+  const loadConfiguredProviders = async (): Promise<void> => {
+    try {
+      const providers = await getConfiguredProviders()
+      setConfiguredProviders(providers)
+    } catch (err) {
+      console.error('Failed to load configured providers:', err)
+    }
+  }
+
+  const handleSaveApiKey = async (): Promise<void> => {
+    if (!apiKeyInput.trim() || !providerId.trim()) return
+
+    try {
+      await setApiKey(providerId.trim(), apiKeyInput.trim())
+      setApiKeyInput('') // Clear input after saving
+      await loadConfiguredProviders()
+    } catch (err) {
+      console.error('Failed to save API key:', err)
+    }
+  }
+
+  const handleRemoveApiKey = async (provider: string): Promise<void> => {
+    try {
+      await clearApiKey(provider)
+      await loadConfiguredProviders()
+    } catch (err) {
+      console.error('Failed to remove API key:', err)
+    }
+  }
+
+  const handleSyncApiKeys = async (): Promise<void> => {
+    setIsSyncing(true)
+    try {
+      await syncApiKeys()
+    } catch (err) {
+      console.error('Failed to sync API keys:', err)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  // Load configured providers on mount
+  useEffect(() => {
+    loadConfiguredProviders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <VStack align="stretch" gap={6} h="100%">
@@ -286,6 +370,213 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </Text>
                 <Text color="app.text" fontSize="xs">
                   4. Connect the bot and @mention it or use /chat command
+                </Text>
+              </VStack>
+            </Box>
+          </VStack>
+        </Card.Body>
+      </Card.Root>
+
+      {/* OpenCode API Keys Integration Card */}
+      <Card.Root bg="app.dark" border="1px solid" borderColor="app.border">
+        <Card.Body p={6}>
+          <VStack align="stretch" gap={4}>
+            {/* Card Header */}
+            <HStack justify="space-between">
+              <HStack gap={3}>
+                <Box
+                  w={10}
+                  h={10}
+                  borderRadius="full"
+                  bg="purple.600"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <LuKey size={24} color="white" />
+                </Box>
+                <Box>
+                  <Text color="app.light" fontSize="lg" fontWeight="semibold">
+                    OpenCode API Keys
+                  </Text>
+                  <Text color="app.text" fontSize="sm">
+                    Configure API keys to access more AI models
+                  </Text>
+                </Box>
+              </HStack>
+              <Button
+                size="xs"
+                variant="outline"
+                colorPalette="purple"
+                onClick={handleSyncApiKeys}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <>
+                    <LuRefreshCw size={12} />
+                    <Text ml={1}>Sync</Text>
+                  </>
+                )}
+              </Button>
+            </HStack>
+
+            {/* Error Display */}
+            {apiKeyError && (
+              <Box
+                p={3}
+                bg="rgba(239, 68, 68, 0.1)"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="red.500"
+              >
+                <Text color="red.400" fontSize="sm">
+                  {apiKeyError}
+                </Text>
+              </Box>
+            )}
+
+            {/* Add New API Key */}
+            <Box
+              p={4}
+              bg="rgba(168, 85, 247, 0.05)"
+              borderRadius="md"
+              border="1px solid"
+              borderColor="purple.800"
+            >
+              <VStack align="stretch" gap={3}>
+                <Text color="purple.300" fontSize="sm" fontWeight="medium">
+                  Add New API Key
+                </Text>
+
+                {/* Provider ID Input */}
+                <Box>
+                  <Text color="app.text" fontSize="xs" mb={1}>
+                    Provider ID (e.g., zen, anthropic, openai):
+                  </Text>
+                  <Input
+                    type="text"
+                    placeholder="zen"
+                    value={providerId}
+                    onChange={(e) => setProviderId(e.target.value)}
+                    bg="rgba(255,255,255,0.02)"
+                    border="1px solid"
+                    borderColor="app.border"
+                    color="app.light"
+                    size="sm"
+                    _placeholder={{ color: 'app.text' }}
+                    _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
+                  />
+                </Box>
+
+                {/* API Key Input */}
+                <Box>
+                  <Text color="app.text" fontSize="xs" mb={1}>
+                    API Key:
+                  </Text>
+                  <HStack gap={2}>
+                    <Box flex="1" position="relative">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        placeholder="sk-..."
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        bg="rgba(255,255,255,0.02)"
+                        border="1px solid"
+                        borderColor="app.border"
+                        color="app.light"
+                        size="sm"
+                        _placeholder={{ color: 'app.text' }}
+                        _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
+                        pr={10}
+                      />
+                      <Button
+                        position="absolute"
+                        right={1}
+                        top="50%"
+                        transform="translateY(-50%)"
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                        aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+                      >
+                        {showApiKey ? <LuEyeOff size={14} /> : <LuEye size={14} />}
+                      </Button>
+                    </Box>
+                  </HStack>
+                </Box>
+
+                <Button
+                  colorPalette="purple"
+                  variant="solid"
+                  size="sm"
+                  onClick={handleSaveApiKey}
+                  disabled={!apiKeyInput.trim() || !providerId.trim() || isApiKeyLoading}
+                >
+                  {isApiKeyLoading ? <Spinner size="sm" /> : 'Save API Key'}
+                </Button>
+              </VStack>
+            </Box>
+
+            {/* Configured Providers List */}
+            {configuredProviders.length > 0 && (
+              <Box>
+                <Text color="app.text" fontSize="sm" fontWeight="medium" mb={2}>
+                  Configured Providers ({configuredProviders.length}):
+                </Text>
+                <VStack align="stretch" gap={2}>
+                  <For each={configuredProviders}>
+                    {(provider) => (
+                      <HStack
+                        key={provider}
+                        p={2}
+                        bg="rgba(255,255,255,0.02)"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="app.border"
+                        justify="space-between"
+                      >
+                        <HStack gap={2}>
+                          <Badge colorPalette="green" size="sm">
+                            {provider}
+                          </Badge>
+                          <Text color="app.text" fontSize="xs">
+                            API key configured
+                          </Text>
+                        </HStack>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          colorPalette="red"
+                          onClick={() => handleRemoveApiKey(provider)}
+                        >
+                          <LuTrash2 size={12} />
+                        </Button>
+                      </HStack>
+                    )}
+                  </For>
+                </VStack>
+              </Box>
+            )}
+
+            {/* Instructions */}
+            <Box pt={2} borderTop="1px solid" borderColor="app.border">
+              <Text color="app.text" fontSize="xs" fontWeight="medium" mb={2}>
+                How it works:
+              </Text>
+              <VStack align="start" gap={1}>
+                <Text color="app.text" fontSize="xs">
+                  1. Enter the provider ID (e.g., &quot;zen&quot; for OpenCode ZEN API)
+                </Text>
+                <Text color="app.text" fontSize="xs">
+                  2. Paste your API key from the provider
+                </Text>
+                <Text color="app.text" fontSize="xs">
+                  3. Click Save - keys are encrypted and synced with OpenCode
+                </Text>
+                <Text color="app.text" fontSize="xs">
+                  4. Access provider models in chat configuration
                 </Text>
               </VStack>
             </Box>
