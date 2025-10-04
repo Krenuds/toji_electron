@@ -193,12 +193,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 >
                   <HStack justify="space-between" align="center" gap={3}>
                     <VStack align="start" gap={0} flex="1" minW="0">
-                      <Text color="#5865F2" fontSize="xs" fontWeight="medium">
+                      <Text color="#5865F2" fontSize="sm" fontWeight="medium">
                         Invite Bot to Server
                       </Text>
                       <Text
                         color="app.text"
-                        fontSize="2xs"
+                        fontSize="xs"
                         overflow="hidden"
                         textOverflow="ellipsis"
                         whiteSpace="nowrap"
@@ -221,7 +221,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                       }}
                     >
                       <LuExternalLink size={12} />
-                      <Text ml={1} color="white" fontSize="2xs">
+                      <Text ml={1} color="white" fontSize="xs">
                         Add to Server
                       </Text>
                     </Button>
@@ -239,13 +239,13 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   borderColor="green.500"
                 >
                   <HStack gap={3} align="center">
-                    <Text color="green.400" fontSize="xs" fontWeight="medium">
+                    <Text color="green.400" fontSize="sm" fontWeight="medium">
                       Bot Connected
                     </Text>
                     {status.username && (
                       <>
                         <Text color="app.border">•</Text>
-                        <Text color="app.text" fontSize="2xs">
+                        <Text color="app.text" fontSize="xs">
                           {status.username}
                         </Text>
                       </>
@@ -253,7 +253,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     {status.guilds !== undefined && (
                       <>
                         <Text color="app.border">•</Text>
-                        <Text color="app.text" fontSize="2xs">
+                        <Text color="app.text" fontSize="xs">
                           {status.guilds} server{status.guilds !== 1 ? 's' : ''}
                         </Text>
                       </>
@@ -271,7 +271,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   border="1px solid"
                   borderColor="red.500"
                 >
-                  <Text color="red.400" fontSize="xs">
+                  <Text color="red.400" fontSize="sm">
                     {error}
                   </Text>
                 </Box>
