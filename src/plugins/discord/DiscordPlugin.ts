@@ -148,14 +148,14 @@ export class DiscordPlugin extends EventEmitter {
                 if (!progressMessage) {
                   // Send initial progress embed
                   updateCount++
-                  const embed = createProgressEmbed(charCount, updateCount, toolActivity)
+                  const embed = createProgressEmbed(updateCount, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
                   log('✅ Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
                   updateCount++
-                  const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
+                  const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
                   log('✅ Updated progress embed: %d chars', charCount)
@@ -177,11 +177,7 @@ export class DiscordPlugin extends EventEmitter {
                   (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
                 ) {
                   updateCount++ // Increment since we're updating the embed
-                  const charCountStr =
-                    progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
-                      ?.value || '0'
-                  const charCount = parseInt(charCountStr.replace(/,/g, ''), 10)
-                  const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
+                  const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = Date.now()
                   log('✅ Updated progress embed with tool info')
@@ -250,14 +246,14 @@ export class DiscordPlugin extends EventEmitter {
               if (!progressMessage) {
                 // Send initial progress embed
                 updateCount++
-                const embed = createProgressEmbed(charCount, updateCount, toolActivity)
+                const embed = createProgressEmbed(updateCount, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
                 log('✅ Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
                 updateCount++
-                const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
+                const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
                 log('✅ Updated progress embed: %d chars (mention)', charCount)
@@ -279,11 +275,7 @@ export class DiscordPlugin extends EventEmitter {
                 (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
               ) {
                 updateCount++ // Increment since we're updating the embed
-                const charCountStr =
-                  progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
-                    ?.value || '0'
-                const charCount = parseInt(charCountStr.replace(/,/g, ''), 10)
-                const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
+                const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = Date.now()
                 log('✅ Updated progress embed with tool info (mention)')

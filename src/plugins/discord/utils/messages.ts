@@ -35,27 +35,48 @@ function formatToolName(toolName: string): string {
 function createToolStatusString(tools: ToolActivity): string {
   const lines: string[] = []
 
+  // Calculate totals
+  const totalCompleted = tools.completed.length
+  const totalErrors = tools.errors.length
+  const totalRunning = tools.running.size
+  const totalTools = totalCompleted + totalErrors + totalRunning
+
+  // Add summary header if any tools have been used
+  if (totalTools > 0) {
+    lines.push(`**Total: ${totalTools}**`)
+    lines.push('') // Empty line for spacing
+  }
+
+  // Show currently running tools (all of them)
   if (tools.running.size > 0) {
     const running = Array.from(tools.running.values())
-      .map((t) => `🔄 ${formatToolName(t.name)}${t.title ? `: ${t.title}` : ''}`)
+      .map((t) => `🔄 **${formatToolName(t.name)}**${t.title ? `\n   └─ ${t.title}` : ''}`)
       .join('\n')
     lines.push(running)
   }
 
+  // Show last 5 completed tools with more detail
   if (tools.completed.length > 0) {
-    const completed = tools.completed
-      .slice(-3) // Show last 3 completed
-      .map((name) => `✅ ${formatToolName(name)}`)
-      .join('\n')
+    const recentCompleted = tools.completed.slice(-5)
+    const completed = recentCompleted.map((name) => `✅ ${formatToolName(name)}`).join('\n')
     lines.push(completed)
+
+    // Show "and X more" if there are more than 5
+    if (tools.completed.length > 5) {
+      lines.push(`   _...and ${tools.completed.length - 5} more_`)
+    }
   }
 
+  // Show last 3 errors
   if (tools.errors.length > 0) {
-    const errors = tools.errors
-      .slice(-2) // Show last 2 errors
-      .map((name) => `❌ ${formatToolName(name)}`)
-      .join('\n')
+    const recentErrors = tools.errors.slice(-3)
+    const errors = recentErrors.map((name) => `❌ **${formatToolName(name)}**`).join('\n')
     lines.push(errors)
+
+    // Show "and X more" if there are more than 3
+    if (tools.errors.length > 3) {
+      lines.push(`   _...and ${tools.errors.length - 3} more errors_`)
+    }
   }
 
   return lines.join('\n') || '_No tools used yet_'
@@ -247,41 +268,33 @@ export function formatErrorMessage(error: unknown, context: string): string {
  * Shows activity level rather than fake progress
  */
 export function createActivityIndicator(updateCount: number): string {
-  // Show 1-5 chevrons based on activity, cycling
-  const chevronCount = Math.min(5, (updateCount % 5) + 1)
+  // Show 1-10 chevrons based on activity, cycling
+  const chevronCount = Math.min(10, (updateCount % 10) + 1)
+  // Use ANSI color codes for green chevrons in Discord
   const chevrons = '⟩'.repeat(chevronCount)
-  const spaces = ' '.repeat(5 - chevronCount)
-  return `${chevrons}${spaces} ${updateCount} updates`
+  // ANSI code: \u001b[32m = green, \u001b[1m = bold, \u001b[0m = reset
+  return `\`\`\`ansi\n\u001b[1;32m${chevrons}\u001b[0m\n\`\`\``
 }
 
 /**
  * Create a progress embed for streaming responses
  */
-export function createProgressEmbed(
-  charCount: number,
-  updateCount: number = 0,
-  tools?: ToolActivity
-): EmbedBuilder {
+export function createProgressEmbed(updateCount: number = 0, tools?: ToolActivity): EmbedBuilder {
   const activity = createActivityIndicator(updateCount)
 
   const embed = new EmbedBuilder()
-    .setColor(DISCORD_COLORS.PENDING)
-    .setTitle('🤖 Toji is thinking...')
+    .setColor(DISCORD_COLORS.SUCCESS)
     .setDescription('🔄 Streaming response...')
     .setTimestamp()
 
-  if (charCount > 0) {
-    embed.addFields(
-      { name: '📊 Activity', value: activity, inline: false },
-      { name: '📝 Characters', value: `${charCount.toLocaleString()}`, inline: true }
-    )
-  } else {
-    embed.addFields({ name: '� Activity', value: activity, inline: false })
-  }
+  embed.addFields({ name: `Tasks: ${updateCount}`, value: activity, inline: false })
 
-  if (tools && (tools.running.size > 0 || tools.completed.length > 0 || tools.errors.length > 0)) {
-    embed.addFields({ name: '🔧 Tools', value: createToolStatusString(tools), inline: false })
-  }
+  // Always add Tools field to maintain consistent embed size
+  const toolsValue =
+    tools && (tools.running.size > 0 || tools.completed.length > 0 || tools.errors.length > 0)
+      ? createToolStatusString(tools)
+      : '_Waiting for tools..._'
+  embed.addFields({ name: '🔧 Tools', value: toolsValue, inline: false })
 
   return embed
 }
@@ -289,26 +302,21 @@ export function createProgressEmbed(
 /**
  * Update a progress embed with new information
  */
-export function updateProgressEmbed(
-  charCount: number,
-  updateCount: number,
-  tools?: ToolActivity
-): EmbedBuilder {
+export function updateProgressEmbed(updateCount: number, tools?: ToolActivity): EmbedBuilder {
   const activity = createActivityIndicator(updateCount)
 
   const embed = new EmbedBuilder()
-    .setColor(DISCORD_COLORS.PENDING)
-    .setTitle('🤖 Toji is working...')
+    .setColor(DISCORD_COLORS.SUCCESS)
     .setDescription('✍️ Writing response...')
-    .addFields(
-      { name: '📊 Activity', value: activity, inline: false },
-      { name: '📝 Characters', value: `${charCount.toLocaleString()}`, inline: true }
-    )
+    .addFields({ name: `Tasks: ${updateCount}`, value: activity, inline: false })
     .setTimestamp()
 
-  if (tools && (tools.running.size > 0 || tools.completed.length > 0 || tools.errors.length > 0)) {
-    embed.addFields({ name: '🔧 Tools', value: createToolStatusString(tools), inline: false })
-  }
+  // Always add Tools field to maintain consistent embed size
+  const toolsValue =
+    tools && (tools.running.size > 0 || tools.completed.length > 0 || tools.errors.length > 0)
+      ? createToolStatusString(tools)
+      : '_No tools running yet..._'
+  embed.addFields({ name: '🔧 Tools', value: toolsValue, inline: false })
 
   return embed
 }
