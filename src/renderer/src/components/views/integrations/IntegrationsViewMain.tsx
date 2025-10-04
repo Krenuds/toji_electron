@@ -5,11 +5,11 @@ import {
   HStack,
   Text,
   Button,
-  Card,
   Input,
   Badge,
   Spinner,
-  For
+  For,
+  Card
 } from '@chakra-ui/react'
 import {
   LuPlug,
@@ -19,10 +19,18 @@ import {
   LuEyeOff,
   LuExternalLink,
   LuKey,
-  LuRefreshCw
+  LuRefreshCw,
+  LuPlus
 } from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa6'
-import { MainContentContainer } from '../../shared/MainContentContainer'
+import {
+  ActionButton,
+  IntegrationCard,
+  MainContentContainer,
+  SectionDivider,
+  StatusBox,
+  ThemedInput
+} from '../../shared'
 import { useDiscord } from '../../../hooks/useDiscord'
 import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
 import { useAvailableModels } from '../../../hooks/useAvailableModels'
@@ -184,13 +192,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
 
               {/* Bot Invite Link */}
               {status.botId && (
-                <Box
-                  p={2}
-                  bg="rgba(88, 101, 242, 0.1)"
-                  borderRadius="md"
-                  border="1px solid"
-                  borderColor="#5865F2"
-                >
+                <StatusBox variant="info" compact>
                   <HStack justify="space-between" align="center" gap={3}>
                     <VStack align="start" gap={0} flex="1" minW="0">
                       <Text color="#5865F2" fontSize="sm" fontWeight="medium">
@@ -226,18 +228,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                       </Text>
                     </Button>
                   </HStack>
-                </Box>
+                </StatusBox>
               )}
 
               {/* Connection Status */}
               {status.connected && (
-                <Box
-                  p={2}
-                  bg="rgba(34, 197, 94, 0.1)"
-                  borderRadius="md"
-                  border="1px solid"
-                  borderColor="green.500"
-                >
+                <StatusBox variant="success" compact>
                   <HStack gap={3} align="center">
                     <Text color="green.400" fontSize="sm" fontWeight="medium">
                       Bot Connected
@@ -259,22 +255,16 @@ export function IntegrationsViewMain(): React.JSX.Element {
                       </>
                     )}
                   </HStack>
-                </Box>
+                </StatusBox>
               )}
 
               {/* Error Display */}
               {error && (
-                <Box
-                  p={2}
-                  bg="rgba(239, 68, 68, 0.1)"
-                  borderRadius="md"
-                  border="1px solid"
-                  borderColor="red.500"
-                >
+                <StatusBox variant="error" compact>
                   <Text color="red.400" fontSize="sm">
                     {error}
                   </Text>
-                </Box>
+                </StatusBox>
               )}
 
               {/* Token Configuration */}
@@ -285,17 +275,11 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   </Text>
                   <HStack gap={2}>
                     <Box flex="1" position="relative">
-                      <Input
+                      <ThemedInput
                         type={showToken ? 'text' : 'password'}
                         placeholder="Enter Discord bot token..."
                         value={tokenInput}
                         onChange={(e) => setTokenInput(e.target.value)}
-                        bg="rgba(255,255,255,0.02)"
-                        border="1px solid"
-                        borderColor="app.border"
-                        color="app.light"
-                        _placeholder={{ color: 'app.text' }}
-                        _focus={{ borderColor: '#5865F2', boxShadow: 'none' }}
                         pr={10}
                       />
                       <Button
@@ -393,8 +377,10 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </VStack>
               )}
 
+              <SectionDivider />
+
               {/* Instructions */}
-              <Box pt={2} borderTop="1px solid" borderColor="app.border">
+              <Box>
                 <Text color="app.text" fontSize="xs" fontWeight="medium" mb={2}>
                   How to use:
                 </Text>
@@ -694,18 +680,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     </Text>
                     <HStack gap={2}>
                       <Box flex="1" position="relative">
-                        <Input
+                        <ThemedInput
                           type={showApiKey ? 'text' : 'password'}
                           placeholder="sk-..."
                           value={apiKeyInput}
                           onChange={(e) => setApiKeyInput(e.target.value)}
-                          bg="rgba(255,255,255,0.02)"
-                          border="1px solid"
-                          borderColor="app.border"
-                          color="app.light"
                           size="sm"
-                          _placeholder={{ color: 'app.text' }}
-                          _focus={{ borderColor: 'green.500', boxShadow: 'none' }}
                           pr={10}
                         />
                         <Button
@@ -785,10 +765,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </Box>
               )}
 
+              <SectionDivider />
+
               {/* Instructions */}
-              <Box pt={2} borderTop="1px solid" borderColor="app.border">
+              <Box>
                 <Text color="app.text" fontSize="xs" fontWeight="medium" mb={2}>
-                  How it works:
+                  Instructions:
                 </Text>
                 <VStack align="start" gap={1}>
                   <Text color="app.text" fontSize="xs">
