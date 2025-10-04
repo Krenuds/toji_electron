@@ -24,6 +24,7 @@ import {
 import { FaDiscord } from 'react-icons/fa6'
 import { useDiscord } from '../../../hooks/useDiscord'
 import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
+import { useAvailableModels } from '../../../hooks/useAvailableModels'
 
 export function IntegrationsViewMain(): React.JSX.Element {
   const { status, hasToken, isConnecting, error, connect, disconnect, refreshStatus } = useDiscord()
@@ -40,6 +41,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
     isLoading: isApiKeyLoading,
     error: apiKeyError
   } = useOpencodeApiKeys()
+  const { models: availableModels, refresh: refreshModels } = useAvailableModels()
   const [providerId, setProviderId] = useState('opencode')
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
@@ -95,6 +97,8 @@ export function IntegrationsViewMain(): React.JSX.Element {
       await setApiKey(providerId.trim(), apiKeyInput.trim())
       setApiKeyInput('') // Clear input after saving
       await loadConfiguredProviders()
+      // Refresh models to show newly available models
+      await refreshModels()
     } catch (err) {
       console.error('Failed to save API key:', err)
     }
@@ -104,6 +108,8 @@ export function IntegrationsViewMain(): React.JSX.Element {
     try {
       await clearApiKey(provider)
       await loadConfiguredProviders()
+      // Refresh models to update list after removal
+      await refreshModels()
     } catch (err) {
       console.error('Failed to remove API key:', err)
     }
@@ -113,6 +119,8 @@ export function IntegrationsViewMain(): React.JSX.Element {
     setIsSyncing(true)
     try {
       await syncApiKeys()
+      // Refresh models after sync
+      await refreshModels()
     } catch (err) {
       console.error('Failed to sync API keys:', err)
     } finally {
@@ -452,12 +460,60 @@ export function IntegrationsViewMain(): React.JSX.Element {
 
                 {/* Provider ID Input */}
                 <Box>
-                  <Text color="app.text" fontSize="xs" mb={1}>
-                    Provider ID (e.g., zen, anthropic, openai):
+                  <Text color="app.text" fontSize="xs" mb={1} fontWeight="medium">
+                    Provider ID
                   </Text>
+                  <Text color="app.textSecondary" fontSize="xs" mb={2}>
+                    Select a common provider or enter a custom ID:
+                  </Text>
+
+                  {/* Common Provider Quick Select */}
+                  <Box mb={2}>
+                    <Text color="app.textSecondary" fontSize="xs" mb={1}>
+                      Common Providers:
+                    </Text>
+                    <HStack gap={1} flexWrap="wrap">
+                      {[
+                        {
+                          id: 'opencode',
+                          name: 'OpenCode ZEN',
+                          url: 'https://opencode.ai/auth'
+                        },
+                        {
+                          id: 'anthropic',
+                          name: 'Anthropic',
+                          url: 'https://console.anthropic.com'
+                        },
+                        {
+                          id: 'openai',
+                          name: 'OpenAI',
+                          url: 'https://platform.openai.com/api-keys'
+                        },
+                        { id: 'google', name: 'Google', url: 'https://makersuite.google.com' },
+                        {
+                          id: 'deepseek',
+                          name: 'DeepSeek',
+                          url: 'https://platform.deepseek.com/'
+                        },
+                        { id: 'groq', name: 'Groq', url: 'https://console.groq.com/' }
+                      ].map((provider) => (
+                        <Button
+                          key={provider.id}
+                          size="xs"
+                          variant={providerId === provider.id ? 'solid' : 'outline'}
+                          colorPalette={providerId === provider.id ? 'purple' : 'gray'}
+                          onClick={() => setProviderId(provider.id)}
+                          title={`Get API key from ${provider.url}`}
+                        >
+                          {provider.name}
+                        </Button>
+                      ))}
+                    </HStack>
+                  </Box>
+
                   <Input
                     type="text"
-                    placeholder="zen"
+                    placeholder="opencode"
                     value={providerId}
                     onChange={(e) => setProviderId(e.target.value)}
                     bg="rgba(255,255,255,0.02)"
@@ -468,6 +524,124 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     _placeholder={{ color: 'app.text' }}
                     _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
                   />
+
+                  {/* Show link to get API key for selected provider */}
+                  {providerId && (
+                    <HStack mt={1} gap={1} align="center">
+                      <Text color="app.textSecondary" fontSize="xs">
+                        Get API key:
+                      </Text>
+                      {providerId === 'opencode' && (
+                        <a
+                          href="https://opencode.ai/auth"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          opencode.ai/auth <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {providerId === 'anthropic' && (
+                        <a
+                          href="https://console.anthropic.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          console.anthropic.com <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {providerId === 'openai' && (
+                        <a
+                          href="https://platform.openai.com/api-keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          platform.openai.com <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {providerId === 'google' && (
+                        <a
+                          href="https://makersuite.google.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          makersuite.google.com <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {providerId === 'deepseek' && (
+                        <a
+                          href="https://platform.deepseek.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          platform.deepseek.com <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {providerId === 'groq' && (
+                        <a
+                          href="https://console.groq.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#a855f7',
+                            fontSize: '12px',
+                            textDecoration: 'underline',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          console.groq.com <LuExternalLink size={10} />
+                        </a>
+                      )}
+                      {!['opencode', 'anthropic', 'openai', 'google', 'deepseek', 'groq'].includes(
+                        providerId
+                      ) && (
+                        <Text color="app.textSecondary" fontSize="xs">
+                          Check provider documentation
+                        </Text>
+                      )}
+                    </HStack>
+                  )}
                 </Box>
 
                 {/* API Key Input */}
@@ -527,34 +701,42 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </Text>
                 <VStack align="stretch" gap={2}>
                   <For each={configuredProviders}>
-                    {(provider) => (
-                      <HStack
-                        key={provider}
-                        p={2}
-                        bg="rgba(255,255,255,0.02)"
-                        borderRadius="md"
-                        border="1px solid"
-                        borderColor="app.border"
-                        justify="space-between"
-                      >
-                        <HStack gap={2}>
-                          <Badge colorPalette="green" size="sm">
-                            {provider}
-                          </Badge>
-                          <Text color="app.text" fontSize="xs">
-                            API key configured
-                          </Text>
-                        </HStack>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          colorPalette="red"
-                          onClick={() => handleRemoveApiKey(provider)}
+                    {(provider) => {
+                      // Count models for this provider
+                      const modelCount = availableModels.filter(
+                        (m) => m.providerId === provider
+                      ).length
+                      return (
+                        <HStack
+                          key={provider}
+                          p={2}
+                          bg="rgba(255,255,255,0.02)"
+                          borderRadius="md"
+                          border="1px solid"
+                          borderColor="app.border"
+                          justify="space-between"
                         >
-                          <LuTrash2 size={12} />
-                        </Button>
-                      </HStack>
-                    )}
+                          <HStack gap={2}>
+                            <Badge colorPalette="green" size="sm">
+                              {provider}
+                            </Badge>
+                            <Text color="app.text" fontSize="xs">
+                              {modelCount > 0
+                                ? `${modelCount} model${modelCount !== 1 ? 's' : ''} available`
+                                : 'API key configured'}
+                            </Text>
+                          </HStack>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            colorPalette="red"
+                            onClick={() => handleRemoveApiKey(provider)}
+                          >
+                            <LuTrash2 size={12} />
+                          </Button>
+                        </HStack>
+                      )
+                    }}
                   </For>
                 </VStack>
               </Box>
@@ -567,16 +749,16 @@ export function IntegrationsViewMain(): React.JSX.Element {
               </Text>
               <VStack align="start" gap={1}>
                 <Text color="app.text" fontSize="xs">
-                  1. Enter the provider ID (use &quot;opencode&quot; for OpenCode ZEN API)
+                  1. Select a provider or enter a custom provider ID
                 </Text>
                 <Text color="app.text" fontSize="xs">
-                  2. Get your API key from opencode.ai/auth (for ZEN) or provider website
+                  2. Click the link to get your API key from the provider
                 </Text>
                 <Text color="app.text" fontSize="xs">
-                  3. Click Save - keys are encrypted and synced with OpenCode
+                  3. Paste the API key and click Save (keys are encrypted)
                 </Text>
                 <Text color="app.text" fontSize="xs">
-                  4. Access provider models in chat configuration
+                  4. Provider models will appear in chat configuration
                 </Text>
               </VStack>
             </Box>

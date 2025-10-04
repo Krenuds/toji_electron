@@ -9,7 +9,7 @@ The user was registering the API key with provider ID **`zen`**, but according t
 From [OpenCode Documentation](https://opencode.ai/docs/):
 
 > **OpenCode Zen** is a curated list of models that have been tested and verified by the OpenCode team.
-> 
+>
 > - Run `opencode auth login`
 > - Select **`opencode`** as the provider
 > - Go to https://opencode.ai/auth
@@ -119,10 +119,10 @@ await window.api.opencode.syncApiKeys()
 
 // 4. Check available models (should now show ZEN models)
 const providers = await window.api.toji.getModelProviders()
-console.log('Providers:', providers.providers.map(p => ({ 
-  id: p.id, 
-  name: p.name, 
-  modelCount: Object.keys(p.models).length 
+console.log('Providers:', providers.providers.map(p => ({
+  id: p.id,
+  name: p.name,
+  modelCount: Object.keys(p.models).length
 })))
 ```
 

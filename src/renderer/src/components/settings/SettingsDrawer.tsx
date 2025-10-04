@@ -205,11 +205,29 @@ export function SettingsDrawer({
                 }}
               >
                 {!modelType.required && <option value="">None (use primary model)</option>}
-                {availableModels.map((model) => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
+                {/* Group models by provider for better organization */}
+                {(() => {
+                  const groupedModels = availableModels.reduce(
+                    (acc, model) => {
+                      if (!acc[model.providerName]) {
+                        acc[model.providerName] = []
+                      }
+                      acc[model.providerName].push(model)
+                      return acc
+                    },
+                    {} as Record<string, typeof availableModels>
+                  )
+
+                  return Object.entries(groupedModels).map(([providerName, models]) => (
+                    <optgroup key={providerName} label={providerName}>
+                      {models.map((model) => (
+                        <option key={model.value} value={model.value}>
+                          {model.displayLabel || model.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))
+                })()}
               </select>
             </Field.Root>
           </Box>

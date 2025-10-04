@@ -6,7 +6,7 @@
 ZEN API models were not appearing in the model dropdown after registering an API key. The investigation revealed that the system was working perfectly - **the issue was simply using the wrong provider ID**.
 
 ### Root Cause
-- UI was defaulting to provider ID **`zen`** 
+- UI was defaulting to provider ID **`zen`**
 - OpenCode ZEN is **NOT a separate provider**
 - ZEN is a **curated model collection** accessed through the **`opencode`** provider
 

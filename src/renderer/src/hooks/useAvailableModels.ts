@@ -19,6 +19,7 @@ interface ModelOption {
   providerId: string
   modelId: string
   providerName: string
+  displayLabel?: string // Optional enhanced label with provider info for duplicates
 }
 
 interface UseAvailableModelsReturn {
@@ -86,15 +87,21 @@ export function useAvailableModels(): UseAvailableModelsReturn {
 
   /**
    * Transform OpenCode Provider data into ModelOption format
+   * Detects duplicate model names across providers and adds provider context
    */
   const transformProvidersToModels = useCallback((providers: Provider[]): ModelOption[] => {
     const modelOptions: ModelOption[] = []
+    const modelNameCounts = new Map<string, number>()
 
+    // First pass: collect all models and count duplicates by model ID
     providers.forEach((provider) => {
       Object.entries(provider.models || {}).forEach(([modelId, modelInfo]) => {
+        const modelName = modelInfo.name || modelId
+        modelNameCounts.set(modelId, (modelNameCounts.get(modelId) || 0) + 1)
+
         modelOptions.push({
           value: `${provider.id}/${modelId}`,
-          label: modelInfo.name || modelId,
+          label: modelName,
           providerId: provider.id,
           modelId,
           providerName: provider.name || provider.id
@@ -102,11 +109,25 @@ export function useAvailableModels(): UseAvailableModelsReturn {
       })
     })
 
+    // Second pass: add provider context to duplicates and create display labels
+    modelOptions.forEach((option) => {
+      const hasDuplicate = modelNameCounts.get(option.modelId)! > 1
+
+      if (hasDuplicate) {
+        // Add provider name in parentheses for duplicates
+        option.displayLabel = `${option.label} (${option.providerName})`
+      } else {
+        option.displayLabel = option.label
+      }
+    })
+
     // Sort by provider name, then model name
     return modelOptions.sort((a, b) => {
+      // Primary sort: provider name
       if (a.providerName !== b.providerName) {
         return a.providerName.localeCompare(b.providerName)
       }
+      // Secondary sort: model name
       return a.label.localeCompare(b.label)
     })
   }, [])
