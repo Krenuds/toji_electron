@@ -119,39 +119,18 @@ export class DiscordPlugin extends EventEmitter {
             log('Calling streaming chat with message: %s', message.content)
 
             // Process message through Toji with streaming
-            let buffer = ''
-            let sentMessage: Message | undefined
-            let lastUpdateTime = 0
-            const UPDATE_INTERVAL = 500 // 500ms between Discord edits to respect rate limits
+            // For now: just collect chunks and send final message
+            let fullResponse = ''
 
             await this.projectManager.chatStreaming(message.content, {
               onChunk: async (text) => {
-                buffer += text
-                const now = Date.now()
-
-                // Throttle updates to respect Discord rate limits (5 edits per 5 seconds)
-                if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-                  lastUpdateTime = now
-
-                  if (!sentMessage) {
-                    // First chunk - send initial message
-                    sentMessage = await sendDiscordResponse(message, buffer)
-                  } else if (buffer.length <= 2000) {
-                    // Update existing message if within Discord's limit
-                    await sentMessage.edit(buffer)
-                  }
-                  // If over 2000 chars, wait for onComplete to handle splitting
-                }
+                fullResponse += text
+                log('Received chunk: %d chars (total: %d)', text.length, fullResponse.length)
               },
 
               onComplete: async (fullText) => {
-                log('Got complete response (%d chars), sending final update', fullText.length)
-                // Final update with complete text
-                if (sentMessage) {
-                  await sendDiscordResponse(sentMessage, fullText)
-                } else {
-                  await sendDiscordResponse(message, fullText)
-                }
+                log('Got complete response (%d chars), sending to Discord', fullText.length)
+                await sendDiscordResponse(message, fullText)
               },
 
               onError: async (error) => {
@@ -179,32 +158,16 @@ export class DiscordPlugin extends EventEmitter {
 
         try {
           // Use current active project context with streaming
-          let buffer = ''
-          let sentMessage: Message | undefined
-          let lastUpdateTime = 0
-          const UPDATE_INTERVAL = 500
+          let fullResponse = ''
 
           await this.projectManager.chatStreaming(content, {
             onChunk: async (text) => {
-              buffer += text
-              const now = Date.now()
-
-              if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-                lastUpdateTime = now
-                if (!sentMessage) {
-                  sentMessage = await sendDiscordResponse(message, buffer)
-                } else if (buffer.length <= 2000) {
-                  await sentMessage.edit(buffer)
-                }
-              }
+              fullResponse += text
+              log('Received chunk: %d chars (total: %d)', text.length, fullResponse.length)
             },
 
             onComplete: async (fullText) => {
-              if (sentMessage) {
-                await sendDiscordResponse(sentMessage, fullText)
-              } else {
-                await sendDiscordResponse(message, fullText)
-              }
+              await sendDiscordResponse(message, fullText)
             },
 
             onError: async (error) => {
