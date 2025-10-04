@@ -345,6 +345,47 @@ npm run dev
 }
 ```
 
+### Scroll Containers
+
+Every view must use scroll containers to prevent app-level scrolling:
+
+```tsx
+// Sidebar sections
+import { SidebarContainer } from '../../SidebarContainer'
+
+export function MyViewSidebar() {
+  return (
+    <SidebarContainer>
+      <VStack align="stretch" gap={4}>
+        {/* Content here */}
+      </VStack>
+    </SidebarContainer>
+  )
+}
+
+// Main content sections
+import { MainContentContainer } from '../../shared/MainContentContainer'
+
+export function MyViewMain() {
+  return (
+    <MainContentContainer>
+      <VStack align="stretch" gap={6}>
+        {/* Content here */}
+      </VStack>
+    </MainContentContainer>
+  )
+}
+```
+
+**Key Points:**
+
+- **Never** add scrolling to the main Electron container
+- Each section (sidebar/main) has **independent** scrolling
+- Both containers use Chakra UI's `ScrollArea` component
+- Custom themed scrollbar: `app.border` background, `app.text` on hover
+- Size `xs` for minimal visual footprint
+- Transparent background for clean appearance
+
 ## Text Readability Rules
 
 ### Critical: Always Specify Text Colors
