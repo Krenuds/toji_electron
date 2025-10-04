@@ -2,7 +2,15 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Import all API modules
-import { tojiAPI, projectAPI, windowAPI, discordAPI, binaryAPI, loggerAPI } from './api'
+import {
+  tojiAPI,
+  projectAPI,
+  windowAPI,
+  discordAPI,
+  binaryAPI,
+  loggerAPI,
+  opencodeAPI
+} from './api'
 
 // Build the complete API object - clean and modular!
 const api = {
@@ -12,6 +20,7 @@ const api = {
   discord: discordAPI,
   binary: binaryAPI,
   logger: loggerAPI,
+  opencode: opencodeAPI,
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogOptions) =>
       ipcRenderer.invoke('dialog:showOpenDialog', options)

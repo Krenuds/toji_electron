@@ -10,7 +10,13 @@ import { ProjectInitializer } from './project-initializer'
 import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import { McpManager } from './mcp'
-import type { DiscordMessageFetcher } from './mcp'
+import type {
+  DiscordMessageFetcher,
+  DiscordFileUploader,
+  DiscordChannelLister,
+  DiscordChannelInfoProvider,
+  DiscordMessageSearcher
+} from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus, Session } from './types'
 import type {
@@ -118,6 +124,38 @@ export class Toji extends EventEmitter {
     this.mcp.setDiscordMessageFetcher(fetcher)
   }
 
+  /**
+   * Set the Discord file uploader for MCP servers
+   */
+  setDiscordFileUploader(uploader: DiscordFileUploader): void {
+    log('Configuring Discord file uploader for MCP')
+    this.mcp.setDiscordFileUploader(uploader)
+  }
+
+  /**
+   * Set the Discord channel lister for MCP servers
+   */
+  setDiscordChannelLister(lister: DiscordChannelLister): void {
+    log('Configuring Discord channel lister for MCP')
+    this.mcp.setDiscordChannelLister(lister)
+  }
+
+  /**
+   * Set the Discord channel info provider for MCP servers
+   */
+  setDiscordChannelInfoProvider(provider: DiscordChannelInfoProvider): void {
+    log('Configuring Discord channel info provider for MCP')
+    this.mcp.setDiscordChannelInfoProvider(provider)
+  }
+
+  /**
+   * Set the Discord message searcher for MCP servers
+   */
+  setDiscordMessageSearcher(searcher: DiscordMessageSearcher): void {
+    log('Configuring Discord message searcher for MCP')
+    this.mcp.setDiscordMessageSearcher(searcher)
+  }
+
   async getServerStatus(): Promise<ServerStatus> {
     return this.server.getStatus()
   }
@@ -144,6 +182,15 @@ export class Toji extends EventEmitter {
     // Set current directory
     this.currentProjectDirectory = targetDirectory
     logClient('Current project directory set to: %s', this.currentProjectDirectory)
+
+    // Sync API keys with OpenCode server after connection
+    try {
+      await this.syncApiKeys()
+      log('API keys synced with OpenCode server')
+    } catch (error) {
+      log('Warning: Failed to sync API keys: %o', error)
+      // Don't throw - API key sync failure shouldn't prevent connection
+    }
 
     // Note: ProjectManager already uses getClient() callback, no need to recreate it
   }
@@ -816,6 +863,63 @@ export class Toji extends EventEmitter {
       throw new Error('Config provider not initialized')
     }
     return config.setDefaultOpencodePermissions(permissions)
+  }
+
+  // ==========================================
+  // OpenCode API Key Management
+  // ==========================================
+
+  /**
+   * Register API key with OpenCode server
+   * This makes the provider available for model selection
+   */
+  async registerApiKey(providerId: string, apiKey: string): Promise<void> {
+    log('Registering API key for provider: %s', providerId)
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    try {
+      await client.auth.set({
+        path: { id: providerId },
+        body: {
+          type: 'api',
+          key: apiKey
+        }
+      })
+      log('Successfully registered API key for provider: %s', providerId)
+    } catch (error) {
+      log('ERROR: Failed to register API key for %s: %o', providerId, error)
+      throw error
+    }
+  }
+
+  /**
+   * Sync all stored API keys with OpenCode server
+   * Useful after server restart or project change
+   */
+  async syncApiKeys(): Promise<void> {
+    const config = this._config
+    if (!config) {
+      log('WARNING: No config provider, skipping API key sync')
+      return
+    }
+
+    const providers = config.getConfiguredProviders()
+    log('Syncing %d API keys with OpenCode server', providers.length)
+
+    for (const providerId of providers) {
+      const apiKey = config.getOpencodeApiKey(providerId)
+      if (apiKey) {
+        try {
+          await this.registerApiKey(providerId, apiKey)
+        } catch (error) {
+          log('WARNING: Failed to sync API key for %s: %o', providerId, error)
+          // Continue with other providers even if one fails
+        }
+      }
+    }
   }
 }
 

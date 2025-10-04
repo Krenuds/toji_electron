@@ -25,7 +25,8 @@ import {
   registerWindowHandlers,
   registerDiscordHandlers,
   registerBinaryHandlers,
-  registerLoggerHandlers
+  registerLoggerHandlers,
+  registerOpencodeHandlers
 } from './handlers'
 
 // Global instances
@@ -170,6 +171,7 @@ app.whenReady().then(async () => {
   registerDiscordHandlers(discordService, config)
   registerBinaryHandlers(openCodeService)
   registerLoggerHandlers()
+  registerOpencodeHandlers(toji, config)
 
   // Register Toji event forwarding (bridge business logic events to renderer)
   registerTojiEventForwarding(toji)

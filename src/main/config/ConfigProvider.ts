@@ -17,6 +17,10 @@ interface AppConfig {
       permissions?: PermissionConfig
       model?: ModelConfig
     }
+    apiKeys?: {
+      // Provider ID mapped to API key (e.g., 'anthropic', 'openai', 'zen')
+      [providerId: string]: string
+    }
   }
 }
 
@@ -153,6 +157,59 @@ export class ConfigProvider {
 
   clearDiscordToken(): void {
     this.store.delete('discord.token')
+  }
+
+  // ==========================================
+  // OpenCode API Keys Management
+  // ==========================================
+
+  /**
+   * Get API key for a specific provider
+   */
+  getOpencodeApiKey(providerId: string): string | undefined {
+    const apiKeys = this.store.get('opencode.apiKeys', {})
+    return apiKeys[providerId]
+  }
+
+  /**
+   * Set API key for a specific provider
+   */
+  setOpencodeApiKey(providerId: string, apiKey: string): void {
+    const apiKeys = this.store.get('opencode.apiKeys', {})
+    apiKeys[providerId] = apiKey
+    this.store.set('opencode.apiKeys', apiKeys)
+  }
+
+  /**
+   * Check if API key exists for a provider
+   */
+  hasOpencodeApiKey(providerId: string): boolean {
+    const apiKeys = this.store.get('opencode.apiKeys', {})
+    return !!apiKeys[providerId]
+  }
+
+  /**
+   * Clear API key for a specific provider
+   */
+  clearOpencodeApiKey(providerId: string): void {
+    const apiKeys = this.store.get('opencode.apiKeys', {})
+    delete apiKeys[providerId]
+    this.store.set('opencode.apiKeys', apiKeys)
+  }
+
+  /**
+   * Get all configured provider IDs
+   */
+  getConfiguredProviders(): string[] {
+    const apiKeys = this.store.get('opencode.apiKeys', {})
+    return Object.keys(apiKeys)
+  }
+
+  /**
+   * Clear all API keys
+   */
+  clearAllOpencodeApiKeys(): void {
+    this.store.set('opencode.apiKeys', {})
   }
 
   // ==========================================
