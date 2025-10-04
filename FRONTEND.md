@@ -219,37 +219,189 @@ npm run typecheck:node
 npm run dev
 ```
 
-## Common Patterns
+## Reusable Component Library
 
-### Button Styling
+### Overview
+
+The `src/renderer/src/components/shared/` directory contains reusable components that enforce consistency across the application. **Always use these components** instead of creating one-off implementations.
+
+### Available Components
+
+#### ActionButton
+
+Standardized button with predefined variants.
 
 ```tsx
-// Action button (green)
+import { ActionButton } from '../../shared'
+
+// Primary action (green)
+<ActionButton variant="primary" size="sm" onClick={handleSave}>
+  Save
+</ActionButton>
+
+// Secondary action (gray)
+<ActionButton variant="secondary" size="sm" onClick={handleCancel}>
+  Cancel
+</ActionButton>
+
+// Destructive action (red)
+<ActionButton variant="danger" size="sm" onClick={handleDelete}>
+  Delete
+</ActionButton>
+
+// Ghost/subtle action
+<ActionButton variant="ghost" size="xs" onClick={handleAction}>
+  Action
+</ActionButton>
+
+// With icons
+<ActionButton variant="primary" leftIcon={<LuSave size={14} />}>
+  Save
+</ActionButton>
+```
+
+#### ThemedInput
+
+Input field with consistent theming and focus states.
+
+```tsx
+import { ThemedInput } from '../../shared'
+
+<ThemedInput
+  type="text"
+  placeholder="Enter value..."
+  value={value}
+  onChange={(e) => setValue(e.target.value)}
+  size="sm"
+/>
+
+// Password input with custom props
+<ThemedInput
+  type="password"
+  placeholder="Enter token..."
+  value={token}
+  onChange={(e) => setToken(e.target.value)}
+  pr={10} // Custom padding for eye icon
+/>
+```
+
+#### StatusBox
+
+Colored container for status messages and indicators.
+
+```tsx
+import { StatusBox } from '../../shared'
+
+// Info (Discord blue)
+<StatusBox variant="info" compact>
+  <Text>Bot invite link ready</Text>
+</StatusBox>
+
+// Success (green)
+<StatusBox variant="success" compact>
+  <Text>Successfully connected</Text>
+</StatusBox>
+
+// Error (red)
+<StatusBox variant="error" compact>
+  <Text>{errorMessage}</Text>
+</StatusBox>
+
+// Warning (orange)
+<StatusBox variant="warning">
+  <Text>Attention required</Text>
+</StatusBox>
+```
+
+#### IntegrationCard
+
+Standardized card layout for integration sections.
+
+```tsx
+import { IntegrationCard } from '../../shared'
+import { FaDiscord } from 'react-icons/fa6'
+
+;<IntegrationCard
+  icon={<FaDiscord size={24} color="white" />}
+  iconBg="#5865F2"
+  title="Discord Bot"
+  description="Connect Toji to Discord for AI-powered conversations"
+  headerAction={
+    <ActionButton variant="primary" size="sm" onClick={handleSync}>
+      Sync
+    </ActionButton>
+  }
+>
+  {/* Card content */}
+  <VStack align="stretch" gap={3}>
+    {/* Your content here */}
+  </VStack>
+</IntegrationCard>
+```
+
+#### SectionDivider
+
+Visual separator line using theme border color.
+
+```tsx
+import { SectionDivider } from '../../shared'
+
+;<VStack align="stretch" gap={4}>
+  <Box>Content section 1</Box>
+  <SectionDivider />
+  <Box>Content section 2</Box>
+</VStack>
+```
+
+#### Scroll Containers
+
+Use these for areas that need independent scrolling:
+
+```tsx
+import { MainContentContainer, SidebarContainer } from '../../shared'
+
+// For main content areas
+<MainContentContainer>
+  {/* Content with independent scroll */}
+</MainContentContainer>
+
+// For sidebar panels (from parent directory)
+<SidebarContainer>
+  {/* Sidebar content with independent scroll */}
+</SidebarContainer>
+```
+
+### Benefits of Reusable Components
+
+1. **Consistency**: All status boxes, inputs, and buttons look identical
+2. **Maintainability**: Update styling in one place, applies everywhere
+3. **Type Safety**: Props are strongly typed and validated
+4. **Code Reduction**: Dramatically less boilerplate code
+5. **Theme Integration**: All components use theme tokens automatically
+
+### When to Create New Shared Components
+
+Create a new shared component when you find yourself:
+
+- Copying the same JSX structure 3+ times
+- Using the same styling patterns repeatedly
+- Need to ensure consistency across multiple views
+- Want a single source of truth for a UI pattern
+
+## Common Patterns
+
+### Manual Button Styling (Avoid - Use ActionButton Instead)
+
+```tsx
+// ❌ AVOID - Use ActionButton instead
 <Button colorPalette="green" variant="solid" size="sm" onClick={handleSave}>
   <Text color="white">Save</Text>
 </Button>
 
-// Destructive action (red)
-<Button colorPalette="red" variant="solid" size="sm" onClick={handleDelete}>
-  <Text color="white">Delete</Text>
-</Button>
-
-// Secondary action (gray)
-<Button
-  variant="solid"
-  bg="gray.700"
-  color="white"
-  _hover={{ bg: 'gray.600' }}
-  size="sm"
->
-  <Text color="white">Cancel</Text>
-</Button>
-
-// Ghost/subtle action
-<Button variant="ghost" size="xs" onClick={handleAction}>
-  <LuIcon size={12} />
-  <Text ml={1} color="currentColor">Action</Text>
-</Button>
+// ✅ CORRECT
+<ActionButton variant="primary" size="sm" onClick={handleSave}>
+  Save
+</ActionButton>
 ```
 
 ### Input Styling
