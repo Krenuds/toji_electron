@@ -168,6 +168,15 @@ export class ConfigProvider {
    */
   getOpencodeApiKey(providerId: string): string | undefined {
     const apiKeys = this.store.get('opencode.apiKeys', {})
+    const hasKey = !!apiKeys[providerId]
+    console.log(
+      `[ConfigProvider] getOpencodeApiKey('${providerId}'): ${hasKey ? 'FOUND' : 'NOT FOUND'}`
+    )
+    if (hasKey) {
+      console.log(
+        `[ConfigProvider] API key for '${providerId}' length: ${apiKeys[providerId].length}`
+      )
+    }
     return apiKeys[providerId]
   }
 
@@ -175,9 +184,14 @@ export class ConfigProvider {
    * Set API key for a specific provider
    */
   setOpencodeApiKey(providerId: string, apiKey: string): void {
+    console.log(
+      `[ConfigProvider] setOpencodeApiKey('${providerId}'): Storing key (length: ${apiKey.length})`
+    )
     const apiKeys = this.store.get('opencode.apiKeys', {})
     apiKeys[providerId] = apiKey
     this.store.set('opencode.apiKeys', apiKeys)
+    console.log(`[ConfigProvider] API key stored successfully for '${providerId}'`)
+    console.log(`[ConfigProvider] Total configured providers: ${Object.keys(apiKeys).length}`)
   }
 
   /**
@@ -202,7 +216,11 @@ export class ConfigProvider {
    */
   getConfiguredProviders(): string[] {
     const apiKeys = this.store.get('opencode.apiKeys', {})
-    return Object.keys(apiKeys)
+    const providers = Object.keys(apiKeys)
+    console.log(
+      `[ConfigProvider] getConfiguredProviders(): Found ${providers.length} providers: [${providers.join(', ')}]`
+    )
+    return providers
   }
 
   /**

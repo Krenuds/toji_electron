@@ -801,18 +801,34 @@ export class Toji extends EventEmitter {
 
   // Get available model providers from OpenCode
   async getModelProviders(): Promise<ConfigProvidersResponse> {
+    console.log('[Toji] getModelProviders: Fetching available model providers from OpenCode')
     const client = this.getClient()
     if (!client) {
+      console.error('[Toji] getModelProviders: No client connected to server')
       throw new Error('Client not connected to server')
     }
 
+    console.log('[Toji] getModelProviders: Calling client.config.providers()')
     const raw = await client.config.providers()
     const response =
       raw && typeof raw === 'object' && 'data' in raw
         ? (raw as { data: ConfigProvidersResponse }).data
         : (raw as ConfigProvidersResponse)
 
-    log('Retrieved %d model providers', response?.providers?.length ?? 0)
+    const providerCount = response?.providers?.length ?? 0
+    log('Retrieved %d model providers', providerCount)
+    console.log(`[Toji] getModelProviders: Retrieved ${providerCount} providers from OpenCode`)
+
+    if (response?.providers && Array.isArray(response.providers)) {
+      const providerIds = response.providers.map((p) => p.id)
+      console.log(`[Toji] getModelProviders: Provider IDs: [${providerIds.join(', ')}]`)
+
+      // Log model counts per provider
+      response.providers.forEach((provider) => {
+        const modelCount = Object.keys(provider.models || {}).length
+        console.log(`[Toji] getModelProviders: Provider '${provider.id}' has ${modelCount} models`)
+      })
+    }
 
     return {
       providers: Array.isArray(response?.providers) ? response.providers : [],
@@ -875,12 +891,17 @@ export class Toji extends EventEmitter {
    */
   async registerApiKey(providerId: string, apiKey: string): Promise<void> {
     log('Registering API key for provider: %s', providerId)
+    console.log(
+      `[Toji] registerApiKey('${providerId}'): Starting registration (key length: ${apiKey.length})`
+    )
     const client = this.getClient()
     if (!client) {
+      console.error('[Toji] registerApiKey: No client connected to server')
       throw new Error('Client not connected to server')
     }
 
     try {
+      console.log(`[Toji] Calling client.auth.set for provider '${providerId}'`)
       await client.auth.set({
         path: { id: providerId },
         body: {
@@ -889,8 +910,10 @@ export class Toji extends EventEmitter {
         }
       })
       log('Successfully registered API key for provider: %s', providerId)
+      console.log(`[Toji] ✓ API key registered successfully for '${providerId}'`)
     } catch (error) {
       log('ERROR: Failed to register API key for %s: %o', providerId, error)
+      console.error(`[Toji] ✗ Failed to register API key for '${providerId}':`, error)
       throw error
     }
   }
@@ -900,26 +923,42 @@ export class Toji extends EventEmitter {
    * Useful after server restart or project change
    */
   async syncApiKeys(): Promise<void> {
+    console.log('[Toji] syncApiKeys: Starting API key synchronization')
     const config = this._config
     if (!config) {
       log('WARNING: No config provider, skipping API key sync')
+      console.warn('[Toji] syncApiKeys: No config provider available')
       return
     }
 
     const providers = config.getConfiguredProviders()
     log('Syncing %d API keys with OpenCode server', providers.length)
+    console.log(
+      `[Toji] syncApiKeys: Found ${providers.length} providers to sync: [${providers.join(', ')}]`
+    )
+
+    if (providers.length === 0) {
+      console.log('[Toji] syncApiKeys: No API keys configured, skipping sync')
+      return
+    }
 
     for (const providerId of providers) {
       const apiKey = config.getOpencodeApiKey(providerId)
       if (apiKey) {
         try {
+          console.log(`[Toji] syncApiKeys: Syncing provider '${providerId}'...`)
           await this.registerApiKey(providerId, apiKey)
+          console.log(`[Toji] syncApiKeys: ✓ Successfully synced '${providerId}'`)
         } catch (error) {
           log('WARNING: Failed to sync API key for %s: %o', providerId, error)
+          console.error(`[Toji] syncApiKeys: ✗ Failed to sync '${providerId}':`, error)
           // Continue with other providers even if one fails
         }
+      } else {
+        console.warn(`[Toji] syncApiKeys: No API key found for provider '${providerId}'`)
       }
     }
+    console.log('[Toji] syncApiKeys: Synchronization complete')
   }
 }
 
