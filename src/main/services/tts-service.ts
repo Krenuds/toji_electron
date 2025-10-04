@@ -20,12 +20,21 @@ export class TTSService {
 
   constructor(config: ConfigProvider) {
     log('Initializing TTSService')
+    
+    // Try to get API key from ConfigProvider first
     this.apiKey = config.getOpencodeApiKey('openai')
+    
+    // Fall back to environment variable if not in config
+    if (!this.apiKey && process.env.OPENAI_TTS_API_KEY) {
+      this.apiKey = process.env.OPENAI_TTS_API_KEY
+      log('✅ OpenAI API key loaded from environment variable')
+    }
 
     if (!this.apiKey) {
-      log('⚠️ OpenAI API key not found - TTS will not be available')
+      log('⚠️ OpenAI API key not found in config or environment - TTS will not be available')
+      log('   Set OPENAI_TTS_API_KEY environment variable or configure in UI')
     } else {
-      log('✅ OpenAI API key configured')
+      log(`✅ OpenAI API key configured (length: ${this.apiKey.length})`)
     }
   }
 
