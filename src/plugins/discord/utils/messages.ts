@@ -55,26 +55,33 @@ export function splitMessage(
 
 /**
  * Send a response to Discord, handling message splitting and errors
+ * Returns the first sent message for editing during streaming
  */
-export async function sendDiscordResponse(message: Message, response: string): Promise<void> {
+export async function sendDiscordResponse(
+  message: Message,
+  response: string
+): Promise<Message | undefined> {
   try {
     // Check if we have a valid response
     if (!response || response.trim().length === 0) {
       log('WARNING: Empty response received, sending default message')
       await message.reply('I received your message but got an empty response. Please try again.')
-      return
+      return undefined
     }
 
     // Split and send if necessary
     if (response.length > DISCORD_MAX_MESSAGE_LENGTH) {
       log('Response is long (%d chars), splitting into chunks', response.length)
       const chunks = splitMessage(response)
+      let firstMessage: Message | undefined
       for (const chunk of chunks) {
-        await message.reply(chunk)
+        const sent = await message.reply(chunk)
+        if (!firstMessage) firstMessage = sent
       }
+      return firstMessage
     } else {
       log('Sending response (%d chars)', response.length)
-      await message.reply(response)
+      return await message.reply(response)
     }
   } catch (error) {
     log('ERROR: Failed to send Discord response: %o', error)
@@ -85,6 +92,7 @@ export async function sendDiscordResponse(message: Message, response: string): P
     } catch (fallbackError) {
       log('ERROR: Failed to send error message: %o', fallbackError)
     }
+    return undefined
   }
 }
 

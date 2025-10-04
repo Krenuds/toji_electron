@@ -116,13 +116,49 @@ export class DiscordPlugin extends EventEmitter {
               await message.channel.sendTyping()
             }
 
-            log('Calling chat with message: %s', message.content)
-            // Process message through Toji
-            const response = await this.projectManager.chat(message.content)
+            log('Calling streaming chat with message: %s', message.content)
 
-            log('Got response (%d chars), sending to Discord', response?.length || 0)
-            // Send response
-            await sendDiscordResponse(message, response)
+            // Process message through Toji with streaming
+            let buffer = ''
+            let sentMessage: Message | undefined
+            let lastUpdateTime = 0
+            const UPDATE_INTERVAL = 500 // 500ms between Discord edits to respect rate limits
+
+            await this.projectManager.chatStreaming(message.content, {
+              onChunk: async (text) => {
+                buffer += text
+                const now = Date.now()
+
+                // Throttle updates to respect Discord rate limits (5 edits per 5 seconds)
+                if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+                  lastUpdateTime = now
+
+                  if (!sentMessage) {
+                    // First chunk - send initial message
+                    sentMessage = await sendDiscordResponse(message, buffer)
+                  } else if (buffer.length <= 2000) {
+                    // Update existing message if within Discord's limit
+                    await sentMessage.edit(buffer)
+                  }
+                  // If over 2000 chars, wait for onComplete to handle splitting
+                }
+              },
+
+              onComplete: async (fullText) => {
+                log('Got complete response (%d chars), sending final update', fullText.length)
+                // Final update with complete text
+                if (sentMessage) {
+                  await sendDiscordResponse(sentMessage, fullText)
+                } else {
+                  await sendDiscordResponse(message, fullText)
+                }
+              },
+
+              onError: async (error) => {
+                log('ERROR: Streaming chat failed: %o', error)
+                await message.reply('❌ Error: ' + error.message)
+              }
+            })
           } catch (error) {
             log('ERROR: Failed to process message in project channel: %o', error)
             await message.reply(
@@ -142,9 +178,40 @@ export class DiscordPlugin extends EventEmitter {
         }
 
         try {
-          // Use current active project context
-          const response = await this.projectManager.chat(content)
-          await sendDiscordResponse(message, response)
+          // Use current active project context with streaming
+          let buffer = ''
+          let sentMessage: Message | undefined
+          let lastUpdateTime = 0
+          const UPDATE_INTERVAL = 500
+
+          await this.projectManager.chatStreaming(content, {
+            onChunk: async (text) => {
+              buffer += text
+              const now = Date.now()
+
+              if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+                lastUpdateTime = now
+                if (!sentMessage) {
+                  sentMessage = await sendDiscordResponse(message, buffer)
+                } else if (buffer.length <= 2000) {
+                  await sentMessage.edit(buffer)
+                }
+              }
+            },
+
+            onComplete: async (fullText) => {
+              if (sentMessage) {
+                await sendDiscordResponse(sentMessage, fullText)
+              } else {
+                await sendDiscordResponse(message, fullText)
+              }
+            },
+
+            onError: async (error) => {
+              log('ERROR: Streaming chat failed: %o', error)
+              await message.reply('❌ Error: ' + error.message)
+            }
+          })
         } catch (error) {
           log('ERROR: Failed to process mentioned message: %o', error)
           await message.reply(

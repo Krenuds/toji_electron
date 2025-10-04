@@ -341,6 +341,20 @@ export class DiscordProjectManager implements DiscordModule {
   }
 
   /**
+   * Send a chat message with streaming responses
+   */
+  async chatStreaming(
+    message: string,
+    callbacks: {
+      onChunk?: (text: string, partId: string) => void | Promise<void>
+      onComplete?: (fullText: string) => void | Promise<void>
+      onError?: (error: Error) => void | Promise<void>
+    }
+  ): Promise<void> {
+    return this.toji.chatStreaming(message, callbacks)
+  }
+
+  /**
    * Clear the current conversation
    */
   async clearConversation(): Promise<void> {
