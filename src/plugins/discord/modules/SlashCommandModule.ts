@@ -100,10 +100,10 @@ export class SlashCommandModule implements DiscordModule {
         return
       }
 
-      // Skip permission check for admin command (it has its own owner-only check)
-      const skipPermissionCheck = interaction.commandName === 'admin'
+      // Check permissions before executing command (except help and admin which anyone can use)
+      const publicCommands = ['help', 'admin']
+      const skipPermissionCheck = publicCommands.includes(interaction.commandName)
 
-      // Check permissions before executing command
       if (
         !skipPermissionCheck &&
         !hasPermission(interaction, { adminRoleName: DEFAULT_ADMIN_ROLE_NAME })

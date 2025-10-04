@@ -47,13 +47,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         inline: false
       },
       {
-        name: '⚙️ /admin [subcommand] (Owner Only)',
-        value: [
-          '**setup** - Create the Toji Admin role automatically',
-          '**status** - Check current permission setup',
-          '**grant @user** - Give bot access to a user',
-          '**revoke @user** - Remove bot access from a user'
-        ].join('\n'),
+        name: '⚙️ /admin',
+        value: 'Check who has bot access (shows current role members)',
         inline: false
       }
     ],
@@ -62,12 +57,5 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     }
   }
 
-  const isOwner = interaction.guild && interaction.user.id === interaction.guild.ownerId
-
-  await interaction.reply({
-    embeds: [helpEmbed],
-    content: isOwner
-      ? '💡 **Tip:** Use `/admin setup` to automatically create the admin role and manage permissions!'
-      : undefined
-  })
+  await interaction.reply({ embeds: [helpEmbed] })
 }

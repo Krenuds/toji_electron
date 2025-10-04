@@ -238,7 +238,43 @@ export class DiscordPlugin extends EventEmitter {
       }
     }
 
+    // Auto-create Toji Admin role in all guilds if it doesn't exist
+    await this.ensureAdminRoleExists(client)
+
     this.emit('ready', client)
+  }
+
+  /**
+   * Ensure the Toji Admin role exists in all guilds
+   */
+  private async ensureAdminRoleExists(client: Client): Promise<void> {
+    const { DEFAULT_ADMIN_ROLE_NAME } = await import('./constants')
+
+    for (const [, guild] of client.guilds.cache) {
+      try {
+        const existingRole = guild.roles.cache.find((role) => role.name === DEFAULT_ADMIN_ROLE_NAME)
+
+        if (!existingRole) {
+          log(`Creating ${DEFAULT_ADMIN_ROLE_NAME} role in guild: ${guild.name} (${guild.id})`)
+          const newRole = await guild.roles.create({
+            name: DEFAULT_ADMIN_ROLE_NAME,
+            color: 0x33b42f, // Toji brand green
+            reason: 'Auto-created by Toji Bot for permission management',
+            permissions: [] // No Discord permissions - only for bot access control
+          })
+          log(
+            `✅ Created ${DEFAULT_ADMIN_ROLE_NAME} role in ${guild.name} (role ID: ${newRole.id})`
+          )
+        } else {
+          log(
+            `${DEFAULT_ADMIN_ROLE_NAME} role already exists in ${guild.name} (role ID: ${existingRole.id})`
+          )
+        }
+      } catch (error) {
+        log(`Warning: Could not create ${DEFAULT_ADMIN_ROLE_NAME} role in ${guild.name}: %o`, error)
+        log('Make sure the bot has "Manage Roles" permission')
+      }
+    }
   }
 
   /**
