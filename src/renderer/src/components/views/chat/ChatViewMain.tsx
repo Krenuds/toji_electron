@@ -11,7 +11,16 @@ import {
   Spinner,
   Center
 } from '@chakra-ui/react'
-import { LuSend, LuUser, LuBot, LuRefreshCw, LuInfo, LuX, LuSettings } from 'react-icons/lu'
+import {
+  LuSend,
+  LuUser,
+  LuBot,
+  LuRefreshCw,
+  LuInfo,
+  LuX,
+  LuSettings,
+  LuFolderOpen
+} from 'react-icons/lu'
 import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
 import { SettingsDrawer } from '../../settings/SettingsDrawer'
 
@@ -59,6 +68,15 @@ export function ChatViewMain(): React.JSX.Element {
     if (e.key === 'Enter' && !e.shiftKey && !isSendingMessage) {
       e.preventDefault()
       handleSendMessage()
+    }
+  }
+
+  const handleOpenFolder = async (): Promise<void> => {
+    if (!currentProject?.path) return
+    try {
+      await window.api.window.openFolder(currentProject.path)
+    } catch (error) {
+      console.error('Failed to open folder:', error)
     }
   }
 
@@ -270,6 +288,23 @@ export function ChatViewMain(): React.JSX.Element {
             )}
             {currentProject && (
               <>
+                <Badge
+                  size="sm"
+                  colorPalette="green"
+                  variant="subtle"
+                  cursor="pointer"
+                  onClick={handleOpenFolder}
+                  _hover={{
+                    bg: 'green.600',
+                    color: 'white'
+                  }}
+                  title="Open project folder in Explorer"
+                >
+                  <HStack gap={1}>
+                    <LuFolderOpen size={12} />
+                    <Text>Open Folder</Text>
+                  </HStack>
+                </Badge>
                 <Badge
                   size="sm"
                   colorPalette="blue"

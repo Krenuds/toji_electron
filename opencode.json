@@ -3,7 +3,7 @@
   "mcp": {
     "toji": {
       "type": "remote",
-      "url": "http://localhost:3102/mcp",
+      "url": "http://localhost:3100/mcp",
       "enabled": true
     }
   },

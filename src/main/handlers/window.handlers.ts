@@ -1,5 +1,5 @@
 // Window control IPC handlers
-import { ipcMain, BrowserWindow, dialog } from 'electron'
+import { ipcMain, BrowserWindow, dialog, shell } from 'electron'
 
 export function registerWindowHandlers(): void {
   // Minimize window
@@ -48,5 +48,10 @@ export function registerWindowHandlers(): void {
     }
 
     return result.filePaths[0]
+  })
+
+  // Open folder in file explorer
+  ipcMain.handle('window:open-folder', async (_, folderPath: string) => {
+    await shell.openPath(folderPath)
   })
 }

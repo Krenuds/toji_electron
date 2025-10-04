@@ -46,10 +46,10 @@ export class DiscordService {
 
       // The first part is the base64-encoded bot ID
       const encodedId = parts[0]
-      
+
       // Decode from base64
       const decodedId = Buffer.from(encodedId, 'base64').toString('utf-8')
-      
+
       log('Successfully extracted Client ID from token: %s', decodedId)
       return decodedId
     } catch (error) {
@@ -67,16 +67,16 @@ export class DiscordService {
 
       // Pass config to plugin for command deployment
       const token = this.config.getDiscordToken()
-      
+
       // Extract Client ID from the token itself (no environment variable needed!)
       const clientId = token ? this.extractClientIdFromToken(token) || '' : ''
-      
+
       if (!clientId) {
         log('WARNING: Could not extract Client ID from token - slash commands may fail to deploy')
       } else {
         log('Using extracted Client ID for slash command deployment: %s', clientId)
       }
-      
+
       const guildId = process.env.DISCORD_GUILD_ID // Optional: for guild-specific commands
 
       this.plugin = new DiscordPlugin(this.toji, {

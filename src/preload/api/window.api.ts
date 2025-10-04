@@ -8,5 +8,9 @@ export const windowAPI = {
   close: (): Promise<void> => ipcRenderer.invoke('window:close'),
 
   // Directory selection
-  selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('window:select-directory')
+  selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('window:select-directory'),
+
+  // Open folder in file explorer
+  openFolder: (folderPath: string): Promise<void> =>
+    ipcRenderer.invoke('window:open-folder', folderPath)
 }
