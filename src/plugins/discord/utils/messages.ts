@@ -1,4 +1,5 @@
-import { Message } from 'discord.js'
+import { Message, EmbedBuilder } from 'discord.js'
+import { DISCORD_COLORS } from '../constants'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 
 const log = createFileDebugLogger('discord:utils:messages')
@@ -126,4 +127,62 @@ export function formatErrorMessage(error: unknown, context: string): string {
   }
 
   return helpfulMessage
+}
+
+/**
+ * Create a visual progress bar for Discord embeds
+ */
+export function createProgressBar(percent: number): string {
+  const clampedPercent = Math.max(0, Math.min(100, percent))
+  const filled = Math.floor(clampedPercent / 10)
+  const empty = 10 - filled
+  return '▓'.repeat(filled) + '░'.repeat(empty) + ` ${clampedPercent}%`
+}
+
+/**
+ * Create a progress embed for streaming responses
+ */
+export function createProgressEmbed(
+  charCount: number,
+  estimatedTotal: number = 2000
+): EmbedBuilder {
+  // Calculate progress (max 90% until complete)
+  const progress = Math.min(90, Math.floor((charCount / estimatedTotal) * 100))
+  const progressBar = createProgressBar(progress)
+
+  const embed = new EmbedBuilder()
+    .setColor(DISCORD_COLORS.PENDING)
+    .setTitle('🤖 Toji is thinking...')
+    .setDescription('Generating response...')
+    .addFields({ name: '📊 Progress', value: progressBar, inline: false })
+    .setTimestamp()
+
+  if (charCount > 0) {
+    embed.addFields({ name: '📝 Characters', value: `${charCount}`, inline: true })
+  }
+
+  return embed
+}
+
+/**
+ * Update a progress embed with new information
+ */
+export function updateProgressEmbed(
+  charCount: number,
+  estimatedTotal: number = 2000
+): EmbedBuilder {
+  const progress = Math.min(90, Math.floor((charCount / estimatedTotal) * 100))
+  const progressBar = createProgressBar(progress)
+
+  const embed = new EmbedBuilder()
+    .setColor(DISCORD_COLORS.PENDING)
+    .setTitle('🤖 Toji is working...')
+    .setDescription('Writing response...')
+    .addFields(
+      { name: '📊 Progress', value: progressBar, inline: false },
+      { name: '📝 Characters', value: `${charCount}`, inline: true }
+    )
+    .setTimestamp()
+
+  return embed
 }

@@ -3,7 +3,8 @@
 ## Current Pipeline (Blocking)
 
 ### Discord Bot Message Flow
-```
+
+````
 1. Discord Message Received
    ↓
 2. DiscordPlugin.handleMessage(message)
@@ -28,43 +29,46 @@
 ## Proposed Pipeline (Event-Driven Streaming)
 
 ### Event Subscription Architecture
-```
+````
+
 ┌─────────────────────────────────────────────────────────┐
-│  Toji Core (Main Process)                              │
-│  ┌────────────────────────────────────────────────┐   │
-│  │ Event Stream Subscription                       │   │
-│  │  - Subscribe to client.event.subscribe()       │   │
-│  │  - Listen for message.part.updated events      │   │
-│  │  - Emit Toji-level events                      │   │
-│  └────────────────────────────────────────────────┘   │
+│ Toji Core (Main Process) │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ Event Stream Subscription │ │
+│ │ - Subscribe to client.event.subscribe() │ │
+│ │ - Listen for message.part.updated events │ │
+│ │ - Emit Toji-level events │ │
+│ └────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
-                         │
-                         │ (Toji emits: 'chat:chunk', 'chat:complete')
-                         │
-         ┌───────────────┴───────────────┐
-         │                               │
-         ▼                               ▼
-┌─────────────────┐           ┌─────────────────┐
-│ Discord Plugin  │           │ Electron/IPC    │
-│                 │           │                 │
-│ Subscribe to:   │           │ Subscribe to:   │
-│ - chat:chunk    │           │ - chat:chunk    │
-│ - chat:complete │           │ - chat:complete │
-│                 │           │                 │
-│ Buffer chunks   │           │ Stream to UI    │
-│ Send to Discord │           │ Real-time       │
-└─────────────────┘           └─────────────────┘
+│
+│ (Toji emits: 'chat:chunk', 'chat:complete')
+│
+┌───────────────┴───────────────┐
+│ │
+▼ ▼
+┌─────────────────┐ ┌─────────────────┐
+│ Discord Plugin │ │ Electron/IPC │
+│ │ │ │
+│ Subscribe to: │ │ Subscribe to: │
+│ - chat:chunk │ │ - chat:chunk │
+│ - chat:complete │ │ - chat:complete │
+│ │ │ │
+│ Buffer chunks │ │ Stream to UI │
+│ Send to Discord │ │ Real-time │
+└─────────────────┘ └─────────────────┘
+
 ```
 
 ### New Discord Flow (Streaming)
 ```
+
 1. Discord Message Received
    ↓
 2. DiscordPlugin.handleMessage(message)
    ↓
 3. projectManager.chatStreaming(message.content, {
-     onChunk: (text) => { ... },      ← Real-time callbacks
-     onComplete: (full) => { ... }
+   onChunk: (text) => { ... }, ← Real-time callbacks
+   onComplete: (full) => { ... }
    })
    ↓
 4. toji.chatStreaming(message, callbacks)
@@ -72,15 +76,16 @@
 5. Subscribe to event stream
    │
    ├─ Event: message.part.updated
-   │  ├─ Extract part.text
-   │  ├─ Append to buffer
-   │  └─ Call onChunk(text)  ← Immediate feedback
-   │     └─ Discord: Update/edit message in real-time
+   │ ├─ Extract part.text
+   │ ├─ Append to buffer
+   │ └─ Call onChunk(text) ← Immediate feedback
+   │ └─ Discord: Update/edit message in real-time
    │
    └─ Event: message.updated (complete)
-      └─ Call onComplete(fullText)
-         └─ Discord: Final message edit
-```
+   └─ Call onComplete(fullText)
+   └─ Discord: Final message edit
+
+````
 
 ---
 
@@ -105,13 +110,14 @@ type EventMessageUpdated = {
     info: Message  // Full message object with status
   }
 }
-```
+````
 
 ### Secondary Events (Future)
+
 ```typescript
 // Session becomes idle (response complete)
 type EventSessionIdle = {
-  type: "session.idle"
+  type: 'session.idle'
   properties: {
     sessionID: string
   }
@@ -119,7 +125,7 @@ type EventSessionIdle = {
 
 // Permission requests (for tool use)
 type EventPermissionUpdated = {
-  type: "permission.updated"
+  type: 'permission.updated'
   properties: Permission
 }
 ```
@@ -221,14 +227,15 @@ await this.projectManager.chatStreaming(message.content, {
     // Update every N characters or N milliseconds
     if (!sentMessage) {
       sentMessage = await message.reply(buffer)
-    } else if (buffer.length % 100 === 0) {  // Update every 100 chars
+    } else if (buffer.length % 100 === 0) {
+      // Update every 100 chars
       await sentMessage.edit(buffer)
     }
   },
 
   onComplete: async (fullText) => {
     if (sentMessage) {
-      await sentMessage.edit(fullText)  // Final update
+      await sentMessage.edit(fullText) // Final update
     } else {
       await message.reply(fullText)
     }
@@ -241,14 +248,17 @@ await this.projectManager.chatStreaming(message.content, {
 ## Discord-Specific Considerations
 
 ### Rate Limits
+
 - Discord allows ~5 message edits per 5 seconds per channel
 - **Solution**: Batch chunks, update every 100-200 characters or 500ms intervals
 
 ### Message Length
+
 - Discord max message length: 2000 characters
 - **Solution**: Split long responses into multiple messages automatically
 
 ### Typing Indicator
+
 - Typing indicator lasts 10 seconds
 - **Solution**: Refresh typing indicator every 8 seconds during streaming
 
@@ -257,16 +267,19 @@ await this.projectManager.chatStreaming(message.content, {
 ## Testing Strategy
 
 ### Unit Tests
+
 1. Test event subscription starts correctly
 2. Test event handling routes to correct emitters
 3. Test chunk buffering and aggregation
 
 ### Integration Tests
+
 1. Send simple message, verify chunks arrive
 2. Send long message, verify multiple chunks
 3. Test error handling mid-stream
 
 ### Discord Tests
+
 1. Verify typing indicator refreshes
 2. Verify message edits respect rate limits
 3. Verify long responses split correctly
@@ -276,21 +289,25 @@ await this.projectManager.chatStreaming(message.content, {
 ## Rollout Plan
 
 ### Step 1: Implement Core (Toji)
+
 - Add event subscription
 - Add streaming chat method
 - Keep blocking chat() for backward compatibility
 
 ### Step 2: Implement Discord
+
 - Add streaming to DiscordProjectManager
 - Update handleMessage to use streaming
 - Test in development Discord server
 
 ### Step 3: Test & Iterate
+
 - Monitor Discord rate limits
 - Tune chunk size and update frequency
 - Handle edge cases (network drops, etc)
 
 ### Step 4: Extend to Electron
+
 - Wire up IPC handlers for streaming
 - Update renderer to show real-time updates
 - Add UI for streaming indicator

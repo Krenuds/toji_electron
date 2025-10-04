@@ -5,7 +5,8 @@ import type { DiscordProjectManager } from './modules/DiscordProjectManager'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
 import { createFileDebugLogger } from '../../main/utils/logger'
-import { sendDiscordResponse } from './utils/messages'
+import { sendDiscordResponse, createProgressEmbed, updateProgressEmbed } from './utils/messages'
+import { createErrorEmbed } from './utils/errors'
 import { createDiscordMessageFetcher } from './utils/mcp-fetcher'
 import { createDiscordFileUploader } from './utils/mcp-uploader'
 import { createDiscordChannelLister } from './utils/mcp-channel-lister'
@@ -118,22 +119,49 @@ export class DiscordPlugin extends EventEmitter {
 
             log('Calling streaming chat with message: %s', message.content)
 
-            // Process message through Toji with streaming
-            // For now: just wait for final message, ignore intermediate chunks
+            // Process message through Toji with streaming progress embeds
+            let progressMessage: Message | undefined
+            let lastUpdate = Date.now()
+            const UPDATE_THROTTLE = 1000 // 1 second between updates
+
             await this.projectManager.chatStreaming(message.content, {
               onChunk: async (text) => {
-                // Text is cumulative, not a delta - just log it
-                log('Streaming update: %d chars', text.length)
+                const now = Date.now()
+                const charCount = text.length
+
+                if (!progressMessage) {
+                  // Send initial progress embed
+                  const embed = createProgressEmbed(charCount)
+                  progressMessage = await message.reply({ embeds: [embed] })
+                  lastUpdate = now
+                  log('Sent initial progress embed')
+                } else if (now - lastUpdate >= UPDATE_THROTTLE) {
+                  // Update progress embed (throttled to respect rate limits)
+                  const embed = updateProgressEmbed(charCount)
+                  await progressMessage.edit({ embeds: [embed] })
+                  lastUpdate = now
+                  log('Updated progress embed: %d chars', charCount)
+                }
               },
 
               onComplete: async (fullText) => {
                 log('Got complete response (%d chars), sending to Discord', fullText.length)
+                // Delete progress message and send final response
+                if (progressMessage) {
+                  await progressMessage.delete()
+                }
                 await sendDiscordResponse(message, fullText)
               },
 
               onError: async (error) => {
                 log('ERROR: Streaming chat failed: %o', error)
-                await message.reply('❌ Error: ' + error.message)
+                // Replace progress with error embed
+                if (progressMessage) {
+                  const errorEmbed = createErrorEmbed(error, 'Chat')
+                  await progressMessage.edit({ embeds: [errorEmbed] })
+                } else {
+                  await message.reply('❌ Error: ' + error.message)
+                }
               }
             })
           } catch (error) {
@@ -155,20 +183,48 @@ export class DiscordPlugin extends EventEmitter {
         }
 
         try {
-          // Use current active project context with streaming
+          // Use current active project context with streaming progress embeds
+          let progressMessage: Message | undefined
+          let lastUpdate = Date.now()
+          const UPDATE_THROTTLE = 1000 // 1 second between updates
+
           await this.projectManager.chatStreaming(content, {
             onChunk: async (text) => {
-              // Text is cumulative, not a delta - just log it
-              log('Streaming update: %d chars', text.length)
+              const now = Date.now()
+              const charCount = text.length
+
+              if (!progressMessage) {
+                // Send initial progress embed
+                const embed = createProgressEmbed(charCount)
+                progressMessage = await message.reply({ embeds: [embed] })
+                lastUpdate = now
+                log('Sent initial progress embed (mention)')
+              } else if (now - lastUpdate >= UPDATE_THROTTLE) {
+                // Update progress embed (throttled to respect rate limits)
+                const embed = updateProgressEmbed(charCount)
+                await progressMessage.edit({ embeds: [embed] })
+                lastUpdate = now
+                log('Updated progress embed: %d chars (mention)', charCount)
+              }
             },
 
             onComplete: async (fullText) => {
+              // Delete progress message and send final response
+              if (progressMessage) {
+                await progressMessage.delete()
+              }
               await sendDiscordResponse(message, fullText)
             },
 
             onError: async (error) => {
               log('ERROR: Streaming chat failed: %o', error)
-              await message.reply('❌ Error: ' + error.message)
+              // Replace progress with error embed
+              if (progressMessage) {
+                const errorEmbed = createErrorEmbed(error, 'Chat')
+                await progressMessage.edit({ embeds: [errorEmbed] })
+              } else {
+                await message.reply('❌ Error: ' + error.message)
+              }
             }
           })
         } catch (error) {
