@@ -7,6 +7,10 @@ import { deployCommands } from './deploy-commands'
 import { createFileDebugLogger } from '../../main/utils/logger'
 import { sendDiscordResponse } from './utils/messages'
 import { createDiscordMessageFetcher } from './utils/mcp-fetcher'
+import { createDiscordFileUploader } from './utils/mcp-uploader'
+import { createDiscordChannelLister } from './utils/mcp-channel-lister'
+import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
+import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
 
 const log = createFileDebugLogger('discord:plugin')
 
@@ -32,6 +36,10 @@ export class DiscordPlugin extends EventEmitter {
   private slashCommandModule?: SlashCommandModule
   private initialized = false
   private messageFetcher?: ReturnType<typeof createDiscordMessageFetcher>
+  private fileUploader?: ReturnType<typeof createDiscordFileUploader>
+  private channelLister?: ReturnType<typeof createDiscordChannelLister>
+  private channelInfoProvider?: ReturnType<typeof createDiscordChannelInfoProvider>
+  private messageSearcher?: ReturnType<typeof createDiscordMessageSearcher>
 
   constructor(
     private toji: Toji,
@@ -86,6 +94,9 @@ export class DiscordPlugin extends EventEmitter {
     // Update current channel for MCP context
     if (this.messageFetcher) {
       this.messageFetcher.setCurrentChannel(message.channel.id)
+    }
+    if (this.fileUploader) {
+      this.fileUploader.setCurrentChannel(message.channel.id)
     }
 
     // Check if message is in a project channel within Toji Desktop category
@@ -173,7 +184,43 @@ export class DiscordPlugin extends EventEmitter {
       this.toji.setDiscordMessageFetcher(this.messageFetcher)
       log('MCP Discord message fetcher configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord fetcher: %o', error)
+      log('Warning: Failed to configure MCP Discord message fetcher: %o', error)
+    }
+
+    // Configure MCP Discord file uploader
+    try {
+      this.fileUploader = createDiscordFileUploader(client)
+      this.toji.setDiscordFileUploader(this.fileUploader)
+      log('MCP Discord file uploader configured')
+    } catch (error) {
+      log('Warning: Failed to configure MCP Discord file uploader: %o', error)
+    }
+
+    // Configure MCP Discord channel lister
+    try {
+      this.channelLister = createDiscordChannelLister(client)
+      this.toji.setDiscordChannelLister(this.channelLister)
+      log('MCP Discord channel lister configured')
+    } catch (error) {
+      log('Warning: Failed to configure MCP Discord channel lister: %o', error)
+    }
+
+    // Configure MCP Discord channel info provider
+    try {
+      this.channelInfoProvider = createDiscordChannelInfoProvider(client)
+      this.toji.setDiscordChannelInfoProvider(this.channelInfoProvider)
+      log('MCP Discord channel info provider configured')
+    } catch (error) {
+      log('Warning: Failed to configure MCP Discord channel info provider: %o', error)
+    }
+
+    // Configure MCP Discord message searcher
+    try {
+      this.messageSearcher = createDiscordMessageSearcher(client)
+      this.toji.setDiscordMessageSearcher(this.messageSearcher)
+      log('MCP Discord message searcher configured')
+    } catch (error) {
+      log('Warning: Failed to configure MCP Discord message searcher: %o', error)
     }
 
     // Deploy slash commands if we have config

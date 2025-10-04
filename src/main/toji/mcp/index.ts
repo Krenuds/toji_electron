@@ -1,5 +1,13 @@
 // MCP module exports
 export { McpManager } from './mcp-manager'
 export { registerDiscordMessageTool } from './tools/discord-messages'
+export { registerDiscordUploadTool } from './tools/discord-upload'
+export { registerDiscordListChannelsTool } from './tools/discord-list-channels'
+export { registerDiscordChannelInfoTool } from './tools/discord-channel-info'
+export { registerDiscordSearchMessagesTool } from './tools/discord-search-messages'
 export type { DiscordMessageFetcher } from './tools/discord-messages'
+export type { DiscordFileUploader } from './tools/discord-upload'
+export type { DiscordChannelLister } from './tools/discord-list-channels'
+export type { DiscordChannelInfoProvider } from './tools/discord-channel-info'
+export type { DiscordMessageSearcher } from './tools/discord-search-messages'
 export type { McpServerInstance, McpServerOptions } from './types'

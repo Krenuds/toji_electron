@@ -113,12 +113,155 @@ Reads recent messages from a Discord channel.
 
 ```json
 {
-  "messages": [
-    {"id": "...", "author": "user#1234", "content": "...", "timestamp": "..."}
-  ],
+  "messages": [{ "id": "...", "author": "user#1234", "content": "...", "timestamp": "..." }],
   "count": 1
 }
 ```
+
+### `discord_upload`
+
+Uploads a file to a Discord channel with an optional message. Enables AI to share files, screenshots, logs, or generated content directly to Discord.
+
+**Inputs:**
+
+- `filePath` (required): Absolute path to the file to upload. The file must exist and be accessible.
+- `channelId` (optional): Discord channel ID. Uses current channel if omitted.
+- `message` (optional): Optional message to send with the file attachment
+
+**Output:**
+
+```json
+{
+  "messageId": "123456789...",
+  "channelId": "987654321...",
+  "attachmentUrl": "https://cdn.discordapp.com/attachments/.../file.png",
+  "success": true
+}
+```
+
+**Example Usage:**
+User asks "send this screenshot to Discord" - AI uses this tool to upload the file to the current Discord channel. Or AI generates a report file and uploads it automatically.
+
+### `discord_list_channels`
+
+Lists all accessible channels in a Discord guild (server). Helps AI navigate and discover available channels for communication.
+
+**Inputs:**
+
+- `guildId` (optional): Discord guild (server) ID. Uses first guild if omitted.
+- `channelType` (optional): Filter by type: "text", "voice", "category", "announcement", "forum", "all" (default: "all")
+
+**Output:**
+
+```json
+{
+  "guildId": "123...",
+  "guildName": "My Server",
+  "channelCount": 5,
+  "channels": [
+    {
+      "id": "456...",
+      "name": "general",
+      "type": "text",
+      "parentId": "789...",
+      "parentName": "Category Name",
+      "topic": "General chat",
+      "position": 0
+    }
+  ]
+}
+```
+
+**Example Usage:**
+User asks "what channels are available?" - AI lists all channels. Or AI needs to find a specific channel type for communication.
+
+### `discord_get_channel_info`
+
+Gets detailed information about a specific Discord channel including permissions, settings, and metadata. Provides context awareness for AI.
+
+**Inputs:**
+
+- `channelId` (required): Discord channel ID to get information about
+
+**Output:**
+
+```json
+{
+  "id": "123...",
+  "name": "general",
+  "type": "text",
+  "guildId": "456...",
+  "guildName": "My Server",
+  "topic": "General discussion",
+  "position": 0,
+  "parentId": "789...",
+  "parentName": "Text Channels",
+  "rateLimitPerUser": 0,
+  "nsfw": false,
+  "permissions": {
+    "canSend": true,
+    "canRead": true,
+    "canManage": false,
+    "canEmbed": true,
+    "canAttach": true,
+    "canMentionEveryone": false
+  },
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Example Usage:**
+Before sending a message, AI checks if it has permission. Or user asks "what is this channel?" - AI provides detailed information.
+
+### `discord_search_messages`
+
+Searches message history in a Discord channel with filters. Find past discussions, code snippets, decisions, or specific content.
+
+**Inputs:**
+
+- `channelId` (required): Discord channel ID to search in
+- `query` (optional): Text to search for (case-insensitive)
+- `authorId` (optional): Filter by author user ID
+- `before` (optional): Only messages before this date (ISO 8601)
+- `after` (optional): Only messages after this date (ISO 8601)
+- `limit` (optional): Maximum messages to return (1-100, default: 20)
+- `hasAttachments` (optional): Only messages with attachments if true
+
+**Output:**
+
+```json
+{
+  "channelId": "123...",
+  "query": "error",
+  "matchCount": 3,
+  "messages": [
+    {
+      "id": "456...",
+      "author": "user#1234",
+      "authorId": "789...",
+      "content": "Got an error message...",
+      "timestamp": "2024-01-01T12:00:00.000Z",
+      "attachments": [
+        {
+          "url": "https://...",
+          "filename": "error.log",
+          "size": 1024
+        }
+      ],
+      "embeds": 0,
+      "reactions": [
+        {
+          "emoji": "👍",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Example Usage:**
+User asks "when did we discuss X?" - AI searches for messages containing X. Or "find all messages with attachments from last week" - AI filters by date and attachments.
 
 ### `initialize_project`
 
@@ -204,20 +347,27 @@ setMyDependency(dep: MyType): void {
 
 ## Architecture
 
-```text
+````text
 ```text
 src/main/toji/mcp/
-├── index.ts                # Module exports
-├── types.ts                # TypeScript interfaces
-├── mcp-manager.ts          # Server lifecycle & HTTP endpoints
-├── README.md               # This file
+├── index.ts                      # Module exports
+├── types.ts                      # TypeScript interfaces
+├── mcp-manager.ts                # Server lifecycle & HTTP endpoints
+├── README.md                     # This file
 └── tools/
-    ├── list-sessions.ts    # List all available sessions
-    ├── clear-session.ts    # Clear and start new session
-    ├── read-session.ts     # Read messages from sessions
-    └── discord-messages.ts # Discord tool implementation
+    ├── list-sessions.ts          # List all available sessions
+    ├── clear-session.ts          # Clear and start new session
+    ├── read-session.ts           # Read messages from sessions
+    ├── discord-messages.ts       # Discord message reading
+    ├── discord-upload.ts         # Discord file upload
+    ├── discord-list-channels.ts  # Discord channel listing
+    ├── discord-channel-info.ts   # Discord channel information
+    ├── discord-search-messages.ts # Discord message search
+    └── initialize-project.ts     # Project initialization
 ```
-```
+````
+
+````
 
 ## Dependencies
 
@@ -229,4 +379,4 @@ src/main/toji/mcp/
 
 ```bash
 DEBUG=mcp:* npm run dev
-```
+````
