@@ -426,12 +426,10 @@ export class Toji extends EventEmitter {
 
             if (part.type === 'text') {
               const textPart = part as { type: 'text'; text: string; id: string }
-              fullText += textPart.text
-              logChat(
-                'Received text chunk: %d chars (total: %d)',
-                textPart.text.length,
-                fullText.length
-              )
+              // IMPORTANT: part.text is CUMULATIVE, not a delta!
+              // We just store it, don't append
+              fullText = textPart.text
+              logChat('Received text update: %d chars total', fullText.length)
 
               if (callbacks.onChunk) {
                 await callbacks.onChunk(textPart.text, textPart.id)

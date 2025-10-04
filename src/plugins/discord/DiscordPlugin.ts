@@ -119,13 +119,11 @@ export class DiscordPlugin extends EventEmitter {
             log('Calling streaming chat with message: %s', message.content)
 
             // Process message through Toji with streaming
-            // For now: just collect chunks and send final message
-            let fullResponse = ''
-
+            // For now: just wait for final message, ignore intermediate chunks
             await this.projectManager.chatStreaming(message.content, {
               onChunk: async (text) => {
-                fullResponse += text
-                log('Received chunk: %d chars (total: %d)', text.length, fullResponse.length)
+                // Text is cumulative, not a delta - just log it
+                log('Streaming update: %d chars', text.length)
               },
 
               onComplete: async (fullText) => {
@@ -158,12 +156,10 @@ export class DiscordPlugin extends EventEmitter {
 
         try {
           // Use current active project context with streaming
-          let fullResponse = ''
-
           await this.projectManager.chatStreaming(content, {
             onChunk: async (text) => {
-              fullResponse += text
-              log('Received chunk: %d chars (total: %d)', text.length, fullResponse.length)
+              // Text is cumulative, not a delta - just log it
+              log('Streaming update: %d chars', text.length)
             },
 
             onComplete: async (fullText) => {
