@@ -19,7 +19,7 @@
 7. return responseText (full string)
    ↓
 8. sendDiscordResponse(message, response)  ← Send entire response at once
-```
+```t
 
 **Problem**: Discord shows typing indicator, then waits 10-60+ seconds, then dumps entire response.
 
@@ -139,7 +139,7 @@ private async subscribeToEvents(): Promise<void> {
   if (!client) return
 
   const events = await client.event.subscribe()
-  
+
   for await (const event of events.stream) {
     this.handleOpencodeEvent(event)
   }
@@ -159,7 +159,7 @@ private handleOpencodeEvent(event: Event): void {
         })
       }
       break
-      
+
     case 'message.updated':
       // Message complete
       this.emit('chat:complete', {
@@ -217,7 +217,7 @@ let buffer = ''
 await this.projectManager.chatStreaming(message.content, {
   onChunk: async (text) => {
     buffer += text
-    
+
     // Update every N characters or N milliseconds
     if (!sentMessage) {
       sentMessage = await message.reply(buffer)
@@ -225,7 +225,7 @@ await this.projectManager.chatStreaming(message.content, {
       await sentMessage.edit(buffer)
     }
   },
-  
+
   onComplete: async (fullText) => {
     if (sentMessage) {
       await sentMessage.edit(fullText)  // Final update
@@ -301,7 +301,7 @@ await this.projectManager.chatStreaming(message.content, {
 
 1. **Session Management**: Do we need one event subscription per session, or one global?
    - **Answer**: One global subscription, filter events by sessionId
-   
+
 2. **Error Recovery**: What happens if event stream disconnects mid-response?
    - **Answer**: Reconnect automatically, fall back to blocking API if needed
 
