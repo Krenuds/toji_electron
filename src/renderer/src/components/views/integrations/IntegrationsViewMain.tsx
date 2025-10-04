@@ -40,7 +40,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
     isLoading: isApiKeyLoading,
     error: apiKeyError
   } = useOpencodeApiKeys()
-  const [providerId, setProviderId] = useState('zen')
+  const [providerId, setProviderId] = useState('opencode')
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([])
@@ -567,10 +567,10 @@ export function IntegrationsViewMain(): React.JSX.Element {
               </Text>
               <VStack align="start" gap={1}>
                 <Text color="app.text" fontSize="xs">
-                  1. Enter the provider ID (e.g., &quot;zen&quot; for OpenCode ZEN API)
+                  1. Enter the provider ID (use &quot;opencode&quot; for OpenCode ZEN API)
                 </Text>
                 <Text color="app.text" fontSize="xs">
-                  2. Paste your API key from the provider
+                  2. Get your API key from opencode.ai/auth (for ZEN) or provider website
                 </Text>
                 <Text color="app.text" fontSize="xs">
                   3. Click Save - keys are encrypted and synced with OpenCode
