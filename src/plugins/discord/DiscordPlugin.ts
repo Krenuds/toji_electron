@@ -128,6 +128,7 @@ export class DiscordPlugin extends EventEmitter {
             // Process message through Toji with streaming progress embeds
             let progressMessage: Message | undefined
             let lastUpdate = Date.now()
+            let updateCount = 0
             const UPDATE_THROTTLE = 1000 // 1 second between updates
             const toolActivity = createToolActivity()
 
@@ -136,6 +137,7 @@ export class DiscordPlugin extends EventEmitter {
                 const now = Date.now()
                 const charCount = text.length
                 const timeSinceLastUpdate = now - lastUpdate
+                updateCount++
 
                 log(
                   '🔵 onChunk fired: %d chars (time since last: %dms, throttle: %dms)',
@@ -146,13 +148,13 @@ export class DiscordPlugin extends EventEmitter {
 
                 if (!progressMessage) {
                   // Send initial progress embed
-                  const embed = createProgressEmbed(charCount, 2000, toolActivity)
+                  const embed = createProgressEmbed(charCount, updateCount, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
                   log('✅ Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
-                  const embed = updateProgressEmbed(charCount, 2000, toolActivity)
+                  const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
                   log('✅ Updated progress embed: %d chars', charCount)
@@ -173,10 +175,11 @@ export class DiscordPlugin extends EventEmitter {
                   progressMessage &&
                   (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
                 ) {
-                  const charCount =
+                  const charCountStr =
                     progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
                       ?.value || '0'
-                  const embed = updateProgressEmbed(parseInt(charCount), 2000, toolActivity)
+                  const charCount = parseInt(charCountStr.replace(/,/g, ''), 10)
+                  const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = Date.now()
                   log('✅ Updated progress embed with tool info')
@@ -225,6 +228,7 @@ export class DiscordPlugin extends EventEmitter {
           // Use current active project context with streaming progress embeds
           let progressMessage: Message | undefined
           let lastUpdate = Date.now()
+          let updateCount = 0
           const UPDATE_THROTTLE = 1000 // 1 second between updates
           const toolActivity = createToolActivity()
 
@@ -233,6 +237,7 @@ export class DiscordPlugin extends EventEmitter {
               const now = Date.now()
               const charCount = text.length
               const timeSinceLastUpdate = now - lastUpdate
+              updateCount++
 
               log(
                 '🔵 onChunk fired (mention): %d chars (time since last: %dms, throttle: %dms)',
@@ -243,13 +248,13 @@ export class DiscordPlugin extends EventEmitter {
 
               if (!progressMessage) {
                 // Send initial progress embed
-                const embed = createProgressEmbed(charCount, 2000, toolActivity)
+                const embed = createProgressEmbed(charCount, updateCount, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
                 log('✅ Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
-                const embed = updateProgressEmbed(charCount, 2000, toolActivity)
+                const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
                 log('✅ Updated progress embed: %d chars (mention)', charCount)
@@ -270,10 +275,11 @@ export class DiscordPlugin extends EventEmitter {
                 progressMessage &&
                 (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
               ) {
-                const charCount =
+                const charCountStr =
                   progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
                     ?.value || '0'
-                const embed = updateProgressEmbed(parseInt(charCount), 2000, toolActivity)
+                const charCount = parseInt(charCountStr.replace(/,/g, ''), 10)
+                const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = Date.now()
                 log('✅ Updated progress embed with tool info (mention)')

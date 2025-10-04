@@ -158,10 +158,7 @@ await this.projectManager.chatStreaming(message.content, {
     updateToolActivity(toolActivity, toolEvent)
 
     // Force update on important events (running/completed)
-    if (
-      toolEvent.state.status === 'running' ||
-      toolEvent.state.status === 'completed'
-    ) {
+    if (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed') {
       const embed = updateProgressEmbed(charCount, 2000, toolActivity)
       await progressMessage.edit({ embeds: [embed] })
     }
@@ -214,7 +211,7 @@ Part = TextPart | ReasoningPart | FilePart | ToolPart | StepStartPart | StepFini
   id: string
   sessionID: string
   messageID: string
-  type: "tool"
+  type: 'tool'
   callID: string
   tool: string
   state: ToolState
@@ -271,18 +268,22 @@ ToolStateError = {
 ### Example Prompts
 
 **File Operations:**
+
 - "What's in package.json?"
 - "Read the Discord plugin implementation"
 
 **Code Search:**
+
 - "Find all uses of the chatStreaming function"
 - "Search for TODO comments in the codebase"
 
 **Multi-Tool Operations:**
+
 - "List all TypeScript files in src/main and show their line counts"
 - "Find the Toji class and explain how it works"
 
 **Error Cases:**
+
 - "Read a file that doesn't exist: /fake/path.txt"
 - "Run a command that will fail: fake-command --help"
 
@@ -438,6 +439,7 @@ if (toolEvent.state.status === 'running' || toolEvent.state.status === 'complete
 ### Why Not Show Pending Tools?
 
 Currently we track pending but don't display them because:
+
 - Transition from pending → running is usually instant
 - Reduces UI clutter
 - User doesn't care about "about to run" vs "running"

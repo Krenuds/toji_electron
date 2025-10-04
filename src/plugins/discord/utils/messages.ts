@@ -243,13 +243,15 @@ export function formatErrorMessage(error: unknown, context: string): string {
 }
 
 /**
- * Create a visual progress bar for Discord embeds
+ * Create a visual activity indicator for Discord embeds
+ * Shows activity level rather than fake progress
  */
-export function createProgressBar(percent: number): string {
-  const clampedPercent = Math.max(0, Math.min(100, percent))
-  const filled = Math.floor(clampedPercent / 10)
-  const empty = 10 - filled
-  return '▓'.repeat(filled) + '░'.repeat(empty) + ` ${clampedPercent}%`
+export function createActivityIndicator(updateCount: number): string {
+  // Show 1-5 chevrons based on activity, cycling
+  const chevronCount = Math.min(5, (updateCount % 5) + 1)
+  const chevrons = '⟩'.repeat(chevronCount)
+  const spaces = ' '.repeat(5 - chevronCount)
+  return `${chevrons}${spaces} ${updateCount} updates`
 }
 
 /**
@@ -257,22 +259,24 @@ export function createProgressBar(percent: number): string {
  */
 export function createProgressEmbed(
   charCount: number,
-  estimatedTotal: number = 2000,
+  updateCount: number = 0,
   tools?: ToolActivity
 ): EmbedBuilder {
-  // Calculate progress (max 90% until complete)
-  const progress = Math.min(90, Math.floor((charCount / estimatedTotal) * 100))
-  const progressBar = createProgressBar(progress)
+  const activity = createActivityIndicator(updateCount)
 
   const embed = new EmbedBuilder()
     .setColor(DISCORD_COLORS.PENDING)
     .setTitle('🤖 Toji is thinking...')
-    .setDescription('Generating response...')
-    .addFields({ name: '📊 Progress', value: progressBar, inline: false })
+    .setDescription('🔄 Streaming response...')
     .setTimestamp()
 
   if (charCount > 0) {
-    embed.addFields({ name: '📝 Characters', value: `${charCount}`, inline: true })
+    embed.addFields(
+      { name: '📊 Activity', value: activity, inline: false },
+      { name: '📝 Characters', value: `${charCount.toLocaleString()}`, inline: true }
+    )
+  } else {
+    embed.addFields({ name: '� Activity', value: activity, inline: false })
   }
 
   if (tools && (tools.running.size > 0 || tools.completed.length > 0 || tools.errors.length > 0)) {
@@ -287,19 +291,18 @@ export function createProgressEmbed(
  */
 export function updateProgressEmbed(
   charCount: number,
-  estimatedTotal: number = 2000,
+  updateCount: number,
   tools?: ToolActivity
 ): EmbedBuilder {
-  const progress = Math.min(90, Math.floor((charCount / estimatedTotal) * 100))
-  const progressBar = createProgressBar(progress)
+  const activity = createActivityIndicator(updateCount)
 
   const embed = new EmbedBuilder()
     .setColor(DISCORD_COLORS.PENDING)
     .setTitle('🤖 Toji is working...')
-    .setDescription('Writing response...')
+    .setDescription('✍️ Writing response...')
     .addFields(
-      { name: '📊 Progress', value: progressBar, inline: false },
-      { name: '📝 Characters', value: `${charCount}`, inline: true }
+      { name: '📊 Activity', value: activity, inline: false },
+      { name: '📝 Characters', value: `${charCount.toLocaleString()}`, inline: true }
     )
     .setTimestamp()
 
