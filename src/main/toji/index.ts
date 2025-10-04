@@ -355,6 +355,17 @@ export class Toji extends EventEmitter {
   async switchToProject(projectPath: string): Promise<{ success: boolean; projectPath: string }> {
     log('Switching to project: %s', projectPath)
 
+    // CRITICAL: Check if projectPath ends with .git and fix it
+    if (projectPath.endsWith('/.git') || projectPath.endsWith('\\.git')) {
+      const originalPath = projectPath
+      projectPath = projectPath.replace(/[\/\\]\.git$/, '')
+      log(
+        'WARNING: Project path had .git suffix, corrected from %s to %s',
+        originalPath,
+        projectPath
+      )
+    }
+
     try {
       // Get or create server for this project directory
       log('Getting or creating server for project: %s', projectPath)

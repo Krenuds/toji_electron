@@ -159,30 +159,45 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
   // Load projects
   const loadProjects = useCallback(async () => {
+    console.log('[ChatCoordinator.loadProjects] Loading projects...')
     try {
       const projectList = await window.api.toji.getProjects()
+      console.log('[ChatCoordinator.loadProjects] Loaded projects:', projectList)
       updateState({ projects: (projectList as unknown as Project[]) || [] })
-    } catch {
-      // Backend handles error logging
+      console.log(
+        '[ChatCoordinator.loadProjects] State updated with',
+        projectList?.length || 0,
+        'projects'
+      )
+    } catch (error) {
+      console.error('[ChatCoordinator.loadProjects] Error loading projects:', error)
       updateState({ projectError: 'Failed to load projects' })
     }
   }, [updateState])
 
   // Load sessions for current project
   const loadSessions = useCallback(async (): Promise<Session[]> => {
+    console.log('[ChatCoordinator.loadSessions] Current project:', state.currentProject)
     if (!state.currentProject) {
+      console.log('[ChatCoordinator.loadSessions] No current project, clearing sessions')
       updateState({ sessions: [], currentSessionId: undefined })
       return []
     }
 
+    console.log(
+      '[ChatCoordinator.loadSessions] Loading sessions for project:',
+      state.currentProject.path
+    )
     updateState({ isLoadingSessions: true, sessionError: null })
 
     try {
       const sessions = await window.api.toji.listSessions()
+      console.log('[ChatCoordinator.loadSessions] Loaded sessions:', sessions)
       updateState({ sessions: sessions || [] })
 
       // Get current session from backend
       const currentId = await window.api.toji.getCurrentSessionId()
+      console.log('[ChatCoordinator.loadSessions] Current session ID:', currentId)
       updateState({ currentSessionId: currentId })
 
       if (currentId) {
@@ -285,6 +300,12 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
         const project = { path: current.path, sessionId: current.sessionId }
         updateState({ currentProject: project })
         saveToCache(CACHE_KEYS.LAST_PROJECT, project)
+
+        // Check project status (global vs proper project) - CRITICAL!
+        console.log('[ChatCoordinator.initialize] Loading project status...')
+        const status = await window.api.toji.getProjectStatus()
+        console.log('[ChatCoordinator.initialize] Project status:', status)
+        updateState({ projectStatus: status })
 
         // Load sessions for this project
         await loadSessions()
@@ -517,14 +538,38 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
       const result = await window.api.toji.initializeProject()
 
       if (result.success) {
+        console.log('[ChatCoordinator.initializeProject] ✅ Success! Result:', result)
+        console.log(
+          '[ChatCoordinator.initializeProject] Current project before refresh:',
+          state.currentProject
+        )
+
+        // Clear stale status immediately
+        console.log('[ChatCoordinator.initializeProject] Clearing stale project status...')
+        updateState({ projectStatus: null })
+
+        // Wait a moment for the backend to fully process
+        console.log('[ChatCoordinator.initializeProject] Waiting 500ms for backend processing...')
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        // Reload the full project list - THIS IS KEY!
+        // This updates the OpenCode SDK's internal project cache
+        console.log('[ChatCoordinator.initializeProject] 🔄 Reloading projects list...')
+        await loadProjects()
+        console.log('[ChatCoordinator.initializeProject] ✅ Projects list reloaded')
+
         // Refresh project status
+        console.log('[ChatCoordinator.initializeProject] 🔄 Getting fresh project status...')
         const status = await window.api.toji.getProjectStatus()
+        console.log('[ChatCoordinator.initializeProject] Fresh project status:', status)
         updateState({ projectStatus: status })
 
         // Reload sessions (project should now be recognized)
+        console.log('[ChatCoordinator.initializeProject] 🔄 Reloading sessions...')
         await loadSessions()
+        console.log('[ChatCoordinator.initializeProject] ✅ Sessions reloaded')
 
-        // Sessions will be created as needed by the user
+        console.log('[ChatCoordinator.initializeProject] ✅✅✅ All state refreshed successfully!')
 
         // Show success message
         updateState({ projectError: null })
@@ -542,7 +587,7 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
     } finally {
       updateState({ isInitializingProject: false })
     }
-  }, [state.currentProject, loadSessions, updateState])
+  }, [state.currentProject, loadSessions, loadProjects, updateState])
 
   // Create session
   const createSession = useCallback(
