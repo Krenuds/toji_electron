@@ -37,3 +37,23 @@ export function getErrorColor(hasErrors: boolean, hasWarnings: boolean): number 
   if (hasWarnings) return DISCORD_COLORS.WARNING
   return DISCORD_COLORS.SUCCESS
 }
+
+/**
+ * Default role name for bot administrators
+ */
+export const DEFAULT_ADMIN_ROLE_NAME = 'Toji Admin'
+
+/**
+ * Permission-related messages
+ */
+export const PERMISSION_MESSAGES = {
+  ACCESS_DENIED: {
+    TITLE: '🚫 Access Denied',
+    DESCRIPTION: "You don't have permission to use this command."
+  },
+  ROLE_INFO: {
+    TITLE: '👥 Who Can Use Commands',
+    SERVER_OWNER: 'Server Owner (automatic access)',
+    ADMIN_ROLE: (roleName: string) => `Members with the **${roleName}** role`
+  }
+} as const

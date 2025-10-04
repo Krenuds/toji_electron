@@ -3,6 +3,8 @@ import type { Toji } from '../../../main/toji'
 import type { DiscordModule } from '../DiscordPlugin'
 import type { DiscordProjectManager } from './DiscordProjectManager'
 import { createFileDebugLogger } from '../../../main/utils/logger'
+import { hasPermission } from '../utils/permissions'
+import { DISCORD_COLORS, PERMISSION_MESSAGES, DEFAULT_ADMIN_ROLE_NAME } from '../constants'
 
 const log = createFileDebugLogger('discord:slash-commands')
 
@@ -93,6 +95,38 @@ export class SlashCommandModule implements DiscordModule {
       // Check if interaction is still valid before executing
       if (interaction.replied) {
         log('WARNING: Interaction already replied to, skipping')
+        return
+      }
+
+      // Check permissions before executing command
+      if (!hasPermission(interaction, { adminRoleName: DEFAULT_ADMIN_ROLE_NAME })) {
+        log(
+          'Permission denied for user %s on command %s',
+          interaction.user.tag,
+          interaction.commandName
+        )
+        await interaction.reply({
+          embeds: [
+            {
+              color: DISCORD_COLORS.ERROR,
+              title: PERMISSION_MESSAGES.ACCESS_DENIED.TITLE,
+              description: PERMISSION_MESSAGES.ACCESS_DENIED.DESCRIPTION,
+              fields: [
+                {
+                  name: PERMISSION_MESSAGES.ROLE_INFO.TITLE,
+                  value: [
+                    `• ${PERMISSION_MESSAGES.ROLE_INFO.SERVER_OWNER}`,
+                    `• ${PERMISSION_MESSAGES.ROLE_INFO.ADMIN_ROLE(DEFAULT_ADMIN_ROLE_NAME)}`
+                  ].join('\n')
+                }
+              ],
+              footer: {
+                text: 'Contact your server owner to get access'
+              }
+            }
+          ],
+          ephemeral: true
+        })
         return
       }
 

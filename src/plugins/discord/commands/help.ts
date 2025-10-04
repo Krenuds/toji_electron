@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
-import { DISCORD_COLORS } from '../constants'
+import { DISCORD_COLORS, DEFAULT_ADMIN_ROLE_NAME, PERMISSION_MESSAGES } from '../constants'
 
 export const data = new SlashCommandBuilder()
   .setName('help')
@@ -11,6 +11,15 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
     title: '🤖 Toji Bot Help',
     description: 'I&apos;m Toji, your AI coding assistant powered by OpenCode!',
     fields: [
+      {
+        name: '🔒 Permissions',
+        value: [
+          'Commands can only be used by:',
+          `• ${PERMISSION_MESSAGES.ROLE_INFO.SERVER_OWNER}`,
+          `• ${PERMISSION_MESSAGES.ROLE_INFO.ADMIN_ROLE(DEFAULT_ADMIN_ROLE_NAME)}`
+        ].join('\n'),
+        inline: false
+      },
       {
         name: '💬 Chat with @mention',
         value: 'Just mention me (@Toji) in any message and I&apos;ll respond!',
