@@ -320,7 +320,6 @@ Standardized card layout for integration sections.
 ```tsx
 import { IntegrationCard } from '../../shared'
 import { FaDiscord } from 'react-icons/fa6'
-
 ;<IntegrationCard
   icon={<FaDiscord size={24} color="white" />}
   iconBg="#5865F2"
@@ -345,7 +344,6 @@ Visual separator line using theme border color.
 
 ```tsx
 import { SectionDivider } from '../../shared'
-
 ;<VStack align="stretch" gap={4}>
   <Box>Content section 1</Box>
   <SectionDivider />

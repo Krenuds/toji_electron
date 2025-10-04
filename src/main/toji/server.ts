@@ -87,7 +87,9 @@ export class ServerManager {
     }
 
     try {
+      log('========== SPAWNING SERVER ==========')
       log('Spawning OpenCode server from directory: %s', targetDirectory)
+      log('Server options config: %o', config)
       const server = await this.spawnOpenCodeServer(serverOptions)
       log('Server created successfully at %s for directory %s', server.url, targetDirectory)
 
@@ -254,8 +256,12 @@ export class ServerManager {
 
   async restart(config?: Config, cwd?: string): Promise<number> {
     const targetDir = normalizePath(cwd || process.cwd())
+    log('========== SERVER RESTART ==========')
+    log('Restarting server for directory: %s', targetDir)
+    log('Config passed to restart: %o', config)
     await this.stopServerForDirectory(targetDir)
     const instance = await this.getOrCreateServer(targetDir, config)
+    log('Server restarted on port: %d', instance.port)
     return instance.port
   }
 
@@ -416,6 +422,12 @@ export class ServerManager {
       throw new Error(`OpenCode binary not found at ${binaryPath}. Please ensure it is installed.`)
     }
 
+    const configContent = opts.config ?? {}
+    log('========== SPAWN OPENCODE PROCESS ==========')
+    log('Working directory: %s', opts.cwd)
+    log('Config being passed via OPENCODE_CONFIG_CONTENT: %o', configContent)
+    log('Config JSON: %s', JSON.stringify(configContent))
+
     const proc = spawn(
       binaryPath,
       ['serve', `--hostname=${opts.hostname}`, `--port=${opts.port}`],
@@ -424,7 +436,7 @@ export class ServerManager {
         signal: opts.signal,
         env: {
           ...process.env,
-          OPENCODE_CONFIG_CONTENT: JSON.stringify(opts.config ?? {})
+          OPENCODE_CONFIG_CONTENT: JSON.stringify(configContent)
         }
       }
     )

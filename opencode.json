@@ -3,20 +3,8 @@
   "mcp": {
     "toji": {
       "type": "remote",
-      "url": "http://localhost:3100/mcp",
+      "url": "http://localhost:3103/mcp",
       "enabled": true
     }
-  },
-  "agent": {},
-  "mode": {},
-  "plugin": [],
-  "command": {},
-  "username": "donth",
-  "permission": {
-    "edit": "allow",
-    "bash": "allow",
-    "webfetch": "allow"
-  },
-  "model": "opencode/qwen3-coder",
-  "small_model": "opencode/grok-code"
+  }
 }

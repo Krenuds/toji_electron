@@ -95,7 +95,9 @@ export class ConfigManager {
   // Persist configuration to opencode.json file for permanent storage
   private async persistConfigToFile(directory: string, config: OpencodeConfig): Promise<void> {
     const configPath = join(directory, 'opencode.json')
+    log('========== PERSIST CONFIG TO FILE ==========')
     log('Persisting config to file: %s', configPath)
+    log('Config to persist: %o', config)
 
     try {
       // Read existing config if it exists
@@ -104,10 +106,12 @@ export class ConfigManager {
         try {
           const existingContent = await readFile(configPath, 'utf-8')
           existingConfig = JSON.parse(existingContent)
-          log('Loaded existing config from file')
+          log('Loaded existing config from file: %o', existingConfig)
         } catch (error) {
           log('WARNING: Could not parse existing config file, creating new: %o', error)
         }
+      } else {
+        log('No existing opencode.json file found, will create new')
       }
 
       // Merge with existing configuration to preserve other settings
@@ -116,9 +120,12 @@ export class ConfigManager {
         ...config
       }
 
+      log('Merged config to write: %o', mergedConfig)
+
       // Write updated configuration to file
       await writeFile(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8')
       log('Configuration successfully written to: %s', configPath)
+      log('File content: %s', JSON.stringify(mergedConfig, null, 2))
     } catch (error) {
       log('ERROR: Failed to persist config to file: %o', error)
       throw error

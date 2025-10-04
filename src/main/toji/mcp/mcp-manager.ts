@@ -27,7 +27,7 @@ import type { SessionManager } from '../sessions'
 import type { Toji } from '../index'
 import { createFileDebugLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
-import { promises as fs } from 'fs'
+import { promises as fs, existsSync } from 'fs'
 import path from 'path'
 
 const log = createFileDebugLogger('mcp:manager')
@@ -213,13 +213,28 @@ export class McpManager {
 
   /**
    * Write opencode.json configuration with MCP server
+   * IMPORTANT: Merges with existing config to preserve user settings
    */
   private async writeOpencodeConfig(projectDirectory: string, mcpPort: number): Promise<void> {
     const configPath = path.join(projectDirectory, 'opencode.json')
     log('Writing opencode.json to %s', configPath)
 
+    // Read existing config if it exists
+    let existingConfig: Record<string, unknown> = {}
+    try {
+      if (existsSync(configPath)) {
+        const existingContent = await fs.readFile(configPath, 'utf-8')
+        existingConfig = JSON.parse(existingContent)
+        log('Loaded existing opencode.json config for merging')
+      }
+    } catch (error) {
+      log('Warning: Could not read existing opencode.json, creating new: %o', error)
+    }
+
+    // Merge MCP config with existing config
     const config = {
       $schema: 'https://opencode.ai/config.json',
+      ...existingConfig, // Preserve all existing settings
       mcp: {
         toji: {
           type: 'remote',
@@ -231,7 +246,7 @@ export class McpManager {
 
     try {
       await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8')
-      log('Successfully wrote opencode.json with MCP config')
+      log('Successfully wrote opencode.json with MCP config (merged with existing)')
     } catch (error) {
       log('Warning: Failed to write opencode.json: %o', error)
     }

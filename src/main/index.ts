@@ -131,10 +131,29 @@ app.whenReady().then(async () => {
 
     // Load last project or use default
     const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
+    logStartup('========== APP STARTUP ==========')
     logStartup('Loading project: %s', lastProject)
+    logStartup('Checking opencode.json in project directory...')
+    try {
+      const { readFile: readFileAsync } = await import('fs/promises')
+      const { existsSync } = await import('fs')
+      const { join: joinPath } = await import('path')
+      const configPath = joinPath(lastProject, 'opencode.json')
+      const configExists = existsSync(configPath)
+      if (configExists) {
+        const configContent = await readFileAsync(configPath, 'utf-8')
+        logStartup('opencode.json EXISTS in project directory: %s', configPath)
+        logStartup('opencode.json content: %s', configContent)
+      } else {
+        logStartup('opencode.json DOES NOT EXIST in project directory: %s', configPath)
+      }
+    } catch (error) {
+      logStartup('Error checking opencode.json: %o', error)
+    }
 
     // Start the server from the project directory
     logStartup('Starting OpenCode server from project directory')
+    logStartup('Config passed to server.start: undefined (should read from opencode.json)')
     await toji.server.start(undefined, lastProject)
     logStartup('OpenCode server ready (running from %s)', lastProject)
 
