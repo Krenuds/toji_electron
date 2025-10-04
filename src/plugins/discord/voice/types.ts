@@ -9,7 +9,8 @@ export interface VoiceSessionConfig {
   userId: string
   guildId: string
   channelId: string // Voice channel ID
-  projectChannelId?: string // Text channel for project context (Phase 2)
+  projectPath?: string // Project path for Toji context
+  projectChannelId?: string // Text channel ID for the project
 }
 
 export interface VoiceSession {
@@ -18,6 +19,8 @@ export interface VoiceSession {
   connection: DiscordVoiceConnection
   startTime: Date
   status: 'connecting' | 'connected' | 'disconnected' | 'error'
+  projectPath?: string // Quick access to project path
+  projectChannelId?: string // Quick access to project text channel
 }
 
 export interface VoiceModuleEvents {

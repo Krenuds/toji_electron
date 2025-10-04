@@ -1,5 +1,5 @@
 /**
- * Voice Command - Phase 1: Basic voice channel join/leave
+ * Voice Command - Phase 1: Project-based voice channel management
  * Slash command interface for voice functionality
  */
 
@@ -8,35 +8,93 @@ import {
   ChatInputCommandInteraction,
   ChannelType,
   PermissionFlagsBits,
-  MessageFlags
+  MessageFlags,
+  type VoiceChannel
 } from 'discord.js'
 import { DISCORD_COLORS } from '../constants'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import type { VoiceModule } from '../voice/VoiceModule'
+import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 
 const log = createFileDebugLogger('discord:command:voice')
 
+/**
+ * Get or create a voice channel for a project
+ * Voice channels are named "🎙️-{project-name}" and live in the Toji Desktop category
+ */
+async function getOrCreateProjectVoiceChannel(
+  interaction: ChatInputCommandInteraction,
+  projectName: string,
+  textChannelId: string
+): Promise<VoiceChannel | null> {
+  const guild = interaction.guild
+  if (!guild) return null
+
+  // Generate voice channel name
+  const voiceChannelName = `🎙️-${projectName}`
+
+  log(`Looking for voice channel: ${voiceChannelName}`)
+
+  // Check if voice channel already exists in the guild
+  const existingVoiceChannel = guild.channels.cache.find(
+    (ch) => ch.type === ChannelType.GuildVoice && ch.name === voiceChannelName
+  ) as VoiceChannel | undefined
+
+  if (existingVoiceChannel) {
+    log(`Found existing voice channel: ${existingVoiceChannel.id}`)
+    return existingVoiceChannel
+  }
+
+  // Create new voice channel in the same parent as text channel
+  const textChannel = guild.channels.cache.get(textChannelId)
+  const parentId = textChannel && 'parent' in textChannel ? textChannel.parent?.id : undefined
+
+  log(`Creating new voice channel: ${voiceChannelName} in category: ${parentId || 'none'}`)
+
+  try {
+    const voiceChannel = await guild.channels.create({
+      name: voiceChannelName,
+      type: ChannelType.GuildVoice,
+      parent: parentId,
+      reason: `Voice channel for project: ${projectName}`,
+      permissionOverwrites: [
+        {
+          id: guild.roles.everyone,
+          allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
+          deny: [PermissionFlagsBits.ManageChannels]
+        }
+      ]
+    })
+
+    log(`Created voice channel: ${voiceChannel.id}`)
+    return voiceChannel
+  } catch (error) {
+    log(`Failed to create voice channel:`, error)
+    return null
+  }
+}
+
 export const data = new SlashCommandBuilder()
   .setName('voice')
-  .setDescription('Voice channel commands')
+  .setDescription('Voice channel commands (must be used in a project channel)')
   .addSubcommand((subcommand) =>
-    subcommand.setName('join').setDescription('Join your current voice channel')
+    subcommand.setName('join').setDescription('Join/create the voice channel for this project')
   )
   .addSubcommand((subcommand) =>
-    subcommand.setName('leave').setDescription('Leave the voice channel')
+    subcommand.setName('leave').setDescription('Leave the project voice channel')
   )
   .addSubcommand((subcommand) =>
-    subcommand.setName('status').setDescription('Check your voice session status')
+    subcommand.setName('status').setDescription('Check voice session status for this project')
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
   _toji: unknown,
-  _projectManager?: unknown,
+  projectManager?: DiscordProjectManager,
   voiceModule?: VoiceModule
 ): Promise<void> {
-  if (!voiceModule) {
+  if (!voiceModule || !projectManager) {
     await interaction.reply({
       content: '❌ Voice module not initialized',
       flags: MessageFlags.Ephemeral
@@ -48,15 +106,15 @@ export async function execute(
 
   switch (subcommand) {
     case 'join':
-      await handleJoin(interaction, voiceModule)
+      await handleJoin(interaction, projectManager, voiceModule)
       break
 
     case 'leave':
-      await handleLeave(interaction, voiceModule)
+      await handleLeave(interaction, projectManager, voiceModule)
       break
 
     case 'status':
-      await handleStatus(interaction, voiceModule)
+      await handleStatus(interaction, projectManager, voiceModule)
       break
 
     default:
@@ -68,39 +126,49 @@ export async function execute(
 }
 
 /**
- * Handle /voice join - Join user's current voice channel
+ * Handle /voice join - Create/join voice channel for this project
  */
 async function handleJoin(
   interaction: ChatInputCommandInteraction,
+  projectManager: DiscordProjectManager,
   voiceModule: VoiceModule
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
   try {
-    // Check if user is in a voice channel
-    const member = interaction.guild?.members.cache.get(interaction.user.id)
-    if (!member || !member.voice) {
+    // VALIDATION: Must be in a project channel
+    const channelId = interaction.channelId
+    if (!projectManager.isProjectChannel(channelId)) {
       await interaction.editReply({
-        content: '❌ Could not determine your voice state. Please try again.'
+        content:
+          '❌ This command can only be used in a project channel!\nUse `/project list` to see available projects.'
       })
       return
     }
 
-    const voiceChannel = member.voice.channel
+    // Get project info
+    const project = projectManager.getProjectByChannel(channelId)
+    if (!project) {
+      await interaction.editReply({
+        content: '❌ Could not find project information for this channel.'
+      })
+      return
+    }
+
+    log(
+      `User ${interaction.user.tag} requesting voice for project: ${project.projectName} (${project.projectPath})`
+    )
+
+    // Get or create the voice channel for this project
+    const voiceChannel = await getOrCreateProjectVoiceChannel(
+      interaction,
+      project.projectName,
+      project.channelId
+    )
+
     if (!voiceChannel) {
       await interaction.editReply({
-        content: '❌ You must be in a voice channel to use this command!'
-      })
-      return
-    }
-
-    // Verify it's a voice channel (not stage)
-    if (
-      voiceChannel.type !== ChannelType.GuildVoice &&
-      voiceChannel.type !== ChannelType.GuildStageVoice
-    ) {
-      await interaction.editReply({
-        content: '❌ You must be in a voice or stage channel!'
+        content: '❌ Failed to create/find voice channel for this project.'
       })
       return
     }
@@ -121,18 +189,41 @@ async function handleJoin(
       return
     }
 
-    log(`User ${interaction.user.tag} joining voice channel ${voiceChannel.id}`)
+    // Check if user already has a session - inform them we're switching
+    const existingSession = voiceModule.getUserSession(interaction.user.id)
+    const isSwitching = existingSession !== undefined
 
-    // Join the voice channel
-    const session = await voiceModule.joinVoiceChannel(voiceChannel, interaction.user.id)
+    log(`Joining voice channel ${voiceChannel.id} for project ${project.projectName}`)
+
+    // Join the voice channel with project context (auto-leaves previous session)
+    const session = await voiceModule.joinVoiceChannel(
+      voiceChannel,
+      interaction.user.id,
+      project.projectPath,
+      project.channelId
+    )
 
     await interaction.editReply({
       embeds: [
         {
-          title: '🎙️ Voice Session Started',
+          title: isSwitching ? '🔄 Voice Session Switched' : '🎙️ Voice Session Started',
           description: `Connected to **${voiceChannel.name}**`,
           color: DISCORD_COLORS.SUCCESS,
           fields: [
+            ...(isSwitching
+              ? [
+                  {
+                    name: '🔄 Switched Sessions',
+                    value: 'Automatically left previous voice session and joined this one.',
+                    inline: false
+                  }
+                ]
+              : []),
+            {
+              name: 'Project',
+              value: `\`${project.projectName}\``,
+              inline: true
+            },
             {
               name: 'Session ID',
               value: `\`${session.id}\``,
@@ -144,9 +235,14 @@ async function handleJoin(
               inline: true
             },
             {
+              name: 'Voice Channel',
+              value: `<#${voiceChannel.id}>`,
+              inline: false
+            },
+            {
               name: 'Next Steps',
               value:
-                'Phase 1 complete! Voice connection established.\nUse `/voice leave` to disconnect.',
+                'Join the voice channel to start talking!\nYour conversation will be routed to this project.\nUse `/voice leave` to disconnect.',
               inline: false
             }
           ],
@@ -155,7 +251,7 @@ async function handleJoin(
       ]
     })
 
-    log(`Successfully connected user ${interaction.user.tag} to voice`)
+    log(`Successfully connected user ${interaction.user.tag} to project voice channel`)
   } catch (error) {
     log('Error in handleJoin:', error)
 
@@ -179,11 +275,22 @@ async function handleJoin(
  */
 async function handleLeave(
   interaction: ChatInputCommandInteraction,
+  projectManager: DiscordProjectManager,
   voiceModule: VoiceModule
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
   try {
+    // VALIDATION: Must be in a project channel
+    const channelId = interaction.channelId
+    if (!projectManager.isProjectChannel(channelId)) {
+      await interaction.editReply({
+        content:
+          '❌ This command can only be used in a project channel!\nUse `/project list` to see available projects.'
+      })
+      return
+    }
+
     await voiceModule.leaveVoiceChannel(interaction.user.id)
 
     await interaction.editReply({
@@ -221,11 +328,22 @@ async function handleLeave(
  */
 async function handleStatus(
   interaction: ChatInputCommandInteraction,
+  projectManager: DiscordProjectManager,
   voiceModule: VoiceModule
 ): Promise<void> {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
   try {
+    // VALIDATION: Must be in a project channel
+    const channelId = interaction.channelId
+    if (!projectManager.isProjectChannel(channelId)) {
+      await interaction.editReply({
+        content:
+          '❌ This command can only be used in a project channel!\nUse `/project list` to see available projects.'
+      })
+      return
+    }
+
     const session = voiceModule.getUserSession(interaction.user.id)
 
     if (!session) {
@@ -247,6 +365,10 @@ async function handleStatus(
     const minutes = Math.floor(duration / 60)
     const seconds = duration % 60
 
+    const project = session.projectPath
+      ? projectManager.getProjectByChannel(session.projectChannelId || '')
+      : undefined
+
     await interaction.editReply({
       embeds: [
         {
@@ -259,6 +381,11 @@ async function handleStatus(
               inline: false
             },
             {
+              name: 'Project',
+              value: project ? `\`${project.projectName}\`` : 'None',
+              inline: true
+            },
+            {
               name: 'Status',
               value: `${session.status} (${connectionStatus})`,
               inline: true
@@ -269,9 +396,14 @@ async function handleStatus(
               inline: true
             },
             {
-              name: 'Channel',
+              name: 'Voice Channel',
               value: `<#${session.config.channelId}>`,
-              inline: true
+              inline: false
+            },
+            {
+              name: 'Project Channel',
+              value: session.projectChannelId ? `<#${session.projectChannelId}>` : 'None',
+              inline: false
             }
           ],
           timestamp: new Date().toISOString()

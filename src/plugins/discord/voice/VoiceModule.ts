@@ -69,21 +69,42 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   /**
    * Join a voice channel and create a session
    */
-  async joinVoiceChannel(channel: VoiceBasedChannel, userId: string): Promise<VoiceSession> {
+  async joinVoiceChannel(
+    channel: VoiceBasedChannel,
+    userId: string,
+    projectPath?: string,
+    projectChannelId?: string
+  ): Promise<VoiceSession> {
     log(`=== JOIN VOICE CHANNEL START ===`)
     log(`User: ${userId}`)
     log(`Channel ID: ${channel.id}`)
     log(`Channel Name: ${channel.name}`)
     log(`Guild ID: ${channel.guild.id}`)
     log(`Guild Name: ${channel.guild.name}`)
+    log(`Project Path: ${projectPath || 'none'}`)
+    log(`Project Channel: ${projectChannelId || 'none'}`)
 
-    // Check if user already has a session
+    // Check if user already has a session - automatically leave it
     const existingSessionId = this.userSessions.get(userId)
     if (existingSessionId) {
       const existingSession = this.sessions.get(existingSessionId)
       if (existingSession) {
-        log(`User ${userId} already has an active session: ${existingSessionId}`)
-        throw new Error('You already have an active voice session. Use /voice leave first.')
+        log(
+          `User ${userId} already has an active session: ${existingSessionId}, automatically leaving...`
+        )
+
+        try {
+          // Clean up the existing session
+          existingSession.connection.destroy()
+          existingSession.status = 'disconnected'
+          this.sessions.delete(existingSessionId)
+          this.userSessions.delete(userId)
+          this.emit('sessionEnded', existingSessionId)
+          log(`Successfully left previous session ${existingSessionId}`)
+        } catch (error) {
+          log(`Error leaving previous session:`, error)
+          // Continue anyway - we'll create a new session
+        }
       }
     }
 
@@ -95,7 +116,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     const config: VoiceSessionConfig = {
       userId,
       guildId: channel.guild.id,
-      channelId: channel.id
+      channelId: channel.id,
+      projectPath,
+      projectChannelId
     }
 
     log(`Calling joinVoiceChannel from @discordjs/voice...`)
@@ -117,7 +140,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       config,
       connection,
       startTime: new Date(),
-      status: 'connecting'
+      status: 'connecting',
+      projectPath,
+      projectChannelId
     }
 
     // Store session

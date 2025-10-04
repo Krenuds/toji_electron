@@ -323,6 +323,13 @@ export class DiscordProjectManager implements DiscordModule {
   }
 
   /**
+   * Get project info by channel ID
+   */
+  getProjectByChannel(channelId: string): ProjectChannel | undefined {
+    return this.projectChannels.get(channelId)
+  }
+
+  /**
    * Check if a channel is in the Toji Desktop category
    */
   async isInTojiCategory(channelId: string): Promise<boolean> {
