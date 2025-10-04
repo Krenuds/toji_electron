@@ -185,22 +185,34 @@ export function IntegrationsViewMain(): React.JSX.Element {
               {/* Bot Invite Link */}
               {status.botId && (
                 <Box
-                  p={3}
+                  p={2}
                   bg="rgba(88, 101, 242, 0.1)"
                   borderRadius="md"
                   border="1px solid"
                   borderColor="#5865F2"
                 >
-                  <VStack align="start" gap={2}>
-                    <Text color="#5865F2" fontSize="sm" fontWeight="medium">
-                      Invite Bot to Server
-                    </Text>
+                  <HStack justify="space-between" align="center" gap={3}>
+                    <VStack align="start" gap={0} flex="1" minW="0">
+                      <Text color="#5865F2" fontSize="xs" fontWeight="medium">
+                        Invite Bot to Server
+                      </Text>
+                      <Text
+                        color="app.text"
+                        fontSize="2xs"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        whiteSpace="nowrap"
+                      >
+                        Add Toji to your Discord server
+                      </Text>
+                    </VStack>
                     <Button
-                      size="sm"
+                      size="xs"
                       bg="#5865F2"
                       _hover={{ bg: '#4752C4' }}
                       color="white"
                       variant="solid"
+                      flexShrink={0}
                       onClick={() => {
                         // Discord permissions: Administrator (8) for full access
                         const permissions = '8'
@@ -208,55 +220,58 @@ export function IntegrationsViewMain(): React.JSX.Element {
                         window.open(inviteUrl, '_blank')
                       }}
                     >
-                      <LuExternalLink size={14} />
-                      <Text ml={1} color="white">
-                        Add to Discord Server
+                      <LuExternalLink size={12} />
+                      <Text ml={1} color="white" fontSize="2xs">
+                        Add to Server
                       </Text>
                     </Button>
-                    <Text color="app.text" fontSize="xs">
-                      Click to invite Toji to your Discord server with required permissions
-                    </Text>
-                  </VStack>
+                  </HStack>
                 </Box>
               )}
 
               {/* Connection Status */}
               {status.connected && (
                 <Box
-                  p={3}
+                  p={2}
                   bg="rgba(34, 197, 94, 0.1)"
                   borderRadius="md"
                   border="1px solid"
                   borderColor="green.500"
                 >
-                  <VStack align="start" gap={1}>
-                    <Text color="green.400" fontSize="sm" fontWeight="medium">
+                  <HStack gap={3} align="center">
+                    <Text color="green.400" fontSize="xs" fontWeight="medium">
                       Bot Connected
                     </Text>
                     {status.username && (
-                      <Text color="app.text" fontSize="xs">
-                        Logged in as: {status.username}
-                      </Text>
+                      <>
+                        <Text color="app.border">•</Text>
+                        <Text color="app.text" fontSize="2xs">
+                          {status.username}
+                        </Text>
+                      </>
                     )}
                     {status.guilds !== undefined && (
-                      <Text color="app.text" fontSize="xs">
-                        Active in {status.guilds} server{status.guilds !== 1 ? 's' : ''}
-                      </Text>
+                      <>
+                        <Text color="app.border">•</Text>
+                        <Text color="app.text" fontSize="2xs">
+                          {status.guilds} server{status.guilds !== 1 ? 's' : ''}
+                        </Text>
+                      </>
                     )}
-                  </VStack>
+                  </HStack>
                 </Box>
               )}
 
               {/* Error Display */}
               {error && (
                 <Box
-                  p={3}
+                  p={2}
                   bg="rgba(239, 68, 68, 0.1)"
                   borderRadius="md"
                   border="1px solid"
                   borderColor="red.500"
                 >
-                  <Text color="red.400" fontSize="sm">
+                  <Text color="red.400" fontSize="xs">
                     {error}
                   </Text>
                 </Box>
