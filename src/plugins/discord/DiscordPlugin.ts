@@ -5,7 +5,13 @@ import type { DiscordProjectManager } from './modules/DiscordProjectManager'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
 import { createFileDebugLogger } from '../../main/utils/logger'
-import { sendDiscordResponse, createProgressEmbed, updateProgressEmbed } from './utils/messages'
+import {
+  sendDiscordResponse,
+  createProgressEmbed,
+  updateProgressEmbed,
+  createToolActivity,
+  updateToolActivity
+} from './utils/messages'
 import { createErrorEmbed } from './utils/errors'
 import { createDiscordMessageFetcher } from './utils/mcp-fetcher'
 import { createDiscordFileUploader } from './utils/mcp-uploader'
@@ -123,24 +129,57 @@ export class DiscordPlugin extends EventEmitter {
             let progressMessage: Message | undefined
             let lastUpdate = Date.now()
             const UPDATE_THROTTLE = 1000 // 1 second between updates
+            const toolActivity = createToolActivity()
 
             await this.projectManager.chatStreaming(message.content, {
               onChunk: async (text) => {
                 const now = Date.now()
                 const charCount = text.length
+                const timeSinceLastUpdate = now - lastUpdate
+
+                log(
+                  '🔵 onChunk fired: %d chars (time since last: %dms, throttle: %dms)',
+                  charCount,
+                  timeSinceLastUpdate,
+                  UPDATE_THROTTLE
+                )
 
                 if (!progressMessage) {
                   // Send initial progress embed
-                  const embed = createProgressEmbed(charCount)
+                  const embed = createProgressEmbed(charCount, 2000, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
-                  log('Sent initial progress embed')
+                  log('✅ Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
-                  const embed = updateProgressEmbed(charCount)
+                  const embed = updateProgressEmbed(charCount, 2000, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
-                  log('Updated progress embed: %d chars', charCount)
+                  log('✅ Updated progress embed: %d chars', charCount)
+                } else {
+                  log(
+                    '⏸️  Throttled: skipping update (need %dms more)',
+                    UPDATE_THROTTLE - timeSinceLastUpdate
+                  )
+                }
+              },
+
+              onTool: async (toolEvent) => {
+                log('🔧 Tool event: %s - %s', toolEvent.tool, toolEvent.state.status)
+                updateToolActivity(toolActivity, toolEvent)
+
+                // Force update progress embed with tool info (not throttled for important tool events)
+                if (
+                  progressMessage &&
+                  (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
+                ) {
+                  const charCount =
+                    progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
+                      ?.value || '0'
+                  const embed = updateProgressEmbed(parseInt(charCount), 2000, toolActivity)
+                  await progressMessage.edit({ embeds: [embed] })
+                  lastUpdate = Date.now()
+                  log('✅ Updated progress embed with tool info')
                 }
               },
 
@@ -187,24 +226,57 @@ export class DiscordPlugin extends EventEmitter {
           let progressMessage: Message | undefined
           let lastUpdate = Date.now()
           const UPDATE_THROTTLE = 1000 // 1 second between updates
+          const toolActivity = createToolActivity()
 
           await this.projectManager.chatStreaming(content, {
             onChunk: async (text) => {
               const now = Date.now()
               const charCount = text.length
+              const timeSinceLastUpdate = now - lastUpdate
+
+              log(
+                '🔵 onChunk fired (mention): %d chars (time since last: %dms, throttle: %dms)',
+                charCount,
+                timeSinceLastUpdate,
+                UPDATE_THROTTLE
+              )
 
               if (!progressMessage) {
                 // Send initial progress embed
-                const embed = createProgressEmbed(charCount)
+                const embed = createProgressEmbed(charCount, 2000, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
-                log('Sent initial progress embed (mention)')
+                log('✅ Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
-                const embed = updateProgressEmbed(charCount)
+                const embed = updateProgressEmbed(charCount, 2000, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
-                log('Updated progress embed: %d chars (mention)', charCount)
+                log('✅ Updated progress embed: %d chars (mention)', charCount)
+              } else {
+                log(
+                  '⏸️  Throttled (mention): skipping update (need %dms more)',
+                  UPDATE_THROTTLE - timeSinceLastUpdate
+                )
+              }
+            },
+
+            onTool: async (toolEvent) => {
+              log('🔧 Tool event (mention): %s - %s', toolEvent.tool, toolEvent.state.status)
+              updateToolActivity(toolActivity, toolEvent)
+
+              // Force update progress embed with tool info
+              if (
+                progressMessage &&
+                (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
+              ) {
+                const charCount =
+                  progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
+                    ?.value || '0'
+                const embed = updateProgressEmbed(parseInt(charCount), 2000, toolActivity)
+                await progressMessage.edit({ embeds: [embed] })
+                lastUpdate = Date.now()
+                log('✅ Updated progress embed with tool info (mention)')
               }
             },
 

@@ -18,7 +18,7 @@ import type {
   DiscordMessageSearcher
 } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type { ServerStatus, Session, StreamCallbacks } from './types'
+import type { ServerStatus, Session, StreamCallbacks, ToolEvent, ToolState } from './types'
 import type {
   OpencodeConfig,
   PermissionConfig,
@@ -410,8 +410,16 @@ export class Toji extends EventEmitter {
         // Type assertion for the event
         const typedEvent = event as Event
 
+        // DEBUG: Log ALL incoming events
+        logChat(
+          '🔵 RAW EVENT: type=%s, sessionID=%s',
+          typedEvent.type,
+          'sessionID' in typedEvent.properties ? typedEvent.properties.sessionID : 'N/A'
+        )
+
         // Only process events for our session
         if ('sessionID' in typedEvent.properties && typedEvent.properties.sessionID !== sessionId) {
+          logChat('⏭️  Skipping event for different session')
           continue
         }
 
@@ -429,10 +437,47 @@ export class Toji extends EventEmitter {
               // IMPORTANT: part.text is CUMULATIVE, not a delta!
               // We just store it, don't append
               fullText = textPart.text
-              logChat('Received text update: %d chars total', fullText.length)
+              logChat('✅ Received text update: %d chars total', fullText.length)
 
               if (callbacks.onChunk) {
+                logChat('📤 Calling onChunk callback with %d chars', textPart.text.length)
                 await callbacks.onChunk(textPart.text, textPart.id)
+                logChat('✔️  onChunk callback completed')
+              } else {
+                logChat('⚠️  No onChunk callback registered')
+              }
+            } else if (part.type === 'tool') {
+              // Handle tool usage events
+              const toolPart = part as {
+                type: 'tool'
+                id: string
+                callID: string
+                tool: string
+                state: ToolState
+                sessionID: string
+                messageID: string
+              }
+              logChat(
+                '🔧 Tool event: %s - %s (status: %s)',
+                toolPart.tool,
+                toolPart.callID,
+                toolPart.state.status
+              )
+
+              if (callbacks.onTool) {
+                const toolEvent: ToolEvent = {
+                  id: toolPart.id,
+                  callID: toolPart.callID,
+                  tool: toolPart.tool,
+                  state: toolPart.state,
+                  sessionID: toolPart.sessionID,
+                  messageID: toolPart.messageID
+                }
+                logChat('📤 Calling onTool callback')
+                await callbacks.onTool(toolEvent)
+                logChat('✔️  onTool callback completed')
+              } else {
+                logChat('⚠️  No onTool callback registered')
               }
             }
             break

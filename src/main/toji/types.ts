@@ -1,6 +1,16 @@
-import type { Session as OpencodeSession } from '@opencode-ai/sdk'
+import type { Session as OpencodeSession, ToolState } from '@opencode-ai/sdk'
 
 // Minimal types for Toji
+
+// Tool event information
+export interface ToolEvent {
+  id: string
+  callID: string
+  tool: string
+  state: ToolState
+  sessionID: string
+  messageID: string
+}
 
 // Event streaming types
 export interface StreamCallbacks {
@@ -8,10 +18,11 @@ export interface StreamCallbacks {
   onComplete?: (fullText: string) => void | Promise<void>
   onError?: (error: Error) => void | Promise<void>
   onThinking?: (isThinking: boolean) => void | Promise<void>
+  onTool?: (tool: ToolEvent) => void | Promise<void>
 }
 
 // Re-export Event type for use in other modules
-export type { Event as OpencodeEvent } from '@opencode-ai/sdk'
+export type { Event as OpencodeEvent, ToolState } from '@opencode-ai/sdk'
 
 export interface TojiConfig {
   server?: {

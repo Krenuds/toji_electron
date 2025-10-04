@@ -1,4 +1,5 @@
 import type { Toji } from '../../../main/toji'
+import type { ToolEvent } from '../../../main/toji/types'
 import type { Client, TextChannel } from 'discord.js'
 import type { DiscordModule } from '../DiscordPlugin'
 import { CategoryManager } from './CategoryManager'
@@ -349,6 +350,7 @@ export class DiscordProjectManager implements DiscordModule {
       onChunk?: (text: string, partId: string) => void | Promise<void>
       onComplete?: (fullText: string) => void | Promise<void>
       onError?: (error: Error) => void | Promise<void>
+      onTool?: (toolEvent: ToolEvent) => void | Promise<void>
     }
   ): Promise<void> {
     return this.toji.chatStreaming(message, callbacks)
