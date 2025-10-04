@@ -6,6 +6,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import type { OpencodeConfig } from './config'
 import { defaultOpencodeConfig } from './config'
+import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
 import { createFileDebugLogger } from '../utils/logger'
 
 const log = createFileDebugLogger('toji:project-init')
@@ -193,6 +194,13 @@ yarn-error.log*
       await this.createOpenCodeConfig(directory, config)
       completedSteps.push('opencode-config')
 
+      // Step 5b: Create AGENTS.md if it doesn't exist
+      log('Ensuring AGENTS.md exists...')
+      const agentsCreated = await this.ensureAgentsFile(directory)
+      if (agentsCreated) {
+        completedSteps.push('agents-md')
+      }
+
       // Step 6: Create README.md if doesn't exist
       const readmePath = join(directory, 'README.md')
       if (!existsSync(readmePath)) {
@@ -264,16 +272,41 @@ Project settings are stored in \`opencode.json\`.
     directory: string,
     config?: Partial<OpencodeConfig>
   ): Promise<void> {
-    const opencodeConfig = {
+    const opencodeConfig: OpencodeConfig = {
       ...defaultOpencodeConfig,
-      ...config
-      // Only include valid OpenCode config fields
-      // No "rules" or "project" fields as they are not valid
+      ...config,
+      // Include AGENTS.md in instructions array so OpenCode reads it
+      instructions: ['AGENTS.md', ...(config?.instructions || [])]
     }
 
     const configPath = join(directory, 'opencode.json')
     await writeFile(configPath, JSON.stringify(opencodeConfig, null, 2), 'utf-8')
     log('Created opencode.json at: %s', configPath)
+  }
+
+  /**
+   * Create AGENTS.md file with Toji default prompt if it doesn't exist
+   */
+  async ensureAgentsFile(directory: string): Promise<boolean> {
+    const agentsPath = join(directory, 'AGENTS.md')
+
+    // Check if AGENTS.md already exists
+    if (existsSync(agentsPath)) {
+      log('AGENTS.md already exists at: %s', agentsPath)
+      return false
+    }
+
+    try {
+      // Write AGENTS.md to project directory using centralized template
+      await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
+      log('Created AGENTS.md at: %s', agentsPath)
+
+      return true
+    } catch (error) {
+      log('ERROR: Failed to create AGENTS.md: %o', error)
+      // Don't throw - AGENTS.md creation is optional
+      return false
+    }
   }
 
   /**

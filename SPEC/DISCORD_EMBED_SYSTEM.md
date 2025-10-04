@@ -144,7 +144,7 @@ interface ToolActivity {
 
 ### Display Format
 
-```text
+````text
 🔧 Tools
 
 - `🔄` = Running
@@ -178,7 +178,7 @@ if (now - lastUpdate >= UPDATE_THROTTLE) {
   // Skip this update
   log('⏸️ Throttled: skipping update')
 }
-```
+````
 
 ### Critical Rule
 
@@ -213,7 +213,7 @@ Progress embeds use `PENDING` (orange).
 
 ### Change Activity Indicator Style
 
-**File:** `src/plugins/discord/utils/messages.ts`  
+**File:** `src/plugins/discord/utils/messages.ts`
 **Function:** `createActivityIndicator(updateCount: number)`
 
 Replace chevron animation with:
@@ -224,12 +224,12 @@ Replace chevron animation with:
 
 ### Change Embed Colors
 
-**File:** `src/plugins/discord/constants.ts`  
+**File:** `src/plugins/discord/constants.ts`
 Modify `DISCORD_COLORS` values (use hex: `0xRRGGBB`)
 
 ### Add New Embed Fields
 
-**File:** `src/plugins/discord/utils/messages.ts`  
+**File:** `src/plugins/discord/utils/messages.ts`
 **Functions:** `createProgressEmbed()` or `updateProgressEmbed()`
 
 ```typescript
@@ -242,7 +242,7 @@ embed.addFields({
 
 ### Change Update Frequency
 
-**File:** `src/plugins/discord/DiscordPlugin.ts`  
+**File:** `src/plugins/discord/DiscordPlugin.ts`
 **Line:** `const UPDATE_THROTTLE = 1000`
 
 Change milliseconds (1000 = 1 second). **Warning:** Discord limits 5 edits per 5 seconds.
@@ -406,5 +406,5 @@ Before committing embed changes:
 
 ---
 
-**Last Updated:** October 4, 2025  
+**Last Updated:** October 4, 2025
 **Status:** ✅ Fully Implemented and Working

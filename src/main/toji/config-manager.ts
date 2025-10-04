@@ -8,6 +8,7 @@ import type {
   PermissionLevel,
   ModelConfig
 } from './config'
+import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
 import { createFileDebugLogger } from '../utils/logger'
 import { writeFile, readFile } from 'fs/promises'
 import { join } from 'path'
@@ -58,6 +59,31 @@ export class ConfigManager {
         await writeFile(configPath, JSON.stringify({}, null, 2), 'utf-8')
         log('Created minimal opencode.json file')
       }
+    }
+
+    // Also ensure AGENTS.md exists whenever we touch config
+    await this.ensureAgentsFile(directory)
+  }
+
+  /**
+   * Create AGENTS.md file with Toji default prompt if it doesn't exist
+   */
+  private async ensureAgentsFile(directory: string): Promise<void> {
+    const agentsPath = join(directory, 'AGENTS.md')
+
+    // Check if AGENTS.md already exists
+    if (existsSync(agentsPath)) {
+      log('AGENTS.md already exists, skipping creation')
+      return
+    }
+
+    try {
+      // Write AGENTS.md to project directory using centralized template
+      await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
+      log('Created AGENTS.md at: %s', agentsPath)
+    } catch (error) {
+      log('WARNING: Failed to create AGENTS.md: %o', error)
+      // Don't throw - AGENTS.md creation is optional
     }
   }
 
