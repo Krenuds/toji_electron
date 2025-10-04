@@ -4,11 +4,16 @@
  */
 
 import { EventEmitter } from 'events'
+import { Readable } from 'stream'
 import {
   joinVoiceChannel,
   VoiceConnectionStatus,
   entersState,
-  getVoiceConnection
+  getVoiceConnection,
+  createAudioPlayer,
+  createAudioResource,
+  StreamType,
+  type AudioPlayer
 } from '@discordjs/voice'
 import type { VoiceBasedChannel } from 'discord.js'
 import { createFileDebugLogger } from '../../../main/utils/logger'
@@ -20,10 +25,12 @@ const log = createFileDebugLogger('discord:voice')
 /**
  * VoiceModule - Handles voice channel connections
  * Phase 1: Join/leave voice channels, track active sessions
+ * Phase 2: TTS audio playback
  */
 export class VoiceModule extends EventEmitter implements DiscordModule {
   private sessions: Map<string, VoiceSession> = new Map()
   private userSessions: Map<string, string> = new Map() // userId -> sessionId
+  private audioPlayers: Map<string, AudioPlayer> = new Map() // sessionId -> AudioPlayer
 
   constructor() {
     super()
@@ -346,5 +353,89 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     if (!connection) return 'no-connection'
 
     return connection.state.status
+  }
+
+  /**
+   * Phase 2: TTS Playback Methods
+   */
+
+  /**
+   * Play TTS audio in a voice session
+   * @param sessionId The voice session ID
+   * @param audioBuffer Audio data from TTS service (opus format)
+   */
+  async playTTS(sessionId: string, audioBuffer: Buffer): Promise<void> {
+    log(`[playTTS] Starting playback for session ${sessionId}`)
+    
+    const session = this.sessions.get(sessionId)
+    if (!session) {
+      throw new Error(`Voice session not found: ${sessionId}`)
+    }
+
+    const connection = getVoiceConnection(session.config.guildId)
+    if (!connection) {
+      throw new Error(`No voice connection for session: ${sessionId}`)
+    }
+
+    try {
+      // Get or create audio player for this session
+      let player = this.audioPlayers.get(sessionId)
+      if (!player) {
+        player = createAudioPlayer()
+        this.audioPlayers.set(sessionId, player)
+        
+        // Subscribe the connection to the player
+        connection.subscribe(player)
+        
+        // Handle player events
+        player.on('error', (error) => {
+          log(`[playTTS] Audio player error for ${sessionId}:`, error)
+        })
+        
+        log(`[playTTS] Created new audio player for session ${sessionId}`)
+      }
+
+      // Convert Buffer to Readable stream
+      const audioStream = Readable.from(audioBuffer)
+
+      // Create audio resource with opus format (no transcoding needed)
+      const resource = createAudioResource(audioStream, {
+        inputType: StreamType.Opus
+      })
+
+      // Play the audio
+      player.play(resource)
+      log(`[playTTS] Started TTS playback for session ${sessionId}`)
+    } catch (error) {
+      log(`[playTTS] Failed to play TTS audio for ${sessionId}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Stop TTS playback for a session
+   * @param sessionId The voice session ID
+   */
+  stopTTS(sessionId: string): void {
+    const player = this.audioPlayers.get(sessionId)
+    if (player) {
+      player.stop()
+      log(`[stopTTS] Stopped TTS playback for session ${sessionId}`)
+    }
+  }
+
+  /**
+   * Get a voice session by project text channel ID
+   * Used to find which voice session to play TTS in based on where the message was sent
+   * @param textChannelId Discord text channel ID
+   * @returns The voice session for that project, or undefined
+   */
+  getUserSessionByChannel(textChannelId: string): VoiceSession | undefined {
+    for (const session of this.sessions.values()) {
+      if (session.projectChannelId === textChannelId) {
+        return session
+      }
+    }
+    return undefined
   }
 }
