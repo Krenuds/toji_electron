@@ -366,7 +366,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   async playTTS(sessionId: string, audioBuffer: Buffer): Promise<void> {
     log(`[playTTS] Starting playback for session ${sessionId}`)
-    
+
     const session = this.sessions.get(sessionId)
     if (!session) {
       throw new Error(`Voice session not found: ${sessionId}`)
@@ -383,15 +383,15 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       if (!player) {
         player = createAudioPlayer()
         this.audioPlayers.set(sessionId, player)
-        
+
         // Subscribe the connection to the player
         connection.subscribe(player)
-        
+
         // Handle player events
         player.on('error', (error) => {
           log(`[playTTS] Audio player error for ${sessionId}:`, error)
         })
-        
+
         log(`[playTTS] Created new audio player for session ${sessionId}`)
       }
 

@@ -329,7 +329,7 @@ Configured in `ConfigProvider`:
 
 ### Internal Services
 - `TTSService` - OpenAI integration
-- `VoiceModule` - Discord voice management  
+- `VoiceModule` - Discord voice management
 - `DiscordPlugin` - Message handling
 - `ConfigProvider` - API key management
 

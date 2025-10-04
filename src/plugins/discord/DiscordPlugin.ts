@@ -53,7 +53,12 @@ export class DiscordPlugin extends EventEmitter {
 
   constructor(
     private toji: Toji,
-    private config?: { token?: string; clientId?: string; guildId?: string; configProvider?: import('../../main/config/ConfigProvider').ConfigProvider }
+    private config?: {
+      token?: string
+      clientId?: string
+      guildId?: string
+      configProvider?: import('../../main/config/ConfigProvider').ConfigProvider
+    }
   ) {
     super()
     // Initialize TTS service if ConfigProvider is available
