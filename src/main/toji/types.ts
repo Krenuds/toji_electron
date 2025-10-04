@@ -2,6 +2,17 @@ import type { Session as OpencodeSession } from '@opencode-ai/sdk'
 
 // Minimal types for Toji
 
+// Event streaming types
+export interface StreamCallbacks {
+  onChunk?: (text: string, partId: string) => void | Promise<void>
+  onComplete?: (fullText: string) => void | Promise<void>
+  onError?: (error: Error) => void | Promise<void>
+  onThinking?: (isThinking: boolean) => void | Promise<void>
+}
+
+// Re-export Event type for use in other modules
+export type { Event as OpencodeEvent } from '@opencode-ai/sdk'
+
 export interface TojiConfig {
   server?: {
     hostname?: string

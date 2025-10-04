@@ -1,6 +1,6 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
 import { EventEmitter } from 'events'
-import type { OpencodeClient, Part, Message, Project, Provider } from '@opencode-ai/sdk'
+import type { OpencodeClient, Part, Message, Project, Provider, Event } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -18,7 +18,7 @@ import type {
   DiscordMessageSearcher
 } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type { ServerStatus, Session } from './types'
+import type { ServerStatus, Session, StreamCallbacks } from './types'
 import type {
   OpencodeConfig,
   PermissionConfig,
@@ -315,6 +315,189 @@ export class Toji extends EventEmitter {
       return responseText
     } catch (error) {
       logChat('ERROR: Chat failed: %o', error)
+      throw error
+    }
+  }
+
+  // Chat with streaming responses (event-driven)
+  async chatStreaming(
+    message: string,
+    callbacks: StreamCallbacks,
+    sessionId?: string
+  ): Promise<void> {
+    logChat('Streaming chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+
+    const client = this.getClient()
+    if (!client) {
+      const error = new Error('Client not connected to server')
+      logChat('ERROR: %s', error.message)
+      if (callbacks.onError) {
+        await callbacks.onError(error)
+      }
+      throw error
+    }
+
+    try {
+      // Get or create session using SessionManager
+      let activeSessionId = sessionId
+      if (!activeSessionId && this.currentProjectDirectory) {
+        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+      }
+
+      if (!activeSessionId) {
+        logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
+        const sessionInfo = await this.sessions.createSession(
+          client,
+          undefined, // title
+          this.currentProjectDirectory
+        )
+        activeSessionId = sessionInfo.id
+        if (this.currentProjectDirectory) {
+          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
+        }
+        logChat('Created session: %s', activeSessionId)
+      }
+
+      // Subscribe to events FIRST
+      const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
+
+      // Send message to session (this will trigger events)
+      logChat('Sending message to session %s', activeSessionId)
+      await client.session.prompt({
+        path: { id: activeSessionId },
+        body: {
+          parts: [{ type: 'text', text: message }]
+        },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
+      })
+
+      // Wait for events to complete
+      await eventPromise
+    } catch (error) {
+      logChat('ERROR: Streaming chat failed: %o', error)
+      if (callbacks.onError) {
+        await callbacks.onError(error instanceof Error ? error : new Error(String(error)))
+      }
+      throw error
+    }
+  }
+
+  // Subscribe to OpenCode events for a specific session
+  private async subscribeToSessionEvents(
+    sessionId: string,
+    callbacks: StreamCallbacks
+  ): Promise<void> {
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    logChat('Subscribing to events for session: %s', sessionId)
+
+    try {
+      const events = await client.event.subscribe({
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
+      })
+
+      let fullText = ''
+      let isComplete = false
+
+      for await (const event of events.stream) {
+        // Type assertion for the event
+        const typedEvent = event as Event
+
+        // Only process events for our session
+        if ('sessionID' in typedEvent.properties && typedEvent.properties.sessionID !== sessionId) {
+          continue
+        }
+
+        switch (typedEvent.type) {
+          case 'message.part.updated': {
+            // Extract part from event
+            const partEvent = typedEvent as {
+              type: 'message.part.updated'
+              properties: { part: Part }
+            }
+            const part = partEvent.properties.part
+
+            if (part.type === 'text') {
+              const textPart = part as { type: 'text'; text: string; id: string }
+              fullText += textPart.text
+              logChat(
+                'Received text chunk: %d chars (total: %d)',
+                textPart.text.length,
+                fullText.length
+              )
+
+              if (callbacks.onChunk) {
+                await callbacks.onChunk(textPart.text, textPart.id)
+              }
+            }
+            break
+          }
+
+          case 'message.updated': {
+            // Message complete
+            logChat('Message updated event received')
+            break
+          }
+
+          case 'session.idle': {
+            // Session is idle - response complete
+            const idleEvent = typedEvent as {
+              type: 'session.idle'
+              properties: { sessionID: string }
+            }
+            if (idleEvent.properties.sessionID === sessionId) {
+              logChat('Session idle - response complete (%d total chars)', fullText.length)
+              isComplete = true
+
+              if (callbacks.onComplete) {
+                await callbacks.onComplete(fullText)
+              }
+
+              // Exit the event loop
+              return
+            }
+            break
+          }
+
+          case 'session.error': {
+            // Handle errors
+            const errorEvent = typedEvent as {
+              type: 'session.error'
+              properties: { sessionID?: string; error?: unknown }
+            }
+            if (errorEvent.properties.sessionID === sessionId) {
+              logChat('Session error event: %o', errorEvent.properties.error)
+              const error = new Error(
+                'Session error: ' + JSON.stringify(errorEvent.properties.error)
+              )
+              if (callbacks.onError) {
+                await callbacks.onError(error)
+              }
+              throw error
+            }
+            break
+          }
+
+          default:
+            // Log other events for debugging
+            logChat('Received event: %s', typedEvent.type)
+        }
+      }
+
+      // If we exit the loop without seeing session.idle, still call onComplete
+      if (!isComplete && callbacks.onComplete && fullText) {
+        logChat('Event stream ended without session.idle, calling onComplete')
+        await callbacks.onComplete(fullText)
+      }
+    } catch (error) {
+      logChat('ERROR: Event subscription failed: %o', error)
       throw error
     }
   }
