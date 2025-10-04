@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { VStack, Text, Box, HStack, Badge } from '@chakra-ui/react'
-import { LuSlack, LuGithub, LuKey } from 'react-icons/lu'
+import { LuKey } from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa6'
 import { SidebarCard } from '../../shared/SidebarCard'
 import { useDiscord } from '../../../hooks/useDiscord'
@@ -47,20 +47,6 @@ export function IntegrationsViewSidebar(): React.JSX.Element {
       status: providerCount > 0 ? 'configured' : 'disconnected',
       color: 'purple.500',
       count: providerCount
-    },
-    {
-      id: 'slack',
-      name: 'Slack',
-      icon: <LuSlack size={16} />,
-      status: 'coming-soon',
-      color: 'orange.500'
-    },
-    {
-      id: 'github',
-      name: 'GitHub',
-      icon: <LuGithub size={16} />,
-      status: 'coming-soon',
-      color: 'gray.500'
     }
   ]
 
@@ -104,7 +90,7 @@ export function IntegrationsViewSidebar(): React.JSX.Element {
                 </Badge>
               )}
               {integration.status === 'configured' && integration.count !== undefined && (
-                <Badge size="xs" colorPalette="purple" variant="subtle">
+                <Badge size="xs" colorPalette="green" variant="subtle">
                   {integration.count} key{integration.count !== 1 ? 's' : ''}
                 </Badge>
               )}

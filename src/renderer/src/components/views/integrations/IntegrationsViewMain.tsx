@@ -207,7 +207,9 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     }}
                   >
                     <LuExternalLink size={14} />
-                    <Text ml={1}>Add to Discord Server</Text>
+                    <Text ml={1} color="white">
+                      Add to Discord Server
+                    </Text>
                   </Button>
                   <Text color="app.text" fontSize="xs">
                     Click to invite Toji to your Discord server with required permissions
@@ -327,7 +329,9 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   </Text>
                   <Button size="xs" variant="ghost" colorPalette="red" onClick={handleClearToken}>
                     <LuTrash2 size={12} />
-                    <Text ml={1}>Clear Token</Text>
+                    <Text ml={1} color="white">
+                      Clear Token
+                    </Text>
                   </Button>
                 </HStack>
 
@@ -343,18 +347,24 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     >
                       {isConnecting ? (
                         <>
-                          <Spinner size="sm" mr={2} /> Connecting...
+                          <Spinner size="sm" mr={2} />
+                          <Text color="white">Connecting...</Text>
                         </>
                       ) : (
                         <>
-                          <LuPlug size={14} /> <Text ml={1}>Connect Bot</Text>
+                          <LuPlug size={14} />
+                          <Text ml={1} color="white">
+                            Connect Bot
+                          </Text>
                         </>
                       )}
                     </Button>
                   ) : (
                     <Button colorPalette="red" variant="solid" size="sm" onClick={handleDisconnect}>
                       <LuPowerOff size={14} />
-                      <Text ml={1}>Disconnect</Text>
+                      <Text ml={1} color="white">
+                        Disconnect
+                      </Text>
                     </Button>
                   )}
                 </HStack>
@@ -396,7 +406,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   w={10}
                   h={10}
                   borderRadius="full"
-                  bg="purple.600"
+                  bg="gray.600"
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
@@ -415,7 +425,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
               <Button
                 size="xs"
                 variant="outline"
-                colorPalette="purple"
+                colorPalette="green"
                 onClick={handleSyncApiKeys}
                 disabled={isSyncing}
               >
@@ -424,7 +434,9 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 ) : (
                   <>
                     <LuRefreshCw size={12} />
-                    <Text ml={1}>Sync</Text>
+                    <Text ml={1} color="currentColor">
+                      Sync
+                    </Text>
                   </>
                 )}
               </Button>
@@ -448,13 +460,13 @@ export function IntegrationsViewMain(): React.JSX.Element {
             {/* Add New API Key */}
             <Box
               p={4}
-              bg="rgba(168, 85, 247, 0.05)"
+              bg="rgba(255, 255, 255, 0.02)"
               borderRadius="md"
               border="1px solid"
-              borderColor="purple.800"
+              borderColor="app.border"
             >
               <VStack align="stretch" gap={3}>
-                <Text color="purple.300" fontSize="sm" fontWeight="medium">
+                <Text color="app.light" fontSize="sm" fontWeight="medium">
                   Add New API Key
                 </Text>
 
@@ -463,13 +475,13 @@ export function IntegrationsViewMain(): React.JSX.Element {
                   <Text color="app.text" fontSize="xs" mb={1} fontWeight="medium">
                     Provider ID
                   </Text>
-                  <Text color="app.textSecondary" fontSize="xs" mb={2}>
+                  <Text color="app.text" fontSize="xs" mb={2}>
                     Select a common provider or enter a custom ID:
                   </Text>
 
                   {/* Common Provider Quick Select */}
                   <Box mb={2}>
-                    <Text color="app.textSecondary" fontSize="xs" mb={1}>
+                    <Text color="app.text" fontSize="xs" mb={1}>
                       Common Providers:
                     </Text>
                     <HStack gap={1} flexWrap="wrap">
@@ -500,8 +512,12 @@ export function IntegrationsViewMain(): React.JSX.Element {
                         <Button
                           key={provider.id}
                           size="xs"
-                          variant={providerId === provider.id ? 'solid' : 'outline'}
-                          colorPalette={providerId === provider.id ? 'purple' : 'gray'}
+                          variant="solid"
+                          bg={providerId === provider.id ? 'green.600' : 'gray.700'}
+                          color="white"
+                          _hover={{
+                            bg: providerId === provider.id ? 'green.500' : 'gray.600'
+                          }}
                           onClick={() => setProviderId(provider.id)}
                           title={`Get API key from ${provider.url}`}
                         >
@@ -522,13 +538,13 @@ export function IntegrationsViewMain(): React.JSX.Element {
                     color="app.light"
                     size="sm"
                     _placeholder={{ color: 'app.text' }}
-                    _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
+                    _focus={{ borderColor: 'green.500', boxShadow: 'none' }}
                   />
 
                   {/* Show link to get API key for selected provider */}
                   {providerId && (
                     <HStack mt={1} gap={1} align="center">
-                      <Text color="app.textSecondary" fontSize="xs">
+                      <Text color="app.text" fontSize="xs">
                         Get API key:
                       </Text>
                       {providerId === 'opencode' && (
@@ -537,7 +553,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -554,7 +570,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -571,7 +587,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -588,7 +604,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -605,7 +621,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -622,7 +638,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{
-                            color: '#a855f7',
+                            color: '#22c55e',
                             fontSize: '12px',
                             textDecoration: 'underline',
                             display: 'inline-flex',
@@ -636,7 +652,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                       {!['opencode', 'anthropic', 'openai', 'google', 'deepseek', 'groq'].includes(
                         providerId
                       ) && (
-                        <Text color="app.textSecondary" fontSize="xs">
+                        <Text color="app.text" fontSize="xs">
                           Check provider documentation
                         </Text>
                       )}
@@ -662,7 +678,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                         color="app.light"
                         size="sm"
                         _placeholder={{ color: 'app.text' }}
-                        _focus={{ borderColor: 'purple.500', boxShadow: 'none' }}
+                        _focus={{ borderColor: 'green.500', boxShadow: 'none' }}
                         pr={10}
                       />
                       <Button
@@ -682,7 +698,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
                 </Box>
 
                 <Button
-                  colorPalette="purple"
+                  colorPalette="green"
                   variant="solid"
                   size="sm"
                   onClick={handleSaveApiKey}
