@@ -176,6 +176,7 @@ export class DiscordPlugin extends EventEmitter {
                   progressMessage &&
                   (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
                 ) {
+                  updateCount++ // Increment since we're updating the embed
                   const charCountStr =
                     progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
                       ?.value || '0'
@@ -277,6 +278,7 @@ export class DiscordPlugin extends EventEmitter {
                 progressMessage &&
                 (toolEvent.state.status === 'running' || toolEvent.state.status === 'completed')
               ) {
+                updateCount++ // Increment since we're updating the embed
                 const charCountStr =
                   progressMessage.embeds[0]?.fields?.find((f) => f.name === '📝 Characters')
                     ?.value || '0'
