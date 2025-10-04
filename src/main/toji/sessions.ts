@@ -34,7 +34,8 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        throw new Error('Failed to list sessions: No response data')
+        log('No sessions response (likely uninitialized project), returning empty array')
+        return []
       }
 
       // Get existing cached sessions to preserve lastActive times
@@ -90,7 +91,8 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        throw new Error('Failed to create session: No response data')
+        log('No response when creating session (likely uninitialized project)')
+        throw new Error('Cannot create session: Project not initialized')
       }
 
       let rawSession: SdkSession | undefined
@@ -210,7 +212,10 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        throw new Error('Failed to get session messages: No response data')
+        log(
+          'No response for session messages (likely uninitialized project), returning empty array'
+        )
+        return []
       }
 
       // With responseStyle: 'data', response is the data directly

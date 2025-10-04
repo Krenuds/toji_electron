@@ -106,7 +106,14 @@ export function registerInitializeProjectTool(
           }
         }
 
-        // First, switch to this directory so initializeProject works with the right context
+        // Build config object first
+        const config: Record<string, unknown> = {}
+        if (projectName) config.name = projectName
+        if (description) config.description = description
+        if (model) config.model = model
+
+        // Switch to the directory to set context
+        // Note: This may show "global" status initially since the directory is empty
         try {
           await toji.switchToProject(absolutePath)
         } catch (error) {
@@ -128,18 +135,15 @@ export function registerInitializeProjectTool(
           }
         }
 
-        // Build config object
-        const config: Record<string, unknown> = {}
-        if (projectName) config.name = projectName
-        if (description) config.description = description
-        if (model) config.model = model
-
-        // Initialize the project
+        // Initialize the project (this will restart the server and properly configure it)
         const result = await toji.initializeProject(config)
 
         if (result.success) {
+          // Give the server a moment to fully stabilize after restart
+          await new Promise((resolve) => setTimeout(resolve, 500))
+
           const stepsCompleted = result.steps?.join(', ') || 'initialization'
-          const message = `Successfully initialized project at ${result.projectPath}. Completed: ${stepsCompleted}${autoSwitch ? '. Project is now active.' : ''}`
+          const message = `Successfully initialized project at ${result.projectPath}. Completed: ${stepsCompleted}${autoSwitch ? '. Project is now active and ready.' : ''}`
 
           return {
             content: [
