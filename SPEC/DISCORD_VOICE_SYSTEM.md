@@ -305,14 +305,12 @@ class AudioProcessor {
 **Command Flow: `/voice join`**
 
 1. **Validation**:
-
    - User must be in a voice channel
    - Bot must have voice permissions
    - Project must exist in Toji
    - User cannot already be in a voice session
 
 2. **Session Creation**:
-
    - Create VoiceSession record
    - Join Discord voice channel
    - Connect to OpenAI Realtime API
@@ -320,7 +318,6 @@ class AudioProcessor {
    - Send confirmation embed to project text channel
 
 3. **Active State**:
-
    - Listen to user's audio stream
    - Forward audio to OpenAI Realtime API
    - Receive AI audio responses
@@ -349,7 +346,7 @@ You are an AI assistant helping with the project "${project.name}".
 Project Details:
 - Path: ${projectPath}
 - Description: ${project.description || 'No description'}
-- Active Agents: ${agents.map(a => a.name).join(', ')}
+- Active Agents: ${agents.map((a) => a.name).join(', ')}
 
 You are currently in a voice conversation. Be concise and natural.
 When referencing code or complex information, offer to send it to the text channel.
@@ -641,150 +638,388 @@ Add to `opencode.json`:
 - Multi-user scenarios
 - Network interruption simulation
 
-## Rollout Plan
+## Core Technical Challenges
 
-### Phase 1: Foundation (Week 1)
+Focus: **Get audio in, get audio out**. Everything else is premature.
 
-- [ ] Install dependencies
-- [ ] Implement `AudioProcessor` utility
-- [ ] Implement `OpenAIRealtimeClient` with WebSocket
-- [ ] Add basic unit tests
+### Challenge 1: Audio Input Pipeline
 
-### Phase 2: Discord Integration (Week 2)
+**Question**: How do we capture Discord user audio?
 
-- [ ] Implement `VoiceConnection` wrapper
-- [ ] Create `/voice join` command (basic)
-- [ ] Test audio receive and send pipelines
-- [ ] Implement basic transcript logging
+```typescript
+// discord.js provides VoiceReceiver
+const connection = joinVoiceChannel({...})
+const receiver = connection.receiver
 
-### Phase 3: Session Management (Week 3)
+// Subscribe to a specific user's audio
+const audioStream = receiver.subscribe(userId, {
+  end: {
+    behavior: EndBehaviorType.AfterSilence,
+    duration: 100 // End after 100ms of silence
+  }
+})
 
-- [ ] Implement `VoiceSessionManager`
-- [ ] Add project context loading
-- [ ] Implement `/voice leave` and auto-disconnect
-- [ ] Add error handling and recovery
+// Audio comes as Opus packets
+audioStream.on('data', (chunk: Buffer) => {
+  // Opus encoded audio, 20ms frames, 48kHz
+  console.log('Received Opus packet:', chunk.length)
+})
+```
 
-### Phase 4: Advanced Features (Week 4)
+**Problems to solve**:
 
-- [ ] Add function calling (tools integration)
-- [ ] Implement `/voice switch` for project switching
-- [ ] Add `/voice pause` and `/voice resume`
-- [ ] Polish transcript formatting
+1. **Opus Decoding**: Discord sends Opus, OpenAI needs PCM
+   - Use `@discordjs/opus` or `prism-media` to decode
+   - Convert 48kHz stereo → 24kHz mono for OpenAI
+2. **Silence Detection**: When does user stop talking?
+   - `EndBehaviorType.AfterSilence` helps but needs tuning
+   - 100ms? 200ms? 500ms? Experimentation needed
+3. **Keyword Detection**: "Hey Toji" to activate listening
+   - Run local wake word detection? (Porcupine, Picovoice)
+   - Or always-on listening (privacy concerns)
+   - Or push-to-talk command?
 
-### Phase 5: Production Hardening (Week 5)
+**Streaming Challenge**:
 
-- [ ] Add comprehensive error handling
-- [ ] Implement rate limiting and quotas
-- [ ] Add monitoring and logging
-- [ ] Performance optimization
-- [ ] Security audit
+```typescript
+// Option A: Buffer until silence, then send complete utterance
+const audioBuffer: Buffer[] = []
+audioStream.on('data', (chunk) => {
+  audioBuffer.push(chunk)
+})
+audioStream.on('end', () => {
+  // User stopped talking, send to OpenAI
+  const completeAudio = Buffer.concat(audioBuffer)
+  sendToWhisper(completeAudio)
+})
 
-### Phase 6: Documentation & Launch (Week 6)
+// Option B: Stream chunks in real-time (OpenAI Realtime API only)
+audioStream.on('data', (chunk) => {
+  const pcm = opusToPCM(chunk)
+  realtimeClient.sendAudio(pcm) // Immediate send
+})
+```
 
-- [ ] Write user documentation
-- [ ] Create example videos/GIFs
-- [ ] Update CLAUDE.md with voice system
-- [ ] Beta testing with select users
-- [ ] Public release
+**Decision needed**: Batch or stream?
 
-## Security Considerations
+- **Batch**: Simpler, works with Whisper API, but adds latency
+- **Stream**: Lower latency, requires Realtime API, more complex
 
-### API Key Protection
+### Challenge 2: Audio Output Pipeline
 
-- Store OpenAI API key in secure config
-- Never expose key in logs or error messages
-- Rotate keys periodically
+**Question**: How do we play AI responses in Discord?
 
-### User Authentication
+```typescript
+// discord.js provides AudioPlayer
+import { createAudioPlayer, createAudioResource, StreamType } from '@discordjs/voice'
 
-- Verify Discord user identity
-- Prevent session hijacking
-- Rate limit per user
+const player = createAudioPlayer()
+connection.subscribe(player)
 
-### Data Privacy
+// Play audio from OpenAI
+const audioStream = /* PCM audio from OpenAI */
+const resource = createAudioResource(audioStream, {
+  inputType: StreamType.Raw,
+  inlineVolume: true
+})
 
-- Transcripts contain potentially sensitive code
-- Only log to project channels (not public)
-- Add opt-out mechanism for transcript logging
-- GDPR compliance: Allow transcript deletion
+player.play(resource)
+```
 
-### Audio Security
+**Problems to solve**:
 
-- Don't store raw audio files
-- Only keep transcripts (text)
-- Implement maximum session duration
-- Auto-cleanup on bot restart
+1. **PCM Encoding**: OpenAI sends PCM, Discord needs Opus
+   - Use `prism-media` to encode
+   - Convert 24kHz mono → 48kHz stereo (or mono)
+2. **Streaming vs Buffering**: Can we stream TTS output?
+   - OpenAI TTS API: Returns complete audio file (no streaming)
+   - OpenAI Realtime API: Streams audio chunks in real-time
+3. **Audio Quality**: Ensure no pops, clicks, or distortion
+   - Proper sample rate conversion
+   - Smooth transitions between audio chunks
 
-## Cost Analysis
+**Streaming Challenge**:
 
-### OpenAI Realtime API Costs
+```typescript
+// Option A: Wait for complete response, then play
+const ttsResponse = await openai.audio.speech.create({...})
+const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer())
+playInDiscord(audioBuffer)
 
-- **Input Audio**: $0.06 per minute
-- **Output Audio**: $0.24 per minute
-- **Average Conversation**: 10 minutes = $3.00
-- **100 conversations/month**: $300
-- **1000 conversations/month**: $3,000
+// Option B: Stream as it arrives (Realtime API only)
+realtimeClient.on('audio', (pcmChunk: Int16Array) => {
+  // Convert and play immediately
+  const opusChunk = pcmToOpus(pcmChunk)
+  audioOutputStream.write(opusChunk)
+})
+```
 
-### Cost Mitigation Strategies
+**Decision needed**: Can we achieve truly streaming playback?
 
-1. Set per-user quotas (e.g., 30 min/day)
-2. Implement session timeouts (30 min max)
-3. Add cost dashboard for admins
-4. Option to disable voice for non-premium users
-5. Fall back to Whisper + TTS for budget constraints
+### Challenge 3: Voice Activity Detection (VAD)
 
-### Alternative: Local Whisper
+**Question**: How do we know when the user is speaking vs background noise?
 
-- **whisper.cpp**: Fast C++ implementation
-- **faster-whisper**: Optimized Python version
-- **Pros**: No API costs, lower latency for STT
-- **Cons**: Requires local compute, no native conversation flow
-- **Hybrid**: Use local Whisper for STT, OpenAI for TTS and chat
+**Options**:
 
-## Future Enhancements
+1. **Discord's Built-in**: `EndBehaviorType.AfterSilence`
+   - Simple but crude
+   - Tunable silence duration
+2. **OpenAI Realtime API VAD**: Built-in, handles automatically
+   - No custom implementation needed
+   - Trust the API
+3. **Local VAD**: `@ricky0123/vad-node`, `silero-vad`
+   - More control
+   - Can detect speech before sending to API (save costs)
+   - Adds complexity
 
-### Multi-User Voice Conversations
+**Experimentation needed**:
 
-- Multiple users in same voice channel
-- Round-robin speaking turns
-- Voice identification
-- Group context tracking
+- Test background noise filtering
+- Test multiple people talking
+- Test music playing in background
 
-### Voice Customization
+### Challenge 4: Audio Format Conversion
 
-- User-selectable AI voices
-- Adjustable speaking speed
-- Emotion/tone control
-- Different voices for different agents
+**Question**: How do we convert between formats efficiently?
 
-### Advanced Audio Processing
+**Format Requirements**:
 
-- Noise cancellation
-- Echo suppression
-- Background music detection
-- Audio quality enhancement
+- **Discord**: Opus codec, 48kHz, 20ms frames, stereo or mono
+- **OpenAI Realtime**: PCM16, 24kHz, mono
+- **OpenAI Whisper**: Various formats (mp3, wav, webm, etc.)
+- **OpenAI TTS**: PCM, mp3, opus, aac, flac
 
-### Analytics & Insights
+**Conversion Pipeline**:
 
-- Conversation duration tracking
-- Most discussed topics
-- User engagement metrics
-- Cost per project reporting
+```typescript
+class AudioConverter {
+  // Discord Opus → PCM for processing
+  opusToPCM(opusBuffer: Buffer): Int16Array {
+    const decoder = new OpusDecoder(48000, 2) // 48kHz stereo
+    return decoder.decode(opusBuffer)
+  }
 
-### Accessibility Features
+  // Resample 48kHz → 24kHz
+  resample(pcm48k: Int16Array): Int16Array {
+    // Simple linear interpolation or use proper resampler
+    const pcm24k = new Int16Array(pcm48k.length / 2)
+    for (let i = 0; i < pcm24k.length; i++) {
+      pcm24k[i] = pcm48k[i * 2] // Naive downsampling
+    }
+    return pcm24k
+  }
 
-- Live captions (real-time transcripts)
-- Text-to-speech for text responses
-- Voice command shortcuts
-- Multilingual support
+  // Stereo → Mono
+  stereoToMono(stereo: Int16Array): Int16Array {
+    const mono = new Int16Array(stereo.length / 2)
+    for (let i = 0; i < mono.length; i++) {
+      mono[i] = (stereo[i * 2] + stereo[i * 2 + 1]) / 2
+    }
+    return mono
+  }
 
-## Open Questions
+  // PCM → Opus for Discord
+  pcmToOpus(pcmBuffer: Int16Array): Buffer {
+    const encoder = new OpusEncoder(48000, 2 /* other params */)
+    return encoder.encode(pcmBuffer)
+  }
+}
+```
 
-1. **Session Persistence**: Should sessions survive bot restarts?
-2. **Multi-Project**: Allow switching projects mid-conversation or force restart?
-3. **Audio Storage**: Store audio for debugging/replay? (Privacy implications)
-4. **Voice Authentication**: Use voice biometrics for security?
-5. **Fallback Strategy**: Graceful degradation when OpenAI API unavailable?
+**Research needed**:
+
+- Best resampling library? (`node-libsamplerate`, `audio-resampler`)
+- CPU cost of real-time conversion?
+- Quality loss in naive downsampling?
+
+### Challenge 5: WebSocket Management (Realtime API)
+
+**Question**: How do we maintain a stable WebSocket connection?
+
+**WebSocket Lifecycle**:
+
+```typescript
+import WebSocket from 'ws'
+
+class OpenAIRealtimeClient {
+  private ws: WebSocket | null = null
+  private audioBuffer: Int16Array[] = []
+
+  async connect(apiKey: string): Promise<void> {
+    this.ws = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview', {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'OpenAI-Beta': 'realtime=v1'
+      }
+    })
+
+    this.ws.on('open', () => {
+      console.log('Connected to OpenAI Realtime API')
+      // Send session configuration
+      this.sendEvent({
+        type: 'session.update',
+        session: {
+          voice: 'alloy',
+          instructions: 'You are a helpful assistant...'
+        }
+      })
+    })
+
+    this.ws.on('message', (data: Buffer) => {
+      const event = JSON.parse(data.toString())
+      this.handleEvent(event)
+    })
+
+    this.ws.on('error', (err) => {
+      console.error('WebSocket error:', err)
+    })
+
+    this.ws.on('close', () => {
+      console.log('WebSocket closed')
+      // Reconnect logic?
+    })
+  }
+
+  sendAudio(pcmChunk: Int16Array): void {
+    if (!this.ws) return
+    // Convert to base64
+    const base64Audio = Buffer.from(pcmChunk.buffer).toString('base64')
+    this.sendEvent({
+      type: 'input_audio_buffer.append',
+      audio: base64Audio
+    })
+  }
+
+  private handleEvent(event: any): void {
+    switch (event.type) {
+      case 'response.audio.delta':
+        // Decode base64 PCM and play
+        const pcmChunk = Buffer.from(event.delta, 'base64')
+        this.emit('audio', new Int16Array(pcmChunk.buffer))
+        break
+      case 'response.audio_transcript.delta':
+        // Transcript for logging
+        this.emit('transcript', event.delta)
+        break
+      // ... other events
+    }
+  }
+}
+```
+
+**Problems to solve**:
+
+1. **Reconnection**: What if WebSocket drops?
+2. **Backpressure**: What if we send audio faster than API processes?
+3. **Latency Monitoring**: Track end-to-end delays
+4. **Error Recovery**: Handle rate limits, API errors gracefully
+
+### Challenge 6: Keyword Activation
+
+**Question**: How do we avoid always-on listening?
+
+**Options**:
+
+1. **Push-to-Talk**: User holds a key or clicks button
+   - Not viable in Discord voice chat
+2. **Slash Command**: `/voice activate` to start listening
+   - Manual, not conversational
+3. **Wake Word**: "Hey Toji" detection
+   - Need local wake word engine
+   - Porcupine, Picovoice, Snowboy (deprecated)
+4. **Name Detection in Transcript**: Listen, transcribe, check for "Toji"
+   - High latency
+   - Wastes API calls
+
+**Wake Word Implementation**:
+
+```typescript
+import { PvPorcupine } from '@picovoice/porcupine-node'
+
+const porcupine = new PvPorcupine(
+  accessKey,
+  [PvPorcupine.KEYWORDS.HEY_SIRI], // or custom wake word
+  [0.5] // Sensitivity
+)
+
+// Process audio through wake word detector
+audioStream.on('data', (chunk: Buffer) => {
+  const pcm = opusToPCM(chunk)
+  const keywordIndex = porcupine.process(pcm)
+
+  if (keywordIndex >= 0) {
+    console.log('Wake word detected!')
+    // Start buffering audio for OpenAI
+    startListening()
+  }
+})
+```
+
+**Research needed**:
+
+- Free wake word solutions?
+- Train custom "Hey Toji" model?
+- CPU cost of continuous wake word detection?
+
+## Minimal Implementation Plan
+
+**Goal**: Prove audio in/out works before adding features.
+
+### Phase 1: Audio I/O Proof of Concept
+
+- [ ] Install `@discordjs/voice`, `@discordjs/opus`, `prism-media`, `ws`
+- [ ] Create Discord bot, join voice channel with `/voice join`
+- [ ] Capture user audio from Discord (Opus)
+- [ ] Decode Opus → PCM
+- [ ] Log PCM data to verify reception
+- [ ] Play test audio file (PCM) in Discord voice
+- [ ] Verify smooth playback without glitches
+
+**Success Criteria**: Bot can hear and speak.
+
+### Phase 2: OpenAI Integration
+
+- [ ] Implement WebSocket client for Realtime API
+- [ ] Send captured PCM audio to Realtime API
+- [ ] Receive audio response from Realtime API
+- [ ] Play response in Discord voice channel
+- [ ] Test end-to-end latency
+
+**Success Criteria**: User says "Hello" → AI responds in voice.
+
+### Phase 3: Research & Refinement
+
+- [ ] Experiment with silence detection thresholds
+- [ ] Test audio quality and conversion artifacts
+- [ ] Measure latency at each pipeline stage
+- [ ] Research wake word solutions
+- [ ] Test background noise handling
+- [ ] Decide: Streaming vs batching approach
+
+**Success Criteria**: Stable conversation without manual intervention.
+
+## Open Research Questions
+
+These need real-world experimentation:
+
+1. **Streaming**: Can we stream both input and output for true real-time feel?
+2. **Latency**: What's the actual end-to-end delay? (Target: <500ms)
+3. **Wake Word**: Free solutions vs always-on vs manual activation?
+4. **Audio Quality**: Will naive resampling sound acceptable?
+5. **VAD Tuning**: What silence threshold works best? (100ms? 500ms?)
+6. **Background Noise**: How well does OpenAI Realtime API handle noise?
+7. **Multiple Speakers**: What happens when 2+ people talk simultaneously?
+8. **Cost**: Real-world usage costs vs API pricing estimates
+
+## Key Implementation Notes
+
+- **Start simple**: Get audio in/out working first
+- **No sessions yet**: Focus on technical pipeline, not architecture
+- **No transcripts yet**: Just prove voice works
+- **No project context yet**: Hardcode a simple prompt
+- **No error handling yet**: Happy path only
+- **Measure everything**: Log latency at each stage
 
 ## References
 
