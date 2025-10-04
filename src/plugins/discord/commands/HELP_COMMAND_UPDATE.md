@@ -205,6 +205,6 @@ When Phase 2 of voice is implemented, update voice command descriptions to refle
 
 ---
 
-**Document Status**: Implemented ✅  
-**Last Updated**: 2025-10-04  
+**Document Status**: Implemented ✅
+**Last Updated**: 2025-10-04
 **Related Files**: `src/plugins/discord/commands/help.ts`

@@ -50,7 +50,7 @@ if (existingSessionId) {
   const existingSession = this.sessions.get(existingSessionId)
   if (existingSession) {
     log(`User ${userId} already has an active session: ${existingSessionId}, automatically leaving...`)
-    
+
     try {
       // Clean up the existing session
       existingSession.connection.destroy()
@@ -239,8 +239,8 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 
 ---
 
-**Document Status**: Implemented ✅  
-**Last Updated**: 2025-10-04  
+**Document Status**: Implemented ✅
+**Last Updated**: 2025-10-04
 **Related Files**:
 - `src/plugins/discord/voice/VoiceModule.ts`
 - `src/plugins/discord/commands/voice.ts`
