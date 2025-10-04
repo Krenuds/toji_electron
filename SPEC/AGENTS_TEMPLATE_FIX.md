@@ -1,9 +1,11 @@
 # ✅ AGENTS.md Template System - FIXED
 
 ## Problem
+
 The initial implementation had the template embedded separately in two files, and the template file itself wasn't being used. User edits to the template wouldn't take effect.
 
 ## Solution
+
 Created a **centralized template system** with a single source of truth.
 
 ---
@@ -28,6 +30,7 @@ src/main/toji/
 This is the **ONLY** place you need to edit the default AGENTS.md template.
 
 ### Current Template Content:
+
 ```typescript
 export const DEFAULT_AGENTS_TEMPLATE = `**PERSONALITY**
 - Friendly, funny, like to format responses and use emojis
@@ -45,6 +48,7 @@ When responding via Discord, format appropriately.
 ```
 
 ### To Update:
+
 1. Edit `src/main/toji/agents-template.ts`
 2. Change the `DEFAULT_AGENTS_TEMPLATE` string
 3. Save
@@ -56,6 +60,7 @@ When responding via Discord, format appropriately.
 ## 🔄 How It Works
 
 ### Flow:
+
 ```
 User Initializes Project
     ↓
@@ -69,11 +74,13 @@ Both always in sync!
 ```
 
 ### When Template is Used:
+
 1. **New project initialization** (`/init` command)
 2. **Config file creation** (first time opencode.json needed)
 3. **Config updates** (when persisting settings)
 
 ### After Creation:
+
 - Users can edit `<their-project>/AGENTS.md` per-project
 - Their edits won't be overwritten
 - Each project can have custom instructions
@@ -93,6 +100,7 @@ Both always in sync!
 ## 📝 Implementation Details
 
 ### Before (BROKEN):
+
 ```typescript
 // config-manager.ts - had its own embedded template
 private getDefaultAgentsTemplate(): string {
@@ -104,11 +112,13 @@ private getDefaultAgentsTemplate(): string {
   return `different hardcoded content...`
 }
 ```
+
 ❌ Two copies, out of sync
 ❌ User edits to AGENTS.md ignored
 ❌ Hard to maintain
 
 ### After (FIXED):
+
 ```typescript
 // agents-template.ts
 export const DEFAULT_AGENTS_TEMPLATE = `your content...`
@@ -121,6 +131,7 @@ await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
 import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
 await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
 ```
+
 ✅ Single source
 ✅ Always in sync
 ✅ Easy to update
@@ -130,14 +141,18 @@ await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
 ## 🚀 Usage Guide
 
 ### For Developers:
+
 **To update the default template:**
+
 1. Open `src/main/toji/agents-template.ts`
 2. Edit `DEFAULT_AGENTS_TEMPLATE` string
 3. Rebuild app
 4. All new projects use new template
 
 ### For Users:
+
 **To customize their project:**
+
 1. Navigate to their project folder
 2. Edit `AGENTS.md` file
 3. Changes apply immediately (OpenCode reads on each session)
@@ -148,7 +163,9 @@ await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
 ## 🔮 Future Enhancements
 
 ### Potential Additions:
+
 1. **Multiple Templates** - Different templates for different project types
+
    ```typescript
    export const TEMPLATES = {
      default: DEFAULT_AGENTS_TEMPLATE,
@@ -159,15 +176,17 @@ await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
    ```
 
 2. **Template Variables** - Dynamic content injection
+
    ```typescript
    export function generateAgentsTemplate(vars: {
      projectName: string
      projectType: string
      userName: string
    }): string {
-     return DEFAULT_AGENTS_TEMPLATE
-       .replace('{{PROJECT_NAME}}', vars.projectName)
-       .replace('{{PROJECT_TYPE}}', vars.projectType)
+     return DEFAULT_AGENTS_TEMPLATE.replace('{{PROJECT_NAME}}', vars.projectName).replace(
+       '{{PROJECT_TYPE}}',
+       vars.projectType
+     )
    }
    ```
 
@@ -206,13 +225,16 @@ npm run build
 ## 📚 Related Files
 
 ### Created:
+
 - `src/main/toji/agents-template.ts` - **THE SOURCE**
 
 ### Modified:
+
 - `src/main/toji/config-manager.ts` - Imports template
 - `src/main/toji/project-initializer.ts` - Imports template
 
 ### Deprecated:
+
 - `src/main/toji/templates/AGENTS.md` - No longer used (safe to delete)
 
 ---

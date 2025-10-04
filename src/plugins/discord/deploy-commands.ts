@@ -21,8 +21,16 @@ export async function deployCommands(
   const projectCommand = await import('./commands/project')
   const clearCommand = await import('./commands/clear')
   const adminCommand = await import('./commands/admin')
+  const voiceCommand = await import('./commands/voice')
 
-  const commandModules = [helpCommand, initCommand, projectCommand, clearCommand, adminCommand]
+  const commandModules = [
+    helpCommand,
+    initCommand,
+    projectCommand,
+    clearCommand,
+    adminCommand,
+    voiceCommand
+  ]
 
   const commands: RESTPostAPIApplicationCommandsJSONBody[] = []
 

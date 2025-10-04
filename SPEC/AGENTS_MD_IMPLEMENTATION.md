@@ -7,9 +7,11 @@ Implemented automatic creation of `AGENTS.md` file for all Toji projects. This f
 ## What Was Implemented
 
 ### 1. Template File
+
 **Location:** `src/main/toji/templates/AGENTS.md`
 
 Contains:
+
 - Toji-specific development guidelines
 - Architecture overview
 - Code quality standards
@@ -18,26 +20,32 @@ Contains:
 - Project-specific customization section
 
 ### 2. Project Initialization Integration
+
 **File:** `src/main/toji/project-initializer.ts`
 
 **Added:**
+
 - `ensureAgentsFile()` method - Creates AGENTS.md from template if it doesn't exist
 - Integrated into `initializeProject()` flow
 - Updates `opencode.json` to include `instructions: ['AGENTS.md']`
 
 **When it runs:**
+
 - During new project initialization (`/init` command)
 - Only creates if AGENTS.md doesn't already exist
 - Non-blocking - won't fail project init if template is missing
 
 ### 3. Config Management Integration
+
 **File:** `src/main/toji/config-manager.ts`
 
 **Added:**
+
 - Private `ensureAgentsFile()` method
 - Calls from `ensureConfigFile()` whenever opencode.json is touched
 
 **When it runs:**
+
 - First time opencode.json is created for a project
 - When config updates require file persistence
 - When switching to projects without opencode.json
@@ -90,19 +98,23 @@ OpenCode automatically reads `AGENTS.md` and uses it as context/system prompt fo
 ## User Experience
 
 ### New Project
+
 1. User runs `/init` or initializes project
 2. Toji creates: git, .gitignore, opencode.json, **AGENTS.md**
 3. OpenCode immediately starts using AGENTS.md guidance
 4. User can edit AGENTS.md to customize behavior
 
 ### Existing Project
+
 1. User switches to project without opencode.json
 2. Toji creates opencode.json for persistence
 3. Toji also creates AGENTS.md if missing
 4. Project now has AI guidance
 
 ### Customization
+
 Users can:
+
 - Edit AGENTS.md directly in their project
 - Add project-specific instructions
 - Override defaults
@@ -111,16 +123,19 @@ Users can:
 ## Technical Details
 
 ### Template Location
+
 - Compiled path: `dist/main/toji/templates/AGENTS.md`
 - Source path: `src/main/toji/templates/AGENTS.md`
 - Accessed via: `join(__dirname, 'templates', 'AGENTS.md')`
 
 ### Error Handling
+
 - Missing template → Log warning, continue
 - File write error → Log warning, continue
 - Never throws exceptions
 
 ### Performance
+
 - Synchronous template read (small file)
 - Asynchronous file write
 - Only runs once per project
@@ -129,6 +144,7 @@ Users can:
 ## Future Enhancements
 
 ### Potential Improvements
+
 1. **Multiple Templates** - Different templates for different project types
 2. **Template Variables** - Inject project name, date, user preferences
 3. **UI Editor** - Edit AGENTS.md through Toji UI
@@ -138,14 +154,12 @@ Users can:
 7. **AI Generation** - Let AI analyze project and generate custom AGENTS.md
 
 ### Configuration Options
+
 Future config in opencode.json:
+
 ```json
 {
-  "instructions": [
-    "AGENTS.md",
-    ".github/instructions/*.md",
-    "docs/ai-guidelines.md"
-  ],
+  "instructions": ["AGENTS.md", ".github/instructions/*.md", "docs/ai-guidelines.md"],
   "agent": {
     "general": {
       "prompt": "Additional inline prompt..."
@@ -157,6 +171,7 @@ Future config in opencode.json:
 ## Testing
 
 ### Manual Test Steps
+
 1. Initialize a new project
 2. Verify AGENTS.md is created
 3. Verify opencode.json includes `instructions: ["AGENTS.md"]`
@@ -166,6 +181,7 @@ Future config in opencode.json:
 7. Verify AGENTS.md is recreated
 
 ### Expected Behavior
+
 - ✅ AGENTS.md created on first init
 - ✅ Not created if already exists
 - ✅ OpenCode reads and uses instructions
@@ -175,6 +191,7 @@ Future config in opencode.json:
 ## Rollout
 
 ### Deployment Steps
+
 1. ✅ Create template file
 2. ✅ Implement creation logic
 3. ✅ Integrate into init flow
@@ -186,6 +203,7 @@ Future config in opencode.json:
 9. 🔲 Create example customizations
 
 ### User Communication
+
 - Update README with AGENTS.md info
 - Add to Discord bot help text
 - Create example AGENTS.md files
@@ -194,14 +212,17 @@ Future config in opencode.json:
 ## Related Files
 
 ### Modified
+
 - `src/main/toji/project-initializer.ts`
 - `src/main/toji/config-manager.ts`
 
 ### Created
+
 - `src/main/toji/templates/AGENTS.md`
 - `SPEC/AGENTS_MD_IMPLEMENTATION.md` (this file)
 
 ### To Update
+
 - README.md - Mention AGENTS.md
 - User documentation
 - Help commands

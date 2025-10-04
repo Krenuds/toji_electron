@@ -2,6 +2,7 @@ import { Collection, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
 import type { DiscordModule } from '../DiscordPlugin'
 import type { DiscordProjectManager } from './DiscordProjectManager'
+import type { VoiceModule } from '../voice/VoiceModule'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import { hasPermission } from '../utils/permissions'
 import { DISCORD_COLORS, PERMISSION_MESSAGES, DEFAULT_ADMIN_ROLE_NAME } from '../constants'
@@ -16,7 +17,8 @@ interface SlashCommand {
   execute: (
     interaction: ChatInputCommandInteraction,
     toji: Toji,
-    projectManager?: DiscordProjectManager
+    projectManager?: DiscordProjectManager,
+    voiceModule?: VoiceModule
   ) => Promise<void>
 }
 
@@ -25,12 +27,21 @@ interface SlashCommand {
  */
 export class SlashCommandModule implements DiscordModule {
   private commands: Collection<string, SlashCommand> = new Collection()
+  private voiceModule?: VoiceModule
 
   constructor(
     private toji: Toji,
     private projectManager?: DiscordProjectManager
   ) {
     // Commands will be loaded during initialization
+  }
+
+  /**
+   * Set the voice module after construction
+   */
+  setVoiceModule(voiceModule: VoiceModule): void {
+    this.voiceModule = voiceModule
+    log('Voice module registered')
   }
 
   /**
@@ -54,12 +65,14 @@ export class SlashCommandModule implements DiscordModule {
       const projectCommand = await import('../commands/project')
       const clearCommand = await import('../commands/clear')
       const adminCommand = await import('../commands/admin')
+      const voiceCommand = await import('../commands/voice')
 
       this.commands.set('help', helpCommand)
       this.commands.set('init', initCommand)
       this.commands.set('project', projectCommand)
       this.commands.set('clear', clearCommand)
       this.commands.set('admin', adminCommand)
+      this.commands.set('voice', voiceCommand)
 
       log(`Loaded ${this.commands.size} slash commands`)
     } catch (error) {
@@ -138,8 +151,8 @@ export class SlashCommandModule implements DiscordModule {
         return
       }
 
-      // Execute the command with projectManager
-      await command.execute(interaction, this.toji, this.projectManager)
+      // Execute the command with projectManager and voiceModule
+      await command.execute(interaction, this.toji, this.projectManager, this.voiceModule)
     } catch (error) {
       log('ERROR: Error executing command %s: %o', interaction.commandName, error)
 

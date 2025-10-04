@@ -140,7 +140,8 @@ export class DiscordService {
         intents: [
           GatewayIntentBits.Guilds,
           GatewayIntentBits.GuildMessages,
-          GatewayIntentBits.MessageContent
+          GatewayIntentBits.MessageContent,
+          GatewayIntentBits.GuildVoiceStates // Required for voice connections
         ]
       })
       console.log('DiscordService: Client created successfully')

@@ -41,6 +41,7 @@ export class DiscordPlugin extends EventEmitter {
   private modules: Map<string, DiscordModule> = new Map()
   private projectManager?: DiscordProjectManager
   private slashCommandModule?: SlashCommandModule
+  private voiceModule?: import('./voice/VoiceModule').VoiceModule
   private initialized = false
   private messageFetcher?: ReturnType<typeof createDiscordMessageFetcher>
   private fileUploader?: ReturnType<typeof createDiscordFileUploader>
@@ -69,12 +70,18 @@ export class DiscordPlugin extends EventEmitter {
     // Import and register modules
     const { DiscordProjectManager } = await import('./modules/DiscordProjectManager')
     const { SlashCommandModule } = await import('./modules/SlashCommandModule')
+    const { VoiceModule } = await import('./voice/VoiceModule')
 
     this.projectManager = new DiscordProjectManager(this.toji)
     this.slashCommandModule = new SlashCommandModule(this.toji, this.projectManager)
+    this.voiceModule = new VoiceModule()
 
     await this.registerModule('project', this.projectManager)
     await this.registerModule('slashCommand', this.slashCommandModule)
+    await this.registerModule('voice', this.voiceModule)
+
+    // Register voice module with slash command module
+    this.slashCommandModule.setVoiceModule(this.voiceModule)
 
     this.initialized = true
     log('Initialized successfully')
