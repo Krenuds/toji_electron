@@ -120,6 +120,33 @@ Reads recent messages from a Discord channel.
 }
 ```
 
+### `initialize_project`
+
+Initialize a new project with git and opencode.json at a specified path. Creates the directory if it doesn't exist.
+
+**Inputs:**
+
+- `path` (required): Full absolute path where project should be initialized (e.g., "C:\\Users\\Name\\Projects\\my-app")
+- `projectName` (optional): Project name for opencode.json (defaults to directory name)
+- `description` (optional): Project description for opencode.json
+- `model` (optional): Default AI model (e.g., "anthropic/claude-3-5-sonnet-20241022")
+- `autoSwitch` (optional): Automatically switch to the new project (default: true)
+
+**Output:**
+
+```json
+{
+  "success": true,
+  "projectPath": "C:\\Users\\Name\\Projects\\my-app",
+  "steps": ["git-init", "gitignore", "opencode-config", "readme"],
+  "switched": true,
+  "message": "Successfully initialized project..."
+}
+```
+
+**Example Usage:**
+User says "create a new project at C:\\MyProjects\\my-app" - AI calls this tool with the path, automatically creating and initializing the project.
+
 ## Adding New Tools
 
 **Step 1: Create tool file** in `tools/`:

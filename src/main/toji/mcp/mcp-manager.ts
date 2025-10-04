@@ -9,7 +9,9 @@ import { registerDiscordMessageTool, type DiscordMessageFetcher } from './tools/
 import { registerClearSessionTool } from './tools/clear-session'
 import { registerReadSessionTool } from './tools/read-session'
 import { registerListSessionsTool } from './tools/list-sessions'
+import { registerInitializeProjectTool } from './tools/initialize-project'
 import type { SessionManager } from '../sessions'
+import type { Toji } from '../index'
 import { createFileDebugLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
 import { promises as fs } from 'fs'
@@ -27,10 +29,29 @@ export class McpManager {
   private getClientFn?: () => OpencodeClient | null
   private getCurrentProjectPathFn?: () => string | undefined
   private sessionManager?: SessionManager
+  private getTojiFn?: () => Toji | null
   private portCounter = BASE_PORT
 
   constructor() {
     log('McpManager initialized')
+  }
+
+  /**
+   * Set Toji instance getter for project initialization tool
+   */
+  setTojiInstance(getToji: () => Toji | null): void {
+    log('Toji instance configured for MCP tools')
+    this.getTojiFn = getToji
+
+    // Register initialize project tool with all existing MCP servers
+    for (const [dir, instance] of this.servers.entries()) {
+      try {
+        registerInitializeProjectTool(instance.server, { getToji })
+        log('Registered initialize project tool for existing server: %s', dir)
+      } catch (error) {
+        log('Warning: Failed to register initialize project tool for %s: %o', dir, error)
+      }
+    }
   }
 
   /**
@@ -171,6 +192,12 @@ export class McpManager {
     if (this.messageFetcher) {
       registerDiscordMessageTool(server, this.messageFetcher)
       log('Registered Discord tool for new server: %s', normalized)
+    }
+
+    // Register initialize project tool if Toji instance available
+    if (this.getTojiFn) {
+      registerInitializeProjectTool(server, { getToji: this.getTojiFn })
+      log('Registered initialize project tool for new server: %s', normalized)
     }
 
     // Create Express app

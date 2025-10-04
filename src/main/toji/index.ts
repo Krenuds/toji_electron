@@ -104,6 +104,9 @@ export class Toji extends EventEmitter {
       this.sessions
     )
 
+    // Configure MCP with Toji instance for project initialization tool
+    this.mcp.setTojiInstance(() => this)
+
     log('Toji initialized successfully')
   }
 
@@ -358,7 +361,7 @@ export class Toji extends EventEmitter {
     // CRITICAL: Check if projectPath ends with .git and fix it
     if (projectPath.endsWith('/.git') || projectPath.endsWith('\\.git')) {
       const originalPath = projectPath
-      projectPath = projectPath.replace(/[\/\\]\.git$/, '')
+      projectPath = projectPath.replace(/[/\\]\.git$/, '')
       log(
         'WARNING: Project path had .git suffix, corrected from %s to %s',
         originalPath,
