@@ -137,7 +137,6 @@ export class DiscordPlugin extends EventEmitter {
                 const now = Date.now()
                 const charCount = text.length
                 const timeSinceLastUpdate = now - lastUpdate
-                updateCount++
 
                 log(
                   '🔵 onChunk fired: %d chars (time since last: %dms, throttle: %dms)',
@@ -148,12 +147,14 @@ export class DiscordPlugin extends EventEmitter {
 
                 if (!progressMessage) {
                   // Send initial progress embed
+                  updateCount++
                   const embed = createProgressEmbed(charCount, updateCount, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
                   log('✅ Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
+                  updateCount++
                   const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
@@ -237,7 +238,6 @@ export class DiscordPlugin extends EventEmitter {
               const now = Date.now()
               const charCount = text.length
               const timeSinceLastUpdate = now - lastUpdate
-              updateCount++
 
               log(
                 '🔵 onChunk fired (mention): %d chars (time since last: %dms, throttle: %dms)',
@@ -248,12 +248,14 @@ export class DiscordPlugin extends EventEmitter {
 
               if (!progressMessage) {
                 // Send initial progress embed
+                updateCount++
                 const embed = createProgressEmbed(charCount, updateCount, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
                 log('✅ Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
+                updateCount++
                 const embed = updateProgressEmbed(charCount, updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
