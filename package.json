@@ -20,7 +20,9 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
-    "lint:fix": "eslint --cache . --fix"
+    "lint:fix": "eslint --cache . --fix",
+    "graph": "depcruise src --output-type dot --config .dependency-cruiser.js > graphs/architecture.dot && dot -Tsvg graphs/architecture.dot -o graphs/architecture.svg",
+    "graph:full": "powershell -ExecutionPolicy Bypass -File ./scripts/setup-review-workspace.ps1"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.0",
@@ -39,6 +41,7 @@
     "electron-window-state": "^5.0.3",
     "express": "^5.1.0",
     "libsodium-wrappers": "^0.7.15",
+    "prism-media": "^1.3.5",
     "react-icons": "^5.5.0",
     "sodium-native": "^5.0.9",
     "zod": "^3.25.76"

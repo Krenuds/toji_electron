@@ -4,24 +4,63 @@ applyTo: '**'
 
 Provide project context and coding guidelines that AI should follow when generating code, answering questions, or reviewing changes.
 
-1. Research online if working with https://electron-vite.org/ or https://opencode.ai/ SDKs
-2. Plan
-3. Write code in small, incremental steps
-4. Lint
-5. npm run typecheck:node
-6. Iterate as needed
-7. Commit with conventional commit messages
+## Development Workflow
+
+### Before Starting
+
+1. **Research** - Check electron-vite.org or opencode.ai SDK docs if needed
+2. **Review Context**:
+   - Check logs: `C:\donth\AppData\Roaming\toji3\logs\`
+   - Review graphs: `npm run graph` to see current architecture (output in `graphs/`)
+   - Read graph docs in `graphs/AGENTS.md`
+3. **Plan** - Design feature with proper separation of concerns
+
+### Implementation Steps
+
+1. Write code in small, incremental steps
+2. `npm run format` - Format code
+3. `npm run lint` - Check/fix linting
+4. `npm run typecheck:node` - Verify types (main/preload)
+5. `npm run typecheck:web` - Verify types (renderer)
+6. Test the feature
+7. Iterate as needed
+8. `npm run graph` - Update architecture visualization
+9. Commit with conventional commit messages
+
+### After Completing
+
+- Verify no red lines in `graphs/architecture.svg`
+- Check logs for runtime issues
+- Update relevant documentation if needed
 
 ## Success Metrics
 
 A properly implemented feature will:
 
-1. Have full TypeScript coverage
-2. Pass all linting rules
-3. Use Chakra UI exclusively
-4. Implement thin IPC handlers
-5. Abstract API calls through hooks
-6. Handle errors gracefully
-7. Log operations appropriately
+1. ✅ Have full TypeScript coverage (no `any` types)
+2. ✅ Pass all linting rules
+3. ✅ Use Chakra UI exclusively
+4. ✅ Implement thin IPC handlers (≤5 lines)
+5. ✅ Abstract API calls through hooks
+6. ✅ Handle errors gracefully
+7. ✅ Log operations appropriately
+8. ✅ Show clean architecture graph (no red violations)
+
+## Quick Commands
+
+```powershell
+npm run dev              # Start development
+npm run format           # Format all files
+npm run lint             # Check and auto-fix linting
+npm run typecheck:node   # Type check main/preload
+npm run typecheck:web    # Type check renderer
+npm run graph            # Generate architecture graph
+```
+
+## Documentation
+
+- Architecture graphs: `graphs/AGENTS.md`
+- Project overview: `.github/copilot-instructions.md`
+- Logs location: `C:\donth\AppData\Roaming\toji3\logs\`
 
 Echo "I'm DOING IT" now.

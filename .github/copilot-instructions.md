@@ -64,6 +64,7 @@ All three must pass with zero errors.
 - `npm run lint` - Check and auto-fix linting issues
 - `npm run typecheck:node` - Verify main/preload TypeScript
 - `npm run typecheck:web` - Verify renderer TypeScript
+- `npm run graph` - Generate architecture visualization
 - `npm run build` - Production build (runs typecheck first)
 
 ## File Structure Guide
@@ -159,16 +160,25 @@ function MyComponent() {
 - Sessions are the primary interaction unit
 - Configuration hierarchy: defaults → opencode.json → runtime overrides
 
-## Debugging
+## Debugging & Context Tools
 
-Logs location: `C:\donth\AppData\Roaming\toji3\logs\`
+**Logs location:** `C:\donth\AppData\Roaming\toji3\logs\`
+
+**Architecture visualization:** Run `npm run graph` to generate/update `graphs/architecture.svg`
 
 Debug order:
 
 1. Check main process logs first
-2. Verify IPC message flow
-3. Inspect type definitions
-4. Validate OpenCode SDK responses
+2. Review architecture graph for dependency issues
+3. Verify IPC message flow
+4. Inspect type definitions
+5. Validate OpenCode SDK responses
+
+## Documentation
+
+- **Workflow:** `.github/instructions/WORKFLOW.instructions.md`
+- **Architecture graphs:** `graphs/AGENTS.md`
+- **Specs:** `SPEC/` folder for feature specifications
 
 ## Success Metrics
 
