@@ -6,7 +6,7 @@ Implementation of bidirectional voice communication for Discord bot using Docker
 
 ## Architecture Decision
 
-**Selected: Docker Services (Whisper + Piper)**  
+**Selected: Docker Services (Whisper + Piper)**
 Alternative considered: OpenAI Realtime API ($0.30/min) - rejected due to cost
 
 ### Why Docker Services
@@ -201,7 +201,7 @@ const audioBuffer = await response.arrayBuffer()
 ```typescript
 onComplete: async (fullText) => {
   await sendDiscordResponse(message, fullText)
-  
+
   // Speak in voice if bot is connected
   if (this.voiceModule && message.guildId) {
     const sessions = this.voiceModule.getAllSessions()
@@ -229,26 +229,26 @@ onComplete: async (fullText) => {
 
 ### Issue 1: Opus Decoding
 
-**Problem**: Raw audio stream missing Opus decoder  
-**Solution**: Pipe through `opus.Decoder` before processing  
+**Problem**: Raw audio stream missing Opus decoder
+**Solution**: Pipe through `opus.Decoder` before processing
 **Commit**: `76a696c`
 
 ### Issue 2: Double Bot Responses
 
-**Problem**: Manual `handleMessage()` + Discord MessageCreate event  
-**Solution**: Remove manual call, let Discord event handle it  
+**Problem**: Manual `handleMessage()` + Discord MessageCreate event
+**Solution**: Remove manual call, let Discord event handle it
 **Commit**: `950ccfd`
 
 ### Issue 3: Bot Ignoring Transcriptions
 
-**Problem**: Bot filtered out its own messages including transcriptions  
-**Solution**: Exception for INFO color embeds with content  
+**Problem**: Bot filtered out its own messages including transcriptions
+**Solution**: Exception for INFO color embeds with content
 **Commit**: `f2a3869`
 
 ### Issue 4: WAV Playback Failure
 
-**Problem**: Discord.js doesn't support WAV directly (needs PCM/Opus)  
-**Solution**: FFmpeg transcoding WAV → PCM  
+**Problem**: Discord.js doesn't support WAV directly (needs PCM/Opus)
+**Solution**: FFmpeg transcoding WAV → PCM
 **Commit**: `e2dd0d3`
 
 ## Performance Characteristics
@@ -282,12 +282,12 @@ onComplete: async (fullText) => {
 
 ## Testing Checklist
 
-✅ User speaks → Transcription embed appears  
-✅ Bot processes transcription → Text response  
-✅ Bot speaks response in voice channel  
-✅ Multiple users can speak (no conflicts)  
-✅ Queue handles rapid-fire messages  
-✅ Bot ignores own non-transcription messages  
+✅ User speaks → Transcription embed appears
+✅ Bot processes transcription → Text response
+✅ Bot speaks response in voice channel
+✅ Multiple users can speak (no conflicts)
+✅ Queue handles rapid-fire messages
+✅ Bot ignores own non-transcription messages
 ✅ FFmpeg transcoding works on Windows/Mac/Linux
 
 ## Dependencies Added
