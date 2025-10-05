@@ -4,6 +4,8 @@
 
 Implementation of bidirectional voice communication for Discord bot using Docker-based Whisper (STT) and Piper (TTS) services.
 
+**Key Feature**: Wake word system - Bot only processes voice input after hearing the trigger word "listen" to avoid responding to every conversation in the channel.
+
 ## Architecture Decision
 
 **Selected: Docker Services (Whisper + Piper)**
@@ -36,7 +38,7 @@ Alternative considered: OpenAI Realtime API ($0.30/min) - rejected due to cost
 
 ## Audio Flow Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Discord Voice Channel                     │
 └──────────────┬────────────────────────────────────┬──────────────┘
@@ -80,6 +82,7 @@ Alternative considered: OpenAI Realtime API ($0.30/min) - rejected due to cost
   - Min duration: 1s
 - PCM to WAV conversion (16kHz mono, 16-bit)
 - Per-user audio buffering
+- Continuous transcription (wake word filtering happens downstream)
 
 **Critical Bug Fixed**: Opus decoder pipeline
 
@@ -109,7 +112,54 @@ const result = await response.json() // {text: "..."}
 
 **Critical**: WAV format must be 16kHz mono for Whisper
 
-### 3. Transcription Display
+### 3. Wake Word Detection
+
+**Location**: `src/plugins/discord/voice/VoiceModule.ts`
+
+**Purpose**: Prevent bot from responding to every conversation in voice channel
+
+**Logic**:
+
+```typescript
+// Session tracks listening state
+session.isListening = false // Default: not listening
+session.wakeWord = 'listen' // Configurable wake word
+
+// In transcription handler:
+if (!session.isListening) {
+  // Check for wake word
+  if (transcriptionLower.includes(wakeWord)) {
+    session.isListening = true
+    // Process text after wake word if present
+    const textAfterWakeWord = extractAfterWakeWord(result.text, wakeWord)
+    if (textAfterWakeWord) {
+      emit('transcription', textAfterWakeWord)
+    }
+  } else {
+    // Ignore - no wake word
+  }
+} else {
+  // Already listening - process transcription
+  emit('transcription', result.text)
+  session.isListening = false // Reset for next interaction
+}
+```
+
+**Behavior**:
+
+- **First utterance**: Bot ignores unless it contains "listen"
+- **Wake word detected**: Bot enters listening mode
+- **Text after wake word**: Immediately processed (e.g., "listen what is the weather")
+- **Next utterance**: Processed (listening mode active)
+- **After processing**: Listening mode resets, wake word required again
+
+**Why This Pattern**:
+
+- Prevents responding to ambient conversation
+- Natural flow: "listen" → immediate command, or "listen" → pause → command
+- Resets after each response to avoid continuous monitoring
+
+### 4. Transcription Display
 
 **Location**: `src/plugins/discord/voice/VoiceModule.ts`
 
@@ -128,7 +178,9 @@ await channel.send({ content: text, embeds: [embed] })
 
 **Why text + embed?**: Bot needs text content to process, embed for visual display
 
-### 4. Bot Message Processing
+**Note**: Only transcriptions that pass wake word detection are sent to Discord
+
+### 5. Bot Message Processing
 
 **Location**: `src/plugins/discord/DiscordPlugin.ts`
 
@@ -147,7 +199,7 @@ if (message.author.bot) {
 
 **Critical Bug Fixed**: Double responses from manual `handleMessage()` call + Discord event
 
-### 5. TTSPlayer (TTS Pipeline)
+### 6. TTSPlayer (TTS Pipeline)
 
 **Location**: `src/plugins/discord/voice/TTSPlayer.ts`
 
@@ -177,7 +229,7 @@ player.play(resource)
 
 **Dependencies**: `@ffmpeg-installer/ffmpeg` (cross-platform FFmpeg binary)
 
-### 6. Piper Integration
+### 7. Piper Integration
 
 **Location**: `src/main/services/voice-service-manager.ts`
 
@@ -192,7 +244,7 @@ const response = await fetch('http://localhost:9001/tts', {
 const audioBuffer = await response.arrayBuffer()
 ```
 
-### 7. TTS Trigger
+### 8. TTS Trigger
 
 **Location**: `src/plugins/discord/DiscordPlugin.ts`
 
@@ -219,11 +271,18 @@ onComplete: async (fullText) => {
 
 1. User: `/voice join <project>` → Bot joins voice channel
 2. Bot: Auto-starts AudioReceiver (STT) + TTSPlayer (TTS)
-3. User: Speaks → Transcription embed → Bot text response → Bot speaks
-4. Loop: Continue conversation
-5. User: `/voice leave` → Bot disconnects
+3. Users talk (ignored until wake word)
+4. User: Says "listen" → Bot enters listening mode
+5. User: Speaks command → Transcription embed → Bot text response → Bot speaks
+6. Bot: Resets to non-listening mode (wake word required for next interaction)
+7. Loop: Repeat from step 3
+8. User: `/voice leave` → Bot disconnects
 
-**Key Insight**: Single voice session per guild, any user in channel can speak
+**Key Insights**:
+
+- Single voice session per guild, any user in channel can speak
+- Wake word "listen" gates all voice input processing
+- Listening state resets after each bot response
 
 ## Known Issues & Solutions
 
@@ -282,9 +341,13 @@ onComplete: async (fullText) => {
 
 ## Testing Checklist
 
-✅ User speaks → Transcription embed appears
+✅ User speaks without wake word → Ignored (no transcription)
+✅ User says "listen" → Bot enters listening mode
+✅ User speaks after wake word → Transcription embed appears
 ✅ Bot processes transcription → Text response
 ✅ Bot speaks response in voice channel
+✅ Bot resets listening state → Requires wake word again
+✅ User says "listen [command]" → Processes command immediately
 ✅ Multiple users can speak (no conflicts)
 ✅ Queue handles rapid-fire messages
 ✅ Bot ignores own non-transcription messages

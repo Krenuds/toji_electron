@@ -18,6 +18,7 @@ import { createDiscordFileUploader } from './utils/mcp-uploader'
 import { createDiscordChannelLister } from './utils/mcp-channel-lister'
 import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
+import { DISCORD_COLORS } from './constants'
 
 const log = createFileDebugLogger('discord:plugin')
 
@@ -105,7 +106,7 @@ export class DiscordPlugin extends EventEmitter {
       // Allow transcription messages (they have embeds with INFO color and content text)
       const isTranscription =
         message.embeds.length > 0 &&
-        message.embeds[0].color === 0x3b82f6 && // DISCORD_COLORS.INFO
+        message.embeds[0].color === DISCORD_COLORS.INFO &&
         message.content.length > 0
       if (!isTranscription) {
         return

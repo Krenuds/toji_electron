@@ -11,6 +11,7 @@ export interface VoiceSessionConfig {
   channelId: string // Voice channel ID
   projectPath?: string // Project path for Toji context
   projectChannelId?: string // Text channel ID for the project
+  wakeWord?: string // Wake word to trigger listening (default: 'listen')
 }
 
 export interface VoiceSession {
@@ -21,6 +22,8 @@ export interface VoiceSession {
   status: 'connecting' | 'connected' | 'disconnected' | 'error'
   projectPath?: string // Quick access to project path
   projectChannelId?: string // Quick access to project text channel
+  isListening: boolean // Whether bot is currently listening for input (after wake word)
+  wakeWord: string // Wake word that triggers listening mode
 }
 
 export interface VoiceModuleEvents {

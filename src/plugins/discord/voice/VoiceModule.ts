@@ -171,7 +171,8 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       guildId: channel.guild.id,
       channelId: channel.id,
       projectPath,
-      projectChannelId
+      projectChannelId,
+      wakeWord: 'listen' // Default wake word
     }
 
     log(`Calling joinVoiceChannel from @discordjs/voice...`)
@@ -197,7 +198,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       startTime: new Date(),
       status: 'connecting',
       projectPath,
-      projectChannelId
+      projectChannelId,
+      isListening: false, // Start in non-listening mode
+      wakeWord: config.wakeWord || 'listen'
     }
 
     // Store session
@@ -435,12 +438,60 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           const result = await voiceManager.transcribe(audioWav)
           if (result.text) {
             log(`Transcription: "${result.text}"`)
-            this.emit('transcription', {
-              sessionId,
-              userId,
-              text: result.text,
-              duration
-            })
+
+            // Get session to check listening state
+            const session = this.sessions.get(sessionId)
+            if (!session) {
+              log('Session not found, skipping transcription')
+              return
+            }
+
+            // Check for wake word in transcription
+            const transcriptionLower = result.text.toLowerCase()
+            const wakeWord = session.wakeWord.toLowerCase()
+
+            if (!session.isListening) {
+              // Not listening yet - check for wake word
+              if (transcriptionLower.includes(wakeWord)) {
+                log(`🎤 Wake word "${session.wakeWord}" detected! Entering listening mode...`)
+                session.isListening = true
+
+                // Extract text after wake word if present
+                const wakeWordIndex = transcriptionLower.indexOf(wakeWord)
+                const textAfterWakeWord = result.text
+                  .substring(wakeWordIndex + wakeWord.length)
+                  .trim()
+
+                if (textAfterWakeWord.length > 0) {
+                  // Process the text that came after the wake word
+                  log(`Processing text after wake word: "${textAfterWakeWord}"`)
+                  this.emit('transcription', {
+                    sessionId,
+                    userId,
+                    text: textAfterWakeWord,
+                    duration
+                  })
+                } else {
+                  log('Wake word detected, waiting for next speech input...')
+                }
+              } else {
+                log(`Ignoring speech (no wake word): "${result.text}"`)
+              }
+            } else {
+              // Already listening - process the transcription
+              log(`Processing transcription (listening mode active): "${result.text}"`)
+              this.emit('transcription', {
+                sessionId,
+                userId,
+                text: result.text,
+                duration
+              })
+
+              // Reset listening state after processing
+              // Bot will need wake word again for next interaction
+              session.isListening = false
+              log('Listening mode reset - waiting for wake word again')
+            }
           } else if (result.error) {
             log(`Transcription error: ${result.error}`)
           }
