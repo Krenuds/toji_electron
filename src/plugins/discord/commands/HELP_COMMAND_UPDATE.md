@@ -55,6 +55,7 @@ Reorganized commands into logical categories with visual separators:
 ### 4. **Improved Footer**
 
 Updated footer with helpful tip:
+
 > 💡 Tip: Each project channel maintains separate conversation context and can have its own voice session
 
 ## Command Structure

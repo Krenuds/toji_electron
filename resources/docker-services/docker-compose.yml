@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  whisper:
+    build:
+      context: ./whisper-service
+      dockerfile: Dockerfile
+    image: toji-whisper:latest
+    container_name: toji-whisper
+    ports:
+      - '9000:9000'
+    environment:
+      - WHISPER_PORT=9000
+      - WHISPER_HOST=0.0.0.0
+      - WHISPER_MODEL_SIZE=small
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    volumes:
+      - whisper-models:/root/.cache/huggingface
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    # Uncomment for GPU support (requires nvidia-docker)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  piper:
+    build:
+      context: ./piper-service
+      dockerfile: Dockerfile
+    image: toji-piper:latest
+    container_name: toji-piper
+    ports:
+      - '9001:9001'
+    environment:
+      - PIPER_PORT=9001
+      - PIPER_HOST=0.0.0.0
+      - PIPER_DEFAULT_VOICE=en_US-lessac-medium
+      - PIPER_MAX_CONCURRENT=10
+    volumes:
+      - piper-models:/app/models/piper
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  whisper-models:
+    driver: local
+  piper-models:
+    driver: local

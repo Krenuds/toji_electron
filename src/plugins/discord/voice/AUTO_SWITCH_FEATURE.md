@@ -7,6 +7,7 @@ Implemented automatic voice session switching to improve user experience. Users 
 ## Problem
 
 **Before:**
+
 ```
 User in voice session for Project A
 ↓
@@ -24,6 +25,7 @@ This was frustrating and added unnecessary friction.
 ## Solution
 
 **After:**
+
 ```
 User in voice session for Project A
 ↓
@@ -49,8 +51,10 @@ const existingSessionId = this.userSessions.get(userId)
 if (existingSessionId) {
   const existingSession = this.sessions.get(existingSessionId)
   if (existingSession) {
-    log(`User ${userId} already has an active session: ${existingSessionId}, automatically leaving...`)
-    
+    log(
+      `User ${userId} already has an active session: ${existingSessionId}, automatically leaving...`
+    )
+
     try {
       // Clean up the existing session
       existingSession.connection.destroy()
@@ -150,6 +154,7 @@ Error handling ensures new session is created even if old session cleanup fails.
 ### ✅ Logged
 
 All session switches are logged for debugging:
+
 ```
 User alice already has an active session: voice-alice-123, automatically leaving...
 Successfully left previous session voice-alice-123
@@ -161,6 +166,7 @@ Created session ID: voice-alice-456
 ### 1. **Orphaned Session Reference**
 
 If `userSessions` has a reference but session doesn't exist:
+
 ```typescript
 if (existingSession) {
   // Only cleanup if session actually exists
@@ -170,6 +176,7 @@ if (existingSession) {
 ### 2. **Cleanup Failure**
 
 If destroying previous connection throws error:
+
 ```typescript
 try {
   existingSession.connection.destroy()
@@ -182,6 +189,7 @@ try {
 ### 3. **Same Channel Rejoin**
 
 User can re-run `/voice join` in same project - bot will:
+
 - Leave existing session
 - Create new session
 - Reconnect to same voice channel
@@ -207,6 +215,7 @@ User can re-run `/voice join` in same project - bot will:
 ### Multi-Guild Support
 
 When bot is in multiple Discord servers:
+
 - Track sessions per guild
 - Allow switching between guilds
 - Prevent cross-guild interference
@@ -214,12 +223,13 @@ When bot is in multiple Discord servers:
 ### Session History
 
 Track recent switches:
+
 ```typescript
 interface SessionHistory {
   userId: string
   switches: Array<{
-    from: string  // Previous project
-    to: string    // New project
+    from: string // Previous project
+    to: string // New project
     timestamp: Date
   }>
 }
@@ -230,6 +240,7 @@ Use for analytics or undo functionality.
 ### Voice Follow Mode
 
 Optional feature: Bot automatically follows user between voice channels:
+
 ```typescript
 client.on('voiceStateUpdate', (oldState, newState) => {
   // If user moves to different voice channel
@@ -242,5 +253,6 @@ client.on('voiceStateUpdate', (oldState, newState) => {
 **Document Status**: Implemented ✅  
 **Last Updated**: 2025-10-04  
 **Related Files**:
+
 - `src/plugins/discord/voice/VoiceModule.ts`
 - `src/plugins/discord/commands/voice.ts`
