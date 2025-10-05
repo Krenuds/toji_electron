@@ -31,7 +31,6 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   private ttsPlayers: Map<string, TTSPlayer> = new Map() // sessionId -> TTSPlayer
   private botUserId?: string
   private client?: Client
-  private plugin?: import('../DiscordPlugin').DiscordPlugin
 
   constructor() {
     super()
@@ -83,13 +82,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   /**
    * Initialize with Discord client (called from onReady)
    */
-  async initializeWithClient(
-    client: Client,
-    plugin: import('../DiscordPlugin').DiscordPlugin
-  ): Promise<void> {
+  async initializeWithClient(client: Client): Promise<void> {
     this.client = client
-    this.plugin = plugin
-    log('VoiceModule initialized with Discord client and plugin')
+    log('VoiceModule initialized with Discord client')
   }
 
   /**
@@ -609,17 +604,13 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       // Type guard to ensure channel has send method
       if ('send' in channel) {
         // Send both text (for bot processing) and embed (for visual formatting)
-        const sentMessage = await channel.send({
+        // Discord will automatically trigger MessageCreate event, which will be
+        // processed by our handleMessage with the transcription exception
+        await channel.send({
           content: event.text,
           embeds: [embed]
         })
         log(`✅ Sent transcription to channel ${targetChannelId}`)
-
-        // Pass the message through the normal Discord message handling pipeline
-        if (this.plugin && sentMessage) {
-          log('Processing transcription through message handler')
-          await this.plugin.handleMessage(sentMessage)
-        }
       } else {
         log('Cannot send transcription: channel does not support sending messages')
       }

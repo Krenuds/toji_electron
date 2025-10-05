@@ -353,7 +353,7 @@ export class DiscordPlugin extends EventEmitter {
 
     // Initialize voice module with client
     if (this.voiceModule) {
-      await this.voiceModule.initializeWithClient(client, this)
+      await this.voiceModule.initializeWithClient(client)
     }
 
     // Configure MCP Discord message fetcher
