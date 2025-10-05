@@ -14,6 +14,9 @@ import type { VoiceBasedChannel } from 'discord.js'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import type { VoiceSession, VoiceSessionConfig } from './types'
 import type { DiscordModule } from '../DiscordPlugin'
+import { AudioReceiver, DEFAULT_AUDIO_CONFIG } from './AudioReceiver'
+import { TTSPlayer } from './TTSPlayer'
+import { getVoiceServiceManager } from '../../../main/services/voice-service-manager'
 
 const log = createFileDebugLogger('discord:voice')
 
@@ -24,10 +27,21 @@ const log = createFileDebugLogger('discord:voice')
 export class VoiceModule extends EventEmitter implements DiscordModule {
   private sessions: Map<string, VoiceSession> = new Map()
   private userSessions: Map<string, string> = new Map() // userId -> sessionId
+  private audioReceivers: Map<string, AudioReceiver> = new Map() // sessionId -> AudioReceiver
+  private ttsPlayers: Map<string, TTSPlayer> = new Map() // sessionId -> TTSPlayer
+  private botUserId?: string
 
   constructor() {
     super()
     log('VoiceModule constructed')
+  }
+
+  /**
+   * Set bot user ID for audio filtering
+   */
+  setBotUserId(userId: string): void {
+    this.botUserId = userId
+    log('Bot user ID set:', userId)
   }
 
   /**
@@ -44,6 +58,17 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     } catch (error) {
       log('Failed to generate dependency report:', error)
     }
+
+    // Initialize voice services (Docker + HTTP clients)
+    try {
+      log('Initializing voice services...')
+      const voiceManager = getVoiceServiceManager()
+      await voiceManager.initialize()
+      log('Voice services initialized successfully')
+    } catch (error) {
+      log('Failed to initialize voice services (non-fatal):', error)
+      log('Voice transcription and TTS will not be available')
+    }
   }
 
   /**
@@ -51,6 +76,16 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   cleanup(): void {
     log('Cleaning up VoiceModule')
+
+    // Stop all audio receivers
+    for (const sessionId of this.audioReceivers.keys()) {
+      this.stopAudioCapture(sessionId)
+    }
+
+    // Stop all TTS players
+    for (const sessionId of this.ttsPlayers.keys()) {
+      this.stopTTSPlayer(sessionId)
+    }
 
     // Disconnect all active sessions
     for (const [sessionId, session] of this.sessions) {
@@ -64,6 +99,8 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
     this.sessions.clear()
     this.userSessions.clear()
+    this.audioReceivers.clear()
+    this.ttsPlayers.clear()
   }
 
   /**
@@ -212,6 +249,10 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     log(`Leaving voice channel for session ${sessionId}`)
 
     try {
+      // Stop audio capture and TTS for this session
+      this.stopAudioCapture(sessionId)
+      this.stopTTSPlayer(sessionId)
+
       session.connection.destroy()
       session.status = 'disconnected'
 
@@ -325,6 +366,156 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       connectionWithDebug.on('debug', (message: string) => {
         log(`🐛 Debug [${session.id}]: ${message}`)
       })
+    }
+  }
+
+  /**
+   * Start audio capture for a session
+   */
+  startAudioCapture(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId)
+    if (!session) {
+      log(`Cannot start audio capture: session ${sessionId} not found`)
+      return false
+    }
+
+    // Check if already capturing
+    if (this.audioReceivers.has(sessionId)) {
+      log(`Audio capture already active for session ${sessionId}`)
+      return true
+    }
+
+    try {
+      log(`Starting audio capture for session ${sessionId}`)
+      const receiver = new AudioReceiver(session.connection, DEFAULT_AUDIO_CONFIG)
+
+      // Set bot user ID if available
+      if (this.botUserId) {
+        receiver.setBotUserId(this.botUserId)
+      }
+
+      // Set callback for when audio is ready
+      receiver.setOnAudioReady(async (userId, audioWav, duration) => {
+        log(`Audio ready from user ${userId}: ${audioWav.length} bytes, ${duration.toFixed(2)}s`)
+
+        // Transcribe with Whisper
+        try {
+          const voiceManager = getVoiceServiceManager()
+          if (!voiceManager.isAvailable()) {
+            log('Voice services not available, skipping transcription')
+            return
+          }
+
+          const result = await voiceManager.transcribe(audioWav)
+          if (result.text) {
+            log(`Transcription: "${result.text}"`)
+            this.emit('transcription', {
+              sessionId,
+              userId,
+              text: result.text,
+              duration
+            })
+          } else if (result.error) {
+            log(`Transcription error: ${result.error}`)
+          }
+        } catch (error) {
+          log('Error transcribing audio:', error)
+        }
+      })
+
+      receiver.start()
+      this.audioReceivers.set(sessionId, receiver)
+      log(`✅ Audio capture started for session ${sessionId}`)
+      return true
+    } catch (error) {
+      log(`Failed to start audio capture for session ${sessionId}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Stop audio capture for a session
+   */
+  stopAudioCapture(sessionId: string): void {
+    const receiver = this.audioReceivers.get(sessionId)
+    if (receiver) {
+      log(`Stopping audio capture for session ${sessionId}`)
+      receiver.stop()
+      this.audioReceivers.delete(sessionId)
+    }
+  }
+
+  /**
+   * Start TTS player for a session
+   */
+  startTTSPlayer(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId)
+    if (!session) {
+      log(`Cannot start TTS player: session ${sessionId} not found`)
+      return false
+    }
+
+    // Check if already exists
+    if (this.ttsPlayers.has(sessionId)) {
+      log(`TTS player already active for session ${sessionId}`)
+      return true
+    }
+
+    try {
+      log(`Starting TTS player for session ${sessionId}`)
+      const player = new TTSPlayer(session.connection)
+      this.ttsPlayers.set(sessionId, player)
+      log(`✅ TTS player started for session ${sessionId}`)
+      return true
+    } catch (error) {
+      log(`Failed to start TTS player for session ${sessionId}:`, error)
+      return false
+    }
+  }
+
+  /**
+   * Stop TTS player for a session
+   */
+  stopTTSPlayer(sessionId: string): void {
+    const player = this.ttsPlayers.get(sessionId)
+    if (player) {
+      log(`Stopping TTS player for session ${sessionId}`)
+      player.destroy()
+      this.ttsPlayers.delete(sessionId)
+    }
+  }
+
+  /**
+   * Speak text in a voice channel using TTS
+   */
+  async speak(sessionId: string, text: string): Promise<boolean> {
+    const player = this.ttsPlayers.get(sessionId)
+    if (!player) {
+      log(`Cannot speak: no TTS player for session ${sessionId}`)
+      return false
+    }
+
+    try {
+      log(`Speaking in session ${sessionId}: "${text}"`)
+      const voiceManager = getVoiceServiceManager()
+
+      if (!voiceManager.isAvailable()) {
+        log('Voice services not available')
+        return false
+      }
+
+      const audioBuffer = await voiceManager.speak({ text })
+      if (!audioBuffer) {
+        log('Failed to generate TTS audio')
+        return false
+      }
+
+      await player.play(Buffer.from(audioBuffer))
+      log(`✅ TTS audio queued for playback`)
+      return true
+    } catch (error) {
+      log('Error speaking:', error)
+      return false
     }
   }
 

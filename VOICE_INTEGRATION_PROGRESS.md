@@ -2,7 +2,7 @@
 
 **Date:** October 5, 2025
 **Branch:** feature/docker-tts-integration
-**Commit:** b377ae9
+**Commit:** 5598fbe
 
 ---
 
@@ -44,11 +44,22 @@
 
 **Result:** Simple API for Discord plugin to use voice features.
 
+### Phase 5D Part 1: IPC Integration ✅
+
+- [x] Created `voice.handlers.ts` with complete IPC API
+- [x] Registered handlers in main process
+- [x] Added cleanup on app quit
+- [x] Created `voice.api.ts` preload API
+- [x] Exposed voice API to renderer (`window.api.voice`)
+- [x] Added TypeScript definitions
+
+**Result:** Voice services accessible from both main and renderer processes.
+
 ---
 
 ## 🚧 Next Steps
 
-### Phase 5D: Discord Integration (Est. 2 hours)
+### Phase 5D Part 2: Discord Voice Integration (Est. 1.5 hours)
 1. **Wire VoiceServiceManager to Discord plugin**
    - Update `DiscordPlugin` to initialize voice services
    - Add IPC handlers for voice status
