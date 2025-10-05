@@ -203,6 +203,14 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       log(`✅ Successfully connected to voice channel ${channel.id} in ${duration}ms`)
       log(`=== JOIN VOICE CHANNEL SUCCESS ===`)
 
+      // Auto-start audio capture for this session
+      log(`Auto-starting audio capture for session ${sessionId}`)
+      this.startAudioCapture(sessionId)
+
+      // Auto-start TTS player for this session
+      log(`Auto-starting TTS player for session ${sessionId}`)
+      this.startTTSPlayer(sessionId)
+
       this.emit('sessionStarted', session)
       return session
     } catch (error) {

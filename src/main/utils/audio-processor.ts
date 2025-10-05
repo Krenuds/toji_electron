@@ -14,8 +14,10 @@ const log = createFileDebugLogger('audio-processor')
  * @returns Mono PCM data
  */
 export function stereoToMono(stereoData: Buffer): Buffer {
-  // Each sample is 2 bytes (16-bit), stereo has 2 channels
-  const sampleCount = stereoData.length / 4 // Total stereo samples (L+R pairs)
+  // Each sample is 2 bytes (16-bit), stereo has 2 channels (4 bytes per sample pair)
+  // Ensure we only process complete sample pairs
+  const stereoBytes = Math.floor(stereoData.length / 4) * 4
+  const sampleCount = stereoBytes / 4 // Total stereo samples (L+R pairs)
   const monoData = Buffer.allocUnsafe(sampleCount * 2) // Mono is half the size
 
   for (let i = 0; i < sampleCount; i++) {
