@@ -28,10 +28,21 @@ try {
 }
 
 export interface TTSConfig {
-  model: 'tts-1' | 'tts-1-hd'
-  voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'
+  model: 'tts-1' | 'tts-1-hd' | 'gpt-4o-mini-tts'
+  voice:
+    | 'alloy'
+    | 'ash'
+    | 'ballad'
+    | 'coral'
+    | 'echo'
+    | 'fable'
+    | 'nova'
+    | 'onyx'
+    | 'sage'
+    | 'shimmer'
   speed?: number // 0.25 to 4.0
   responseFormat?: 'mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm'
+  instructions?: string // Voice instructions for gpt-4o-mini-tts (accent, emotion, tone, etc.)
 }
 
 export class TTSService {
@@ -58,7 +69,9 @@ export class TTSService {
   }
 
   /**
-   * Convert text to speech using OpenAI TTS API with retry logic
+   * Convert text to speech using OpenAI TTS API with retry logic and streaming support
+   * The gpt-4o-mini-tts model supports chunk transfer encoding for lower latency.
+   * Audio chunks are streamed as they're generated, reducing perceived latency.
    * @param text The text to convert to speech (max 4096 characters)
    * @param options TTS configuration options
    * @returns Audio buffer in specified format
@@ -79,10 +92,11 @@ export class TTSService {
     }
 
     const config: TTSConfig = {
-      model: options.model || 'tts-1', // Fast model by default
-      voice: options.voice || 'nova', // Default voice
+      model: options.model || 'gpt-4o-mini-tts', // Latest streaming model by default
+      voice: options.voice || 'coral', // Default voice (optimized for new model)
       speed: options.speed || 1.0,
-      responseFormat: options.responseFormat || 'pcm' // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
+      responseFormat: options.responseFormat || 'pcm', // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
+      instructions: options.instructions // Optional: control tone, emotion, accent, etc.
     }
 
     log('Generating TTS:')
@@ -115,7 +129,8 @@ export class TTSService {
             input: text,
             voice: config.voice,
             speed: config.speed,
-            response_format: config.responseFormat
+            response_format: config.responseFormat,
+            ...(config.instructions && { instructions: config.instructions })
           })
         })
 
@@ -137,12 +152,54 @@ export class TTSService {
           throw new Error(`TTS API error: ${response.status} - ${errorText}`)
         }
 
-        const audioBuffer = Buffer.from(await response.arrayBuffer())
+        // Stream the response body chunks as they arrive
+        // This reduces perceived latency with gpt-4o-mini-tts model
+        log(`📡 Streaming audio response...`)
+        const chunks: Uint8Array[] = []
+        const reader = response.body?.getReader()
+
+        if (!reader) {
+          throw new Error('Response body stream not available')
+        }
+
+        let firstChunkTime: number | null = null
+        let chunkCount = 0
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+
+            if (done) break
+
+            if (firstChunkTime === null) {
+              firstChunkTime = Date.now()
+              const timeToFirstChunk = firstChunkTime - startTime
+              log(`⚡ First chunk received in ${timeToFirstChunk}ms`)
+            }
+
+            chunks.push(value)
+            chunkCount++
+          }
+        } finally {
+          reader.releaseLock()
+        }
+
+        // Combine all chunks into a single buffer
+        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+        const audioBuffer = Buffer.concat(
+          chunks.map((chunk) => Buffer.from(chunk)),
+          totalLength
+        )
+
         const duration = Date.now() - startTime
 
         log(`✅ TTS generated successfully`)
         log(`  Buffer size: ${audioBuffer.length} bytes`)
-        log(`  Duration: ${duration}ms`)
+        log(`  Total duration: ${duration}ms`)
+        log(`  Chunks received: ${chunkCount}`)
+        if (firstChunkTime) {
+          log(`  Time to first chunk: ${firstChunkTime - startTime}ms`)
+        }
         if (attempt > 1) {
           log(`  (succeeded on attempt ${attempt})`)
         }
