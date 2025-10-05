@@ -26,7 +26,9 @@ import {
   registerDiscordHandlers,
   registerBinaryHandlers,
   registerLoggerHandlers,
-  registerOpencodeHandlers
+  registerOpencodeHandlers,
+  registerVoiceHandlers,
+  cleanupVoiceServices
 } from './handlers'
 
 // Global instances
@@ -191,6 +193,7 @@ app.whenReady().then(async () => {
   registerBinaryHandlers(openCodeService)
   registerLoggerHandlers()
   registerOpencodeHandlers(toji, config)
+  registerVoiceHandlers()
 
   // Register Toji event forwarding (bridge business logic events to renderer)
   registerTojiEventForwarding(toji)
@@ -245,6 +248,15 @@ app.on('window-all-closed', async () => {
     } catch (error) {
       logCleanup('ERROR: Failed to stop OpenCode servers: %o', error)
     }
+  }
+
+  // Cleanup voice services
+  try {
+    logCleanup('Cleaning up voice services...')
+    await cleanupVoiceServices()
+    logCleanup('Voice services cleaned up successfully')
+  } catch (error) {
+    logCleanup('ERROR: Failed to cleanup voice services: %o', error)
   }
 
   if (process.platform !== 'darwin') {

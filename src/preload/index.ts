@@ -9,7 +9,8 @@ import {
   discordAPI,
   binaryAPI,
   loggerAPI,
-  opencodeAPI
+  opencodeAPI,
+  voiceApi
 } from './api'
 
 // Build the complete API object - clean and modular!
@@ -21,6 +22,7 @@ const api = {
   binary: binaryAPI,
   logger: loggerAPI,
   opencode: opencodeAPI,
+  voice: voiceApi,
   dialog: {
     showOpenDialog: (options: Electron.OpenDialogOptions) =>
       ipcRenderer.invoke('dialog:showOpenDialog', options)

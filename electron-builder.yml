@@ -12,14 +12,14 @@ files:
 asarUnpack:
   - resources/**
 extraResources:
-  - from: "resources/docker-services"
-    to: "docker-services"
+  - from: 'resources/docker-services'
+    to: 'docker-services'
     filter:
-      - "**/*"
-      - "!**/logs"
-      - "!**/tmp"
-      - "!**/__pycache__"
-      - "!**/*.pyc"
+      - '**/*'
+      - '!**/logs'
+      - '!**/tmp'
+      - '!**/__pycache__'
+      - '!**/*.pyc'
 win:
   executableName: toji3
 nsis:

@@ -6,7 +6,8 @@ import type {
   discordAPI,
   binaryAPI,
   loggerAPI,
-  opencodeAPI
+  opencodeAPI,
+  voiceApi
 } from './api'
 
 declare global {
@@ -20,6 +21,7 @@ declare global {
       binary: typeof binaryAPI
       logger: typeof loggerAPI
       opencode: typeof opencodeAPI
+      voice: typeof voiceApi
       dialog: {
         showOpenDialog: (
           options: Electron.OpenDialogOptions
@@ -33,6 +35,12 @@ declare global {
 export type { BinaryInfo, BinaryProgress } from './api/binary.api'
 export type { Project } from './api/project.api'
 export type { ApiKeySyncResult } from './api/opencode.api'
+export type {
+  VoiceServiceStatus,
+  TranscriptionResult,
+  VoiceInfo,
+  BuildState
+} from './api/voice.api'
 export type {
   PermissionConfig,
   PermissionLevel,
