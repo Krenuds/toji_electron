@@ -4,67 +4,20 @@
 
 **What**: Add Text-to-Speech so bot speaks AI responses in voice channels
 **How**: OpenAI TTS API → Opus format → Discord AudioPlayer
-**Why TTS First**: Simpler than STT, validates audio pipeline, immediate value
+**Why**: Simpler than STT, validates audio pipeline, immediate value
 
-## Answer to Your Questions
+## Core Concept
 
-### Q: Do we need to use OpenAI's official API?
+Use **OpenAI TTS API** (recommended):
+- Simple REST API, high quality
+- ~$0.015 per 1000 characters
+- 500ms-1s latency
 
-**Yes**, for Phase 2. Options:
+**Automatic routing**: When user has active voice session, bot speaks responses in voice channel AND sends text.
 
-1. **OpenAI TTS API** ✅ (Recommended)
-   - Simple REST API
-   - High quality
-   - ~$0.015 per 1000 characters
-   - 500ms-1s latency
+## Essential Code
 
-2. **OpenAI Realtime API** (Phase 3)
-   - For full voice conversations
-   - Requires WebSocket
-   - More complex but lower latency
-
-3. **Local TTS** (Not recommended)
-   - Lower quality
-   - Complex setup
-   - No cost but maintenance burden
-
-### Q: How does automatic routing work?
-
-**Yes, automatic!** Here's the logic:
-
-```typescript
-User types: @Toji "What's the weather?"
-    ↓
-Message handler detects @mention
-    ↓
-Check: Does user have active voice session?
-    ↓ YES
-Generate AI response (text)
-    ↓
-Convert text → TTS audio
-    ↓
-Play audio in voice channel
-    ↓
-Also send text to Discord channel
-```
-
-**Detection method**:
-```typescript
-// In message handler:
-const voiceSession = voiceModule.getUserSessionByChannel(message.channel.id)
-
-if (voiceSession) {
-  // Generate TTS and play in voice
-  const audio = await ttsService.textToSpeech(response)
-  await voiceModule.playTTS(voiceSession.id, audio)
-}
-```
-
-### Q: How do we wire this to Discord.js?
-
-**Three-step pipeline**:
-
-#### Step 1: Generate Audio (OpenAI)
+### 1. Generate Audio (OpenAI)
 ```typescript
 const response = await fetch('https://api.openai.com/v1/audio/speech', {
   method: 'POST',
@@ -73,99 +26,81 @@ const response = await fetch('https://api.openai.com/v1/audio/speech', {
     model: 'tts-1',
     voice: 'nova',
     input: 'Hello, I am your AI assistant!',
-    response_format: 'opus'  // Discord-friendly format
+    response_format: 'opus'  // Discord-friendly
   })
 })
-
 const audioBuffer = Buffer.from(await response.arrayBuffer())
 ```
 
-#### Step 2: Create Audio Resource (Discord.js)
+### 2. Create Audio Resource (Discord.js)
 ```typescript
 import { createAudioResource, StreamType } from '@discordjs/voice'
 import { Readable } from 'stream'
 
-// Convert buffer to stream
 const stream = Readable.from(audioBuffer)
-
-// Create resource
 const resource = createAudioResource(stream, {
-  inputType: StreamType.Opus  // Tell Discord it's Opus
+  inputType: StreamType.Opus
 })
 ```
 
-#### Step 3: Play in Voice Channel (Discord.js)
+### 3. Play in Voice Channel
 ```typescript
 import { createAudioPlayer } from '@discordjs/voice'
 
-// Create player (once per session)
 const player = createAudioPlayer()
-
-// Subscribe player to voice connection
 session.connection.subscribe(player)
-
-// Play the audio
 player.play(resource)
 ```
 
-## Official Documentation
+### 4. Voice Session Detection
+```typescript
+const voiceSession = voiceModule.getUserSessionByChannel(message.channel.id)
+if (voiceSession) {
+  const audio = await ttsService.textToSpeech(response)
+  await voiceModule.playTTS(voiceSession.id, audio)
+}
+```
 
-### OpenAI TTS API
-- **Docs**: https://platform.openai.com/docs/guides/text-to-speech
-- **API Reference**: https://platform.openai.com/docs/api-reference/audio/createSpeech
-- **Pricing**: https://openai.com/api/pricing/
-
-### Discord.js Voice
-- **Guide**: https://discordjs.guide/voice/
-- **API Docs**: https://discord.js.org/docs/packages/voice/main
-- **Audio Resources**: https://discord.js.org/docs/packages/voice/main/function/createAudioResource
-
-## Implementation Order
+## Implementation Steps
 
 ### Phase 2A: Basic TTS (2-3 days)
 
-1. **Day 1: TTS Service**
-   - [ ] Create `TTSService` class
-   - [ ] Implement OpenAI API calls
-   - [ ] Test TTS generation (save to file)
-   - [ ] Add error handling
+**Day 1: TTS Service**
+- [ ] Create `src/main/services/tts-service.ts`
+- [ ] Implement OpenAI API calls
+- [ ] Test TTS generation
+- [ ] Add error handling
 
-2. **Day 2: Discord Integration**
-   - [ ] Add `playTTS()` to VoiceModule
-   - [ ] Create AudioPlayer per session
-   - [ ] Test playback in Discord voice
-   - [ ] Handle audio formats (Opus)
+**Day 2: Discord Integration**
+- [ ] Add `playTTS()` to VoiceModule
+- [ ] Create AudioPlayer per session
+- [ ] Test playback in Discord
+- [ ] Handle Opus format
 
-3. **Day 3: Message Handler Integration**
-   - [ ] Detect voice sessions in message handler
-   - [ ] Auto-generate TTS for responses
-   - [ ] Test end-to-end flow
-   - [ ] Add configuration options
+**Day 3: Message Handler**
+- [ ] Detect voice sessions
+- [ ] Auto-generate TTS for responses
+- [ ] Test end-to-end flow
+- [ ] Add configuration
 
 ### Phase 2B: Polish (1-2 days)
+- [ ] Handle long text (>4096 chars)
+- [ ] Add playback queue
+- [ ] Implement stop/pause commands
+- [ ] Add voice selection options
 
-4. **Polish**
-   - [ ] Handle long text (>4096 chars)
-   - [ ] Add playback queue
-   - [ ] Implement stop/pause commands
-   - [ ] Add voice selection options
-
-## Key Files to Create/Modify
+## Key Files
 
 ### New Files
 ```
-src/main/services/
-└── tts-service.ts          # OpenAI TTS API integration
-
-SPEC/
-└── TTS_IMPLEMENTATION.md   # Detailed guide
+src/main/services/tts-service.ts    # OpenAI TTS integration
 ```
 
 ### Files to Modify
 ```
 src/plugins/discord/voice/VoiceModule.ts
   - Add playTTS() method
-  - Add getUserSessionByChannel() helper
+  - Add getUserSessionByChannel()
   - Add AudioPlayer management
 
 src/plugins/discord/DiscordPlugin.ts
@@ -178,34 +113,25 @@ src/main/index.ts
   - Pass to DiscordPlugin
 ```
 
-## Testing Plan
+## Testing
 
 ### Manual Tests
 
 1. **Basic Playback**
-   ```
-   1. Join voice: /voice join
-   2. Type: @Toji "Hello"
-   3. Verify: Bot speaks in voice channel
-   4. Verify: Text also appears in channel
-   ```
+   - Join voice: `/voice join`
+   - Type: `@Toji "Hello"`
+   - Verify: Bot speaks + text appears
 
 2. **No Voice Session**
-   ```
-   1. Don't join voice
-   2. Type: @Toji "Hello"
-   3. Verify: Text-only response (no TTS)
-   ```
+   - Don't join voice
+   - Type: `@Toji "Hello"`
+   - Verify: Text-only response
 
 3. **Long Response**
-   ```
-   1. Join voice: /voice join
-   2. Type: @Toji "Explain async/await in detail"
-   3. Verify: Bot speaks full response
-   ```
+   - Type: `@Toji "Explain async/await"`
+   - Verify: Full response spoken
 
-### Automated Tests (Future)
-
+### Test Code
 ```typescript
 describe('TTSService', () => {
   it('generates audio from text', async () => {
@@ -213,103 +139,54 @@ describe('TTSService', () => {
     expect(audio).toBeInstanceOf(Buffer)
     expect(audio.length).toBeGreaterThan(0)
   })
-
-  it('handles long text', async () => {
-    const longText = 'word '.repeat(1000)
-    const chunks = tts.splitText(longText)
-    expect(chunks.length).toBeGreaterThan(1)
-  })
 })
 ```
 
-## Cost Analysis
+## Cost Optimization
 
-### TTS Pricing
-- **Cost**: $15 per 1M characters
-- **Average response**: 500 characters = $0.0075
-- **100 responses/hour**: $0.75/hour
-- **Monthly (1000 hours)**: ~$750
+- **Cost**: $15 per 1M characters (~$0.0075 per 500-char response)
+- **Cache common responses**
+- **Limit response length** to ~1000 chars
+- **Rate limiting**: Max 100 requests/min
 
-**Much cheaper than Realtime API** ($0.30/min = $18/hour)
-
-### Optimization Strategies
-
-1. **Cache common responses**
-   ```typescript
-   const cache = new Map<string, Buffer>()
-
-   if (cache.has(text)) {
-     return cache.get(text)
-   }
-   ```
-
-2. **Limit response length**
-   ```typescript
-   if (text.length > 1000) {
-     text = text.substring(0, 1000) + '... (see text channel)'
-   }
-   ```
-
-3. **Rate limiting**
-   ```typescript
-   const limiter = new RateLimiter({
-     maxRequests: 100,
-     perMinutes: 1
-   })
-   ```
-
-## Audio Format Decision
-
-### Recommended: Opus
-
-**Why**:
-- Native Discord format
-- No conversion overhead
-- Smaller files
-- Optimized for voice
-
-**Request**:
 ```typescript
-{
-  response_format: 'opus'
+// Cache example
+const cache = new Map<string, Buffer>()
+if (cache.has(text)) return cache.get(text)
+
+// Length limit
+if (text.length > 1000) {
+  text = text.substring(0, 1000) + '... (see text channel)'
 }
 ```
 
-**Playback**:
-```typescript
-createAudioResource(stream, {
-  inputType: StreamType.Opus
-})
-```
+## Audio Format
 
-### Alternative: PCM
+**Use Opus** (recommended):
+- Native Discord format
+- No conversion overhead
+- Smaller files
+- Request: `response_format: 'opus'`
+- Playback: `inputType: StreamType.Opus`
 
-**When**: If you need to manipulate audio (volume, effects)
+## Documentation
 
-**Caveat**: Larger files, requires conversion
+- **OpenAI TTS**: https://platform.openai.com/docs/guides/text-to-speech
+- **API Reference**: https://platform.openai.com/docs/api-reference/audio/createSpeech
+- **Discord.js Voice**: https://discordjs.guide/voice/
+- **Voice API**: https://discord.js.org/docs/packages/voice/main
 
-## Next Steps
-
-1. **Read Full Plan**: `SPEC/PHASE2_TTS_PLAN.md`
-2. **Start Implementation**: Create `TTSService`
-3. **Test API**: Generate audio file
-4. **Integrate Discord**: Play audio in voice channel
-5. **Test E2E**: Full message → voice flow
-
-## Questions?
+## FAQ
 
 **Q: What about streaming?**
-A: Not needed for TTS. OpenAI TTS API returns complete audio file. Fast enough (<1s) for good UX.
+A: Not needed. API returns complete audio fast enough (<1s).
 
-**Q: What about real-time conversations?**
-A: That's Phase 3 (Realtime API). Phase 2 is text input → voice output only.
+**Q: Real-time conversations?**
+A: Phase 3 (Realtime API). Phase 2 is text input → voice output only.
 
 **Q: Can users interrupt?**
-A: Phase 2: No. Phase 3: Yes (with Realtime API's turn detection).
-
-**Q: What about multiple users?**
-A: Each user gets own session. Bot speaks to all in voice channel (Discord broadcasts).
+A: Phase 2: No. Phase 3: Yes (with turn detection).
 
 ---
 
-**Ready to implement?** Start with `src/main/services/tts-service.ts`! 🚀
+**Start**: Create `src/main/services/tts-service.ts`! 🚀
