@@ -208,6 +208,16 @@ export class DiscordPlugin extends EventEmitter {
                   await progressMessage.delete()
                 }
                 await sendDiscordResponse(message, fullText)
+
+                // If bot is in a voice channel in this guild, speak the response
+                if (this.voiceModule && message.guildId) {
+                  const sessions = this.voiceModule.getAllSessions()
+                  const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
+                  if (guildSession) {
+                    log('Speaking response in voice channel')
+                    await this.voiceModule.speak(guildSession.id, fullText)
+                  }
+                }
               },
 
               onError: async (error) => {
@@ -305,6 +315,16 @@ export class DiscordPlugin extends EventEmitter {
                 await progressMessage.delete()
               }
               await sendDiscordResponse(message, fullText)
+
+              // If bot is in a voice channel in this guild, speak the response
+              if (this.voiceModule && message.guildId) {
+                const sessions = this.voiceModule.getAllSessions()
+                const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
+                if (guildSession) {
+                  log('Speaking response in voice channel')
+                  await this.voiceModule.speak(guildSession.id, fullText)
+                }
+              }
             },
 
             onError: async (error) => {
