@@ -13,14 +13,15 @@ applyTo: '**'
 ### Implementation Steps
 
 1. Write code in small, incremental steps, use logs.
-2. `npm run format` - Format code
-3. `npm run lint` - Check/fix linting
-4. `npm run typecheck:node` - Verify types (main/preload)
-5. `npm run typecheck:web` - Verify types (renderer)
-6. Test the feature
-7. Iterate as needed
-8. `npm run graph` - Update architecture visualization
-9. Commit with conventional commit messages
+2. Use more logs.
+3. `npm run format` - Format code
+4. `npm run lint` - Check/fix linting
+5. `npm run typecheck:node` - Verify types (main/preload)
+6. `npm run typecheck:web` - Verify types (renderer)
+7. Test the feature
+8. Iterate as needed
+9. `npm run graph` - Update architecture visualization
+10. Commit with conventional commit messages
 
 ### After Completing
 

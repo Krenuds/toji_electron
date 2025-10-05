@@ -11,7 +11,7 @@ import {
   Field
 } from '@chakra-ui/react'
 import { LuX, LuSave, LuRotateCcw } from 'react-icons/lu'
-import { useAvailableModels } from '../../hooks/useAvailableModels'
+import { useAvailableModelsContext } from '../../hooks/useAvailableModelsContext'
 
 // Define types locally since we can't import from preload directly
 interface LocalPermissionConfig {
@@ -42,7 +42,7 @@ export function SettingsDrawer({
   const [saving, setSaving] = useState(false)
 
   // Load available models from OpenCode SDK
-  const { models: availableModels, loading: modelsLoading } = useAvailableModels()
+  const { models: availableModels, loading: modelsLoading } = useAvailableModelsContext()
 
   const isProjectMode = mode === 'project'
   const [permissions, setPermissions] = useState<LocalPermissionConfig>({

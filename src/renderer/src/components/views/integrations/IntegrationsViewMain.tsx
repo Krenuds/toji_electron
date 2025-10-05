@@ -25,7 +25,7 @@ import { FaDiscord } from 'react-icons/fa6'
 import { MainContentContainer, SectionDivider, StatusBox, ThemedInput } from '../../shared'
 import { useDiscord } from '../../../hooks/useDiscord'
 import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
-import { useAvailableModels } from '../../../hooks/useAvailableModels'
+import { useAvailableModelsContext } from '../../../hooks/useAvailableModelsContext'
 
 export function IntegrationsViewMain(): React.JSX.Element {
   const { status, hasToken, isConnecting, error, connect, disconnect, refreshStatus } = useDiscord()
@@ -42,7 +42,7 @@ export function IntegrationsViewMain(): React.JSX.Element {
     isLoading: isApiKeyLoading,
     error: apiKeyError
   } = useOpencodeApiKeys()
-  const { models: availableModels, refresh: refreshModels } = useAvailableModels()
+  const { models: availableModels, refresh: refreshModels } = useAvailableModelsContext()
   const [providerId, setProviderId] = useState('opencode')
   const [apiKeyInput, setApiKeyInput] = useState('')
   const [showApiKey, setShowApiKey] = useState(false)

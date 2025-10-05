@@ -4,6 +4,7 @@ import { LuMessageCircle, LuPlug } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
 import { AppViewProvider } from './contexts/AppViewContext'
+import { AvailableModelsProvider } from './providers/AvailableModelsProvider'
 import { ChatCoordinatorProvider } from './contexts/ChatCoordinatorContext'
 import { ViewType } from './types/ViewTypes'
 import { useViewCoordination } from './hooks/useViewCoordination'
@@ -85,9 +86,11 @@ function AppContent(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <AppViewProvider>
-      <ChatCoordinatorProvider>
-        <AppContent />
-      </ChatCoordinatorProvider>
+      <AvailableModelsProvider>
+        <ChatCoordinatorProvider>
+          <AppContent />
+        </ChatCoordinatorProvider>
+      </AvailableModelsProvider>
     </AppViewProvider>
   )
 }
