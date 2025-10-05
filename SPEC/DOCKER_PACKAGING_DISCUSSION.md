@@ -3,6 +3,7 @@
 ## Current Status (Phase 4 Complete)
 
 We have successfully:
+
 - ✅ Built Docker images for Whisper (STT) and Piper (TTS)
 - ✅ Started services and verified they're running healthy
 - ✅ Confirmed health endpoints responding correctly
@@ -15,6 +16,7 @@ We have successfully:
 ## The Packaging Problem
 
 ### Current State
+
 - Docker images exist **only on your local machine**
 - Services run via `docker compose` **manually**
 - Images total **~15GB** (Whisper: 13.6GB, Piper: 1.24GB)
@@ -25,18 +27,21 @@ We have successfully:
 #### 1. Docker Distribution Strategy
 
 **Option A: Require Docker Desktop**
+
 - Users must install Docker Desktop separately
 - App checks for Docker, provides install instructions if missing
 - Simplest implementation, but friction for users
 - Docker Desktop is free for personal use, paid for commercial
 
 **Option B: Bundle Docker Engine**
+
 - Package lightweight Docker runtime with app
 - More complex, larger installer
 - Better UX, no external dependencies
 - Licensing considerations
 
 **Option C: Pre-built Binaries (Whisper/Piper native)**
+
 - Abandon Docker, use native executables
 - Whisper: Package `faster-whisper` Python or use whisper.cpp
 - Piper: Package Piper native binary
@@ -47,24 +52,28 @@ We have successfully:
 If using Docker, how do users get the images?
 
 **Option A: Build on First Run**
+
 - Ship Dockerfiles + source code
 - Build images on user's machine first time
 - ~6 minute build time on first launch
 - Requires internet for base images
 
 **Option B: Pull from Registry**
+
 - Push images to Docker Hub or GitHub Container Registry
 - App pulls pre-built images on first run
 - Faster than building, but ~15GB download
 - Requires Docker registry account
 
 **Option C: Bundle Images in Installer**
+
 - Export images to `.tar` files
 - Include in Electron app package
 - Load images on first run
 - Massive installer size (~15GB+)
 
 **Option D: Hybrid Approach**
+
 - Ship minimal base, download models separately
 - First run: Pull images, download models
 - Reduces initial size, deferred download
@@ -75,13 +84,14 @@ Our `electron-builder.yml` currently has:
 
 ```yaml
 files:
-  - "!**/.vscode/*"
-  - "!src/*"
-  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
   # ... etc
 ```
 
 **Questions:**
+
 - Do we include `resources/docker-services/` in the packaged app?
 - How do we handle Docker Compose files?
 - Where do we store images or Dockerfiles?
@@ -90,28 +100,33 @@ files:
 #### 4. Platform-Specific Issues
 
 **Windows:**
+
 - Docker Desktop uses WSL2 or Hyper-V
 - Requires Windows 10/11 Pro or Home with WSL2
 - Our target users: Do they have this?
 
 **macOS:**
+
 - Docker Desktop available
 - M1/M2 Macs: ARM architecture considerations
 - Our images are built for x86_64
 
 **Linux:**
+
 - Docker Engine available natively
 - Easier to bundle, but multiple distros
 
 #### 5. Model Storage
 
 **Current Setup:**
+
 - Models cached in Docker volumes
 - Whisper small: ~461MB
 - Piper voice: ~45MB
 - **Total:** ~506MB per installation
 
 **Questions:**
+
 - Where do models live in packaged app?
 - Can users share models between installations?
 - How do we update models?
@@ -123,6 +138,7 @@ files:
 ### Proposal: "Docker Optional with Graceful Fallback"
 
 **Phase 1: Docker Detection**
+
 ```typescript
 // DockerServiceManager already has this
 enum DockerMode {
@@ -135,11 +151,13 @@ enum DockerMode {
 ```
 
 **Phase 2: Smart Packaging**
+
 1. **Ship Dockerfiles + Service Code** (already done)
    - Include `resources/docker-services/` in packaged app
    - ~50KB of code, negligible size
 
 2. **First Run Behavior:**
+
    ```
    User launches app
      ↓
@@ -158,14 +176,15 @@ enum DockerMode {
    ```
 
 3. **electron-builder.yml Updates:**
+
    ```yaml
    extraResources:
-     - from: "resources/docker-services"
-       to: "docker-services"
+     - from: 'resources/docker-services'
+       to: 'docker-services'
        filter:
-         - "**/*"
-         - "!**/logs"
-         - "!**/tmp"
+         - '**/*'
+         - '!**/logs'
+         - '!**/tmp'
    ```
 
 4. **Update DockerServiceManager:**
@@ -176,6 +195,7 @@ enum DockerMode {
    - Cache build status to avoid rebuilds
 
 **Benefits:**
+
 - ✅ No massive installer (still ~200MB base Electron app)
 - ✅ Users without Docker can use other features
 - ✅ First-time setup is clear and guided
@@ -183,6 +203,7 @@ enum DockerMode {
 - ✅ Respects user's choice (optional feature)
 
 **Drawbacks:**
+
 - ⚠️ Requires Docker Desktop (external dependency)
 - ⚠️ 6-minute build on first voice feature use
 - ⚠️ ~15GB disk space for images
@@ -195,23 +216,27 @@ enum DockerMode {
 ### If we abandon Docker:
 
 **Whisper STT:**
+
 - Use `whisper.cpp` (C++ implementation, much smaller)
 - OR package Python + faster-whisper as executable
 - Bundle small model (~461MB) in installer
 - Platform-specific binaries
 
 **Piper TTS:**
+
 - Piper has native executables available
 - Bundle `piper` binary + voice models (~45MB)
 - Platform-specific builds
 
 **Benefits:**
+
 - ✅ No Docker dependency
 - ✅ Smaller footprint (~500MB total)
 - ✅ Faster startup
 - ✅ Easier for users
 
 **Drawbacks:**
+
 - ⚠️ More implementation work
 - ⚠️ Platform-specific builds (Windows/Mac/Linux)
 - ⚠️ We lose the production-tested toji-services code
@@ -252,6 +277,7 @@ enum DockerMode {
 ## Next Steps (After Decision)
 
 ### If Keeping Docker:
+
 1. Update `electron-builder.yml` with `extraResources`
 2. Modify `DockerServiceManager` for packaged app paths
 3. Add UI for Docker setup flow
@@ -259,6 +285,7 @@ enum DockerMode {
 5. **Then** proceed to Phase 5 (HTTP clients)
 
 ### If Going Native:
+
 1. Research `whisper.cpp` integration
 2. Research Piper native binary packaging
 3. Design new service architecture

@@ -1,6 +1,41 @@
+# Build outputs
 out
 dist
+node_modules
+
+# Lock files
 pnpm-lock.yaml
+package-lock.json
+
+# Config files (don't format)
 LICENSE.md
 tsconfig.json
 tsconfig.*.json
+.eslintcache
+
+# Python cache and virtual environments
+.mypy_cache
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+
+# Docker service files (Python)
+resources/docker-services/**/*.pyc
+resources/docker-services/**/*.pyo
+resources/docker-services/**/__pycache__
+resources/docker-services/**/logs
+resources/docker-services/**/tmp
+
+# Logs
+*.log
+logs
+
+# IDE and temp files
+.DS_Store
+.vscode/settings.json
+.idea
+
+# Generated files
+.tsbuildinfo

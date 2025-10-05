@@ -11,6 +11,12 @@ out
 **/_cacache/
 **/_update-notifier-last-checked
 
+# Python cache and type checking
+.mypy_cache/
+**/.mypy_cache/
+**/__pycache__/
+*.pyc
+*.pyo
 
 # Claude local settings
 .claude/settings.local.json
