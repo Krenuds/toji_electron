@@ -92,8 +92,8 @@ For each module in `REVIEW_PRIORITIES.md`:
 
 ### ✅ Circular Dependencies: 0 found (FIXED!)
 
-**Previously:** 16 circular dependencies  
-**Status:** All eliminated on October 5, 2025  
+**Previously:** 16 circular dependencies
+**Status:** All eliminated on October 5, 2025
 **Solution:** Created interface files to break circular imports
 
 Run this to verify:
