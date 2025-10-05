@@ -11,7 +11,8 @@ import {
   AudioPlayerStatus,
   type AudioPlayer,
   VoiceConnectionStatus,
-  entersState
+  entersState,
+  StreamType
 } from '@discordjs/voice'
 import { Readable } from 'stream'
 
@@ -100,15 +101,23 @@ export class TTSPlayer {
       const stream = Readable.from(audioBuffer)
 
       // Create audio resource
-      log(`🎼 Creating audio resource`)
-      const resource = createAudioResource(stream)
+      // Piper returns WAV format, but Discord needs to know the input type
+      log(`🎼 Creating audio resource with inputType: Arbitrary (WAV)`)
+      const resource = createAudioResource(stream, {
+        inputType: StreamType.Arbitrary
+      })
 
       // Play the resource
       log(`▶️  Calling player.play()`)
       this.player.play(resource)
       log('✅ TTS audio now playing')
     } catch (error) {
-      log('❌ Error playing TTS audio:', error)
+      log('❌ Error playing TTS audio:')
+      log('Error details:', error)
+      if (error instanceof Error) {
+        log('Error message:', error.message)
+        log('Error stack:', error.stack)
+      }
       this.isPlaying = false
       log(`🔄 Attempting to play next item in queue`)
       this.playNext()
