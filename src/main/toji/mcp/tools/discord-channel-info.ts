@@ -115,6 +115,4 @@ export function registerDiscordChannelInfoTool(
       }
     }
   )
-
-  logger.debug('discord_get_channel_info tool registered successfully')
 }

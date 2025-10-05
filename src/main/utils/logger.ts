@@ -18,20 +18,22 @@ const colors = {
   reset: '\x1b[0m',
   dim: '\x1b[2m',
   cyan: '\x1b[36m',
+  teal: '\x1b[38;5;80m', // Teal for Toji
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   red: '\x1b[31m',
   magenta: '\x1b[35m',
   blue: '\x1b[34m',
   brightBlue: '\x1b[94m',
+  lightBlue: '\x1b[38;5;117m', // Light blue for Discord
   orange: '\x1b[38;5;208m'
 }
 
 // Namespace color mapping
 const namespaceColors: Record<string, string> = {
-  'toji:': colors.cyan,
-  'discord:': colors.magenta,
-  'mcp:': colors.blue,
+  'toji:': colors.teal,
+  'discord:': colors.lightBlue,
+  'mcp:': colors.magenta,
   voice: colors.green,
   whisper: colors.green,
   piper: colors.green,

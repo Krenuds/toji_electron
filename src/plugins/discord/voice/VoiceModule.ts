@@ -58,13 +58,24 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   async initialize(): Promise<void> {
     logger.debug('Initializing VoiceModule')
 
-    // Log dependency report for debugging
+    // Log compact dependency report for debugging
     try {
       const { generateDependencyReport } = await import('@discordjs/voice')
-      logger.debug('Voice Dependencies Report:')
-      logger.debug(generateDependencyReport())
+      const report = generateDependencyReport()
+
+      // Extract just the critical info (installed libraries)
+      const hasOpus = report.includes('@discordjs/opus:')
+      const hasSodium = report.includes('sodium-native:')
+      const hasFFmpeg = report.includes('FFmpeg') && !report.includes('not found')
+
+      logger.debug(
+        'Voice dependencies: opus=%s, sodium=%s, ffmpeg=%s',
+        hasOpus ? 'ok' : 'missing',
+        hasSodium ? 'ok' : 'missing',
+        hasFFmpeg ? 'ok' : 'missing'
+      )
     } catch (error) {
-      logger.debug('Failed to generate dependency report:', error)
+      logger.debug('Failed to check voice dependencies:', error)
     }
 
     // Initialize voice services (Docker + HTTP clients)

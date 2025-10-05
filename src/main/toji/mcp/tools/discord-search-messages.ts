@@ -165,6 +165,4 @@ export function registerDiscordSearchMessagesTool(
       }
     }
   )
-
-  logger.debug('discord_search_messages tool registered successfully')
 }

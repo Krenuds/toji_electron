@@ -1011,14 +1011,12 @@ export class Toji extends EventEmitter {
 
   // Get available model providers from OpenCode
   async getModelProviders(): Promise<ConfigProvidersResponse> {
-    logger.debug('[Toji] getModelProviders: Fetching available model providers from OpenCode')
     const client = this.getClient()
     if (!client) {
       logger.error('No client connected to server')
       throw new Error('Client not connected to server')
     }
 
-    logger.debug('[Toji] getModelProviders: Calling client.config.providers()')
     const raw = await client.config.providers()
     const response =
       raw && typeof raw === 'object' && 'data' in raw
@@ -1026,19 +1024,14 @@ export class Toji extends EventEmitter {
         : (raw as ConfigProvidersResponse)
 
     const providerCount = response?.providers?.length ?? 0
-    logger.debug('Retrieved %d model providers', providerCount)
-    logger.debug(`[Toji] getModelProviders: Retrieved ${providerCount} providers from OpenCode`)
-
-    if (response?.providers && Array.isArray(response.providers)) {
-      const providerIds = response.providers.map((p) => p.id)
-      logger.debug(`[Toji] getModelProviders: Provider IDs: [${providerIds.join(', ')}]`)
-
-      // Log model counts per provider
-      response.providers.forEach((provider) => {
-        const modelCount = Object.keys(provider.models || {}).length
-        logger.debug(`[Toji] getModelProviders: Provider '${provider.id}' has ${modelCount} models`)
-      })
-    }
+    const totalModels =
+      response?.providers?.reduce((sum, p) => sum + Object.keys(p.models || {}).length, 0) ?? 0
+    logger.debug(
+      'Retrieved %d providers with %d models: [%s]',
+      providerCount,
+      totalModels,
+      response?.providers?.map((p) => p.id).join(', ') || 'none'
+    )
 
     return {
       providers: Array.isArray(response?.providers) ? response.providers : [],

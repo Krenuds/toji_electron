@@ -94,6 +94,4 @@ export function registerDiscordUploadTool(
       }
     }
   )
-
-  logger.debug('discord_upload tool registered successfully')
 }

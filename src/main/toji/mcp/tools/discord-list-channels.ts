@@ -115,6 +115,4 @@ export function registerDiscordListChannelsTool(
       }
     }
   )
-
-  logger.debug('discord_list_channels tool registered successfully')
 }

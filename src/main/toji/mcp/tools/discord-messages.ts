@@ -98,6 +98,4 @@ export function registerDiscordMessageTool(
       }
     }
   )
-
-  logger.debug('discord_messages tool registered successfully')
 }

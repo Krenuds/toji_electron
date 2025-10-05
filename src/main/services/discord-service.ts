@@ -282,9 +282,20 @@ export class DiscordService {
       this.connectionState = 'disconnected'
     })
 
-    // Debug event
+    // Debug event - filter out verbose WebSocket handshake details
     this.client.on(Events.Debug, (info) => {
-      if (info.includes('Heartbeat') || info.includes('heartbeat')) return // Skip heartbeat spam
+      // Skip heartbeat spam
+      if (info.includes('Heartbeat') || info.includes('heartbeat')) return
+
+      // Skip verbose WebSocket connection handshake details
+      if (
+        info.includes('[WS => Manager]') ||
+        info.includes('[WS => Shard') ||
+        info.includes('Waiting for event')
+      ) {
+        return
+      }
+
       logger.debug(info)
     })
 

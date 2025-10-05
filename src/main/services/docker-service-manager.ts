@@ -196,7 +196,6 @@ export class DockerServiceManager {
   async buildImages(onProgress?: (message: string) => void): Promise<void> {
     const needsBuild = await this.needsBuild()
     if (!needsBuild) {
-      logger.debug('Images already built, skipping build')
       onProgress?.('Docker images already built')
       return
     }
