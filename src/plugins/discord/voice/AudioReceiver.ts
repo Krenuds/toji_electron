@@ -226,12 +226,13 @@ export class AudioReceiver {
     // Concatenate all PCM chunks
     const allPcmData = Buffer.concat(buffer.pcmData)
 
-    // Clear buffer for next speech
+    // Clear buffer for next speech (but keep subscription alive!)
     buffer.pcmData = []
     buffer.startTime = Date.now()
 
-    // Remove active subscription since we're done with this speech segment
-    this.activeSubscriptions.delete(userId)
+    // NOTE: We do NOT delete activeSubscriptions here!
+    // The subscription stays alive to capture future speech from this user.
+    // Only remove it when the stream ends or user leaves.
 
     // Process audio (stereo→mono, trim, resample, WAV wrap)
     const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
