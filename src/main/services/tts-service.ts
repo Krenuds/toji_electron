@@ -93,10 +93,12 @@ export class TTSService {
 
     const config: TTSConfig = {
       model: options.model || 'gpt-4o-mini-tts', // Latest streaming model by default
-      voice: options.voice || 'coral', // Default voice (optimized for new model)
+      voice: options.voice || 'ash', // Clear, articulate voice
       speed: options.speed || 1.0,
       responseFormat: options.responseFormat || 'pcm', // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
-      instructions: options.instructions // Optional: control tone, emotion, accent, etc.
+      instructions:
+        options.instructions ||
+        'Speak with a subtle Japanese accent, maintaining clarity and a calm tone.' // Japanese accent by default
     }
 
     log('Generating TTS:')
