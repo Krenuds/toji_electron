@@ -81,14 +81,17 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/index.ts" -> "src/main/toji/client-manager.ts"
     "src/main/toji/index.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/toji/config-manager.ts"
-    "src/main/toji/index.ts" -> "src/main/toji/mcp/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/index.ts" -> "src/main/toji/mcp/index.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project-initializer.ts"
     "src/main/toji/index.ts" -> "src/main/toji/server.ts"
     "src/main/toji/index.ts" -> "src/main/toji/sessions.ts"
     "src/main/toji/index.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/interfaces.ts" [label=<interfaces.ts> tooltip="interfaces.ts" URL="src/main/toji/interfaces.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/interfaces.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/interfaces.ts" -> "src/main/toji/project-initializer.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/mcp/index.ts" fillcolor="#ddfeff"] } } } }
-    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/mcp-manager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/mcp-manager.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-list-channels.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-messages.ts" [arrowhead="inv"]
@@ -98,7 +101,7 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/mcp-manager.ts" [label=<mcp-manager.ts> tooltip="mcp-manager.ts" URL="src/main/toji/mcp/mcp-manager.ts" fillcolor="#ddfeff"] } } } }
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/utils/path.ts"
-    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/clear-session.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts"
@@ -106,7 +109,7 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-messages.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-search-messages.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-upload.ts"
-    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/initialize-project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/initialize-project.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/list-sessions.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/read-session.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/types.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -123,7 +126,7 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-upload.ts" [label=<discord-upload.ts> tooltip="discord-upload.ts" URL="src/main/toji/mcp/tools/discord-upload.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/discord-upload.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/initialize-project.ts" [label=<initialize-project.ts> tooltip="initialize-project.ts" URL="src/main/toji/mcp/tools/initialize-project.ts" fillcolor="#ddfeff"] } } } } }
-    "src/main/toji/mcp/tools/initialize-project.ts" -> "src/main/toji/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "src/main/toji/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/list-sessions.ts" [label=<list-sessions.ts> tooltip="list-sessions.ts" URL="src/main/toji/mcp/tools/list-sessions.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/list-sessions.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/read-session.ts" [label=<read-session.ts> tooltip="read-session.ts" URL="src/main/toji/mcp/tools/read-session.ts" fillcolor="#ddfeff"] } } } } }
@@ -152,9 +155,10 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/DiscordPlugin.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/deploy-commands.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
-    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
-    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/SlashCommandModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/deploy-commands.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [style="dashed"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/SlashCommandModule.ts" [style="dashed"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/errors.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-info.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-lister.ts"
@@ -162,62 +166,63 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-message-searcher.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-uploader.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/messages.ts"
-    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/admin.ts" [label=<admin.ts> tooltip="admin.ts" URL="src/plugins/discord/commands/admin.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/admin.ts" -> "src/plugins/discord/constants.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/clear.ts" [label=<clear.ts> tooltip="clear.ts" URL="src/plugins/discord/commands/clear.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/clear.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/commands/clear.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/utils/errors.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/help.ts" [label=<help.ts> tooltip="help.ts" URL="src/plugins/discord/commands/help.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/help.ts" -> "src/plugins/discord/constants.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/init.ts" [label=<init.ts> tooltip="init.ts" URL="src/plugins/discord/commands/init.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/init.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/commands/init.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/commands/init.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/init.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/project.ts" [label=<project.ts> tooltip="project.ts" URL="src/plugins/discord/commands/project.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/project.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/commands/project.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/commands/project.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/project.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/voice.ts" [label=<voice.ts> tooltip="voice.ts" URL="src/plugins/discord/commands/voice.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/voice.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
-    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/constants.ts" [label=<constants.ts> tooltip="constants.ts" URL="src/plugins/discord/constants.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/deploy-commands.ts" [label=<deploy-commands.ts> tooltip="deploy-commands.ts" URL="src/plugins/discord/deploy-commands.ts" fillcolor="#ddfeff"] } } }
     "src/plugins/discord/deploy-commands.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/admin.ts" [style="dashed"]
-    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/clear.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/clear.ts" [style="dashed"]
     "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/help.ts" [style="dashed"]
-    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/init.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
-    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
-    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/voice.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/init.ts" [style="dashed"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/project.ts" [style="dashed"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/voice.ts" [style="dashed"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/interfaces.ts" [label=<interfaces.ts> tooltip="interfaces.ts" URL="src/plugins/discord/interfaces.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/CategoryManager.ts" [label=<CategoryManager.ts> tooltip="CategoryManager.ts" URL="src/plugins/discord/modules/CategoryManager.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/modules/CategoryManager.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/DiscordProjectManager.ts" [label=<DiscordProjectManager.ts> tooltip="DiscordProjectManager.ts" URL="src/plugins/discord/modules/DiscordProjectManager.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/utils/logger.ts"
-    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/utils/state.ts"
     "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/modules/CategoryManager.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/SlashCommandModule.ts" [label=<SlashCommandModule.ts> tooltip="SlashCommandModule.ts" URL="src/plugins/discord/modules/SlashCommandModule.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/admin.ts" [style="dashed"]
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/clear.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/clear.ts" [style="dashed"]
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/help.ts" [style="dashed"]
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/init.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/voice.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/init.ts" [style="dashed"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/project.ts" [style="dashed"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/voice.ts" [style="dashed"]
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/constants.ts"
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/utils/permissions.ts"
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
-    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/errors.ts" [label=<errors.ts> tooltip="errors.ts" URL="src/plugins/discord/utils/errors.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/errors.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/utils/errors.ts" -> "src/plugins/discord/constants.ts"
@@ -253,7 +258,7 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/services/voice-service-manager.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/constants.ts" [style="dashed"]
-    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/AudioReceiver.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/TTSPlayer.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/types.ts" [arrowhead="onormal" penwidth="1.0"]
