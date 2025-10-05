@@ -204,13 +204,25 @@ export function getAudioDuration(
  * @returns Object with WAV data and duration, or null if too short
  */
 export function processDiscordAudio(
-  stereoData: Buffer,
+  pcmData: Buffer,
   minDuration: number = 1.0
 ): { wavData: Buffer; duration: number } | null {
-  log(`Processing Discord audio: ${stereoData.length} bytes`)
+  if (pcmData.length === 0) {
+    return null
+  }
+
+  // Discord sends stereo PCM at 48kHz, 16-bit (2 bytes per sample)
+  // Format: L1 R1 L2 R2 L3 R3... (4 bytes per stereo sample)
+  const bytesPerSample = 4 // 2 channels * 2 bytes
+  const sampleRate = 48000
+  const inputDurationSec = pcmData.length / (sampleRate * bytesPerSample)
+
+  log(`Processing Discord audio: ${pcmData.length} bytes`)
+  log(`  - Expected format: 48kHz stereo 16-bit PCM`)
+  log(`  - Input duration (from size): ${inputDurationSec.toFixed(3)}s`)
 
   // 1. Convert stereo to mono
-  const monoData = stereoToMono(stereoData)
+  const monoData = stereoToMono(pcmData)
 
   // 2. Trim silence
   const trimmedData = trimSilence(monoData, 0.005)

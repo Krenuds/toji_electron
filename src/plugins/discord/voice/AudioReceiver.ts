@@ -139,6 +139,7 @@ export class AudioReceiver {
     }
 
     const buffer = this.userBuffers.get(userId)!
+    let chunkCount = 0
 
     stream.on('data', (chunk: Buffer) => {
       // Ignore if bot's audio
@@ -146,8 +147,24 @@ export class AudioReceiver {
         return
       }
 
+      chunkCount++
+
       // Discord sends Opus frames, but @discordjs/voice decodes to PCM
       // PCM format: 48kHz, 16-bit signed, stereo
+      // Each Opus frame is typically 20ms of audio = 3840 bytes at 48kHz stereo 16-bit
+      // (48000 samples/sec * 0.02 sec * 2 channels * 2 bytes/sample = 3840 bytes)
+
+      if (chunkCount === 1) {
+        log(`First chunk from user ${userId}: ${chunk.length} bytes`)
+      } else if (chunkCount % 50 === 0) {
+        // Log every 50th chunk to avoid spam
+        const totalBytes = buffer.pcmData.reduce((sum, c) => sum + c.length, 0)
+        const durationMs = (totalBytes / (48000 * 2 * 2)) * 1000 // bytes / (samples/sec * channels * bytes/sample)
+        log(
+          `User ${userId}: ${chunkCount} chunks, ${totalBytes} bytes total (~${durationMs.toFixed(0)}ms)`
+        )
+      }
+
       buffer.pcmData.push(chunk)
       buffer.lastPacketTime = Date.now()
 
@@ -218,7 +235,16 @@ export class AudioReceiver {
       return
     }
 
-    log(`Processing audio for user ${userId}: ${buffer.pcmData.length} chunks`)
+    const totalBytes = buffer.pcmData.reduce((sum, chunk) => sum + chunk.length, 0)
+    const expectedDurationMs = (totalBytes / (48000 * 2 * 2)) * 1000
+    const wallClockDurationMs = Date.now() - buffer.startTime
+
+    log(`Processing audio for user ${userId}:`)
+    log(`  - Chunks: ${buffer.pcmData.length}`)
+    log(`  - Total bytes: ${totalBytes}`)
+    log(`  - Expected duration (from bytes): ${expectedDurationMs.toFixed(2)}ms`)
+    log(`  - Wall clock duration: ${wallClockDurationMs}ms`)
+    log(`  - Average chunk size: ${(totalBytes / buffer.pcmData.length).toFixed(0)} bytes`)
 
     // Cancel timers
     this.cancelUserTimers(userId)
