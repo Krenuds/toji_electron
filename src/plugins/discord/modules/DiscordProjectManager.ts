@@ -1,7 +1,7 @@
 import type { Toji } from '../../../main/toji'
 import type { ToolEvent } from '../../../main/toji/types'
 import type { Client, TextChannel } from 'discord.js'
-import type { DiscordModule } from '../DiscordPlugin'
+import type { DiscordModule } from '../interfaces'
 import { CategoryManager } from './CategoryManager'
 import { createLogger } from '../../../main/utils/logger'
 import { loadState, saveState } from '../utils/state'

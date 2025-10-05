@@ -13,7 +13,7 @@ import {
 import type { VoiceBasedChannel, Client, EmbedBuilder } from 'discord.js'
 import { createLogger } from '../../../main/utils/logger'
 import type { VoiceSession, VoiceSessionConfig } from './types'
-import type { DiscordModule } from '../DiscordPlugin'
+import type { DiscordModule } from '../interfaces'
 import { AudioReceiver, DEFAULT_AUDIO_CONFIG } from './AudioReceiver'
 import { TTSPlayer } from './TTSPlayer'
 import { getVoiceServiceManager } from '../../../main/services/voice-service-manager'

@@ -1,6 +1,6 @@
 import { Collection, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
-import type { DiscordModule } from '../DiscordPlugin'
+import type { DiscordModule } from '../interfaces'
 import type { DiscordProjectManager } from './DiscordProjectManager'
 import type { VoiceModule } from '../voice/VoiceModule'
 import { createLogger } from '../../../main/utils/logger'

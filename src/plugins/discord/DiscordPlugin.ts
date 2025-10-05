@@ -19,20 +19,12 @@ import { createDiscordChannelLister } from './utils/mcp-channel-lister'
 import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
 import { DISCORD_COLORS } from './constants'
+import type { DiscordModule, DiscordPluginEvents, IDiscordPlugin } from './interfaces'
 
 const logger = createLogger('discord:plugin')
 
-export interface DiscordPluginEvents {
-  message: [message: Message]
-  ready: [client: Client]
-  error: [error: Error]
-  interaction: [interaction: Interaction]
-}
-
-export interface DiscordModule {
-  initialize(plugin?: DiscordPlugin): void | Promise<void>
-  cleanup(): void
-}
+// Re-export for backward compatibility
+export type { DiscordPluginEvents, DiscordModule, IDiscordPlugin }
 
 /**
  * Discord Plugin - Handles Discord business logic as a consumer of the Toji API
