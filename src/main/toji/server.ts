@@ -87,9 +87,7 @@ export class ServerManager {
     }
 
     try {
-      logger.debug('========== SPAWNING SERVER ==========')
-      logger.debug('Spawning OpenCode server from directory: %s', targetDirectory)
-      logger.debug('Server options config: %o', config)
+      logger.debug('Spawning OpenCode server for %s on port %d', targetDirectory, port)
       const server = await this.spawnOpenCodeServer(serverOptions)
       logger.debug(
         'Server created successfully at %s for directory %s',
@@ -427,10 +425,6 @@ export class ServerManager {
     }
 
     const configContent = opts.config ?? {}
-    logger.debug('========== SPAWN OPENCODE PROCESS ==========')
-    logger.debug('Working directory: %s', opts.cwd)
-    logger.debug('Config being passed via OPENCODE_CONFIG_CONTENT: %o', configContent)
-    logger.debug('Config JSON: %s', JSON.stringify(configContent))
 
     const proc = spawn(
       binaryPath,

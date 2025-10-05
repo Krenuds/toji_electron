@@ -38,16 +38,15 @@ export async function deployCommands(
   for (const command of commandModules) {
     if ('data' in command && 'execute' in command) {
       commands.push(command.data.toJSON())
-      logger.debug('Loaded command: %s', command.data.name)
     }
   }
+
+  logger.debug('Loaded %d slash commands, deploying...', commands.length)
 
   // Construct and prepare an instance of the REST module
   const rest = new REST().setToken(token)
 
   try {
-    logger.debug('Started refreshing %d application (/) commands', commands.length)
-
     // Deploy commands
     if (guildId) {
       // Guild-specific commands (instant update, good for testing)

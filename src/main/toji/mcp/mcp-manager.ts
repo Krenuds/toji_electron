@@ -301,44 +301,42 @@ export class McpManager {
         getCurrentProjectPath: this.getCurrentProjectPathFn,
         sessionManager: this.sessionManager
       })
-      logger.debug('Registered session tools for new server: %s', normalized)
     }
 
-    // Register Discord message tool if fetcher is available
+    const tools: string[] = ['read-session', 'list-sessions']
+
+    // Register Discord tools if available
     if (this.messageFetcher) {
       registerDiscordMessageTool(server, this.messageFetcher)
-      logger.debug('Registered Discord message tool for new server: %s', normalized)
+      tools.push('discord-messages')
     }
 
-    // Register Discord upload tool if uploader is available
     if (this.fileUploader) {
       registerDiscordUploadTool(server, this.fileUploader)
-      logger.debug('Registered Discord upload tool for new server: %s', normalized)
+      tools.push('discord-upload')
     }
 
-    // Register Discord list channels tool if lister is available
     if (this.channelLister) {
       registerDiscordListChannelsTool(server, this.channelLister)
-      logger.debug('Registered Discord list channels tool for new server: %s', normalized)
+      tools.push('discord-list-channels')
     }
 
-    // Register Discord channel info tool if provider is available
     if (this.channelInfoProvider) {
       registerDiscordChannelInfoTool(server, this.channelInfoProvider)
-      logger.debug('Registered Discord channel info tool for new server: %s', normalized)
+      tools.push('discord-channel-info')
     }
 
-    // Register Discord search messages tool if searcher is available
     if (this.messageSearcher) {
       registerDiscordSearchMessagesTool(server, this.messageSearcher)
-      logger.debug('Registered Discord search messages tool for new server: %s', normalized)
+      tools.push('discord-search')
     }
 
-    // Register initialize project tool if Toji instance available
     if (this.getTojiFn) {
       registerInitializeProjectTool(server, { getToji: this.getTojiFn })
-      logger.debug('Registered initialize project tool for new server: %s', normalized)
+      tools.push('init-project')
     }
+
+    logger.debug('Registered %d MCP tools for %s: [%s]', tools.length, normalized, tools.join(', '))
 
     // Create Express app
     const app = express()
