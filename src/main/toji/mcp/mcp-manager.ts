@@ -24,7 +24,7 @@ import { registerReadSessionTool } from './tools/read-session'
 import { registerListSessionsTool } from './tools/list-sessions'
 import { registerInitializeProjectTool } from './tools/initialize-project'
 import type { SessionManager } from '../sessions'
-import type { Toji } from '../index'
+import type { ITojiCore } from '../interfaces'
 import { createLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
 import { promises as fs, existsSync } from 'fs'
@@ -46,7 +46,7 @@ export class McpManager {
   private getClientFn?: () => OpencodeClient | null
   private getCurrentProjectPathFn?: () => string | undefined
   private sessionManager?: SessionManager
-  private getTojiFn?: () => Toji | null
+  private getTojiFn?: () => ITojiCore | null
   private portCounter = BASE_PORT
 
   constructor() {
@@ -56,7 +56,7 @@ export class McpManager {
   /**
    * Set Toji instance getter for project initialization tool
    */
-  setTojiInstance(getToji: () => Toji | null): void {
+  setTojiInstance(getToji: () => ITojiCore | null): void {
     logger.debug('Toji instance configured for MCP tools')
     this.getTojiFn = getToji
 

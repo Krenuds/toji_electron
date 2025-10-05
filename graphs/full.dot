@@ -1,0 +1,658 @@
+strict digraph "dependency-cruiser output"{
+    rankdir="LR" splines="true" overlap="false" nodesep="0.16" ranksep="0.18" fontname="Helvetica-bold" fontsize="9" style="rounded,bold,filled" fillcolor="#ffffff" compound="true"
+    node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
+    edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
+
+    "child_process" [label=<child_process> tooltip="child_process" URL="https://nodejs.org/api/child_process.html" color="grey" fontcolor="grey"]
+    "events" [label=<events> tooltip="events" URL="https://nodejs.org/api/events.html" color="grey" fontcolor="grey"]
+    "fs" [label=<fs> tooltip="fs" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_fs" {label="fs" "fs/promises" [label=<promises> tooltip="promises" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"] }
+    "http" [label=<http> tooltip="http" URL="https://nodejs.org/api/http.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@chakra-ui" {label="@chakra-ui" "node_modules/@chakra-ui/react" [label=<react> tooltip="react" URL="https://www.npmjs.com/package/@chakra-ui/react" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@discordjs" {label="@discordjs" "node_modules/@discordjs/voice" [label=<voice> tooltip="voice" URL="https://www.npmjs.com/package/@discordjs/voice" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@electron-toolkit" {label="@electron-toolkit" "node_modules/@electron-toolkit/preload" [label=<preload> tooltip="preload" URL="https://www.npmjs.com/package/@electron-toolkit/preload" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@electron-toolkit" {label="@electron-toolkit" "node_modules/@electron-toolkit/utils" [label=<utils> tooltip="utils" URL="https://www.npmjs.com/package/@electron-toolkit/utils" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@ffmpeg-installer" {label="@ffmpeg-installer" "node_modules/@ffmpeg-installer/ffmpeg" [label=<ffmpeg> tooltip="ffmpeg" URL="https://www.npmjs.com/package/@ffmpeg-installer/ffmpeg" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@modelcontextprotocol" {label="@modelcontextprotocol" "node_modules/@modelcontextprotocol/sdk" [label=<sdk> tooltip="sdk" URL="https://www.npmjs.com/package/@modelcontextprotocol/sdk" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" subgraph "cluster_node_modules/@opencode-ai" {label="@opencode-ai" "node_modules/@opencode-ai/sdk" [label=<sdk> tooltip="sdk" URL="https://www.npmjs.com/package/@opencode-ai/sdk" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] } }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/adm-zip" [label=<adm-zip> tooltip="adm-zip" URL="https://www.npmjs.com/package/adm-zip" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/discord.js" [label=<discord.js> tooltip="discord.js" URL="https://www.npmjs.com/package/discord.js" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/electron" [label=<electron> tooltip="electron" URL="https://www.npmjs.com/package/electron" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/electron-store" [label=<electron-store> tooltip="electron-store" URL="https://www.npmjs.com/package/electron-store" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/electron-window-state" [label=<electron-window-state> tooltip="electron-window-state" URL="https://www.npmjs.com/package/electron-window-state" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/express" [label=<express> tooltip="express" URL="https://www.npmjs.com/package/express" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/prism-media" [label=<prism-media> tooltip="prism-media" URL="https://www.npmjs.com/package/prism-media" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/react" [label=<react> tooltip="react" URL="https://www.npmjs.com/package/react" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/react-dom" [label=<react-dom> tooltip="react-dom" URL="https://www.npmjs.com/package/react-dom" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/react-icons" [label=<react-icons> tooltip="react-icons" URL="https://www.npmjs.com/package/react-icons" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/vite" [label=<vite> tooltip="vite" URL="https://www.npmjs.com/package/vite" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    subgraph "cluster_node_modules" {label="node_modules" "node_modules/zod" [label=<zod> tooltip="zod" URL="https://www.npmjs.com/package/zod" shape="box3d" fillcolor="#c40b0a1a" fontcolor="#c40b0a"] }
+    "os" [label=<os> tooltip="os" URL="https://nodejs.org/api/os.html" color="grey" fontcolor="grey"]
+    "path" [label=<path> tooltip="path" URL="https://nodejs.org/api/path.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_resources" {label="resources" "resources/toji.png" [label=<toji.png> tooltip="toji.png" URL="resources/toji.png" ] }
+    subgraph "cluster_resources" {label="resources" "resources/toji_title.png" [label=<toji_title.png> tooltip="toji_title.png" URL="resources/toji_title.png" ] }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/config" {label="config" "src/main/config/ConfigProvider.ts" [label=<ConfigProvider.ts> tooltip="ConfigProvider.ts" URL="src/main/config/ConfigProvider.ts" fillcolor="#ddfeff"] } } }
+    "src/main/config/ConfigProvider.ts" -> "src/main/toji/config.ts"
+    "src/main/config/ConfigProvider.ts" -> "node_modules/electron-store" [penwidth="1.0"]
+    "src/main/config/ConfigProvider.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/binary.handlers.ts" [label=<binary.handlers.ts> tooltip="binary.handlers.ts" URL="src/main/handlers/binary.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/binary.handlers.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/binary.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/discord.handlers.ts" [label=<discord.handlers.ts> tooltip="discord.handlers.ts" URL="src/main/handlers/discord.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/discord.handlers.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/discord.handlers.ts" -> "src/main/services/discord-service.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/discord.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/handlers/index.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/index.ts" -> "src/main/handlers/binary.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/discord.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/logger.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/opencode.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/project.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/toji-events.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/toji.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/voice.handlers.ts" [arrowhead="inv"]
+    "src/main/handlers/index.ts" -> "src/main/handlers/window.handlers.ts" [arrowhead="inv"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/logger.handlers.ts" [label=<logger.handlers.ts> tooltip="logger.handlers.ts" URL="src/main/handlers/logger.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/logger.handlers.ts" -> "src/main/utils/logger.ts"
+    "src/main/handlers/logger.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/opencode.handlers.ts" [label=<opencode.handlers.ts> tooltip="opencode.handlers.ts" URL="src/main/handlers/opencode.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/opencode.handlers.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/opencode.handlers.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/opencode.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/project.handlers.ts" [label=<project.handlers.ts> tooltip="project.handlers.ts" URL="src/main/handlers/project.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/project.handlers.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/project.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/toji-events.handlers.ts" [label=<toji-events.handlers.ts> tooltip="toji-events.handlers.ts" URL="src/main/handlers/toji-events.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/toji-events.handlers.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/toji-events.handlers.ts" -> "src/main/utils/logger.ts"
+    "src/main/handlers/toji-events.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/toji.handlers.ts" [label=<toji.handlers.ts> tooltip="toji.handlers.ts" URL="src/main/handlers/toji.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/toji.handlers.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/toji.handlers.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/toji.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/voice.handlers.ts" [label=<voice.handlers.ts> tooltip="voice.handlers.ts" URL="src/main/handlers/voice.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/voice.handlers.ts" -> "src/main/services/piper-client.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/voice.handlers.ts" -> "src/main/services/voice-service-manager.ts"
+    "src/main/handlers/voice.handlers.ts" -> "src/main/services/whisper-client.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/handlers/voice.handlers.ts" -> "src/main/utils/logger.ts"
+    "src/main/handlers/voice.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/window.handlers.ts" [label=<window.handlers.ts> tooltip="window.handlers.ts" URL="src/main/handlers/window.handlers.ts" fillcolor="#ddfeff"] } } }
+    "src/main/handlers/window.handlers.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" "src/main/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/index.ts" fillcolor="#ddfeff"] } }
+    "src/main/index.ts" -> "resources/toji.png"
+    "src/main/index.ts" -> "src/main/config/ConfigProvider.ts"
+    "src/main/index.ts" -> "src/main/handlers/index.ts"
+    "src/main/index.ts" -> "src/main/services/discord-service.ts"
+    "src/main/index.ts" -> "src/main/services/opencode-service.ts"
+    "src/main/index.ts" -> "src/main/toji/index.ts"
+    "src/main/index.ts" -> "src/main/utils/logger.ts"
+    "src/main/index.ts" -> "node_modules/@electron-toolkit/utils" [penwidth="1.0"]
+    "src/main/index.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "src/main/index.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/main/index.ts" -> "node_modules/electron-window-state" [penwidth="1.0"]
+    "src/main/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/index.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/main/index.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/discord-service.ts" [label=<discord-service.ts> tooltip="discord-service.ts" URL="src/main/services/discord-service.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/discord-service.ts" -> "src/plugins/discord/DiscordPlugin.ts" [style="dashed"]
+    "src/main/services/discord-service.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/services/discord-service.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/services/discord-service.ts" -> "src/main/utils/logger.ts"
+    "src/main/services/discord-service.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/docker-service-manager.ts" [label=<docker-service-manager.ts> tooltip="docker-service-manager.ts" URL="src/main/services/docker-service-manager.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/docker-service-manager.ts" -> "src/main/utils/logger.ts"
+    "src/main/services/docker-service-manager.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "src/main/services/docker-service-manager.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/main/services/docker-service-manager.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/main/services/docker-service-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "src/main/services/docker-service-manager.ts" -> "util" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/opencode-service.ts" [label=<opencode-service.ts> tooltip="opencode-service.ts" URL="src/main/services/opencode-service.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/opencode-service.ts" -> "src/main/utils/path.ts"
+    "src/main/services/opencode-service.ts" -> "node_modules/adm-zip" [penwidth="1.0" style="dashed"]
+    "src/main/services/opencode-service.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/services/opencode-service.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/main/services/opencode-service.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "src/main/services/opencode-service.ts" -> "stream" [style="dashed" penwidth="1.0"]
+    "src/main/services/opencode-service.ts" -> "stream/promises" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/piper-client.ts" [label=<piper-client.ts> tooltip="piper-client.ts" URL="src/main/services/piper-client.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/piper-client.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/voice-service-manager.ts" [label=<voice-service-manager.ts> tooltip="voice-service-manager.ts" URL="src/main/services/voice-service-manager.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/voice-service-manager.ts" -> "src/main/utils/logger.ts"
+    "src/main/services/voice-service-manager.ts" -> "src/main/services/docker-service-manager.ts"
+    "src/main/services/voice-service-manager.ts" -> "src/main/services/piper-client.ts"
+    "src/main/services/voice-service-manager.ts" -> "src/main/services/whisper-client.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/whisper-client.ts" [label=<whisper-client.ts> tooltip="whisper-client.ts" URL="src/main/services/whisper-client.ts" fillcolor="#ddfeff"] } } }
+    "src/main/services/whisper-client.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/agents-template.ts" [label=<agents-template.ts> tooltip="agents-template.ts" URL="src/main/toji/agents-template.ts" fillcolor="#ddfeff"] } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/client-manager.ts" [label=<client-manager.ts> tooltip="client-manager.ts" URL="src/main/toji/client-manager.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/client-manager.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/client-manager.ts" -> "src/main/utils/path.ts"
+    "src/main/toji/client-manager.ts" -> "src/main/toji/server.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/client-manager.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/config-manager.ts" [label=<config-manager.ts> tooltip="config-manager.ts" URL="src/main/toji/config-manager.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/config-manager.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/config-manager.ts" -> "src/main/toji/agents-template.ts"
+    "src/main/toji/config-manager.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/config-manager.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/config-manager.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/toji/config-manager.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/main/toji/config-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/config.ts" [label=<config.ts> tooltip="config.ts" URL="src/main/toji/config.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/config.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/index.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/index.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/index.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/index.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/client-manager.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/index.ts" -> "src/main/toji/config-manager.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/mcp/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/index.ts" -> "src/main/toji/project.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/project-initializer.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/server.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/sessions.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/index.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/index.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" style="dashed" fontcolor="red" color="red"]
+    "src/main/toji/index.ts" -> "events" [style="dashed" penwidth="1.0"]
+    "src/main/toji/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/mcp/index.ts" fillcolor="#ddfeff"] } } } }
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/mcp-manager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-list-channels.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-messages.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-search-messages.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-upload.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/mcp-manager.ts" [label=<mcp-manager.ts> tooltip="mcp-manager.ts" URL="src/main/toji/mcp/mcp-manager.ts" fillcolor="#ddfeff"] } } } }
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/utils/path.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/clear-session.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-list-channels.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-messages.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-search-messages.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-upload.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/initialize-project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/list-sessions.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/read-session.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "node_modules/express" [penwidth="1.0"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "http" [style="dashed" penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/mcp-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/clear-session.ts" [label=<clear-session.ts> tooltip="clear-session.ts" URL="src/main/toji/mcp/tools/clear-session.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/clear-session.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/tools/clear-session.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/clear-session.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/clear-session.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-channel-info.ts" [label=<discord-channel-info.ts> tooltip="discord-channel-info.ts" URL="src/main/toji/mcp/tools/discord-channel-info.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-channel-info.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/tools/discord-channel-info.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/discord-channel-info.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-list-channels.ts" [label=<discord-list-channels.ts> tooltip="discord-list-channels.ts" URL="src/main/toji/mcp/tools/discord-list-channels.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-list-channels.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/tools/discord-list-channels.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/discord-list-channels.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-messages.ts" [label=<discord-messages.ts> tooltip="discord-messages.ts" URL="src/main/toji/mcp/tools/discord-messages.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-messages.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/tools/discord-messages.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/discord-messages.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-search-messages.ts" [label=<discord-search-messages.ts> tooltip="discord-search-messages.ts" URL="src/main/toji/mcp/tools/discord-search-messages.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-search-messages.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/tools/discord-search-messages.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/discord-search-messages.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-upload.ts" [label=<discord-upload.ts> tooltip="discord-upload.ts" URL="src/main/toji/mcp/tools/discord-upload.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-upload.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/mcp/tools/discord-upload.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/discord-upload.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/initialize-project.ts" [label=<initialize-project.ts> tooltip="initialize-project.ts" URL="src/main/toji/mcp/tools/initialize-project.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "src/main/toji/index.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "src/main/toji/mcp/tools/initialize-project.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/list-sessions.ts" [label=<list-sessions.ts> tooltip="list-sessions.ts" URL="src/main/toji/mcp/tools/list-sessions.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/list-sessions.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/tools/list-sessions.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/list-sessions.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/list-sessions.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/read-session.ts" [label=<read-session.ts> tooltip="read-session.ts" URL="src/main/toji/mcp/tools/read-session.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/read-session.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/tools/read-session.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/read-session.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/mcp/tools/read-session.ts" -> "node_modules/zod" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/types.ts" [label=<types.ts> tooltip="types.ts" URL="src/main/toji/mcp/types.ts" fillcolor="#ddfeff"] } } } }
+    "src/main/toji/mcp/types.ts" -> "node_modules/@modelcontextprotocol/sdk" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/project-initializer.ts" [label=<project-initializer.ts> tooltip="project-initializer.ts" URL="src/main/toji/project-initializer.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/project-initializer.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/project-initializer.ts" -> "src/main/toji/agents-template.ts"
+    "src/main/toji/project-initializer.ts" -> "src/main/toji/config.ts"
+    "src/main/toji/project-initializer.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "src/main/toji/project-initializer.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/toji/project-initializer.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/main/toji/project-initializer.ts" -> "path" [style="dashed" penwidth="1.0"]
+    "src/main/toji/project-initializer.ts" -> "util" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/project.ts" [label=<project.ts> tooltip="project.ts" URL="src/main/toji/project.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/project.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/project.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/server.ts" [label=<server.ts> tooltip="server.ts" URL="src/main/toji/server.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/server.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/server.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/server.ts" -> "src/main/utils/path.ts"
+    "src/main/toji/server.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/server.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/main/toji/server.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "src/main/toji/server.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/toji/server.ts" -> "util" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/sessions.ts" [label=<sessions.ts> tooltip="sessions.ts" URL="src/main/toji/sessions.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/sessions.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/sessions.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/sessions.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/types.ts" [label=<types.ts> tooltip="types.ts" URL="src/main/toji/types.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/types.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/audio-processor.ts" [label=<audio-processor.ts> tooltip="audio-processor.ts" URL="src/main/utils/audio-processor.ts" fillcolor="#ddfeff"] } } }
+    "src/main/utils/audio-processor.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/logger.ts" [label=<logger.ts> tooltip="logger.ts" URL="src/main/utils/logger.ts" fillcolor="#ddfeff"] } } }
+    "src/main/utils/logger.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/main/utils/logger.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    "src/main/utils/logger.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/path.ts" [label=<path.ts> tooltip="path.ts" URL="src/main/utils/path.ts" fillcolor="#ddfeff"] } } }
+    "src/main/utils/path.ts" -> "os" [style="dashed" penwidth="1.0"]
+    "src/main/utils/path.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/DiscordPlugin.ts" [label=<DiscordPlugin.ts> tooltip="DiscordPlugin.ts" URL="src/plugins/discord/DiscordPlugin.ts" fillcolor="#ddfeff"] } } }
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/deploy-commands.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/SlashCommandModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/errors.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-info.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-lister.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-fetcher.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-message-searcher.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-uploader.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/messages.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "node_modules/discord.js" [penwidth="1.0" arrowhead="onormal"]
+    "src/plugins/discord/DiscordPlugin.ts" -> "events" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/admin.ts" [label=<admin.ts> tooltip="admin.ts" URL="src/plugins/discord/commands/admin.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/admin.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/admin.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/clear.ts" [label=<clear.ts> tooltip="clear.ts" URL="src/plugins/discord/commands/clear.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/clear.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/commands/clear.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/clear.ts" -> "src/plugins/discord/utils/errors.ts"
+    "src/plugins/discord/commands/clear.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/help.ts" [label=<help.ts> tooltip="help.ts" URL="src/plugins/discord/commands/help.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/help.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/help.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/init.ts" [label=<init.ts> tooltip="init.ts" URL="src/plugins/discord/commands/init.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/init.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/commands/init.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/init.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/init.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/project.ts" [label=<project.ts> tooltip="project.ts" URL="src/plugins/discord/commands/project.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/project.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/commands/project.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/project.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/project.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/voice.ts" [label=<voice.ts> tooltip="voice.ts" URL="src/plugins/discord/commands/voice.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/commands/voice.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/voice.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/commands/voice.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/constants.ts" [label=<constants.ts> tooltip="constants.ts" URL="src/plugins/discord/constants.ts" fillcolor="#ddfeff"] } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/deploy-commands.ts" [label=<deploy-commands.ts> tooltip="deploy-commands.ts" URL="src/plugins/discord/deploy-commands.ts" fillcolor="#ddfeff"] } } }
+    "src/plugins/discord/deploy-commands.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/admin.ts" [style="dashed"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/clear.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/help.ts" [style="dashed"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/init.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "src/plugins/discord/commands/voice.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/deploy-commands.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/CategoryManager.ts" [label=<CategoryManager.ts> tooltip="CategoryManager.ts" URL="src/plugins/discord/modules/CategoryManager.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/modules/CategoryManager.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/modules/CategoryManager.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/DiscordProjectManager.ts" [label=<DiscordProjectManager.ts> tooltip="DiscordProjectManager.ts" URL="src/plugins/discord/modules/DiscordProjectManager.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/utils/state.ts"
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "src/plugins/discord/modules/CategoryManager.ts"
+    "src/plugins/discord/modules/DiscordProjectManager.ts" -> "node_modules/discord.js" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/modules" {label="modules" "src/plugins/discord/modules/SlashCommandModule.ts" [label=<SlashCommandModule.ts> tooltip="SlashCommandModule.ts" URL="src/plugins/discord/modules/SlashCommandModule.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/admin.ts" [style="dashed"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/clear.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/help.ts" [style="dashed"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/init.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/project.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/commands/voice.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" style="dashed" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/utils/permissions.ts"
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/modules/SlashCommandModule.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/errors.ts" [label=<errors.ts> tooltip="errors.ts" URL="src/plugins/discord/utils/errors.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/errors.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/errors.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/utils/errors.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-info.ts" [label=<mcp-channel-info.ts> tooltip="mcp-channel-info.ts" URL="src/plugins/discord/utils/mcp-channel-info.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/mcp-channel-info.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-lister.ts" [label=<mcp-channel-lister.ts> tooltip="mcp-channel-lister.ts" URL="src/plugins/discord/utils/mcp-channel-lister.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-channel-lister.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-channel-lister.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/mcp-channel-lister.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-fetcher.ts" [label=<mcp-fetcher.ts> tooltip="mcp-fetcher.ts" URL="src/plugins/discord/utils/mcp-fetcher.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-fetcher.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-fetcher.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/mcp-fetcher.ts" -> "node_modules/discord.js" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-message-searcher.ts" [label=<mcp-message-searcher.ts> tooltip="mcp-message-searcher.ts" URL="src/plugins/discord/utils/mcp-message-searcher.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-message-searcher.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-message-searcher.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/mcp-message-searcher.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-uploader.ts" [label=<mcp-uploader.ts> tooltip="mcp-uploader.ts" URL="src/plugins/discord/utils/mcp-uploader.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-uploader.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-uploader.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/mcp-uploader.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    "src/plugins/discord/utils/mcp-uploader.ts" -> "fs" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/messages.ts" [label=<messages.ts> tooltip="messages.ts" URL="src/plugins/discord/utils/messages.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/messages.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/utils/messages.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/messages.ts" -> "src/plugins/discord/constants.ts"
+    "src/plugins/discord/utils/messages.ts" -> "node_modules/discord.js" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/permissions.ts" [label=<permissions.ts> tooltip="permissions.ts" URL="src/plugins/discord/utils/permissions.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/permissions.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/permissions.ts" -> "node_modules/discord.js" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/state.ts" [label=<state.ts> tooltip="state.ts" URL="src/plugins/discord/utils/state.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/state.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/utils/state.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/plugins/discord/utils/state.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
+    "src/plugins/discord/utils/state.ts" -> "path" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/AudioReceiver.ts" [label=<AudioReceiver.ts> tooltip="AudioReceiver.ts" URL="src/plugins/discord/voice/AudioReceiver.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/voice/AudioReceiver.ts" -> "src/main/utils/audio-processor.ts"
+    "src/plugins/discord/voice/AudioReceiver.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/voice/AudioReceiver.ts" -> "node_modules/@discordjs/voice" [penwidth="1.0"]
+    "src/plugins/discord/voice/AudioReceiver.ts" -> "node_modules/prism-media" [xlabel="no-non-package-json" tooltip="no-non-package-json" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/TTSPlayer.ts" [label=<TTSPlayer.ts> tooltip="TTSPlayer.ts" URL="src/plugins/discord/voice/TTSPlayer.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/voice/TTSPlayer.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/voice/TTSPlayer.ts" -> "node_modules/@discordjs/voice" [penwidth="1.0"]
+    "src/plugins/discord/voice/TTSPlayer.ts" -> "node_modules/@ffmpeg-installer/ffmpeg" [penwidth="1.0"]
+    "src/plugins/discord/voice/TTSPlayer.ts" -> "child_process" [style="dashed" penwidth="1.0"]
+    "src/plugins/discord/voice/TTSPlayer.ts" -> "stream" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/VoiceModule.ts" [label=<VoiceModule.ts> tooltip="VoiceModule.ts" URL="src/plugins/discord/voice/VoiceModule.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/services/voice-service-manager.ts"
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/utils/logger.ts"
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/constants.ts" [style="dashed"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/DiscordPlugin.ts" [xlabel="no-circular" tooltip="no-circular" arrowhead="normalnoneodot" penwidth="1.0" fontcolor="orange" color="orange"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/AudioReceiver.ts"
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/TTSPlayer.ts"
+    "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "node_modules/@discordjs/voice" [penwidth="1.0"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "node_modules/discord.js" [penwidth="1.0" style="dashed"]
+    "src/plugins/discord/voice/VoiceModule.ts" -> "events" [style="dashed" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/types.ts" [label=<types.ts> tooltip="types.ts" URL="src/plugins/discord/voice/types.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/voice/types.ts" -> "node_modules/@discordjs/voice" [penwidth="1.0" arrowhead="onormal"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/binary.api.ts" [label=<binary.api.ts> tooltip="binary.api.ts" URL="src/preload/api/binary.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/binary.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/discord.api.ts" [label=<discord.api.ts> tooltip="discord.api.ts" URL="src/preload/api/discord.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/discord.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/preload/api/index.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/index.ts" -> "src/preload/api/binary.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/discord.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/logger.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/opencode.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/project.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/toji.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/voice.api.ts" [arrowhead="inv"]
+    "src/preload/api/index.ts" -> "src/preload/api/window.api.ts" [arrowhead="inv"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/logger.ts" [label=<logger.ts> tooltip="logger.ts" URL="src/preload/api/logger.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/logger.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/opencode.api.ts" [label=<opencode.api.ts> tooltip="opencode.api.ts" URL="src/preload/api/opencode.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/opencode.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/project.api.ts" [label=<project.api.ts> tooltip="project.api.ts" URL="src/preload/api/project.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/project.api.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/preload/api/project.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/toji.api.ts" [label=<toji.api.ts> tooltip="toji.api.ts" URL="src/preload/api/toji.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/toji.api.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/api/toji.api.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/api/toji.api.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "src/preload/api/toji.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/voice.api.ts" [label=<voice.api.ts> tooltip="voice.api.ts" URL="src/preload/api/voice.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/voice.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/window.api.ts" [label=<window.api.ts> tooltip="window.api.ts" URL="src/preload/api/window.api.ts" fillcolor="#ddfeff"] } } }
+    "src/preload/api/window.api.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" "src/preload/index.d.ts" [label=<index.d.ts> tooltip="index.d.ts" URL="src/preload/index.d.ts" fillcolor="#ddfeff"] } }
+    "src/preload/index.d.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/preload/api/index.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/preload/api/binary.api.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/preload/api/opencode.api.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/preload/api/project.api.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "src/preload/api/voice.api.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/preload/index.d.ts" -> "node_modules/@electron-toolkit/preload" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" "src/preload/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/preload/index.ts" fillcolor="#ddfeff"] } }
+    "src/preload/index.ts" -> "src/preload/api/index.ts"
+    "src/preload/index.ts" -> "node_modules/@electron-toolkit/preload" [penwidth="1.0"]
+    "src/preload/index.ts" -> "node_modules/electron" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/App.tsx" [label=<App.tsx> tooltip="App.tsx" URL="src/renderer/src/App.tsx" fillcolor="#bbfeff"] } } }
+    "src/renderer/src/App.tsx" -> "src/renderer/src/components/IconButton.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/components/TitleBar.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/contexts/AppViewContext.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContext.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/hooks/useViewCoordination.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/hooks/useWindowControls.ts"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/types/ViewTypes.ts"
+    "src/renderer/src/App.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/App.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/App.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/IconButton.tsx" [label=<IconButton.tsx> tooltip="IconButton.tsx" URL="src/renderer/src/components/IconButton.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/components/IconButton.tsx" -> "src/renderer/src/types/ViewTypes.ts"
+    "src/renderer/src/components/IconButton.tsx" -> "src/renderer/src/components/shared/Tooltip.tsx"
+    "src/renderer/src/components/IconButton.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/IconButton.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/PlaceholderViews.tsx" [label=<PlaceholderViews.tsx> tooltip="PlaceholderViews.tsx" URL="src/renderer/src/components/PlaceholderViews.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/components/PlaceholderViews.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/PlaceholderViews.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/SidebarContainer.tsx" [label=<SidebarContainer.tsx> tooltip="SidebarContainer.tsx" URL="src/renderer/src/components/SidebarContainer.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/components/SidebarContainer.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/SidebarContainer.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/StatusBadge.tsx" [label=<StatusBadge.tsx> tooltip="StatusBadge.tsx" URL="src/renderer/src/components/StatusBadge.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/components/StatusBadge.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/StatusBadge.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/TitleBar.tsx" [label=<TitleBar.tsx> tooltip="TitleBar.tsx" URL="src/renderer/src/components/TitleBar.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/components/TitleBar.tsx" -> "resources/toji_title.png"
+    "src/renderer/src/components/TitleBar.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/TitleBar.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/TitleBar.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/settings" {label="settings" "src/renderer/src/components/settings/SettingsDrawer.tsx" [label=<SettingsDrawer.tsx> tooltip="SettingsDrawer.tsx" URL="src/renderer/src/components/settings/SettingsDrawer.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "src/renderer/src/hooks/useAvailableModels.ts"
+    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/ActionButton.tsx" [label=<ActionButton.tsx> tooltip="ActionButton.tsx" URL="src/renderer/src/components/shared/ActionButton.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/ActionButton.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/ActionButton.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/IntegrationCard.tsx" [label=<IntegrationCard.tsx> tooltip="IntegrationCard.tsx" URL="src/renderer/src/components/shared/IntegrationCard.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/IntegrationCard.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/IntegrationCard.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/LabelRow.tsx" [label=<LabelRow.tsx> tooltip="LabelRow.tsx" URL="src/renderer/src/components/shared/LabelRow.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/LabelRow.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/LabelRow.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/MainContentContainer.tsx" [label=<MainContentContainer.tsx> tooltip="MainContentContainer.tsx" URL="src/renderer/src/components/shared/MainContentContainer.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/MainContentContainer.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/MainContentContainer.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/MetricCard.tsx" [label=<MetricCard.tsx> tooltip="MetricCard.tsx" URL="src/renderer/src/components/shared/MetricCard.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/MetricCard.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/MetricCard.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/QuickActionButton.tsx" [label=<QuickActionButton.tsx> tooltip="QuickActionButton.tsx" URL="src/renderer/src/components/shared/QuickActionButton.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/QuickActionButton.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/QuickActionButton.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/SectionDivider.tsx" [label=<SectionDivider.tsx> tooltip="SectionDivider.tsx" URL="src/renderer/src/components/shared/SectionDivider.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/SectionDivider.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/SectionDivider.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/SecureInput.tsx" [label=<SecureInput.tsx> tooltip="SecureInput.tsx" URL="src/renderer/src/components/shared/SecureInput.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/SecureInput.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/SecureInput.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/shared/SecureInput.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/SidebarCard.tsx" [label=<SidebarCard.tsx> tooltip="SidebarCard.tsx" URL="src/renderer/src/components/shared/SidebarCard.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/SidebarCard.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/SidebarCard.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/SidebarHeader.tsx" [label=<SidebarHeader.tsx> tooltip="SidebarHeader.tsx" URL="src/renderer/src/components/shared/SidebarHeader.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/SidebarHeader.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/SidebarHeader.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/SidebarSection.tsx" [label=<SidebarSection.tsx> tooltip="SidebarSection.tsx" URL="src/renderer/src/components/shared/SidebarSection.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/SidebarSection.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/SidebarSection.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/StatusBox.tsx" [label=<StatusBox.tsx> tooltip="StatusBox.tsx" URL="src/renderer/src/components/shared/StatusBox.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/StatusBox.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/StatusBox.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/ThemedInput.tsx" [label=<ThemedInput.tsx> tooltip="ThemedInput.tsx" URL="src/renderer/src/components/shared/ThemedInput.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/ThemedInput.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/ThemedInput.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/Tooltip.tsx" [label=<Tooltip.tsx> tooltip="Tooltip.tsx" URL="src/renderer/src/components/shared/Tooltip.tsx" fillcolor="#bbfeff"] } } } } }
+    "src/renderer/src/components/shared/Tooltip.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/shared/Tooltip.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/renderer/src/components/shared/index.ts" fillcolor="#ddfeff"] } } } } }
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/ActionButton.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/IntegrationCard.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/LabelRow.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/MainContentContainer.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/MetricCard.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/QuickActionButton.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/SectionDivider.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/SecureInput.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/SidebarCard.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/SidebarHeader.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/SidebarSection.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/StatusBox.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/ThemedInput.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/Tooltip.tsx" [arrowhead="inv"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ChatViewMain.tsx" [label=<ChatViewMain.tsx> tooltip="ChatViewMain.tsx" URL="src/renderer/src/components/views/chat/ChatViewMain.tsx" fillcolor="#bbfeff"] } } } } } }
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "src/renderer/src/components/settings/SettingsDrawer.tsx"
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" [label=<ChatViewSidebar.tsx> tooltip="ChatViewSidebar.tsx" URL="src/renderer/src/components/views/chat/ChatViewSidebar.tsx" fillcolor="#bbfeff"] } } } } } }
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/settings/SettingsDrawer.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarHeader.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarSection.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/shared/Tooltip.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/SidebarContainer.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/views/chat/ProjectList.tsx"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ProjectList.tsx" [label=<ProjectList.tsx> tooltip="ProjectList.tsx" URL="src/renderer/src/components/views/chat/ProjectList.tsx" fillcolor="#bbfeff"] } } } } } }
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/components/shared/SidebarSection.tsx"
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/components/shared/Tooltip.tsx"
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/integrations" {label="integrations" "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" [label=<IntegrationsViewMain.tsx> tooltip="IntegrationsViewMain.tsx" URL="src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" fillcolor="#bbfeff"] } } } } } }
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useAvailableModels.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useDiscord.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useOpencodeApiKeys.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/components/shared/index.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/integrations" {label="integrations" "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" [label=<IntegrationsViewSidebar.tsx> tooltip="IntegrationsViewSidebar.tsx" URL="src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" fillcolor="#bbfeff"] } } } } } }
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/hooks/useDiscord.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/hooks/useOpencodeApiKeys.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarCard.tsx"
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/components/SidebarContainer.tsx"
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "node_modules/react-icons" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AppViewContext.tsx" [label=<AppViewContext.tsx> tooltip="AppViewContext.tsx" URL="src/renderer/src/contexts/AppViewContext.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/contexts/AppViewContext.tsx" -> "src/renderer/src/providers/AppViewProvider.tsx" [arrowhead="inv"]
+    "src/renderer/src/contexts/AppViewContext.tsx" -> "src/renderer/src/contexts/AppViewContextDef.ts" [arrowhead="inv"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AppViewContextDef.ts" [label=<AppViewContextDef.ts> tooltip="AppViewContextDef.ts" URL="src/renderer/src/contexts/AppViewContextDef.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/contexts/AppViewContextDef.ts" -> "src/renderer/src/types/ViewTypes.ts"
+    "src/renderer/src/contexts/AppViewContextDef.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/ChatCoordinatorContext.tsx" [label=<ChatCoordinatorContext.tsx> tooltip="ChatCoordinatorContext.tsx" URL="src/renderer/src/contexts/ChatCoordinatorContext.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/contexts/ChatCoordinatorContext.tsx" -> "src/renderer/src/hooks/useChatCoordinator.ts"
+    "src/renderer/src/contexts/ChatCoordinatorContext.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContextDef.ts"
+    "src/renderer/src/contexts/ChatCoordinatorContext.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/ChatCoordinatorContextDef.ts" [label=<ChatCoordinatorContextDef.ts> tooltip="ChatCoordinatorContextDef.ts" URL="src/renderer/src/contexts/ChatCoordinatorContextDef.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/contexts/ChatCoordinatorContextDef.ts" -> "src/renderer/src/hooks/useChatCoordinator.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/contexts/ChatCoordinatorContextDef.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/env.d.ts" [label=<env.d.ts> tooltip="env.d.ts" URL="src/renderer/src/env.d.ts" fillcolor="#ddfeff"] } } }
+    "src/renderer/src/env.d.ts" -> "node_modules/vite" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" arrowhead="onormal" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useAppView.ts" [label=<useAppView.ts> tooltip="useAppView.ts" URL="src/renderer/src/hooks/useAppView.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useAppView.ts" -> "src/renderer/src/contexts/AppViewContextDef.ts"
+    "src/renderer/src/hooks/useAppView.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useAsyncOperation.ts" [label=<useAsyncOperation.ts> tooltip="useAsyncOperation.ts" URL="src/renderer/src/hooks/useAsyncOperation.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useAsyncOperation.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useAvailableModels.ts" [label=<useAvailableModels.ts> tooltip="useAvailableModels.ts" URL="src/renderer/src/hooks/useAvailableModels.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useAvailableModels.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useBinaryStatus.ts" [label=<useBinaryStatus.ts> tooltip="useBinaryStatus.ts" URL="src/renderer/src/hooks/useBinaryStatus.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useBinaryStatus.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/hooks/useBinaryStatus.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useChatCoordinator.ts" [label=<useChatCoordinator.ts> tooltip="useChatCoordinator.ts" URL="src/renderer/src/hooks/useChatCoordinator.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/utils/messageFormatter.ts"
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useChatCoordinatorContext.ts" [label=<useChatCoordinatorContext.ts> tooltip="useChatCoordinatorContext.ts" URL="src/renderer/src/hooks/useChatCoordinatorContext.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useChatCoordinatorContext.ts" -> "src/renderer/src/contexts/ChatCoordinatorContextDef.ts"
+    "src/renderer/src/hooks/useChatCoordinatorContext.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useCoreStatus.ts" [label=<useCoreStatus.ts> tooltip="useCoreStatus.ts" URL="src/renderer/src/hooks/useCoreStatus.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useCoreStatus.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useDiscord.ts" [label=<useDiscord.ts> tooltip="useDiscord.ts" URL="src/renderer/src/hooks/useDiscord.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useDiscord.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useOpenCodeLogs.ts" [label=<useOpenCodeLogs.ts> tooltip="useOpenCodeLogs.ts" URL="src/renderer/src/hooks/useOpenCodeLogs.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useOpenCodeLogs.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useOpencodeApiKeys.ts" [label=<useOpencodeApiKeys.ts> tooltip="useOpencodeApiKeys.ts" URL="src/renderer/src/hooks/useOpencodeApiKeys.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useOpencodeApiKeys.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/hooks/useOpencodeApiKeys.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useServerStatus.ts" [label=<useServerStatus.ts> tooltip="useServerStatus.ts" URL="src/renderer/src/hooks/useServerStatus.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/hooks/useServerStatus.ts" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useViewCoordination.tsx" [label=<useViewCoordination.tsx> tooltip="useViewCoordination.tsx" URL="src/renderer/src/hooks/useViewCoordination.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/PlaceholderViews.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/chat/ChatViewMain.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/chat/ChatViewSidebar.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/types/ViewTypes.ts"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/hooks/useAppView.ts"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useWindowControls.ts" [label=<useWindowControls.ts> tooltip="useWindowControls.ts" URL="src/renderer/src/hooks/useWindowControls.ts" fillcolor="#ddfeff"] } } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/main.tsx" [label=<main.tsx> tooltip="main.tsx" URL="src/renderer/src/main.tsx" fillcolor="#bbfeff"] } } }
+    "src/renderer/src/main.tsx" -> "src/renderer/src/App.tsx"
+    "src/renderer/src/main.tsx" -> "src/renderer/src/theme.ts"
+    "src/renderer/src/main.tsx" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    "src/renderer/src/main.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    "src/renderer/src/main.tsx" -> "node_modules/react-dom" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/providers" {label="providers" "src/renderer/src/providers/AppViewProvider.tsx" [label=<AppViewProvider.tsx> tooltip="AppViewProvider.tsx" URL="src/renderer/src/providers/AppViewProvider.tsx" fillcolor="#bbfeff"] } } } }
+    "src/renderer/src/providers/AppViewProvider.tsx" -> "src/renderer/src/contexts/AppViewContextDef.ts"
+    "src/renderer/src/providers/AppViewProvider.tsx" -> "src/renderer/src/types/ViewTypes.ts"
+    "src/renderer/src/providers/AppViewProvider.tsx" -> "node_modules/react" [xlabel="not-to-dev-dep" tooltip="not-to-dev-dep" penwidth="1.0" fontcolor="red" color="red"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/theme.ts" [label=<theme.ts> tooltip="theme.ts" URL="src/renderer/src/theme.ts" fillcolor="#ddfeff"] } } }
+    "src/renderer/src/theme.ts" -> "node_modules/@chakra-ui/react" [penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/types" {label="types" "src/renderer/src/types/ViewTypes.ts" [label=<ViewTypes.ts> tooltip="ViewTypes.ts" URL="src/renderer/src/types/ViewTypes.ts" fillcolor="#ddfeff"] } } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/utils" {label="utils" "src/renderer/src/utils/messageFormatter.ts" [label=<messageFormatter.ts> tooltip="messageFormatter.ts" URL="src/renderer/src/utils/messageFormatter.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/utils/messageFormatter.ts" -> "node_modules/@opencode-ai/sdk" [penwidth="1.0" arrowhead="onormal"]
+    "stream" [label=<stream> tooltip="stream" URL="https://nodejs.org/api/stream.html" color="grey" fontcolor="grey"]
+    subgraph "cluster_stream" {label="stream" "stream/promises" [label=<promises> tooltip="promises" URL="https://nodejs.org/api/stream.html" color="grey" fontcolor="grey"] }
+    "util" [label=<util> tooltip="util" URL="https://nodejs.org/api/util.html" color="grey" fontcolor="grey"]
+}

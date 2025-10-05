@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import type { Toji } from '../../index'
+import type { ITojiCore } from '../../interfaces'
 import { existsSync, mkdirSync } from 'fs'
 import { resolve, normalize } from 'path'
 
 interface InitializeProjectDependencies {
-  getToji: () => Toji | null
+  getToji: () => ITojiCore | null
 }
 
 /**
