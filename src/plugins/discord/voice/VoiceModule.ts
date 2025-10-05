@@ -516,7 +516,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   async speak(sessionId: string, text: string): Promise<boolean> {
     log(`🎤 speak() called - sessionId: ${sessionId}, text length: ${text.length}`)
-    
+
     const player = this.ttsPlayers.get(sessionId)
     if (!player) {
       log(`❌ Cannot speak: no TTS player for session ${sessionId}`)

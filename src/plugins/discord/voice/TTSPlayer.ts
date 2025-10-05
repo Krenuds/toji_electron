@@ -15,6 +15,8 @@ import {
   StreamType
 } from '@discordjs/voice'
 import { Readable } from 'stream'
+import { spawn } from 'child_process'
+import ffmpegPath from '@ffmpeg-installer/ffmpeg'
 
 const log = createFileDebugLogger('discord:tts-player')
 
@@ -44,7 +46,19 @@ export class TTSPlayer {
     })
 
     this.player.on('error', (error) => {
-      log('Player error:', error)
+      log('❌ Player error event fired!')
+      log('Error type:', typeof error)
+      log('Error value:', error)
+      if (error instanceof Error) {
+        log('Error name:', error.name)
+        log('Error message:', error.message)
+        log('Error stack:', error.stack)
+      }
+      if (error && typeof error === 'object') {
+        log('Error properties:', Object.keys(error).join(', '))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        log('Error resource:', (error as any).resource)
+      }
       this.isPlaying = false
       this.playNext()
     })
@@ -78,7 +92,7 @@ export class TTSPlayer {
    */
   private async playNext(): Promise<void> {
     log(`🔄 playNext() called, queue length: ${this.queue.length}`)
-    
+
     if (this.queue.length === 0) {
       log('⚠️ Queue empty, nothing to play')
       return
@@ -100,11 +114,51 @@ export class TTSPlayer {
       log(`📊 Creating readable stream from buffer`)
       const stream = Readable.from(audioBuffer)
 
-      // Create audio resource
-      // Piper returns WAV format, but Discord needs to know the input type
-      log(`🎼 Creating audio resource with inputType: Arbitrary (WAV)`)
-      const resource = createAudioResource(stream, {
-        inputType: StreamType.Arbitrary
+      // Use FFmpeg to convert WAV to PCM
+      log(`🎼 Creating FFmpeg transcoder for WAV -> PCM`)
+      log(`🔧 Using FFmpeg from: ${ffmpegPath.path}`)
+
+      // Spawn FFmpeg process to transcode WAV to PCM
+      const ffmpeg = spawn(ffmpegPath.path, [
+        '-analyzeduration',
+        '0',
+        '-loglevel',
+        'error',
+        '-f',
+        'wav',
+        '-i',
+        'pipe:0', // Read from stdin
+        '-f',
+        's16le',
+        '-ar',
+        '48000',
+        '-ac',
+        '2',
+        'pipe:1' // Write to stdout
+      ])
+
+      // Add error handlers
+      ffmpeg.stderr.on('data', (data) => {
+        log('❌ FFmpeg stderr:', data.toString())
+      })
+
+      ffmpeg.on('error', (err) => {
+        log('❌ FFmpeg process error:', err)
+      })
+
+      ffmpeg.on('exit', (code, signal) => {
+        if (code !== 0 && code !== null) {
+          log(`❌ FFmpeg exited with code ${code}, signal ${signal}`)
+        }
+      })
+
+      log(`🔀 Piping audio through FFmpeg`)
+      stream.pipe(ffmpeg.stdin)
+
+      // Create audio resource with the FFmpeg stdout (PCM stream)
+      log(`🎵 Creating audio resource with PCM stream`)
+      const resource = createAudioResource(ffmpeg.stdout, {
+        inputType: StreamType.Raw
       })
 
       // Play the resource
@@ -113,11 +167,15 @@ export class TTSPlayer {
       log('✅ TTS audio now playing')
     } catch (error) {
       log('❌ Error playing TTS audio:')
-      log('Error details:', error)
+      log('Error type:', typeof error)
+      log('Error value:', error)
+      log('Error JSON:', JSON.stringify(error, null, 2))
       if (error instanceof Error) {
+        log('Error name:', error.name)
         log('Error message:', error.message)
         log('Error stack:', error.stack)
       }
+      log('Full error object:', Object.keys(error || {}).join(', '))
       this.isPlaying = false
       log(`🔄 Attempting to play next item in queue`)
       this.playNext()
