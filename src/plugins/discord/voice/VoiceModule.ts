@@ -515,32 +515,41 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    * Speak text in a voice channel using TTS
    */
   async speak(sessionId: string, text: string): Promise<boolean> {
+    log(`🎤 speak() called - sessionId: ${sessionId}, text length: ${text.length}`)
+    
     const player = this.ttsPlayers.get(sessionId)
     if (!player) {
-      log(`Cannot speak: no TTS player for session ${sessionId}`)
+      log(`❌ Cannot speak: no TTS player for session ${sessionId}`)
+      log(`Available TTS players: ${Array.from(this.ttsPlayers.keys()).join(', ')}`)
       return false
     }
+    log(`✅ Found TTS player for session ${sessionId}`)
 
     try {
-      log(`Speaking in session ${sessionId}: "${text}"`)
+      log(`📝 Text to speak: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`)
       const voiceManager = getVoiceServiceManager()
 
       if (!voiceManager.isAvailable()) {
-        log('Voice services not available')
+        log('❌ Voice services not available')
         return false
       }
+      log(`✅ Voice services available`)
 
+      log(`🔊 Calling Piper TTS service...`)
       const audioBuffer = await voiceManager.speak({ text })
       if (!audioBuffer) {
-        log('Failed to generate TTS audio')
+        log('❌ Failed to generate TTS audio - received null/undefined')
         return false
       }
+      log(`✅ Piper TTS returned audio: ${audioBuffer.byteLength} bytes`)
 
-      await player.play(Buffer.from(audioBuffer))
-      log(`✅ TTS audio queued for playback`)
+      const buffer = Buffer.from(audioBuffer)
+      log(`🎵 Queuing audio buffer to player: ${buffer.length} bytes`)
+      await player.play(buffer)
+      log(`✅ TTS audio queued for playback successfully`)
       return true
     } catch (error) {
-      log('Error speaking:', error)
+      log('❌ Error speaking:', error)
       return false
     }
   }

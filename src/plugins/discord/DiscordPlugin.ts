@@ -210,13 +210,24 @@ export class DiscordPlugin extends EventEmitter {
                 await sendDiscordResponse(message, fullText)
 
                 // If bot is in a voice channel in this guild, speak the response
+                log('🎵 Checking for voice session to speak response...')
                 if (this.voiceModule && message.guildId) {
+                  log(`✅ VoiceModule exists, guildId: ${message.guildId}`)
                   const sessions = this.voiceModule.getAllSessions()
+                  log(`📊 Found ${sessions.length} active voice sessions`)
                   const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
                   if (guildSession) {
-                    log('Speaking response in voice channel')
-                    await this.voiceModule.speak(guildSession.id, fullText)
+                    log(`✅ Found voice session for guild: ${guildSession.id}`)
+                    log(`🔊 Calling speak() with ${fullText.length} chars`)
+                    const success = await this.voiceModule.speak(guildSession.id, fullText)
+                    log(`🎵 speak() result: ${success}`)
+                  } else {
+                    log('❌ No voice session found for this guild')
                   }
+                } else {
+                  log(
+                    `❌ Cannot speak - voiceModule: ${!!this.voiceModule}, guildId: ${message.guildId}`
+                  )
                 }
               },
 
@@ -317,13 +328,24 @@ export class DiscordPlugin extends EventEmitter {
               await sendDiscordResponse(message, fullText)
 
               // If bot is in a voice channel in this guild, speak the response
+              log('🎵 Checking for voice session to speak response (mention)...')
               if (this.voiceModule && message.guildId) {
+                log(`✅ VoiceModule exists, guildId: ${message.guildId}`)
                 const sessions = this.voiceModule.getAllSessions()
+                log(`📊 Found ${sessions.length} active voice sessions`)
                 const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
                 if (guildSession) {
-                  log('Speaking response in voice channel')
-                  await this.voiceModule.speak(guildSession.id, fullText)
+                  log(`✅ Found voice session for guild: ${guildSession.id}`)
+                  log(`🔊 Calling speak() with ${fullText.length} chars`)
+                  const success = await this.voiceModule.speak(guildSession.id, fullText)
+                  log(`🎵 speak() result: ${success}`)
+                } else {
+                  log('❌ No voice session found for this guild')
                 }
+              } else {
+                log(
+                  `❌ Cannot speak - voiceModule: ${!!this.voiceModule}, guildId: ${message.guildId}`
+                )
               }
             },
 

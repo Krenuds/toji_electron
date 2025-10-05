@@ -56,14 +56,19 @@ export class TTSPlayer {
    * @param audioBuffer - WAV audio buffer from Piper
    */
   async play(audioBuffer: Buffer): Promise<void> {
-    log(`Queuing TTS audio: ${audioBuffer.length} bytes`)
+    log(`📥 play() called with buffer: ${audioBuffer.length} bytes`)
+    log(`Current queue length: ${this.queue.length}, isPlaying: ${this.isPlaying}`)
 
     // Add to queue
     this.queue.push(audioBuffer)
+    log(`✅ Added to queue, new length: ${this.queue.length}`)
 
     // Start playing if not already
     if (!this.isPlaying) {
+      log(`▶️  Not currently playing, calling playNext()`)
       this.playNext()
+    } else {
+      log(`⏸️  Already playing, will play when current finishes`)
     }
   }
 
@@ -71,34 +76,41 @@ export class TTSPlayer {
    * Play the next item in the queue
    */
   private async playNext(): Promise<void> {
+    log(`🔄 playNext() called, queue length: ${this.queue.length}`)
+    
     if (this.queue.length === 0) {
-      log('Queue empty')
+      log('⚠️ Queue empty, nothing to play')
       return
     }
 
     const audioBuffer = this.queue.shift()!
-    log(`Playing next audio from queue: ${audioBuffer.length} bytes`)
+    log(`🎵 Dequeued audio: ${audioBuffer.length} bytes, remaining: ${this.queue.length}`)
 
     try {
       // Ensure connection is ready
+      log(`🔗 Checking connection status: ${this.connection.state.status}`)
       if (this.connection.state.status !== VoiceConnectionStatus.Ready) {
-        log('Connection not ready, waiting...')
+        log('⏳ Connection not ready, waiting...')
         await entersState(this.connection, VoiceConnectionStatus.Ready, 5000)
+        log(`✅ Connection ready: ${this.connection.state.status}`)
       }
 
       // Create a readable stream from the buffer
+      log(`📊 Creating readable stream from buffer`)
       const stream = Readable.from(audioBuffer)
 
       // Create audio resource
-      // Discord expects PCM or Opus, but WAV files work fine as they contain PCM
+      log(`🎼 Creating audio resource`)
       const resource = createAudioResource(stream)
 
       // Play the resource
+      log(`▶️  Calling player.play()`)
       this.player.play(resource)
-      log('TTS audio playing')
+      log('✅ TTS audio now playing')
     } catch (error) {
-      log('Error playing TTS audio:', error)
+      log('❌ Error playing TTS audio:', error)
       this.isPlaying = false
+      log(`🔄 Attempting to play next item in queue`)
       this.playNext()
     }
   }
