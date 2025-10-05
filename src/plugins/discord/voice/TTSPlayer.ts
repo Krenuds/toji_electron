@@ -46,19 +46,7 @@ export class TTSPlayer {
     })
 
     this.player.on('error', (error) => {
-      log('❌ Player error event fired!')
-      log('Error type:', typeof error)
-      log('Error value:', error)
-      if (error instanceof Error) {
-        log('Error name:', error.name)
-        log('Error message:', error.message)
-        log('Error stack:', error.stack)
-      }
-      if (error && typeof error === 'object') {
-        log('Error properties:', Object.keys(error).join(', '))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        log('Error resource:', (error as any).resource)
-      }
+      log('Player error:', error)
       this.isPlaying = false
       this.playNext()
     })
@@ -71,19 +59,14 @@ export class TTSPlayer {
    * @param audioBuffer - WAV audio buffer from Piper
    */
   async play(audioBuffer: Buffer): Promise<void> {
-    log(`📥 play() called with buffer: ${audioBuffer.length} bytes`)
-    log(`Current queue length: ${this.queue.length}, isPlaying: ${this.isPlaying}`)
+    log(`Playing TTS audio: ${audioBuffer.length} bytes`)
 
     // Add to queue
     this.queue.push(audioBuffer)
-    log(`✅ Added to queue, new length: ${this.queue.length}`)
 
     // Start playing if not already
     if (!this.isPlaying) {
-      log(`▶️  Not currently playing, calling playNext()`)
       this.playNext()
-    } else {
-      log(`⏸️  Already playing, will play when current finishes`)
     }
   }
 
@@ -91,32 +74,20 @@ export class TTSPlayer {
    * Play the next item in the queue
    */
   private async playNext(): Promise<void> {
-    log(`🔄 playNext() called, queue length: ${this.queue.length}`)
-
     if (this.queue.length === 0) {
-      log('⚠️ Queue empty, nothing to play')
       return
     }
 
     const audioBuffer = this.queue.shift()!
-    log(`🎵 Dequeued audio: ${audioBuffer.length} bytes, remaining: ${this.queue.length}`)
 
     try {
       // Ensure connection is ready
-      log(`🔗 Checking connection status: ${this.connection.state.status}`)
       if (this.connection.state.status !== VoiceConnectionStatus.Ready) {
-        log('⏳ Connection not ready, waiting...')
         await entersState(this.connection, VoiceConnectionStatus.Ready, 5000)
-        log(`✅ Connection ready: ${this.connection.state.status}`)
       }
 
       // Create a readable stream from the buffer
-      log(`📊 Creating readable stream from buffer`)
       const stream = Readable.from(audioBuffer)
-
-      // Use FFmpeg to convert WAV to PCM
-      log(`🎼 Creating FFmpeg transcoder for WAV -> PCM`)
-      log(`🔧 Using FFmpeg from: ${ffmpegPath.path}`)
 
       // Spawn FFmpeg process to transcode WAV to PCM
       const ffmpeg = spawn(ffmpegPath.path, [
@@ -137,47 +108,35 @@ export class TTSPlayer {
         'pipe:1' // Write to stdout
       ])
 
-      // Add error handlers
+      // Error handlers
       ffmpeg.stderr.on('data', (data) => {
-        log('❌ FFmpeg stderr:', data.toString())
+        log('FFmpeg error:', data.toString())
       })
 
       ffmpeg.on('error', (err) => {
-        log('❌ FFmpeg process error:', err)
+        log('FFmpeg process error:', err)
       })
 
       ffmpeg.on('exit', (code, signal) => {
         if (code !== 0 && code !== null) {
-          log(`❌ FFmpeg exited with code ${code}, signal ${signal}`)
+          log(`FFmpeg exited with code ${code}, signal ${signal}`)
         }
       })
 
-      log(`🔀 Piping audio through FFmpeg`)
+      // Pipe WAV through FFmpeg
       stream.pipe(ffmpeg.stdin)
 
-      // Create audio resource with the FFmpeg stdout (PCM stream)
-      log(`🎵 Creating audio resource with PCM stream`)
+      // Create audio resource with the PCM stream
       const resource = createAudioResource(ffmpeg.stdout, {
         inputType: StreamType.Raw
       })
 
       // Play the resource
-      log(`▶️  Calling player.play()`)
       this.player.play(resource)
-      log('✅ TTS audio now playing')
+      log('TTS audio playing')
     } catch (error) {
-      log('❌ Error playing TTS audio:')
-      log('Error type:', typeof error)
-      log('Error value:', error)
-      log('Error JSON:', JSON.stringify(error, null, 2))
-      if (error instanceof Error) {
-        log('Error name:', error.name)
-        log('Error message:', error.message)
-        log('Error stack:', error.stack)
-      }
-      log('Full error object:', Object.keys(error || {}).join(', '))
+      log('Error playing TTS audio:', error)
       this.isPlaying = false
-      log(`🔄 Attempting to play next item in queue`)
       this.playNext()
     }
   }
