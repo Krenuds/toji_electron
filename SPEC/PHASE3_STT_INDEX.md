@@ -1,185 +1,58 @@
 # Phase 3: Speech-to-Text - Documentation Index
 
-## Quick Start (5 minutes)
-
-**Want to see it working right now?**
+## Quick Start
 
 👉 **[PHASE3_STT_QUICKSTART.md](./PHASE3_STT_QUICKSTART.md)** - Get whisper.cpp running locally in 5 minutes
 
 ---
 
-## Overview Documents
+## Core Documents
 
 ### 📋 [PHASE3_STT_SUMMARY.md](./PHASE3_STT_SUMMARY.md)
-
-**Read this first!** High-level overview of the entire STT system.
-
-- What we're building
-- Why whisper.cpp
-- Architecture diagram
-- 3 implementation phases
-- Key decisions
-- Success criteria
-
-**Time to read:** 10 minutes
-
----
+**Read this first!** High-level overview: what we're building, why whisper.cpp, architecture, 3 phases, decisions, success criteria.
 
 ### 🔍 [PHASE3_STT_OPTIONS.md](./PHASE3_STT_OPTIONS.md)
-
-Quick comparison of different STT technologies.
-
-- whisper.cpp vs whisper-node vs Python
-- Comparison matrix
-- Pros/cons of each
-- Why we chose whisper.cpp
-
-**Time to read:** 5 minutes
-
----
-
-## Implementation Documents
+Quick comparison of STT technologies (whisper.cpp vs alternatives) with pros/cons.
 
 ### 📘 [PHASE3_STT_PLAN.md](./PHASE3_STT_PLAN.md)
-
-**Most detailed document.** Full implementation plan with all technical details.
-
-- Research findings
-- Architecture diagrams
-- 3 phases with detailed tasks
-- Technical specifications
-- Audio format requirements
-- Model selection
-- Configuration schema
-- Error handling
-- Testing strategy
-- Deployment considerations
-
-**Time to read:** 30 minutes
-**Use for:** Deep technical reference
-
----
+**Most detailed.** Full implementation plan: architecture, specifications, audio formats, models, config, error handling, testing, deployment.
 
 ### 🗺️ [PHASE3_STT_ROADMAP.md](./PHASE3_STT_ROADMAP.md)
-
-Day-by-day implementation timeline with code examples.
-
-- Visual timeline (3 weeks)
-- Day 1: Clone & build
-- Day 2: Models & testing
-- Days 3-4: Electron bundle
-- Day 5: Service stub
-- Days 6-7: Audio capture
-- Days 8-9: Wake word detection
-- Day 10: VAD & silence
-- Days 11-14: Integration & UI
-- Testing checklist
-- Deployment checklist
-
-**Time to read:** 20 minutes
-**Use for:** Daily implementation guide
-
----
+Day-by-day timeline (3 weeks): build setup, audio capture, integration, checklists.
 
 ### 🎯 [PHASE3_STT_DECISIONS.md](./PHASE3_STT_DECISIONS.md)
-
-Decision matrices for all technical choices.
-
-- Wake word strategy comparison
-- Model selection matrix
-- Audio capture library comparison
-- Routing priority
-- UI placement options
-- Hotkey options
-- VAD sensitivity tuning
-- Silence detection timing
-- Deployment strategy
-- Error recovery
-- Performance optimization
-- Testing environments
-- Full configuration schema
-
-**Time to read:** 15 minutes
-**Use for:** Making technical decisions
+Decision matrices: wake word, models, audio capture, routing, UI, hotkeys, VAD, deployment, config schema.
 
 ---
 
 ## Quick Reference
 
 ### Technology Stack
-
 ```text
-whisper.cpp (C++)      ← STT engine
-  ↓
-node-microphone        ← Audio capture
-  ↓
-STTService (TS)        ← Main service
-  ↓
-IPC Handlers           ← Electron bridge
-  ↓
-React Hooks + UI       ← User interface
-  ↓
-Project/Discord        ← Integration
+whisper.cpp (C++) → node-microphone → STTService (TS) → IPC → React Hooks + UI → Project/Discord
 ```
 
-### Key Files to Create
-
+### Key Files
 ```text
-src/
-  main/
-    services/
-      stt-service.ts              ← Core STT logic
-    handlers/
-      stt.handlers.ts             ← IPC handlers
-  preload/
-    api/
-      stt.api.ts                  ← IPC bridge
-  renderer/
-    src/
-      hooks/
-        useSTT.ts                 ← React hook
-      components/
-        STTButton.tsx             ← UI component
-
-resources/
-  whisper/
-    bin/
-      whisper-stream              ← Binary
-    models/
-      ggml-base.en.bin            ← Model (~142MB)
-      ggml-silero-v5.1.2.bin      ← VAD model (~1MB)
+src/main/services/stt-service.ts       ← Core STT logic
+src/main/handlers/stt.handlers.ts      ← IPC handlers
+src/preload/api/stt.api.ts             ← IPC bridge
+src/renderer/src/hooks/useSTT.ts       ← React hook
+src/renderer/src/components/STTButton.tsx ← UI component
+resources/whisper/bin/whisper-stream   ← Binary
+resources/whisper/models/ggml-base.en.bin ← Model (~142MB)
 ```
 
-### Model Recommendations
+### Models
+- **Production:** base.en (142MB, best balance)
+- **Testing:** tiny.en (75MB, fast)
+- **Power Users:** small.en (466MB, better accuracy)
 
-| Environment | Model | Reason |
-|-------------|-------|--------|
-| **Production** | base.en | Best balance (142MB) |
-| **Testing** | tiny.en | Fast, small (75MB) |
-| **Desktop Power Users** | small.en | Better accuracy (466MB) |
-| **Low-end Devices** | tiny.en | Lighter CPU usage |
-
-### Commands Cheat Sheet
-
+### Build Commands
 ```bash
-# Build whisper.cpp
-cmake -B build -DWHISPER_SDL2=ON
-cmake --build build -j --config Release
-
-# Download model
+cmake -B build -DWHISPER_SDL2=ON && cmake --build build -j --config Release
 sh ./models/download-ggml-model.sh base.en
-
-# Test streaming
-./build/bin/whisper-stream -m ./models/ggml-base.en.bin
-
-# Download VAD
-./models/download-vad-model.sh silero-v5.1.2
-
-# Test with VAD
-./build/bin/whisper-stream \
-  -m ./models/ggml-base.en.bin \
-  --vad \
-  --vad-model ./models/ggml-silero-v5.1.2.bin
+./build/bin/whisper-stream -m ./models/ggml-base.en.bin --vad --vad-model ./models/ggml-silero-v5.1.2.bin
 ```
 
 ---
@@ -187,134 +60,66 @@ sh ./models/download-ggml-model.sh base.en
 ## Implementation Phases
 
 ### Phase 3.1: Whisper Setup (2-3 days)
-
-**Goal:** Build and bundle whisper.cpp
-
-📖 **Documents:**
-
-- [PHASE3_STT_ROADMAP.md](./PHASE3_STT_ROADMAP.md) (Days 1-5)
-- [PHASE3_STT_QUICKSTART.md](./PHASE3_STT_QUICKSTART.md)
-
-**Tasks:**
-
-- Build whisper.cpp locally
-- Download models
-- Bundle with Electron
-- Create service stub
-
+**Goal:** Build and bundle whisper.cpp  
+**Docs:** [ROADMAP Days 1-5](./PHASE3_STT_ROADMAP.md), [QUICKSTART](./PHASE3_STT_QUICKSTART.md)  
+**Tasks:** Build whisper.cpp, download models, bundle with Electron, create service stub  
 **Success:** Binary runs, spawns from Node.js
 
----
-
 ### Phase 3.2: Audio Capture (3-4 days)
-
-**Goal:** Capture audio and detect speech boundaries
-
-📖 **Documents:**
-
-- [PHASE3_STT_ROADMAP.md](./PHASE3_STT_ROADMAP.md) (Days 6-10)
-- [PHASE3_STT_DECISIONS.md](./PHASE3_STT_DECISIONS.md) (Audio Capture)
-
-**Tasks:**
-
-- Implement microphone capture
-- Wake word detection
-- VAD integration
-- Silence detection
-
+**Goal:** Capture audio and detect speech boundaries  
+**Docs:** [ROADMAP Days 6-10](./PHASE3_STT_ROADMAP.md), [DECISIONS Audio](./PHASE3_STT_DECISIONS.md)  
+**Tasks:** Microphone capture, wake word detection, VAD integration, silence detection  
 **Success:** Audio captured, wake word works, silence ends transcription
 
----
-
 ### Phase 3.3: Integration (2-3 days)
-
-**Goal:** Route transcriptions and build UI
-
-📖 **Documents:**
-
-- [PHASE3_STT_ROADMAP.md](./PHASE3_STT_ROADMAP.md) (Days 11-14)
-- [PHASE3_STT_DECISIONS.md](./PHASE3_STT_DECISIONS.md) (UI Placement)
-
-**Tasks:**
-
-- IPC handlers
-- Routing logic (Project/Discord)
-- UI components
-- Hotkey registration
-
+**Goal:** Route transcriptions and build UI  
+**Docs:** [ROADMAP Days 11-14](./PHASE3_STT_ROADMAP.md), [DECISIONS UI](./PHASE3_STT_DECISIONS.md)  
+**Tasks:** IPC handlers, routing logic (Project/Discord), UI components, hotkey registration  
 **Success:** End-to-end voice input works
 
 ---
 
 ## Common Questions
 
-### Q: Why not use OpenAI's API?
+**Q: Why not OpenAI's API?**  
+A: Privacy concerns, requires internet, costs money, no real-time streaming.
 
-**A:** Privacy concerns, requires internet, costs money, no real-time streaming.
+**Q: Why whisper.cpp over Python?**  
+A: Faster (C++), real-time streaming, easier Electron bundling.
 
-### Q: Why whisper.cpp over Python Whisper?
+**Q: Always-on wake word?**  
+A: No, starting with button/hotkey. Always-on is optional later.
 
-**A:** Faster (C++), real-time streaming support, easier to bundle with Electron.
+**Q: Speaker diarization?**  
+A: Phase 4+. whisper.cpp supports tinydiarize, but not MVP.
 
-### Q: Do we need always-on wake word detection?
+**Q: Download size?**  
+A: ~142MB model + ~10MB binary = ~200MB total app increase.
 
-**A:** No, starting with button/hotkey activation. Always-on is optional later.
+**Q: Languages?**  
+A: English-only initially (base.en). Multilingual models available later.
 
-### Q: What about speaker diarization?
-
-**A:** Phase 4+. whisper.cpp supports tinydiarize, but not MVP.
-
-### Q: How big is the download?
-
-**A:** ~142MB for base.en model + ~10MB binary. Total app size +~200MB.
-
-### Q: What languages are supported?
-
-**A:** English-only initially (base.en). Multilingual models available later.
-
-### Q: Does it work offline?
-
-**A:** Yes! 100% local processing. No internet required.
+**Q: Offline support?**  
+A: Yes! 100% local processing.
 
 ---
 
 ## Prerequisites
 
 ### Development
-
-- Node.js 18+
-- CMake 3.15+
-- C++ compiler (MSVC/GCC/Clang)
-- SDL2 library (for audio)
-- FFmpeg (for audio conversion)
+- Node.js 18+, CMake 3.15+, C++ compiler (MSVC/GCC/Clang), SDL2, FFmpeg
 
 ### Runtime
-
-- Microphone access
-- ~500MB RAM
-- ~1GB disk space (for models)
-- Modern CPU (whisper.cpp is CPU-optimized)
+- Microphone access, ~500MB RAM, ~1GB disk space, modern CPU
 
 ---
 
-## Timeline Overview
+## Timeline
 
 ```text
-Week 1: Whisper Setup (Phase 3.1)
-├─ Days 1-2: Build & test locally
-├─ Days 3-4: Bundle with Electron
-└─ Day 5: Service stub
-
-Week 2: Audio Capture (Phase 3.2)
-├─ Days 6-7: Microphone capture
-├─ Days 8-9: Wake word detection
-└─ Day 10: VAD & silence
-
-Week 3: Integration (Phase 3.3)
-├─ Day 11: IPC handlers
-├─ Day 12: Routing logic
-└─ Days 13-14: UI & testing
-
+Week 1: Whisper Setup (Phase 3.1)    Days 1-5
+Week 2: Audio Capture (Phase 3.2)    Days 6-10
+Week 3: Integration (Phase 3.3)      Days 11-14
 Total: 14 days (2-3 weeks)
 ```
 
@@ -323,15 +128,13 @@ Total: 14 days (2-3 weeks)
 ## Success Criteria
 
 ### Must Have
-
 - ✅ Real-time audio transcription
 - ✅ Start/stop via button or hotkey
 - ✅ Silence detection (auto-stop)
 - ✅ Send to active project or Discord
 - ✅ Works on Windows/macOS/Linux
 
-### Nice to Have (Phase 4+)
-
+### Phase 4+
 - ⏳ Always-on wake word detection
 - ⏳ Custom wake words
 - ⏳ Speaker diarization
@@ -342,44 +145,16 @@ Total: 14 days (2-3 weeks)
 
 ## Resources
 
-### External Links
+### External
+- [whisper.cpp GitHub](https://github.com/ggml-org/whisper.cpp)
+- [Streaming example](https://github.com/ggml-org/whisper.cpp/tree/master/examples/stream)
+- [Whisper models](https://huggingface.co/ggerganov/whisper.cpp)
+- [node-microphone](https://www.npmjs.com/package/node-microphone)
 
-- whisper.cpp GitHub: <https://github.com/ggml-org/whisper.cpp>
-- Streaming example: <https://github.com/ggml-org/whisper.cpp/tree/master/examples/stream>
-- Whisper models: <https://huggingface.co/ggerganov/whisper.cpp>
-- node-microphone: <https://www.npmjs.com/package/node-microphone>
-
-### Project Files
-
-- [TTS Service](../src/main/services/tts-service.ts) (reference for similar pattern)
-- [Discord Plugin](../src/plugins/discord/) (voice integration reference)
-- [Toji Tools](../src/main/toji/) (MCP tool integration examples)
-
----
-
-## Next Steps
-
-### Today
-
-1. ✅ Read [PHASE3_STT_SUMMARY.md](./PHASE3_STT_SUMMARY.md)
-2. ✅ Review [PHASE3_STT_OPTIONS.md](./PHASE3_STT_OPTIONS.md)
-3. 🎯 **Run [PHASE3_STT_QUICKSTART.md](./PHASE3_STT_QUICKSTART.md)** to test whisper.cpp locally
-
-### This Week
-
-1. Complete Phase 3.1 (Whisper Setup)
-2. Start Phase 3.2 (Audio Capture)
-
-### Next Week
-
-1. Complete Phase 3.2
-2. Start Phase 3.3 (Integration)
-
-### Week After
-
-1. Complete Phase 3.3
-2. Testing & polish
-3. Deploy!
+### Internal
+- [TTS Service](../src/main/services/tts-service.ts) - reference pattern
+- [Discord Plugin](../src/plugins/discord/) - voice integration
+- [Toji Tools](../src/main/toji/) - MCP tool examples
 
 ---
 
@@ -387,35 +162,30 @@ Total: 14 days (2-3 weeks)
 
 ```text
 New to project?
-  → Start: PHASE3_STT_SUMMARY.md
-  → Then: PHASE3_STT_OPTIONS.md
-  → Test: PHASE3_STT_QUICKSTART.md
+  → PHASE3_STT_SUMMARY.md → PHASE3_STT_OPTIONS.md → PHASE3_STT_QUICKSTART.md
 
 Planning/Architecture?
-  → Read: PHASE3_STT_PLAN.md
-  → Decide: PHASE3_STT_DECISIONS.md
+  → PHASE3_STT_PLAN.md → PHASE3_STT_DECISIONS.md
 
 Implementing?
-  → Follow: PHASE3_STT_ROADMAP.md (day by day)
-  → Reference: PHASE3_STT_PLAN.md (technical details)
+  → PHASE3_STT_ROADMAP.md (day by day) + PHASE3_STT_PLAN.md (technical details)
 
 Making choices?
-  → Use: PHASE3_STT_DECISIONS.md (decision matrices)
+  → PHASE3_STT_DECISIONS.md (decision matrices)
 ```
 
 ---
 
-## Feedback & Updates
+## Next Steps
 
-As you implement, update these documents with:
+### Today
+1. ✅ Read [PHASE3_STT_SUMMARY.md](./PHASE3_STT_SUMMARY.md)
+2. ✅ Review [PHASE3_STT_OPTIONS.md](./PHASE3_STT_OPTIONS.md)
+3. 🎯 Run [PHASE3_STT_QUICKSTART.md](./PHASE3_STT_QUICKSTART.md)
 
-- Actual timelines vs estimates
-- Technical issues encountered
-- Solutions to problems
-- Performance benchmarks
-- Platform-specific gotchas
-
-This keeps the docs useful for future reference!
+### This Week: Complete Phase 3.1 (Whisper Setup), start Phase 3.2 (Audio Capture)
+### Next Week: Complete Phase 3.2, start Phase 3.3 (Integration)
+### Week After: Complete Phase 3.3, testing, deploy!
 
 ---
 
