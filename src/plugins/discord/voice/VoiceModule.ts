@@ -131,11 +131,13 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     log(`Calling joinVoiceChannel from @discordjs/voice...`)
     log(`Voice adapter available: ${typeof channel.guild.voiceAdapterCreator === 'function'}`)
 
-    // Join the voice channel with debug enabled
+    // Join the voice channel with audio output enabled
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
       adapterCreator: channel.guild.voiceAdapterCreator,
+      selfDeaf: false, // CRITICAL: Must be false to transmit audio
+      selfMute: false, // Not muted so we can speak
       debug: true // Enable debug logging
     })
 
@@ -360,12 +362,46 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
 
   /**
+   * Upsample PCM audio from 24kHz mono to 48kHz stereo
+   * @param inputBuffer 24kHz mono s16le PCM data from OpenAI
+   * @returns 48kHz stereo s16le PCM data for Discord
+   */
+  private upsamplePCM(inputBuffer: Buffer): Buffer {
+    const inputSamples = inputBuffer.length / 2 // 16-bit = 2 bytes per sample
+    const outputSamples = inputSamples * 2 * 2 // 2x sample rate, 2 channels
+    const outputBuffer = Buffer.alloc(outputSamples * 2) // 2 bytes per sample
+
+    for (let i = 0; i < inputSamples; i++) {
+      // Read 16-bit sample from input (mono, 24kHz)
+      const sample = inputBuffer.readInt16LE(i * 2)
+      
+      // Write to output twice (upsample 24kHz -> 48kHz)
+      // and duplicate to both channels (mono -> stereo)
+      const outIdx = i * 4 * 2 // 4 samples (2x rate, 2 channels), 2 bytes each
+      
+      // First frame (same sample, both channels)
+      outputBuffer.writeInt16LE(sample, outIdx + 0) // Left channel
+      outputBuffer.writeInt16LE(sample, outIdx + 2) // Right channel
+      
+      // Second frame (duplicate for 2x sample rate)
+      outputBuffer.writeInt16LE(sample, outIdx + 4) // Left channel
+      outputBuffer.writeInt16LE(sample, outIdx + 6) // Right channel
+    }
+
+    console.log(`[upsamplePCM] Input: ${inputBuffer.length} bytes (${inputSamples} samples @ 24kHz mono)`)
+    console.log(`[upsamplePCM] Output: ${outputBuffer.length} bytes (${outputSamples / 2} samples @ 48kHz stereo)`)
+    
+    return outputBuffer
+  }
+
+  /**
    * Play TTS audio in a voice session
    * @param sessionId The voice session ID
-   * @param audioBuffer Audio data from TTS service (opus format)
+   * @param audioBuffer Audio data from TTS service (PCM format from OpenAI)
    */
   async playTTS(sessionId: string, audioBuffer: Buffer): Promise<void> {
-    log(`[playTTS] Starting playback for session ${sessionId}`)
+    console.log(`[playTTS] Starting playback for session ${sessionId}`)
+    console.log(`[playTTS] Audio buffer size: ${audioBuffer.length} bytes`)
 
     const session = this.sessions.get(sessionId)
     if (!session) {
@@ -377,37 +413,63 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       throw new Error(`No voice connection for session: ${sessionId}`)
     }
 
+    console.log(`[playTTS] Connection status: ${connection.state.status}`)
+
     try {
       // Get or create audio player for this session
       let player = this.audioPlayers.get(sessionId)
       if (!player) {
+        console.log(`[playTTS] Creating new audio player...`)
         player = createAudioPlayer()
         this.audioPlayers.set(sessionId, player)
 
         // Subscribe the connection to the player
-        connection.subscribe(player)
+        const subscription = connection.subscribe(player)
+        console.log(`[playTTS] Subscription result:`, subscription ? 'SUCCESS' : 'FAILED')
+
+        // Handle player state changes
+        player.on('stateChange', (oldState, newState) => {
+          console.log(
+            `[playTTS] Audio player state: ${oldState.status} -> ${newState.status}`
+          )
+        })
 
         // Handle player events
         player.on('error', (error) => {
-          log(`[playTTS] Audio player error for ${sessionId}:`, error)
+          console.log(`[playTTS] Audio player error for ${sessionId}:`, error)
         })
 
-        log(`[playTTS] Created new audio player for session ${sessionId}`)
+        console.log(`[playTTS] Created new audio player for session ${sessionId}`)
       }
 
-      // Convert Buffer to Readable stream
-      const audioStream = Readable.from(audioBuffer)
+      console.log(`[playTTS] Current player state: ${player.state.status}`)
 
-      // Create audio resource with opus format (no transcoding needed)
-      const resource = createAudioResource(audioStream, {
-        inputType: StreamType.Opus
+      // OpenAI PCM format: 24kHz, mono, signed 16-bit little-endian
+      // Discord.js expects: 48kHz, stereo, signed 16-bit little-endian
+      // Solution: Upsample from 24kHz mono to 48kHz stereo by duplicating samples
+      console.log(`[playTTS] Creating audio resource...`)
+      console.log(`[playTTS] Upsampling PCM from 24kHz mono to 48kHz stereo`)
+      
+      const upsampledBuffer = this.upsamplePCM(audioBuffer)
+      const upsampledStream = Readable.from(upsampledBuffer)
+      
+      const resource = createAudioResource(upsampledStream, {
+        inputType: StreamType.Raw, // Raw PCM s16le 48kHz stereo
+        inlineVolume: true
       })
 
+      // Set volume (optional, but good to verify control works)
+      if (resource.volume) {
+        resource.volume.setVolume(1.0)
+        console.log(`[playTTS] Volume set to 1.0`)
+      }
+
+      console.log(`[playTTS] Resource created, playing...`)
       // Play the audio
       player.play(resource)
-      log(`[playTTS] Started TTS playback for session ${sessionId}`)
+      console.log(`[playTTS] player.play() called successfully`)
     } catch (error) {
-      log(`[playTTS] Failed to play TTS audio for ${sessionId}:`, error)
+      console.log(`[playTTS] Failed to play TTS audio for ${sessionId}:`, error)
       throw error
     }
   }
@@ -431,11 +493,49 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    * @returns The voice session for that project, or undefined
    */
   getUserSessionByChannel(textChannelId: string): VoiceSession | undefined {
+    console.log(
+      '[getUserSessionByChannel] Looking for session with projectChannelId:',
+      textChannelId
+    )
+    console.log('[getUserSessionByChannel] Active sessions count:', this.sessions.size)
+
     for (const session of this.sessions.values()) {
+      console.log('[getUserSessionByChannel] Checking session:', {
+        id: session.id,
+        projectChannelId: session.projectChannelId,
+        voiceChannelId: session.config.channelId,
+        status: session.status
+      })
+
       if (session.projectChannelId === textChannelId) {
+        console.log('[getUserSessionByChannel] ✅ MATCH FOUND!')
         return session
       }
     }
+
+    console.log('[getUserSessionByChannel] ❌ No matching session found')
+    return undefined
+  }
+
+  /**
+   * Get a user's active voice session by their user ID
+   * This allows TTS to work regardless of which text channel they message from
+   */
+  getUserSessionByUserId(userId: string): VoiceSession | undefined {
+    console.log('[getUserSessionByUserId] Looking for session for user:', userId)
+    console.log('[getUserSessionByUserId] Active sessions count:', this.sessions.size)
+
+    const sessionId = this.userSessions.get(userId)
+    if (sessionId) {
+      const session = this.sessions.get(sessionId)
+      console.log(
+        '[getUserSessionByUserId]',
+        session ? '✅ Session found!' : '❌ Session ID exists but session not found'
+      )
+      return session
+    }
+
+    console.log('[getUserSessionByUserId] ❌ No session found for user')
     return undefined
   }
 }

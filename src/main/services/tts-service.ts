@@ -5,8 +5,27 @@
 
 import { createFileDebugLogger } from '../utils/logger'
 import type { ConfigProvider } from '../config/ConfigProvider'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
 
 const log = createFileDebugLogger('tts-service')
+
+// Load .env file manually if it exists
+try {
+  const envPath = join(process.cwd(), '.env')
+  if (existsSync(envPath)) {
+    const envContent = readFileSync(envPath, 'utf-8')
+    envContent.split('\n').forEach((line) => {
+      const match = line.match(/^OPENAI_TTS_API_KEY=(.+)$/)
+      if (match && !process.env.OPENAI_TTS_API_KEY) {
+        process.env.OPENAI_TTS_API_KEY = match[1].trim()
+        console.log('[TTS] Loaded OPENAI_TTS_API_KEY from .env file')
+      }
+    })
+  }
+} catch (err) {
+  console.log('[TTS] Could not load .env file:', err)
+}
 
 export interface TTSConfig {
   model: 'tts-1' | 'tts-1-hd'
@@ -20,10 +39,10 @@ export class TTSService {
 
   constructor(config: ConfigProvider) {
     log('Initializing TTSService')
-    
+
     // Try to get API key from ConfigProvider first
     this.apiKey = config.getOpencodeApiKey('openai')
-    
+
     // Fall back to environment variable if not in config
     if (!this.apiKey && process.env.OPENAI_TTS_API_KEY) {
       this.apiKey = process.env.OPENAI_TTS_API_KEY
@@ -39,7 +58,7 @@ export class TTSService {
   }
 
   /**
-   * Convert text to speech using OpenAI TTS API
+   * Convert text to speech using OpenAI TTS API with retry logic
    * @param text The text to convert to speech (max 4096 characters)
    * @param options TTS configuration options
    * @returns Audio buffer in specified format
@@ -63,7 +82,7 @@ export class TTSService {
       model: options.model || 'tts-1', // Fast model by default
       voice: options.voice || 'nova', // Default voice
       speed: options.speed || 1.0,
-      responseFormat: options.responseFormat || 'opus' // Discord-friendly format
+      responseFormat: options.responseFormat || 'pcm' // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
     }
 
     log('Generating TTS:')
@@ -75,40 +94,79 @@ export class TTSService {
 
     const startTime = Date.now()
 
-    try {
-      const response = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: config.model,
-          input: text,
-          voice: config.voice,
-          speed: config.speed,
-          response_format: config.responseFormat
+    // Retry logic for transient errors
+    const maxRetries = 3
+    const retryDelay = 1000 // Start with 1 second
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 1) {
+          log(`🔄 Retry attempt ${attempt}/${maxRetries}`)
+        }
+
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: config.model,
+            input: text,
+            voice: config.voice,
+            speed: config.speed,
+            response_format: config.responseFormat
+          })
         })
-      })
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        log(`❌ TTS API error: ${response.status} - ${errorText}`)
-        throw new Error(`TTS API error: ${response.status} - ${errorText}`)
+        if (!response.ok) {
+          const errorText = await response.text()
+          const isServerError = response.status >= 500
+          const isRateLimited = response.status === 429
+
+          log(`❌ TTS API error: ${response.status} - ${errorText}`)
+
+          // Retry on server errors or rate limits
+          if ((isServerError || isRateLimited) && attempt < maxRetries) {
+            const delay = retryDelay * Math.pow(2, attempt - 1) // Exponential backoff
+            log(`⏳ Waiting ${delay}ms before retry...`)
+            await new Promise((resolve) => setTimeout(resolve, delay))
+            continue
+          }
+
+          throw new Error(`TTS API error: ${response.status} - ${errorText}`)
+        }
+
+        const audioBuffer = Buffer.from(await response.arrayBuffer())
+        const duration = Date.now() - startTime
+
+        log(`✅ TTS generated successfully`)
+        log(`  Buffer size: ${audioBuffer.length} bytes`)
+        log(`  Duration: ${duration}ms`)
+        if (attempt > 1) {
+          log(`  (succeeded on attempt ${attempt})`)
+        }
+
+        return audioBuffer
+      } catch (error) {
+        // If it's the last attempt or a non-retryable error, throw
+        if (
+          attempt === maxRetries ||
+          (error instanceof Error && !error.message.includes('500')) // Don't retry non-500 errors
+        ) {
+          log('❌ TTS generation failed after all retries:', error)
+          throw error
+        }
+
+        // Otherwise, wait and retry
+        const delay = retryDelay * Math.pow(2, attempt - 1)
+        log(`⏳ Error occurred, waiting ${delay}ms before retry...`)
+        await new Promise((resolve) => setTimeout(resolve, delay))
       }
-
-      const audioBuffer = Buffer.from(await response.arrayBuffer())
-      const duration = Date.now() - startTime
-
-      log(`✅ TTS generated successfully`)
-      log(`  Buffer size: ${audioBuffer.length} bytes`)
-      log(`  Duration: ${duration}ms`)
-
-      return audioBuffer
-    } catch (error) {
-      log('❌ TTS generation failed:', error)
-      throw error
     }
+
+    // Should never reach here, but TypeScript requires it
+    throw new Error('TTS generation failed: max retries exceeded')
   }
 
   /**

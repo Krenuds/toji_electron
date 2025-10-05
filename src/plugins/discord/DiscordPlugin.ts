@@ -62,8 +62,16 @@ export class DiscordPlugin extends EventEmitter {
   ) {
     super()
     // Initialize TTS service if ConfigProvider is available
+    console.log(
+      '[DiscordPlugin] Constructor called, config?.configProvider:',
+      !!config?.configProvider
+    )
     if (config?.configProvider) {
+      console.log('[DiscordPlugin] Creating TTSService...')
       this.ttsService = new TTSService(config.configProvider)
+      console.log('[DiscordPlugin] TTSService created')
+    } else {
+      console.log('[DiscordPlugin] No ConfigProvider, TTS will not be available')
     }
   }
 
@@ -209,6 +217,28 @@ export class DiscordPlugin extends EventEmitter {
                   await progressMessage.delete()
                 }
                 await sendDiscordResponse(message, fullText)
+
+                // Play TTS if there's an active voice session for this channel
+                if (this.voiceModule && this.ttsService) {
+                  try {
+                    const session = this.voiceModule.getUserSessionByChannel(message.channelId)
+                    if (session && session.status === 'connected') {
+                      console.log('[TTS] Found voice session for channel, generating TTS...')
+                      const audioBuffer = await this.ttsService.textToSpeech(fullText)
+                      console.log('[TTS] Audio generated, playing in voice channel...')
+                      await this.voiceModule.playTTS(session.id, audioBuffer)
+                      console.log('[TTS] Successfully played response in voice channel')
+                    }
+                  } catch (error) {
+                    console.log('[TTS] Failed to play voice response:', error)
+                    // Send a subtle warning but don't fail the interaction
+                    if ('send' in message.channel) {
+                      await message.channel.send(
+                        '⚠️ _Voice response temporarily unavailable (text response sent)_'
+                      )
+                    }
+                  }
+                }
               },
 
               onError: async (error) => {
@@ -301,25 +331,33 @@ export class DiscordPlugin extends EventEmitter {
             },
 
             onComplete: async (fullText) => {
+              console.log('[onComplete] Callback fired with text length:', fullText.length)
+              
               // Delete progress message and send final response
               if (progressMessage) {
                 await progressMessage.delete()
               }
               await sendDiscordResponse(message, fullText)
 
-              // Play TTS if user is in a voice channel for this project
+              // Play TTS if there's an active voice session for this channel
               if (this.voiceModule && this.ttsService) {
                 try {
                   const session = this.voiceModule.getUserSessionByChannel(message.channelId)
-                  if (session) {
-                    log('[TTS] Found voice session for channel, generating TTS...')
+                  if (session && session.status === 'connected') {
+                    console.log('[TTS] Found voice session for channel, generating TTS...')
                     const audioBuffer = await this.ttsService.textToSpeech(fullText)
+                    console.log('[TTS] Audio generated, playing in voice channel...')
                     await this.voiceModule.playTTS(session.id, audioBuffer)
-                    log('[TTS] Successfully played response in voice channel')
+                    console.log('[TTS] Successfully played response in voice channel')
                   }
                 } catch (error) {
-                  log('[TTS] Failed to play voice response:', error)
-                  // Don't fail the whole interaction if TTS fails
+                  console.log('[TTS] Failed to play voice response:', error)
+                  // Send a subtle warning but don't fail the interaction
+                  if ('send' in message.channel) {
+                    await message.channel.send(
+                      '⚠️ _Voice response temporarily unavailable (text response sent)_'
+                    )
+                  }
                 }
               }
             },

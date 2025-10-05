@@ -28,7 +28,7 @@ Add OpenAI as a dedicated integration section alongside Discord and OpenCode.
       <Badge>Text-to-Speech</Badge>
     </HStack>
   </Card.Header>
-  
+
   <Card.Body>
     {/* API Key Input */}
     <VStack align="stretch" gap={3}>
@@ -38,7 +38,7 @@ Add OpenAI as a dedicated integration section alongside Discord and OpenCode.
         value={openaiKeyInput}
         onChange={(e) => setOpenaiKeyInput(e.target.value)}
       />
-      
+
       {/* Save/Clear buttons */}
       <HStack>
         <Button onClick={handleSaveOpenAIKey}>Save</Button>
@@ -47,7 +47,7 @@ Add OpenAI as a dedicated integration section alongside Discord and OpenCode.
           {showOpenAIKey ? <LuEyeOff /> : <LuEye />}
         </Button>
       </HStack>
-      
+
       {/* Status */}
       {hasOpenAIKey && (
         <StatusBox status="success">
@@ -74,7 +74,7 @@ const [hasOpenAIKey, setHasOpenAIKey] = useState(false)
 ```tsx
 const handleSaveOpenAIKey = async () => {
   if (!openaiKeyInput.trim()) return
-  
+
   try {
     // Store in ConfigProvider under 'openai' provider
     await setApiKey('openai', openaiKeyInput.trim())
@@ -196,7 +196,7 @@ Add info about where to get the API key:
    - Add handlers for save/clear
 
 2. **Test with existing backend**
-   - Use `setApiKey('openai', key)` 
+   - Use `setApiKey('openai', key)`
    - Verify TTSService picks it up
 
 3. **Polish UI**
@@ -260,13 +260,13 @@ const handleClearOpenAIKey = async () => {
       <Badge colorScheme="purple">Text-to-Speech</Badge>
     </HStack>
   </Card.Header>
-  
+
   <Card.Body>
     <VStack align="stretch" gap={3}>
       <Text fontSize="sm" color="gray.500">
         Configure OpenAI API key for voice responses in Discord
       </Text>
-      
+
       <HStack>
         <Input
           placeholder="sk-proj-..."
@@ -282,7 +282,7 @@ const handleClearOpenAIKey = async () => {
           {showOpenAIKey ? <LuEyeOff /> : <LuEye />}
         </Button>
       </HStack>
-      
+
       <HStack>
         <Button
           onClick={handleSaveOpenAIKey}
@@ -297,13 +297,13 @@ const handleClearOpenAIKey = async () => {
           </Button>
         )}
       </HStack>
-      
+
       {hasOpenAIKey && (
         <StatusBox status="success">
           ✅ OpenAI API key configured
         </StatusBox>
       )}
-      
+
       <Text fontSize="xs" color="gray.500">
         Get your API key from{' '}
         <Link href="https://platform.openai.com/api-keys" isExternal color="blue.500">
