@@ -424,7 +424,12 @@ export class ServerManager {
       throw new Error(`OpenCode binary not found at ${binaryPath}. Please ensure it is installed.`)
     }
 
-    const configContent = opts.config ?? {}
+    // Only set OPENCODE_CONFIG_CONTENT if config is explicitly provided
+    // Otherwise let OpenCode SDK read opencode.json from cwd
+    const envVars = { ...process.env }
+    if (opts.config) {
+      envVars.OPENCODE_CONFIG_CONTENT = JSON.stringify(opts.config)
+    }
 
     const proc = spawn(
       binaryPath,
@@ -432,10 +437,7 @@ export class ServerManager {
       {
         cwd: opts.cwd, // Critical: Set the working directory for multi-project support
         signal: opts.signal,
-        env: {
-          ...process.env,
-          OPENCODE_CONFIG_CONTENT: JSON.stringify(configContent)
-        }
+        env: envVars
       }
     )
 

@@ -35,13 +35,11 @@ export class TTSPlayer {
 
     // Handle player events
     this.player.on(AudioPlayerStatus.Idle, () => {
-      logger.debug('Player idle')
       this.isPlaying = false
       this.playNext()
     })
 
     this.player.on(AudioPlayerStatus.Playing, () => {
-      logger.debug('Player playing')
       this.isPlaying = true
     })
 
@@ -59,8 +57,6 @@ export class TTSPlayer {
    * @param audioBuffer - WAV audio buffer from Piper
    */
   async play(audioBuffer: Buffer): Promise<void> {
-    logger.debug(`Playing TTS audio: ${audioBuffer.length} bytes`)
-
     // Add to queue
     this.queue.push(audioBuffer)
 
@@ -133,7 +129,6 @@ export class TTSPlayer {
 
       // Play the resource
       this.player.play(resource)
-      logger.debug('TTS audio playing')
     } catch (error) {
       logger.debug('Error playing TTS audio:', error)
       this.isPlaying = false

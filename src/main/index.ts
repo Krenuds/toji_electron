@@ -154,8 +154,14 @@ app.whenReady().then(async () => {
     }
 
     // Start the server from the project directory
+    // NOTE: We pass undefined config so OpenCode SDK reads opencode.json from disk
+    // This allows the server to pick up the initial config including MCP servers
+    // Toji will manage config updates through ConfigManager which uses deep merging
     loggerStartup.debug('Starting OpenCode server from project directory')
-    loggerStartup.debug('Config passed to server.start: undefined (should read from opencode.json)')
+    loggerStartup.debug(
+      'Not passing config to server.start - OpenCode SDK will read opencode.json from: %s',
+      lastProject
+    )
     await toji.server.start(undefined, lastProject)
     loggerStartup.debug('OpenCode server ready (running from %s)', lastProject)
 

@@ -27,8 +27,6 @@ import type { SessionManager } from '../sessions'
 import type { ITojiCore } from '../interfaces'
 import { createLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
-import { promises as fs, existsSync } from 'fs'
-import path from 'path'
 
 const logger = createLogger('mcp:manager')
 
@@ -220,47 +218,6 @@ export class McpManager {
   }
 
   /**
-   * Write opencode.json configuration with MCP server
-   * IMPORTANT: Merges with existing config to preserve user settings
-   */
-  private async writeOpencodeConfig(projectDirectory: string, mcpPort: number): Promise<void> {
-    const configPath = path.join(projectDirectory, 'opencode.json')
-    logger.debug('Writing opencode.json to %s', configPath)
-
-    // Read existing config if it exists
-    let existingConfig: Record<string, unknown> = {}
-    try {
-      if (existsSync(configPath)) {
-        const existingContent = await fs.readFile(configPath, 'utf-8')
-        existingConfig = JSON.parse(existingContent)
-        logger.debug('Loaded existing opencode.json config for merging')
-      }
-    } catch (error) {
-      logger.debug('Warning: Could not read existing opencode.json, creating new: %o', error)
-    }
-
-    // Merge MCP config with existing config
-    const config = {
-      $schema: 'https://opencode.ai/config.json',
-      ...existingConfig, // Preserve all existing settings
-      mcp: {
-        toji: {
-          type: 'remote',
-          url: `http://localhost:${mcpPort}/mcp`,
-          enabled: true
-        }
-      }
-    }
-
-    try {
-      await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8')
-      logger.debug('Successfully wrote opencode.json with MCP config (merged with existing)')
-    } catch (error) {
-      logger.debug('Warning: Failed to write opencode.json: %o', error)
-    }
-  }
-
-  /**
    * Create an MCP server for a project
    */
   async createServerForProject(options: McpServerOptions): Promise<McpServerInstance> {
@@ -368,9 +325,6 @@ export class McpManager {
     const httpServer = app.listen(port, () => {
       logger.debug('MCP HTTP server listening on port %d for project %s', port, normalized)
     })
-
-    // Write opencode.json with MCP configuration
-    await this.writeOpencodeConfig(normalized, port)
 
     const instance: McpServerInstance = {
       server,

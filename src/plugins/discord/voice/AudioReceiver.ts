@@ -188,13 +188,11 @@ export class AudioReceiver {
 
     // Speech end timer - fires after silence
     buffer.speechEndTimer = setTimeout(() => {
-      logger.debug(`Speech end detected for user ${userId}`)
       this.processUserAudio(userId)
     }, this.config.speechEndDelay)
 
     // Force timer - fires if user talks too long
     buffer.forceTimer = setTimeout(() => {
-      logger.debug(`Force processing audio for user ${userId} (max duration reached)`)
       this.processUserAudio(userId)
     }, this.config.forceProcessThreshold)
   }
@@ -226,8 +224,6 @@ export class AudioReceiver {
       return
     }
 
-    logger.debug(`Processing audio for user ${userId}: ${buffer.pcmData.length} chunks`)
-
     // Cancel timers
     this.cancelUserTimers(userId)
 
@@ -242,7 +238,6 @@ export class AudioReceiver {
     const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
 
     if (!result) {
-      logger.debug(`Audio from user ${userId} too short or silent, skipping`)
       return
     }
 

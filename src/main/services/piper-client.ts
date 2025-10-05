@@ -46,8 +46,6 @@ export class PiperClient {
     const startTime = Date.now()
     const { text, voice, speed = 1.0 } = request
 
-    logger.debug(`Synthesizing ${text.length} characters of text...`)
-
     try {
       const body = {
         text,
@@ -71,9 +69,6 @@ export class PiperClient {
       }
 
       const audioBuffer = Buffer.from(await response.arrayBuffer())
-      const duration = Date.now() - startTime
-
-      logger.debug(`Synthesis complete in ${duration}ms, ${audioBuffer.length} bytes`)
 
       return audioBuffer
     } catch (error) {

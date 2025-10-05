@@ -10,6 +10,7 @@ import type {
 } from './config'
 import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
 import { createLogger } from '../utils/logger'
+import { deepMerge, mergeMcpConfig } from '../utils/deep-merge'
 import { writeFile, readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -140,11 +141,9 @@ export class ConfigManager {
         logger.debug('No existing opencode.json file found, will create new')
       }
 
-      // Merge with existing configuration to preserve other settings
-      const mergedConfig = {
-        ...existingConfig,
-        ...config
-      }
+      // Deep merge with existing configuration to preserve nested user settings
+      // This is critical for preserving user's MCP servers, nested permissions, etc.
+      const mergedConfig = deepMerge(existingConfig, config)
 
       logger.debug('Merged config to write: %o', mergedConfig)
 
@@ -249,6 +248,49 @@ export class ConfigManager {
       logger.debug('Model selection updated successfully')
     } catch (error) {
       logger.debug('ERROR: Failed to update model selection: %o', error)
+      throw error
+    }
+  }
+
+  /**
+   * Register MCP server in project's opencode.json
+   * This is the ONLY place that writes MCP configuration to opencode.json
+   * Called by Toji after MCP server is created
+   */
+  async registerMcpServer(directory: string, port: number): Promise<void> {
+    const configPath = join(directory, 'opencode.json')
+    logger.debug('Registering MCP server for %s on port %d', directory, port)
+
+    try {
+      // Read existing config
+      let existingConfig: Record<string, unknown> = {}
+      if (existsSync(configPath)) {
+        try {
+          const existingContent = await readFile(configPath, 'utf-8')
+          existingConfig = JSON.parse(existingContent)
+          logger.debug('Loaded existing config for MCP merge')
+        } catch (error) {
+          logger.debug('Warning: Could not parse existing config: %o', error)
+        }
+      }
+
+      // Merge Toji's MCP server config
+      const tojiMcpConfig = {
+        type: 'remote',
+        url: `http://localhost:${port}/mcp`,
+        enabled: true
+      }
+
+      const mergedConfig = {
+        $schema: 'https://opencode.ai/config.json',
+        ...mergeMcpConfig(existingConfig, 'toji', tojiMcpConfig)
+      }
+
+      // Write merged config
+      await writeFile(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8')
+      logger.debug('Successfully registered MCP server in opencode.json')
+    } catch (error) {
+      logger.debug('ERROR: Failed to register MCP server: %o', error)
       throw error
     }
   }

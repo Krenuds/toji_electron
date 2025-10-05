@@ -58,18 +58,26 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   async initialize(): Promise<void> {
     logger.debug('Initializing VoiceModule')
 
-    // Log compact dependency report for debugging
+    // Check voice dependencies (what we actually use)
     try {
       const { generateDependencyReport } = await import('@discordjs/voice')
       const report = generateDependencyReport()
 
-      // Extract just the critical info (installed libraries)
+      // Extract opus and sodium from discord.js report
       const hasOpus = report.includes('@discordjs/opus:')
       const hasSodium = report.includes('sodium-native:')
-      const hasFFmpeg = report.includes('FFmpeg') && !report.includes('not found')
+
+      // Check our bundled FFmpeg (what TTSPlayer actually uses)
+      let hasFFmpeg = false
+      try {
+        const ffmpegModule = await import('@ffmpeg-installer/ffmpeg')
+        hasFFmpeg = Boolean(ffmpegModule.path)
+      } catch {
+        hasFFmpeg = false
+      }
 
       logger.debug(
-        'Voice dependencies: opus=%s, sodium=%s, ffmpeg=%s',
+        'Voice dependencies: opus=%s, sodium=%s, ffmpeg=%s (bundled)',
         hasOpus ? 'ok' : 'missing',
         hasSodium ? 'ok' : 'missing',
         hasFFmpeg ? 'ok' : 'missing'
@@ -198,7 +206,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       adapterCreator: channel.guild.voiceAdapterCreator,
       selfDeaf: false, // IMPORTANT: Must be undeafened to receive audio
       selfMute: false, // Must be unmuted to speak
-      debug: true // Enable debug logging
+      debug: false // Disable to reduce log noise during voice chat
     })
 
     logger.debug(`Connection object created, initial state: ${connection.state.status}`)

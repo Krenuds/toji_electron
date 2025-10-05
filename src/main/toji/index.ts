@@ -160,14 +160,22 @@ export class Toji extends EventEmitter {
     const targetDirectory = directory || process.cwd()
     loggerClient.debug('Connecting client for directory: %s', targetDirectory)
 
-    // Create MCP server FIRST so opencode.json is ready when OpenCode starts
+    // Create MCP server and register it via ConfigManager
     try {
-      await this.mcp.createServerForProject({
+      const mcpInstance = await this.mcp.createServerForProject({
         projectDirectory: targetDirectory
       })
-      logger.debug('MCP server created for project: %s', targetDirectory)
+      logger.debug(
+        'MCP server created on port %d for project: %s',
+        mcpInstance.port,
+        targetDirectory
+      )
+
+      // Register MCP in opencode.json via ConfigManager (single source of truth)
+      await this.configManager.registerMcpServer(targetDirectory, mcpInstance.port)
+      logger.debug('MCP server registered in opencode.json for: %s', targetDirectory)
     } catch (error) {
-      logger.warn('Failed to create MCP server: %o', error)
+      logger.warn('Failed to create/register MCP server: %o', error)
       // Don't throw - MCP is optional functionality
     }
 
@@ -216,16 +224,8 @@ export class Toji extends EventEmitter {
     this.currentProjectDirectory = directory
     loggerClient.info('Project directory set to: %s', directory)
 
-    // Try to create MCP server for this project
-    try {
-      await this.mcp.createServerForProject({
-        projectDirectory: directory
-      })
-      logger.debug('MCP server created for project: %s', directory)
-    } catch (error) {
-      logger.debug('Warning: Failed to create MCP server: %o', error)
-      // Don't throw - MCP is optional functionality
-    }
+    // Note: MCP server is created in connectClient(), not here
+    // This method just changes the working directory and updates config
 
     // Save as current project in config
     const config = this._config

@@ -1,6 +1,7 @@
 // Unified logging system for Toji3
 import { writeFileSync, appendFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
+import { format as utilFormat } from 'util'
 import { app } from 'electron'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
@@ -167,11 +168,9 @@ export class Logger {
 
   private formatArgs(...args: unknown[]): { message: string; data?: unknown } {
     if (args.length === 0) return { message: '' }
-    if (args.length === 1) return { message: String(args[0]) }
-    if (args.length === 2) return { message: String(args[0]), data: args[1] }
 
-    // Handle multiple arguments - join them into message
-    const message = args.map((a) => String(a)).join(' ')
+    // Use Node.js util.format to handle printf-style placeholders (%s, %d, %o, etc.)
+    const message = utilFormat(...args)
     return { message }
   }
 

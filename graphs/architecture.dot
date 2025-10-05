@@ -70,6 +70,7 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/client-manager.ts" -> "src/main/utils/path.ts"
     "src/main/toji/client-manager.ts" -> "src/main/toji/server.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/config-manager.ts" [label=<config-manager.ts> tooltip="config-manager.ts" URL="src/main/toji/config-manager.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/config-manager.ts" -> "src/main/utils/deep-merge.ts"
     "src/main/toji/config-manager.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/config-manager.ts" -> "src/main/toji/agents-template.ts"
     "src/main/toji/config-manager.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -149,6 +150,7 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/types.ts" [label=<types.ts> tooltip="types.ts" URL="src/main/toji/types.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/audio-processor.ts" [label=<audio-processor.ts> tooltip="audio-processor.ts" URL="src/main/utils/audio-processor.ts" fillcolor="#ddfeff"] } } }
     "src/main/utils/audio-processor.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/deep-merge.ts" [label=<deep-merge.ts> tooltip="deep-merge.ts" URL="src/main/utils/deep-merge.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/logger.ts" [label=<logger.ts> tooltip="logger.ts" URL="src/main/utils/logger.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/path.ts" [label=<path.ts> tooltip="path.ts" URL="src/main/utils/path.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/DiscordPlugin.ts" [label=<DiscordPlugin.ts> tooltip="DiscordPlugin.ts" URL="src/plugins/discord/DiscordPlugin.ts" fillcolor="#ddfeff"] } } }
