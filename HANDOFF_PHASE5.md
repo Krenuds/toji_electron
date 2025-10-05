@@ -115,7 +115,7 @@ If keeping Docker (Path A or C), need to add:
 extraResources:
   - from: "resources/docker-services"
     to: "docker-services"
-    filter: 
+    filter:
       - "**/*"
       - "!**/logs"
       - "!**/tmp"

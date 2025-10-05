@@ -152,7 +152,7 @@ enum DockerMode {
      └─ NO  → Show friendly UI:
               "TTS/STT requires Docker Desktop"
               [Download Docker] [Learn More] [Skip]
-              
+
               App continues without voice features
               Can enable later from settings
    ```
@@ -162,7 +162,7 @@ enum DockerMode {
    extraResources:
      - from: "resources/docker-services"
        to: "docker-services"
-       filter: 
+       filter:
          - "**/*"
          - "!**/logs"
          - "!**/tmp"
