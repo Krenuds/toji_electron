@@ -1093,10 +1093,6 @@ export class Toji extends EventEmitter {
    * This makes the provider available for model selection
    */
   async registerApiKey(providerId: string, apiKey: string): Promise<void> {
-    logger.debug('Registering API key for provider: %s', providerId)
-    logger.debug(
-      `[Toji] registerApiKey('${providerId}'): Starting registration (key length: ${apiKey.length})`
-    )
     const client = this.getClient()
     if (!client) {
       logger.error('No client connected to server')
@@ -1104,7 +1100,6 @@ export class Toji extends EventEmitter {
     }
 
     try {
-      logger.debug(`[Toji] Calling client.auth.set for provider '${providerId}'`)
       await client.auth.set({
         path: { id: providerId },
         body: {
@@ -1113,10 +1108,8 @@ export class Toji extends EventEmitter {
         }
       })
       logger.info('Successfully registered API key for provider: %s', providerId)
-      logger.debug(`[Toji] ✓ API key registered successfully for '${providerId}'`)
     } catch (error) {
       logger.error('Failed to register API key for %s: %o', providerId, error)
-      console.error(`[Toji] ✗ Failed to register API key for '${providerId}':`, error)
       throw error
     }
   }
@@ -1126,42 +1119,33 @@ export class Toji extends EventEmitter {
    * Useful after server restart or project change
    */
   async syncApiKeys(): Promise<void> {
-    logger.debug('[Toji] syncApiKeys: Starting API key synchronization')
     const config = this._config
     if (!config) {
       logger.warn('No config provider, skipping API key sync')
-      console.warn('[Toji] syncApiKeys: No config provider available')
       return
     }
 
     const providers = config.getConfiguredProviders()
-    logger.debug('Syncing %d API keys with OpenCode server', providers.length)
-    logger.debug(
-      `[Toji] syncApiKeys: Found ${providers.length} providers to sync: [${providers.join(', ')}]`
-    )
-
     if (providers.length === 0) {
-      logger.debug('[Toji] syncApiKeys: No API keys configured, skipping sync')
       return
     }
+
+    logger.debug('Syncing %d API keys: [%s]', providers.length, providers.join(', '))
 
     for (const providerId of providers) {
       const apiKey = config.getOpencodeApiKey(providerId)
       if (apiKey) {
         try {
-          logger.debug(`[Toji] syncApiKeys: Syncing provider '${providerId}'...`)
           await this.registerApiKey(providerId, apiKey)
-          logger.debug(`[Toji] syncApiKeys: ✓ Successfully synced '${providerId}'`)
         } catch (error) {
           logger.warn('Failed to sync API key for %s: %o', providerId, error)
-          console.error(`[Toji] syncApiKeys: ✗ Failed to sync '${providerId}':`, error)
           // Continue with other providers even if one fails
         }
       } else {
-        console.warn(`[Toji] syncApiKeys: No API key found for provider '${providerId}'`)
+        logger.warn('No API key found for provider: %s', providerId)
       }
     }
-    logger.debug('[Toji] syncApiKeys: Synchronization complete')
+    logger.debug('API key synchronization complete')
   }
 }
 

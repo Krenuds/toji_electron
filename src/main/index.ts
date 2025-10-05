@@ -140,17 +140,14 @@ app.whenReady().then(async () => {
     loggerStartup.debug('Loading project: %s', lastProject)
     loggerStartup.debug('Checking opencode.json in project directory...')
     try {
-      const { readFile: readFileAsync } = await import('fs/promises')
       const { existsSync } = await import('fs')
       const { join: joinPath } = await import('path')
       const configPath = joinPath(lastProject, 'opencode.json')
       const configExists = existsSync(configPath)
       if (configExists) {
-        const configContent = await readFileAsync(configPath, 'utf-8')
-        loggerStartup.debug('opencode.json EXISTS in project directory: %s', configPath)
-        loggerStartup.debug('opencode.json content: %s', configContent)
+        loggerStartup.debug('opencode.json found in project: %s', configPath)
       } else {
-        loggerStartup.debug('opencode.json DOES NOT EXIST in project directory: %s', configPath)
+        loggerStartup.debug('No opencode.json in project: %s', configPath)
       }
     } catch (error) {
       loggerStartup.debug('Error checking opencode.json: %o', error)
