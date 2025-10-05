@@ -100,8 +100,18 @@ export class DiscordPlugin extends EventEmitter {
    * Handle incoming messages from DiscordService
    */
   async handleMessage(message: Message): Promise<void> {
-    // Ignore bot's own messages
-    if (message.author.bot) return
+    // Ignore bot's own messages UNLESS it's a transcription message (has embeds with DISCORD_COLORS.INFO)
+    if (message.author.bot) {
+      // Allow transcription messages (they have embeds with INFO color and content text)
+      const isTranscription =
+        message.embeds.length > 0 &&
+        message.embeds[0].color === 0x3b82f6 && // DISCORD_COLORS.INFO
+        message.content.length > 0
+      if (!isTranscription) {
+        return
+      }
+      log(`Processing transcription message: "${message.content.substring(0, 50)}..."`)
+    }
 
     log(`Handling message from ${message.author.tag} in channel ${message.channel.id}`)
 
@@ -343,7 +353,7 @@ export class DiscordPlugin extends EventEmitter {
 
     // Initialize voice module with client
     if (this.voiceModule) {
-      await this.voiceModule.initializeWithClient(client)
+      await this.voiceModule.initializeWithClient(client, this)
     }
 
     // Configure MCP Discord message fetcher

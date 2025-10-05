@@ -26,7 +26,7 @@ async initializeWithClient(client: Client): Promise<void> {
 constructor() {
   super()
   log('VoiceModule constructed')
-  
+
   // Listen to transcription events and send to Discord
   this.on('transcription', (event) => {
     this.handleTranscription(event).catch((error) => {
@@ -74,7 +74,7 @@ private async handleTranscription(event: {
     }
 
     const embed = await this.createTranscriptionEmbed(event)
-    
+
     const channel = await this.client.channels.fetch(targetChannelId)
     if (!channel?.isTextBased()) {
       log('Cannot send transcription: channel not found or not text-based')
