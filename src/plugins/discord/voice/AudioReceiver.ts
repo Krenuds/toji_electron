@@ -6,6 +6,7 @@
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import { type VoiceConnection, EndBehaviorType, type AudioReceiveStream } from '@discordjs/voice'
 import { processDiscordAudio } from '../../../main/utils/audio-processor'
+import { opus } from 'prism-media'
 
 const log = createFileDebugLogger('discord:audio-receiver')
 
@@ -141,7 +142,20 @@ export class AudioReceiver {
     const buffer = this.userBuffers.get(userId)!
     let chunkCount = 0
 
-    stream.on('data', (chunk: Buffer) => {
+    // Create Opus decoder: Discord sends Opus packets, we need PCM
+    // 48kHz, stereo (2 channels), 20ms frame size
+    const opusDecoder = new opus.Decoder({
+      rate: 48000,
+      channels: 2,
+      frameSize: 960 // 20ms at 48kHz = 960 samples
+    })
+
+    log(`Created Opus decoder for user ${userId} (48kHz stereo)`)
+
+    // Pipe AudioReceiveStream (Opus packets) → OpusDecoder (PCM)
+    stream.pipe(opusDecoder)
+
+    opusDecoder.on('data', (chunk: Buffer) => {
       // Ignore if bot's audio
       if (this.botUserId && userId === this.botUserId) {
         return
@@ -175,14 +189,21 @@ export class AudioReceiver {
       this.scheduleUserTimers(userId)
     })
 
+    opusDecoder.on('error', (error) => {
+      log(`Opus decoder error for user ${userId}:`, error)
+      this.cancelUserTimers(userId)
+    })
+
     stream.on('end', () => {
       log(`Audio stream ended for user ${userId}`)
+      opusDecoder.end()
       this.cancelUserTimers(userId)
       this.activeSubscriptions.delete(userId)
     })
 
     stream.on('error', (error) => {
       log(`Audio stream error for user ${userId}:`, error)
+      opusDecoder.destroy()
       this.cancelUserTimers(userId)
       this.activeSubscriptions.delete(userId)
     })
