@@ -1,9 +1,9 @@
 // Discord message search tool for MCP
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createFileDebugLogger } from '../../../utils/logger'
+import { createLogger } from '../../../utils/logger'
 
-const log = createFileDebugLogger('mcp:discord-search-messages')
+const logger = createLogger('mcp:discord-search-messages')
 
 export interface DiscordMessageSearcher {
   searchMessages(
@@ -37,7 +37,7 @@ export function registerDiscordSearchMessagesTool(
   server: McpServer,
   messageSearcher: DiscordMessageSearcher
 ): void {
-  log('Registering discord_search_messages tool')
+  logger.debug('Registering discord_search_messages tool')
 
   server.registerTool(
     'discord_search_messages',
@@ -102,7 +102,7 @@ export function registerDiscordSearchMessagesTool(
     },
     async ({ channelId, query, authorId, before, after, limit = 20, hasAttachments }) => {
       try {
-        log(
+        logger.debug(
           'Searching messages in channel %s with query: %s, limit: %d',
           channelId,
           query || 'none',
@@ -125,7 +125,7 @@ export function registerDiscordSearchMessagesTool(
           messages
         }
 
-        log('Found %d messages matching search criteria', messages.length)
+        logger.debug('Found %d messages matching search criteria', messages.length)
 
         return {
           content: [
@@ -150,7 +150,7 @@ export function registerDiscordSearchMessagesTool(
           structuredContent: output
         }
       } catch (error) {
-        log('Error searching messages: %o', error)
+        logger.debug('Error searching messages: %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
         return {
@@ -166,5 +166,5 @@ export function registerDiscordSearchMessagesTool(
     }
   )
 
-  log('discord_search_messages tool registered successfully')
+  logger.debug('discord_search_messages tool registered successfully')
 }

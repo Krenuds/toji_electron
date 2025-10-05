@@ -3,12 +3,12 @@
  * Provides high-level API for voice transcription and text-to-speech
  */
 
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { DockerServiceManager, DockerMode } from './docker-service-manager'
 import { WhisperClient, type TranscriptionResult } from './whisper-client'
 import { PiperClient, type TTSRequest } from './piper-client'
 
-const log = createFileDebugLogger('voice-service-manager')
+const logger = createLogger('voice-service-manager')
 
 export interface VoiceServiceStatus {
   available: boolean
@@ -29,7 +29,7 @@ export class VoiceServiceManager {
     this.dockerManager = new DockerServiceManager()
     this.whisperClient = new WhisperClient()
     this.piperClient = new PiperClient()
-    log('VoiceServiceManager created')
+    logger.debug('VoiceServiceManager created')
   }
 
   /**
@@ -37,14 +37,14 @@ export class VoiceServiceManager {
    * Checks Docker, starts services if needed
    */
   async initialize(onProgress?: (message: string) => void): Promise<VoiceServiceStatus> {
-    log('Initializing voice services...')
+    logger.debug('Initializing voice services...')
     onProgress?.('Checking Docker installation...')
 
     // Check if Docker is installed
     const dockerInstalled = await this.dockerManager.checkDockerInstalled()
 
     if (!dockerInstalled) {
-      log('Docker not installed, voice features unavailable')
+      logger.debug('Docker not installed, voice features unavailable')
       this.initialized = false
       return {
         available: false,
@@ -59,7 +59,7 @@ export class VoiceServiceManager {
     // Check if Docker Compose is available
     const composeAvailable = await this.dockerManager.checkDockerCompose()
     if (!composeAvailable) {
-      log('Docker Compose not available')
+      logger.debug('Docker Compose not available')
       this.initialized = false
       return {
         available: false,
@@ -80,7 +80,7 @@ export class VoiceServiceManager {
       const health = await this.dockerManager.getServiceHealth()
 
       if (!health.whisper.healthy || !health.piper.healthy) {
-        log('Services started but not healthy')
+        logger.debug('Services started but not healthy')
         this.initialized = false
         return {
           available: false,
@@ -98,7 +98,7 @@ export class VoiceServiceManager {
       this.piperClient.setBaseUrl(urls.piper)
 
       this.initialized = true
-      log('✅ Voice services initialized and ready')
+      logger.debug('✅ Voice services initialized and ready')
       onProgress?.('Voice services ready!')
 
       return {
@@ -109,7 +109,7 @@ export class VoiceServiceManager {
         piperHealthy: true
       }
     } catch (error) {
-      log('Failed to initialize services:', error)
+      logger.debug('Failed to initialize services:', error)
       this.initialized = false
       return {
         available: false,
@@ -138,7 +138,7 @@ export class VoiceServiceManager {
     try {
       return await this.whisperClient.transcribe(audioBuffer)
     } catch (error) {
-      log('Transcription failed:', error)
+      logger.debug('Transcription failed:', error)
       return {
         text: '',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -153,14 +153,14 @@ export class VoiceServiceManager {
    */
   async speak(request: TTSRequest): Promise<Buffer | null> {
     if (!this.initialized) {
-      log('Cannot speak: services not initialized')
+      logger.debug('Cannot speak: services not initialized')
       return null
     }
 
     try {
       return await this.piperClient.synthesize(request)
     } catch (error) {
-      log('TTS failed:', error)
+      logger.debug('TTS failed:', error)
       return null
     }
   }
@@ -204,7 +204,7 @@ export class VoiceServiceManager {
    * Stop voice services
    */
   async stop(): Promise<void> {
-    log('Stopping voice services...')
+    logger.debug('Stopping voice services...')
     await this.dockerManager.stopServices()
     this.initialized = false
   }
@@ -213,7 +213,7 @@ export class VoiceServiceManager {
    * Restart voice services
    */
   async restart(onProgress?: (message: string) => void): Promise<VoiceServiceStatus> {
-    log('Restarting voice services...')
+    logger.debug('Restarting voice services...')
     await this.stop()
     return await this.initialize(onProgress)
   }

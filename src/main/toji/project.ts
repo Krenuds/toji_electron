@@ -1,8 +1,8 @@
 // Project management module for Toji
 import type { OpencodeClient, Project } from '@opencode-ai/sdk'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('toji:project')
+const logger = createLogger('toji:project')
 
 export interface ProjectInfo {
   path: string
@@ -19,7 +19,7 @@ export class ProjectManager {
   async list(): Promise<Project[]> {
     const client = this.getClient()
     if (!client) {
-      log('OpenCode client not available')
+      logger.debug('OpenCode client not available')
       return []
     }
 
@@ -28,10 +28,10 @@ export class ProjectManager {
       // With responseStyle: 'data', response is the data directly
       // TypeScript needs explicit type assertion due to SDK type definitions
       const projects = (response as unknown as Project[]) || []
-      log('OpenCode SDK returned %d projects', projects.length)
+      logger.debug('OpenCode SDK returned %d projects', projects.length)
       return projects
     } catch (error) {
-      log('Failed to list projects from SDK: %o', error)
+      logger.debug('Failed to list projects from SDK: %o', error)
       return []
     }
   }
@@ -42,7 +42,7 @@ export class ProjectManager {
   async getCurrent(): Promise<Project | null> {
     const client = this.getClient()
     if (!client) {
-      log('OpenCode client not available')
+      logger.debug('OpenCode client not available')
       return null
     }
 

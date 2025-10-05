@@ -9,12 +9,12 @@ import type {
   ModelConfig
 } from './config'
 import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { writeFile, readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
 
-const log = createFileDebugLogger('toji:config-manager')
+const logger = createLogger('toji:config-manager')
 
 export class ConfigManager {
   constructor(
@@ -35,10 +35,10 @@ export class ConfigManager {
       const response = await client.config.get()
       // SDK returns response wrapper, extract data
       const config = 'data' in response ? response.data : response
-      log('Retrieved project config: %o', config)
+      logger.debug('Retrieved project config: %o', config)
       return config as OpencodeConfig
     } catch (error) {
-      log('ERROR: Failed to get project config: %o', error)
+      logger.debug('ERROR: Failed to get project config: %o', error)
       throw error
     }
   }
@@ -47,17 +47,17 @@ export class ConfigManager {
   private async ensureConfigFile(directory: string): Promise<void> {
     const configPath = join(directory, 'opencode.json')
     if (!existsSync(configPath)) {
-      log('No opencode.json found, creating default config file')
+      logger.debug('No opencode.json found, creating default config file')
 
       // Get current runtime config to preserve it
       try {
         const currentConfig = await this.getProjectConfig()
         await writeFile(configPath, JSON.stringify(currentConfig, null, 2), 'utf-8')
-        log('Created opencode.json with current runtime config')
+        logger.debug('Created opencode.json with current runtime config')
       } catch (error) {
-        log('WARNING: Could not get current config, creating minimal file: %o', error)
+        logger.debug('WARNING: Could not get current config, creating minimal file: %o', error)
         await writeFile(configPath, JSON.stringify({}, null, 2), 'utf-8')
-        log('Created minimal opencode.json file')
+        logger.debug('Created minimal opencode.json file')
       }
     }
 
@@ -73,16 +73,16 @@ export class ConfigManager {
 
     // Check if AGENTS.md already exists
     if (existsSync(agentsPath)) {
-      log('AGENTS.md already exists, skipping creation')
+      logger.debug('AGENTS.md already exists, skipping creation')
       return
     }
 
     try {
       // Write AGENTS.md to project directory using centralized template
       await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
-      log('Created AGENTS.md at: %s', agentsPath)
+      logger.debug('Created AGENTS.md at: %s', agentsPath)
     } catch (error) {
-      log('WARNING: Failed to create AGENTS.md: %o', error)
+      logger.debug('WARNING: Failed to create AGENTS.md: %o', error)
       // Don't throw - AGENTS.md creation is optional
     }
   }
@@ -94,8 +94,8 @@ export class ConfigManager {
       throw new Error('No current project directory')
     }
 
-    log('Updating project config for: %s', currentDir)
-    log('New config: %o', config)
+    logger.debug('Updating project config for: %s', currentDir)
+    logger.debug('New config: %o', config)
 
     try {
       // Ensure the project has an opencode.json file
@@ -103,17 +103,17 @@ export class ConfigManager {
 
       // CRITICAL: Persist configuration to opencode.json file for app restart persistence
       await this.persistConfigToFile(currentDir, config)
-      log('Configuration persisted to opencode.json')
+      logger.debug('Configuration persisted to opencode.json')
 
       // Restart server with new config
       await this.serverRestart(config, currentDir)
-      log('Server restarted with new config')
+      logger.debug('Server restarted with new config')
 
       // Reconnect client
       await this.reconnectClient(currentDir)
-      log('Client reconnected successfully')
+      logger.debug('Client reconnected successfully')
     } catch (error) {
-      log('ERROR: Failed to update project config: %o', error)
+      logger.debug('ERROR: Failed to update project config: %o', error)
       throw error
     }
   }
@@ -121,9 +121,9 @@ export class ConfigManager {
   // Persist configuration to opencode.json file for permanent storage
   private async persistConfigToFile(directory: string, config: OpencodeConfig): Promise<void> {
     const configPath = join(directory, 'opencode.json')
-    log('========== PERSIST CONFIG TO FILE ==========')
-    log('Persisting config to file: %s', configPath)
-    log('Config to persist: %o', config)
+    logger.debug('========== PERSIST CONFIG TO FILE ==========')
+    logger.debug('Persisting config to file: %s', configPath)
+    logger.debug('Config to persist: %o', config)
 
     try {
       // Read existing config if it exists
@@ -132,12 +132,12 @@ export class ConfigManager {
         try {
           const existingContent = await readFile(configPath, 'utf-8')
           existingConfig = JSON.parse(existingContent)
-          log('Loaded existing config from file: %o', existingConfig)
+          logger.debug('Loaded existing config from file: %o', existingConfig)
         } catch (error) {
-          log('WARNING: Could not parse existing config file, creating new: %o', error)
+          logger.debug('WARNING: Could not parse existing config file, creating new: %o', error)
         }
       } else {
-        log('No existing opencode.json file found, will create new')
+        logger.debug('No existing opencode.json file found, will create new')
       }
 
       // Merge with existing configuration to preserve other settings
@@ -146,14 +146,14 @@ export class ConfigManager {
         ...config
       }
 
-      log('Merged config to write: %o', mergedConfig)
+      logger.debug('Merged config to write: %o', mergedConfig)
 
       // Write updated configuration to file
       await writeFile(configPath, JSON.stringify(mergedConfig, null, 2), 'utf-8')
-      log('Configuration successfully written to: %s', configPath)
-      log('File content: %s', JSON.stringify(mergedConfig, null, 2))
+      logger.debug('Configuration successfully written to: %s', configPath)
+      logger.debug('File content: %s', JSON.stringify(mergedConfig, null, 2))
     } catch (error) {
-      log('ERROR: Failed to persist config to file: %o', error)
+      logger.debug('ERROR: Failed to persist config to file: %o', error)
       throw error
     }
   }
@@ -161,7 +161,7 @@ export class ConfigManager {
   // Get current permissions from project configuration
   async getPermissions(): Promise<PermissionConfig> {
     const config = await this.getProjectConfig()
-    log('Retrieved permissions from config: %o', config.permission)
+    logger.debug('Retrieved permissions from config: %o', config.permission)
 
     // Return permission object with defaults if not set
     return {
@@ -173,7 +173,7 @@ export class ConfigManager {
 
   // Update permissions by merging with existing configuration
   async updatePermissions(permissions: Partial<PermissionConfig>): Promise<void> {
-    log('Updating permissions: %o', permissions)
+    logger.debug('Updating permissions: %o', permissions)
 
     try {
       // Get current full config
@@ -190,16 +190,16 @@ export class ConfigManager {
 
       // Update the full config (will restart server)
       await this.updateProjectConfig(updatedConfig)
-      log('Permissions updated successfully')
+      logger.debug('Permissions updated successfully')
     } catch (error) {
-      log('ERROR: Failed to update permissions: %o', error)
+      logger.debug('ERROR: Failed to update permissions: %o', error)
       throw error
     }
   }
 
   // Set a single permission (convenience method)
   async setPermission(type: PermissionType, level: PermissionLevel): Promise<void> {
-    log('Setting permission: %s = %s', type, level)
+    logger.debug('Setting permission: %s = %s', type, level)
 
     // For bash, we use simple string form (not complex object)
     const permissions: Partial<PermissionConfig> = {
@@ -211,24 +211,24 @@ export class ConfigManager {
 
   // Get current model selection from project configuration
   async getModelConfig(): Promise<ModelConfig> {
-    log('Getting model config from project configuration')
+    logger.debug('Getting model config from project configuration')
     try {
       const config = await this.getProjectConfig()
       const modelConfig = {
         model: config.model,
         ...(config.small_model ? { small_model: config.small_model } : {})
       }
-      log('Retrieved model config: %o', modelConfig)
+      logger.debug('Retrieved model config: %o', modelConfig)
       return modelConfig
     } catch (error) {
-      log('ERROR: Failed to get model config: %o', error)
+      logger.debug('ERROR: Failed to get model config: %o', error)
       throw error
     }
   }
 
   // Update model selection and restart server
   async updateModelConfig(selection: Partial<ModelConfig>): Promise<void> {
-    log('Updating model selection: %o', selection)
+    logger.debug('Updating model selection: %o', selection)
 
     try {
       const currentConfig = await this.getProjectConfig()
@@ -246,9 +246,9 @@ export class ConfigManager {
       }
 
       await this.updateProjectConfig(updatedConfig)
-      log('Model selection updated successfully')
+      logger.debug('Model selection updated successfully')
     } catch (error) {
-      log('ERROR: Failed to update model selection: %o', error)
+      logger.debug('ERROR: Failed to update model selection: %o', error)
       throw error
     }
   }

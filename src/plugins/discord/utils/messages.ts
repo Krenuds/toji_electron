@@ -1,9 +1,9 @@
 import { Message, EmbedBuilder } from 'discord.js'
 import { DISCORD_COLORS } from '../constants'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import type { ToolEvent } from '../../../main/toji/types'
 
-const log = createFileDebugLogger('discord:utils:messages')
+const logger = createLogger('discord:utils:messages')
 
 /**
  * Tool activity tracking for embeds
@@ -104,7 +104,7 @@ export function updateToolActivity(tools: ToolActivity, event: ToolEvent): void 
     case 'pending':
       if (!tools.pending.includes(callID)) {
         tools.pending.push(callID)
-        log('Tool pending: %s (callID: %s)', tool, callID)
+        logger.debug('Tool pending: %s (callID: %s)', tool, callID)
       }
       break
 
@@ -115,7 +115,7 @@ export function updateToolActivity(tools: ToolActivity, event: ToolEvent): void 
         name: tool,
         title: state.title
       })
-      log('Tool running: %s (callID: %s)', tool, callID)
+      logger.debug('Tool running: %s (callID: %s)', tool, callID)
       break
 
     case 'completed':
@@ -124,7 +124,7 @@ export function updateToolActivity(tools: ToolActivity, event: ToolEvent): void 
       if (!tools.completed.includes(tool)) {
         tools.completed.push(tool)
       }
-      log('Tool completed: %s (callID: %s)', tool, callID)
+      logger.debug('Tool completed: %s (callID: %s)', tool, callID)
       break
 
     case 'error':
@@ -133,7 +133,7 @@ export function updateToolActivity(tools: ToolActivity, event: ToolEvent): void 
       if (!tools.errors.includes(tool)) {
         tools.errors.push(tool)
       }
-      log('Tool error: %s (callID: %s) - %s', tool, callID, state.error)
+      logger.debug('Tool error: %s (callID: %s) - %s', tool, callID, state.error)
       break
   }
 }
@@ -199,14 +199,14 @@ export async function sendDiscordResponse(
   try {
     // Check if we have a valid response
     if (!response || response.trim().length === 0) {
-      log('WARNING: Empty response received, sending default message')
+      logger.debug('WARNING: Empty response received, sending default message')
       await message.reply('I received your message but got an empty response. Please try again.')
       return undefined
     }
 
     // Split and send if necessary
     if (response.length > DISCORD_MAX_MESSAGE_LENGTH) {
-      log('Response is long (%d chars), splitting into chunks', response.length)
+      logger.debug('Response is long (%d chars), splitting into chunks', response.length)
       const chunks = splitMessage(response)
       let firstMessage: Message | undefined
       for (const chunk of chunks) {
@@ -215,17 +215,17 @@ export async function sendDiscordResponse(
       }
       return firstMessage
     } else {
-      log('Sending response (%d chars)', response.length)
+      logger.debug('Sending response (%d chars)', response.length)
       return await message.reply(response)
     }
   } catch (error) {
-    log('ERROR: Failed to send Discord response: %o', error)
+    logger.debug('ERROR: Failed to send Discord response: %o', error)
     try {
       await message.reply(
         '❌ Failed to send response: ' + (error instanceof Error ? error.message : 'Unknown error')
       )
     } catch (fallbackError) {
-      log('ERROR: Failed to send error message: %o', fallbackError)
+      logger.debug('ERROR: Failed to send error message: %o', fallbackError)
     }
     return undefined
   }

@@ -6,11 +6,11 @@
 import { spawn, exec } from 'child_process'
 import { promisify } from 'util'
 import { join } from 'path'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { app } from 'electron'
 
 const execAsync = promisify(exec)
-const log = createFileDebugLogger('docker-service-manager')
+const logger = createLogger('docker-service-manager')
 
 export interface ServiceHealth {
   whisper: {
@@ -53,9 +53,9 @@ export class DockerServiceManager {
   private buildState: BuildState = { imagesBuilt: false }
 
   constructor() {
-    log('DockerServiceManager initialized')
+    logger.debug('DockerServiceManager initialized')
     this.loadBuildState().catch((error: unknown) => {
-      log('Failed to load build state:', error)
+      logger.debug('Failed to load build state:', error)
     })
   }
 
@@ -64,17 +64,17 @@ export class DockerServiceManager {
    */
   async checkDockerInstalled(): Promise<boolean> {
     try {
-      log('Checking if Docker is installed...')
+      logger.debug('Checking if Docker is installed...')
       const { stdout } = await execAsync('docker --version')
-      log(`Docker found: ${stdout.trim()}`)
+      logger.debug(`Docker found: ${stdout.trim()}`)
 
       // Also check if Docker daemon is running
       await execAsync('docker ps')
-      log('Docker daemon is running')
+      logger.debug('Docker daemon is running')
 
       return true
     } catch (error) {
-      log('Docker not available:', error)
+      logger.debug('Docker not available:', error)
       this.mode = DockerMode.NOT_INSTALLED
       return false
     }
@@ -87,16 +87,16 @@ export class DockerServiceManager {
     try {
       // Try docker-compose first (standalone)
       await execAsync('docker-compose --version')
-      log('Found docker-compose (standalone)')
+      logger.debug('Found docker-compose (standalone)')
       return true
     } catch {
       try {
         // Try docker compose (plugin)
         await execAsync('docker compose version')
-        log('Found docker compose (plugin)')
+        logger.debug('Found docker compose (plugin)')
         return true
       } catch (error) {
-        log('Docker Compose not available:', error)
+        logger.debug('Docker Compose not available:', error)
         return false
       }
     }
@@ -139,10 +139,10 @@ export class DockerServiceManager {
       const fs = await import('fs/promises')
       const data = await fs.readFile(statePath, 'utf-8')
       this.buildState = JSON.parse(data)
-      log('Loaded build state:', this.buildState)
+      logger.debug('Loaded build state:', this.buildState)
     } catch {
       // File doesn't exist or invalid JSON - use defaults
-      log('No existing build state found, will build on first run')
+      logger.debug('No existing build state found, will build on first run')
       this.buildState = { imagesBuilt: false }
     }
   }
@@ -155,9 +155,9 @@ export class DockerServiceManager {
       const statePath = this.getBuildStatePath()
       const fs = await import('fs/promises')
       await fs.writeFile(statePath, JSON.stringify(this.buildState, null, 2), 'utf-8')
-      log('Saved build state:', this.buildState)
+      logger.debug('Saved build state:', this.buildState)
     } catch (error) {
-      log('Failed to save build state:', error)
+      logger.debug('Failed to save build state:', error)
     }
   }
 
@@ -175,15 +175,15 @@ export class DockerServiceManager {
         const hasPiper = images.some((img) => img.includes('toji-piper'))
 
         if (hasWhisper && hasPiper) {
-          log('Docker images already exist, skipping build')
+          logger.debug('Docker images already exist, skipping build')
           return false
         } else {
-          log('Build state indicates built, but images not found. Will rebuild.')
+          logger.debug('Build state indicates built, but images not found. Will rebuild.')
           this.buildState.imagesBuilt = false
           return true
         }
       } catch (error) {
-        log('Error checking for existing images:', error)
+        logger.debug('Error checking for existing images:', error)
         return true
       }
     }
@@ -196,12 +196,12 @@ export class DockerServiceManager {
   async buildImages(onProgress?: (message: string) => void): Promise<void> {
     const needsBuild = await this.needsBuild()
     if (!needsBuild) {
-      log('Images already built, skipping build')
+      logger.debug('Images already built, skipping build')
       onProgress?.('Docker images already built')
       return
     }
 
-    log('Building Docker images...')
+    logger.debug('Building Docker images...')
     onProgress?.('Building Docker images (this may take 5-10 minutes on first run)...')
 
     const servicesDir = this.getServicesPath()
@@ -214,7 +214,7 @@ export class DockerServiceManager {
         ? ['compose', '-f', composePath, 'build']
         : ['-f', composePath, 'build']
 
-      log(`Building with: ${command} ${args.join(' ')}`)
+      logger.debug(`Building with: ${command} ${args.join(' ')}`)
       onProgress?.('Building Whisper service (3-4 minutes)...')
 
       const buildProcess = spawn(command, args, {
@@ -226,7 +226,7 @@ export class DockerServiceManager {
       buildProcess.stdout?.on('data', (data) => {
         const message = data.toString().trim()
         if (message && message !== lastProgress) {
-          log(`build stdout: ${message}`)
+          logger.debug(`build stdout: ${message}`)
           lastProgress = message
           onProgress?.(message)
         }
@@ -235,7 +235,7 @@ export class DockerServiceManager {
       buildProcess.stderr?.on('data', (data) => {
         const message = data.toString().trim()
         if (message) {
-          log(`build stderr: ${message}`)
+          logger.debug(`build stderr: ${message}`)
           onProgress?.(message)
         }
       })
@@ -243,7 +243,7 @@ export class DockerServiceManager {
       await new Promise<void>((resolve, reject) => {
         buildProcess.on('close', (code) => {
           if (code === 0) {
-            log('Docker images built successfully')
+            logger.debug('Docker images built successfully')
             resolve()
           } else {
             reject(new Error(`Build failed with code ${code}`))
@@ -270,7 +270,7 @@ export class DockerServiceManager {
       await this.saveBuildState()
       onProgress?.('Build complete!')
     } catch (error) {
-      log('Build failed:', error)
+      logger.debug('Build failed:', error)
       onProgress?.('Build failed: ' + (error instanceof Error ? error.message : 'Unknown error'))
       throw error
     }
@@ -281,11 +281,11 @@ export class DockerServiceManager {
    */
   async startServices(onProgress?: (message: string) => void): Promise<void> {
     if (this.mode === DockerMode.RUNNING) {
-      log('Services already running')
+      logger.debug('Services already running')
       return
     }
 
-    log('Starting Docker services...')
+    logger.debug('Starting Docker services...')
     this.mode = DockerMode.STARTING
     onProgress?.('Starting Docker services...')
 
@@ -295,8 +295,8 @@ export class DockerServiceManager {
     const composePath = this.getDockerComposePath()
     const servicesDir = this.getServicesPath()
 
-    log(`Docker Compose file: ${composePath}`)
-    log(`Services directory: ${servicesDir}`)
+    logger.debug(`Docker Compose file: ${composePath}`)
+    logger.debug(`Services directory: ${servicesDir}`)
 
     try {
       // Determine which docker-compose command to use
@@ -306,7 +306,7 @@ export class DockerServiceManager {
         ? ['compose', '-f', composePath, 'up', '-d']
         : ['-f', composePath, 'up', '-d']
 
-      log(`Executing: ${command} ${args.join(' ')}`)
+      logger.debug(`Executing: ${command} ${args.join(' ')}`)
       onProgress?.('Starting containers...')
 
       // Start docker-compose in detached mode
@@ -317,18 +317,18 @@ export class DockerServiceManager {
 
       // Capture output
       process.stdout?.on('data', (data) => {
-        log(`docker-compose stdout: ${data.toString().trim()}`)
+        logger.debug(`docker-compose stdout: ${data.toString().trim()}`)
       })
 
       process.stderr?.on('data', (data) => {
-        log(`docker-compose stderr: ${data.toString().trim()}`)
+        logger.debug(`docker-compose stderr: ${data.toString().trim()}`)
       })
 
       // Wait for process to complete
       await new Promise<void>((resolve, reject) => {
         process.on('close', (code) => {
           if (code === 0) {
-            log('Docker Compose started successfully')
+            logger.debug('Docker Compose started successfully')
             resolve()
           } else {
             reject(new Error(`docker-compose exited with code ${code}`))
@@ -347,14 +347,14 @@ export class DockerServiceManager {
       if (healthy) {
         this.mode = DockerMode.RUNNING
         this.startHealthChecks()
-        log('✅ All services are healthy and running')
+        logger.debug('✅ All services are healthy and running')
         onProgress?.('Voice services ready!')
       } else {
         this.mode = DockerMode.ERROR
         throw new Error('Services failed to become healthy within timeout')
       }
     } catch (error) {
-      log('❌ Failed to start services:', error)
+      logger.debug('❌ Failed to start services:', error)
       this.mode = DockerMode.ERROR
       onProgress?.(
         'Failed to start services: ' + (error instanceof Error ? error.message : 'Unknown error')
@@ -367,7 +367,7 @@ export class DockerServiceManager {
    * Stop the Docker services
    */
   async stopServices(): Promise<void> {
-    log('Stopping Docker services...')
+    logger.debug('Stopping Docker services...')
 
     this.stopHealthChecks()
 
@@ -380,10 +380,10 @@ export class DockerServiceManager {
       const args = usePlugin ? ['compose', '-f', composePath, 'down'] : ['-f', composePath, 'down']
 
       await execAsync(`${command} ${args.join(' ')}`, { cwd: servicesDir })
-      log('Services stopped successfully')
+      logger.debug('Services stopped successfully')
       this.mode = DockerMode.DISABLED
     } catch (error) {
-      log('Error stopping services:', error)
+      logger.debug('Error stopping services:', error)
       throw error
     }
   }
@@ -401,7 +401,7 @@ export class DockerServiceManager {
   async resetBuildState(): Promise<void> {
     this.buildState = { imagesBuilt: false }
     await this.saveBuildState()
-    log('Build state reset')
+    logger.debug('Build state reset')
   }
 
   /**
@@ -460,24 +460,24 @@ export class DockerServiceManager {
     const startTime = Date.now()
     const checkInterval = 5000 // Check every 5 seconds
 
-    log('Waiting for services to become healthy...')
+    logger.debug('Waiting for services to become healthy...')
 
     while (Date.now() - startTime < this.STARTUP_TIMEOUT) {
       const health = await this.getServiceHealth()
 
       if (health.whisper.healthy && health.piper.healthy) {
-        log('✅ Both services are healthy')
+        logger.debug('✅ Both services are healthy')
         return true
       }
 
-      log(
+      logger.debug(
         `Waiting... Whisper: ${health.whisper.healthy ? '✅' : '❌'}, Piper: ${health.piper.healthy ? '✅' : '❌'}`
       )
 
       await new Promise((resolve) => setTimeout(resolve, checkInterval))
     }
 
-    log('❌ Timeout waiting for services to become healthy')
+    logger.debug('❌ Timeout waiting for services to become healthy')
     return false
   }
 
@@ -491,10 +491,10 @@ export class DockerServiceManager {
       const health = await this.getServiceHealth()
 
       if (!health.whisper.healthy || !health.piper.healthy) {
-        log('⚠️ Health check failed, services may be unhealthy')
+        logger.debug('⚠️ Health check failed, services may be unhealthy')
         this.mode = DockerMode.ERROR
       } else if (this.mode !== DockerMode.RUNNING) {
-        log('✅ Services recovered')
+        logger.debug('✅ Services recovered')
         this.mode = DockerMode.RUNNING
       }
     }, this.HEALTH_CHECK_INTERVAL)

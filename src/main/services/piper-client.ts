@@ -3,9 +3,9 @@
  * Follows the pattern from Python's tts_client.py
  */
 
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('piper-client')
+const logger = createLogger('piper-client')
 
 export interface TTSRequest {
   text: string
@@ -31,9 +31,9 @@ export class PiperClient {
   constructor(baseUrl: string = 'http://localhost:9001', defaultVoice?: string) {
     this.baseUrl = baseUrl
     this.defaultVoice = defaultVoice
-    log('PiperClient initialized with URL:', baseUrl)
+    logger.debug('PiperClient initialized with URL:', baseUrl)
     if (defaultVoice) {
-      log('Default voice:', defaultVoice)
+      logger.debug('Default voice:', defaultVoice)
     }
   }
 
@@ -46,7 +46,7 @@ export class PiperClient {
     const startTime = Date.now()
     const { text, voice, speed = 1.0 } = request
 
-    log(`Synthesizing ${text.length} characters of text...`)
+    logger.debug(`Synthesizing ${text.length} characters of text...`)
 
     try {
       const body = {
@@ -66,19 +66,19 @@ export class PiperClient {
 
       if (!response.ok) {
         const errorText = await response.text()
-        log('TTS failed:', response.status, errorText)
+        logger.debug('TTS failed:', response.status, errorText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
 
       const audioBuffer = Buffer.from(await response.arrayBuffer())
       const duration = Date.now() - startTime
 
-      log(`Synthesis complete in ${duration}ms, ${audioBuffer.length} bytes`)
+      logger.debug(`Synthesis complete in ${duration}ms, ${audioBuffer.length} bytes`)
 
       return audioBuffer
     } catch (error) {
       const duration = Date.now() - startTime
-      log('TTS error after', duration, 'ms:', error)
+      logger.debug('TTS error after', duration, 'ms:', error)
       throw error
     }
   }
@@ -93,15 +93,15 @@ export class PiperClient {
       })
 
       if (!response.ok) {
-        log('Failed to list voices:', response.status)
+        logger.debug('Failed to list voices:', response.status)
         return []
       }
 
       const voices = (await response.json()) as VoiceInfo[]
-      log(`Found ${voices.length} available voices`)
+      logger.debug(`Found ${voices.length} available voices`)
       return voices
     } catch (error) {
-      log('Error listing voices:', error)
+      logger.debug('Error listing voices:', error)
       return []
     }
   }
@@ -116,7 +116,7 @@ export class PiperClient {
       })
       return response.ok
     } catch (error) {
-      log('Health check failed:', error)
+      logger.debug('Health check failed:', error)
       return false
     }
   }
@@ -136,7 +136,7 @@ export class PiperClient {
 
       return (await response.json()) as Record<string, unknown>
     } catch (error) {
-      log('Failed to get service info:', error)
+      logger.debug('Failed to get service info:', error)
       return null
     }
   }
@@ -146,7 +146,7 @@ export class PiperClient {
    */
   async downloadVoice(voiceName: string): Promise<boolean> {
     try {
-      log('Requesting download of voice:', voiceName)
+      logger.debug('Requesting download of voice:', voiceName)
 
       const response = await fetch(`${this.baseUrl}/download-voice`, {
         method: 'POST',
@@ -158,14 +158,14 @@ export class PiperClient {
       })
 
       if (!response.ok) {
-        log('Voice download failed:', response.status)
+        logger.debug('Voice download failed:', response.status)
         return false
       }
 
-      log('Voice downloaded successfully:', voiceName)
+      logger.debug('Voice downloaded successfully:', voiceName)
       return true
     } catch (error) {
-      log('Error downloading voice:', error)
+      logger.debug('Error downloading voice:', error)
       return false
     }
   }
@@ -175,7 +175,7 @@ export class PiperClient {
    */
   setBaseUrl(url: string): void {
     this.baseUrl = url
-    log('Base URL updated to:', url)
+    logger.debug('Base URL updated to:', url)
   }
 
   /**
@@ -190,7 +190,7 @@ export class PiperClient {
    */
   setDefaultVoice(voice: string): void {
     this.defaultVoice = voice
-    log('Default voice set to:', voice)
+    logger.debug('Default voice set to:', voice)
   }
 
   /**

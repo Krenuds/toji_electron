@@ -25,12 +25,12 @@ import { registerListSessionsTool } from './tools/list-sessions'
 import { registerInitializeProjectTool } from './tools/initialize-project'
 import type { SessionManager } from '../sessions'
 import type { Toji } from '../index'
-import { createFileDebugLogger } from '../../utils/logger'
+import { createLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
 import { promises as fs, existsSync } from 'fs'
 import path from 'path'
 
-const log = createFileDebugLogger('mcp:manager')
+const logger = createLogger('mcp:manager')
 
 // Start port range for MCP servers
 const BASE_PORT = 3100
@@ -50,23 +50,23 @@ export class McpManager {
   private portCounter = BASE_PORT
 
   constructor() {
-    log('McpManager initialized')
+    logger.debug('McpManager initialized')
   }
 
   /**
    * Set Toji instance getter for project initialization tool
    */
   setTojiInstance(getToji: () => Toji | null): void {
-    log('Toji instance configured for MCP tools')
+    logger.debug('Toji instance configured for MCP tools')
     this.getTojiFn = getToji
 
     // Register initialize project tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerInitializeProjectTool(instance.server, { getToji })
-        log('Registered initialize project tool for existing server: %s', dir)
+        logger.debug('Registered initialize project tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register initialize project tool for %s: %o', dir, error)
+        logger.debug('Warning: Failed to register initialize project tool for %s: %o', dir, error)
       }
     }
   }
@@ -79,7 +79,7 @@ export class McpManager {
     getCurrentProjectPath: () => string | undefined,
     sessionManager: SessionManager
   ): void {
-    log('Session dependencies configured for MCP tools')
+    logger.debug('Session dependencies configured for MCP tools')
     this.getClientFn = getClient
     this.getCurrentProjectPathFn = getCurrentProjectPath
     this.sessionManager = sessionManager
@@ -102,9 +102,9 @@ export class McpManager {
           getCurrentProjectPath,
           sessionManager
         })
-        log('Registered session tools for existing server: %s', dir)
+        logger.debug('Registered session tools for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register session tools for %s: %o', dir, error)
+        logger.debug('Warning: Failed to register session tools for %s: %o', dir, error)
       }
     }
   }
@@ -114,16 +114,16 @@ export class McpManager {
    * This will register the Discord tool with all existing servers
    */
   setDiscordMessageFetcher(fetcher: DiscordMessageFetcher): void {
-    log('Discord message fetcher configured')
+    logger.debug('Discord message fetcher configured')
     this.messageFetcher = fetcher
 
     // Register Discord tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerDiscordMessageTool(instance.server, fetcher)
-        log('Registered Discord message tool for existing server: %s', dir)
+        logger.debug('Registered Discord message tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register Discord message tool for %s: %o', dir, error)
+        logger.debug('Warning: Failed to register Discord message tool for %s: %o', dir, error)
       }
     }
   }
@@ -133,16 +133,16 @@ export class McpManager {
    * This will register the Discord upload tool with all existing servers
    */
   setDiscordFileUploader(uploader: DiscordFileUploader): void {
-    log('Discord file uploader configured')
+    logger.debug('Discord file uploader configured')
     this.fileUploader = uploader
 
     // Register Discord upload tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerDiscordUploadTool(instance.server, uploader)
-        log('Registered Discord upload tool for existing server: %s', dir)
+        logger.debug('Registered Discord upload tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register Discord upload tool for %s: %o', dir, error)
+        logger.debug('Warning: Failed to register Discord upload tool for %s: %o', dir, error)
       }
     }
   }
@@ -152,16 +152,20 @@ export class McpManager {
    * This will register the Discord list channels tool with all existing servers
    */
   setDiscordChannelLister(lister: DiscordChannelLister): void {
-    log('Discord channel lister configured')
+    logger.debug('Discord channel lister configured')
     this.channelLister = lister
 
     // Register Discord list channels tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerDiscordListChannelsTool(instance.server, lister)
-        log('Registered Discord list channels tool for existing server: %s', dir)
+        logger.debug('Registered Discord list channels tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register Discord list channels tool for %s: %o', dir, error)
+        logger.debug(
+          'Warning: Failed to register Discord list channels tool for %s: %o',
+          dir,
+          error
+        )
       }
     }
   }
@@ -171,16 +175,16 @@ export class McpManager {
    * This will register the Discord channel info tool with all existing servers
    */
   setDiscordChannelInfoProvider(provider: DiscordChannelInfoProvider): void {
-    log('Discord channel info provider configured')
+    logger.debug('Discord channel info provider configured')
     this.channelInfoProvider = provider
 
     // Register Discord channel info tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerDiscordChannelInfoTool(instance.server, provider)
-        log('Registered Discord channel info tool for existing server: %s', dir)
+        logger.debug('Registered Discord channel info tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register Discord channel info tool for %s: %o', dir, error)
+        logger.debug('Warning: Failed to register Discord channel info tool for %s: %o', dir, error)
       }
     }
   }
@@ -190,16 +194,20 @@ export class McpManager {
    * This will register the Discord search messages tool with all existing servers
    */
   setDiscordMessageSearcher(searcher: DiscordMessageSearcher): void {
-    log('Discord message searcher configured')
+    logger.debug('Discord message searcher configured')
     this.messageSearcher = searcher
 
     // Register Discord search messages tool with all existing MCP servers
     for (const [dir, instance] of this.servers.entries()) {
       try {
         registerDiscordSearchMessagesTool(instance.server, searcher)
-        log('Registered Discord search messages tool for existing server: %s', dir)
+        logger.debug('Registered Discord search messages tool for existing server: %s', dir)
       } catch (error) {
-        log('Warning: Failed to register Discord search messages tool for %s: %o', dir, error)
+        logger.debug(
+          'Warning: Failed to register Discord search messages tool for %s: %o',
+          dir,
+          error
+        )
       }
     }
   }
@@ -217,7 +225,7 @@ export class McpManager {
    */
   private async writeOpencodeConfig(projectDirectory: string, mcpPort: number): Promise<void> {
     const configPath = path.join(projectDirectory, 'opencode.json')
-    log('Writing opencode.json to %s', configPath)
+    logger.debug('Writing opencode.json to %s', configPath)
 
     // Read existing config if it exists
     let existingConfig: Record<string, unknown> = {}
@@ -225,10 +233,10 @@ export class McpManager {
       if (existsSync(configPath)) {
         const existingContent = await fs.readFile(configPath, 'utf-8')
         existingConfig = JSON.parse(existingContent)
-        log('Loaded existing opencode.json config for merging')
+        logger.debug('Loaded existing opencode.json config for merging')
       }
     } catch (error) {
-      log('Warning: Could not read existing opencode.json, creating new: %o', error)
+      logger.debug('Warning: Could not read existing opencode.json, creating new: %o', error)
     }
 
     // Merge MCP config with existing config
@@ -246,9 +254,9 @@ export class McpManager {
 
     try {
       await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8')
-      log('Successfully wrote opencode.json with MCP config (merged with existing)')
+      logger.debug('Successfully wrote opencode.json with MCP config (merged with existing)')
     } catch (error) {
-      log('Warning: Failed to write opencode.json: %o', error)
+      logger.debug('Warning: Failed to write opencode.json: %o', error)
     }
   }
 
@@ -258,17 +266,17 @@ export class McpManager {
   async createServerForProject(options: McpServerOptions): Promise<McpServerInstance> {
     const { projectDirectory } = options
     const normalized = normalizePath(projectDirectory)
-    log('Creating MCP server for project: %s', normalized)
+    logger.debug('Creating MCP server for project: %s', normalized)
 
     // Check if we already have a server for this project
     if (this.servers.has(normalized)) {
-      log('MCP server already exists for project: %s', normalized)
+      logger.debug('MCP server already exists for project: %s', normalized)
       return this.servers.get(normalized)!
     }
 
     // Allocate a port for this server
     const port = this.getNextPort()
-    log('Allocated port %d for project: %s', port, normalized)
+    logger.debug('Allocated port %d for project: %s', port, normalized)
 
     // Create MCP server instance
     const server = new McpServer({
@@ -293,43 +301,43 @@ export class McpManager {
         getCurrentProjectPath: this.getCurrentProjectPathFn,
         sessionManager: this.sessionManager
       })
-      log('Registered session tools for new server: %s', normalized)
+      logger.debug('Registered session tools for new server: %s', normalized)
     }
 
     // Register Discord message tool if fetcher is available
     if (this.messageFetcher) {
       registerDiscordMessageTool(server, this.messageFetcher)
-      log('Registered Discord message tool for new server: %s', normalized)
+      logger.debug('Registered Discord message tool for new server: %s', normalized)
     }
 
     // Register Discord upload tool if uploader is available
     if (this.fileUploader) {
       registerDiscordUploadTool(server, this.fileUploader)
-      log('Registered Discord upload tool for new server: %s', normalized)
+      logger.debug('Registered Discord upload tool for new server: %s', normalized)
     }
 
     // Register Discord list channels tool if lister is available
     if (this.channelLister) {
       registerDiscordListChannelsTool(server, this.channelLister)
-      log('Registered Discord list channels tool for new server: %s', normalized)
+      logger.debug('Registered Discord list channels tool for new server: %s', normalized)
     }
 
     // Register Discord channel info tool if provider is available
     if (this.channelInfoProvider) {
       registerDiscordChannelInfoTool(server, this.channelInfoProvider)
-      log('Registered Discord channel info tool for new server: %s', normalized)
+      logger.debug('Registered Discord channel info tool for new server: %s', normalized)
     }
 
     // Register Discord search messages tool if searcher is available
     if (this.messageSearcher) {
       registerDiscordSearchMessagesTool(server, this.messageSearcher)
-      log('Registered Discord search messages tool for new server: %s', normalized)
+      logger.debug('Registered Discord search messages tool for new server: %s', normalized)
     }
 
     // Register initialize project tool if Toji instance available
     if (this.getTojiFn) {
       registerInitializeProjectTool(server, { getToji: this.getTojiFn })
-      log('Registered initialize project tool for new server: %s', normalized)
+      logger.debug('Registered initialize project tool for new server: %s', normalized)
     }
 
     // Create Express app
@@ -351,7 +359,7 @@ export class McpManager {
         await server.connect(transport)
         await transport.handleRequest(req, res, req.body)
       } catch (error) {
-        log('Error handling MCP request: %o', error)
+        logger.debug('Error handling MCP request: %o', error)
         if (!res.headersSent) {
           res.status(500).json({ error: String(error) })
         }
@@ -360,7 +368,7 @@ export class McpManager {
 
     // Start HTTP server
     const httpServer = app.listen(port, () => {
-      log('MCP HTTP server listening on port %d for project %s', port, normalized)
+      logger.debug('MCP HTTP server listening on port %d for project %s', port, normalized)
     })
 
     // Write opencode.json with MCP configuration
@@ -374,7 +382,7 @@ export class McpManager {
 
     this.servers.set(normalized, instance)
     this.httpServers.set(normalized, httpServer)
-    log('MCP server created and connected for %s on port %d', normalized, port)
+    logger.debug('MCP server created and connected for %s on port %d', normalized, port)
 
     return instance
   }
@@ -396,13 +404,13 @@ export class McpManager {
     const httpServer = this.httpServers.get(normalized)
 
     if (instance) {
-      log('Closing MCP server for %s', normalized)
+      logger.debug('Closing MCP server for %s', normalized)
 
       // Close HTTP server
       if (httpServer) {
         await new Promise<void>((resolve) => {
           httpServer.close(() => {
-            log('HTTP server closed for %s', normalized)
+            logger.debug('HTTP server closed for %s', normalized)
             resolve()
           })
         })
@@ -410,7 +418,7 @@ export class McpManager {
       }
 
       this.servers.delete(normalized)
-      log('MCP server closed for %s', normalized)
+      logger.debug('MCP server closed for %s', normalized)
     }
   }
 
@@ -418,10 +426,10 @@ export class McpManager {
    * Close all MCP servers
    */
   async closeAll(): Promise<void> {
-    log('Closing all MCP servers')
+    logger.debug('Closing all MCP servers')
     const directories = Array.from(this.servers.keys())
     await Promise.all(directories.map((dir) => this.closeServer(dir)))
-    log('All MCP servers closed')
+    logger.debug('All MCP servers closed')
   }
 
   /**

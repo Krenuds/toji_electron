@@ -26,11 +26,11 @@ import type {
   PermissionLevel,
   ModelConfig
 } from './config'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('toji:core')
-const logClient = createFileDebugLogger('toji:client')
-const logChat = createFileDebugLogger('toji:chat')
+const logger = createLogger('toji:core')
+const loggerClient = createLogger('toji:client')
+const loggerChat = createLogger('toji:chat')
 
 const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
   edit: 'ask',
@@ -85,7 +85,7 @@ export class Toji extends EventEmitter {
 
   constructor(opencodeService: OpenCodeService, config?: ConfigProvider) {
     super() // Initialize EventEmitter
-    log('Initializing Toji with OpenCode service')
+    logger.debug('Initializing Toji with OpenCode service')
     this._config = config
     // Initialize modules
     this.server = new ServerManager(opencodeService)
@@ -113,14 +113,14 @@ export class Toji extends EventEmitter {
     // Configure MCP with Toji instance for project initialization tool
     this.mcp.setTojiInstance(() => this)
 
-    log('Toji initialized successfully')
+    logger.debug('Toji initialized successfully')
   }
 
   /**
    * Set the Discord message fetcher for MCP servers
    */
   setDiscordMessageFetcher(fetcher: DiscordMessageFetcher): void {
-    log('Configuring Discord message fetcher for MCP')
+    logger.debug('Configuring Discord message fetcher for MCP')
     this.mcp.setDiscordMessageFetcher(fetcher)
   }
 
@@ -128,7 +128,7 @@ export class Toji extends EventEmitter {
    * Set the Discord file uploader for MCP servers
    */
   setDiscordFileUploader(uploader: DiscordFileUploader): void {
-    log('Configuring Discord file uploader for MCP')
+    logger.debug('Configuring Discord file uploader for MCP')
     this.mcp.setDiscordFileUploader(uploader)
   }
 
@@ -136,7 +136,7 @@ export class Toji extends EventEmitter {
    * Set the Discord channel lister for MCP servers
    */
   setDiscordChannelLister(lister: DiscordChannelLister): void {
-    log('Configuring Discord channel lister for MCP')
+    logger.debug('Configuring Discord channel lister for MCP')
     this.mcp.setDiscordChannelLister(lister)
   }
 
@@ -144,7 +144,7 @@ export class Toji extends EventEmitter {
    * Set the Discord channel info provider for MCP servers
    */
   setDiscordChannelInfoProvider(provider: DiscordChannelInfoProvider): void {
-    log('Configuring Discord channel info provider for MCP')
+    logger.debug('Configuring Discord channel info provider for MCP')
     this.mcp.setDiscordChannelInfoProvider(provider)
   }
 
@@ -152,7 +152,7 @@ export class Toji extends EventEmitter {
    * Set the Discord message searcher for MCP servers
    */
   setDiscordMessageSearcher(searcher: DiscordMessageSearcher): void {
-    log('Configuring Discord message searcher for MCP')
+    logger.debug('Configuring Discord message searcher for MCP')
     this.mcp.setDiscordMessageSearcher(searcher)
   }
 
@@ -163,16 +163,16 @@ export class Toji extends EventEmitter {
   // Connect a client to a specific server
   async connectClient(directory?: string): Promise<void> {
     const targetDirectory = directory || process.cwd()
-    logClient('Connecting client for directory: %s', targetDirectory)
+    loggerClient.debug('Connecting client for directory: %s', targetDirectory)
 
     // Create MCP server FIRST so opencode.json is ready when OpenCode starts
     try {
       await this.mcp.createServerForProject({
         projectDirectory: targetDirectory
       })
-      log('MCP server created for project: %s', targetDirectory)
+      logger.debug('MCP server created for project: %s', targetDirectory)
     } catch (error) {
-      log('Warning: Failed to create MCP server: %o', error)
+      logger.debug('Warning: Failed to create MCP server: %o', error)
       // Don't throw - MCP is optional functionality
     }
 
@@ -181,14 +181,14 @@ export class Toji extends EventEmitter {
 
     // Set current directory
     this.currentProjectDirectory = targetDirectory
-    logClient('Current project directory set to: %s', this.currentProjectDirectory)
+    loggerClient.debug('Current project directory set to: %s', this.currentProjectDirectory)
 
     // Sync API keys with OpenCode server after connection
     try {
       await this.syncApiKeys()
-      log('API keys synced with OpenCode server')
+      logger.debug('API keys synced with OpenCode server')
     } catch (error) {
-      log('Warning: Failed to sync API keys: %o', error)
+      logger.debug('Warning: Failed to sync API keys: %o', error)
       // Don't throw - API key sync failure shouldn't prevent connection
     }
 
@@ -203,7 +203,7 @@ export class Toji extends EventEmitter {
 
   // Change working directory (for project context)
   async changeWorkingDirectory(directory: string): Promise<void> {
-    logClient('Changing working directory to: %s', directory)
+    loggerClient.debug('Changing working directory to: %s', directory)
 
     // Validate directory exists
     const fs = await import('fs')
@@ -215,20 +215,20 @@ export class Toji extends EventEmitter {
 
     // CRITICAL: Change Node.js process working directory
     process.chdir(directory)
-    logClient('Changed process.cwd() to: %s', process.cwd())
+    loggerClient.debug('Changed process.cwd() to: %s', process.cwd())
 
     // Update the current project directory
     this.currentProjectDirectory = directory
-    logClient('Project directory set to: %s', directory)
+    loggerClient.debug('Project directory set to: %s', directory)
 
     // Create MCP server for this project
     try {
       await this.mcp.createServerForProject({
         projectDirectory: directory
       })
-      log('MCP server created for project: %s', directory)
+      logger.debug('MCP server created for project: %s', directory)
     } catch (error) {
-      log('Warning: Failed to create MCP server: %o', error)
+      logger.debug('Warning: Failed to create MCP server: %o', error)
       // Don't throw - MCP is optional functionality
     }
 
@@ -237,7 +237,7 @@ export class Toji extends EventEmitter {
     if (config) {
       config.setCurrentProjectPath(directory)
       config.addRecentProject(directory)
-      logClient('Saved current project to config')
+      loggerClient.debug('Saved current project to config')
     }
 
     // Emit project opened event
@@ -246,7 +246,7 @@ export class Toji extends EventEmitter {
       path: directory,
       name: projectName
     })
-    logClient('Emitted project:opened event for: %s', projectName)
+    loggerClient.debug('Emitted project:opened event for: %s', projectName)
   }
 
   // Check if ready
@@ -257,14 +257,18 @@ export class Toji extends EventEmitter {
 
   // Chat with the AI using session management
   async chat(message: string, sessionId?: string): Promise<string> {
-    logChat('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
-    log('CHAT METHOD CALLED: message="%s", projectDir=%s', message, this.currentProjectDirectory)
+    loggerChat.debug('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+    logger.debug(
+      'CHAT METHOD CALLED: message="%s", projectDir=%s',
+      message,
+      this.currentProjectDirectory
+    )
 
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
-      logChat('ERROR: %s', error.message)
-      log('ERROR: Chat failed - no client connected')
+      loggerChat.debug('ERROR: %s', error.message)
+      logger.debug('ERROR: Chat failed - no client connected')
       throw error
     }
 
@@ -276,7 +280,10 @@ export class Toji extends EventEmitter {
       }
 
       if (!activeSessionId) {
-        logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
+        loggerChat.debug(
+          'Creating new session for project: %s',
+          this.currentProjectDirectory || 'unknown'
+        )
         const sessionInfo = await this.sessions.createSession(
           client,
           undefined, // title
@@ -286,11 +293,11 @@ export class Toji extends EventEmitter {
         if (this.currentProjectDirectory) {
           this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
         }
-        logChat('Created session: %s', activeSessionId)
+        loggerChat.debug('Created session: %s', activeSessionId)
       }
 
       // Send message to session
-      logChat('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s', activeSessionId)
       const response = await client.session.prompt({
         path: { id: activeSessionId },
         body: {
@@ -311,10 +318,10 @@ export class Toji extends EventEmitter {
           .join('')
       }
 
-      logChat('Chat response received: %d characters', responseText.length)
+      loggerChat.debug('Chat response received: %d characters', responseText.length)
       return responseText
     } catch (error) {
-      logChat('ERROR: Chat failed: %o', error)
+      loggerChat.debug('ERROR: Chat failed: %o', error)
       throw error
     }
   }
@@ -325,12 +332,16 @@ export class Toji extends EventEmitter {
     callbacks: StreamCallbacks,
     sessionId?: string
   ): Promise<void> {
-    logChat('Streaming chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+    loggerChat.debug(
+      'Streaming chat request: message="%s", sessionId=%s',
+      message,
+      sessionId || 'auto'
+    )
 
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
-      logChat('ERROR: %s', error.message)
+      loggerChat.debug('ERROR: %s', error.message)
       if (callbacks.onError) {
         await callbacks.onError(error)
       }
@@ -345,7 +356,10 @@ export class Toji extends EventEmitter {
       }
 
       if (!activeSessionId) {
-        logChat('Creating new session for project: %s', this.currentProjectDirectory || 'unknown')
+        loggerChat.debug(
+          'Creating new session for project: %s',
+          this.currentProjectDirectory || 'unknown'
+        )
         const sessionInfo = await this.sessions.createSession(
           client,
           undefined, // title
@@ -355,14 +369,14 @@ export class Toji extends EventEmitter {
         if (this.currentProjectDirectory) {
           this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
         }
-        logChat('Created session: %s', activeSessionId)
+        loggerChat.debug('Created session: %s', activeSessionId)
       }
 
       // Subscribe to events FIRST
       const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
 
       // Send message to session (this will trigger events)
-      logChat('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s', activeSessionId)
       await client.session.prompt({
         path: { id: activeSessionId },
         body: {
@@ -376,7 +390,7 @@ export class Toji extends EventEmitter {
       // Wait for events to complete
       await eventPromise
     } catch (error) {
-      logChat('ERROR: Streaming chat failed: %o', error)
+      loggerChat.debug('ERROR: Streaming chat failed: %o', error)
       if (callbacks.onError) {
         await callbacks.onError(error instanceof Error ? error : new Error(String(error)))
       }
@@ -394,7 +408,7 @@ export class Toji extends EventEmitter {
       throw new Error('Client not connected to server')
     }
 
-    logChat('Subscribing to events for session: %s', sessionId)
+    loggerChat.debug('Subscribing to events for session: %s', sessionId)
 
     try {
       const events = await client.event.subscribe({
@@ -411,7 +425,7 @@ export class Toji extends EventEmitter {
         const typedEvent = event as Event
 
         // DEBUG: Log ALL incoming events
-        logChat(
+        loggerChat.debug(
           '🔵 RAW EVENT: type=%s, sessionID=%s',
           typedEvent.type,
           'sessionID' in typedEvent.properties ? typedEvent.properties.sessionID : 'N/A'
@@ -419,7 +433,7 @@ export class Toji extends EventEmitter {
 
         // Only process events for our session
         if ('sessionID' in typedEvent.properties && typedEvent.properties.sessionID !== sessionId) {
-          logChat('⏭️  Skipping event for different session')
+          loggerChat.debug('⏭️  Skipping event for different session')
           continue
         }
 
@@ -437,14 +451,14 @@ export class Toji extends EventEmitter {
               // IMPORTANT: part.text is CUMULATIVE, not a delta!
               // We just store it, don't append
               fullText = textPart.text
-              logChat('✅ Received text update: %d chars total', fullText.length)
+              loggerChat.debug('✅ Received text update: %d chars total', fullText.length)
 
               if (callbacks.onChunk) {
-                logChat('📤 Calling onChunk callback with %d chars', textPart.text.length)
+                loggerChat.debug('📤 Calling onChunk callback with %d chars', textPart.text.length)
                 await callbacks.onChunk(textPart.text, textPart.id)
-                logChat('✔️  onChunk callback completed')
+                loggerChat.debug('✔️  onChunk callback completed')
               } else {
-                logChat('⚠️  No onChunk callback registered')
+                loggerChat.debug('⚠️  No onChunk callback registered')
               }
             } else if (part.type === 'tool') {
               // Handle tool usage events
@@ -457,7 +471,7 @@ export class Toji extends EventEmitter {
                 sessionID: string
                 messageID: string
               }
-              logChat(
+              loggerChat.debug(
                 '🔧 Tool event: %s - %s (status: %s)',
                 toolPart.tool,
                 toolPart.callID,
@@ -473,11 +487,11 @@ export class Toji extends EventEmitter {
                   sessionID: toolPart.sessionID,
                   messageID: toolPart.messageID
                 }
-                logChat('📤 Calling onTool callback')
+                loggerChat.debug('📤 Calling onTool callback')
                 await callbacks.onTool(toolEvent)
-                logChat('✔️  onTool callback completed')
+                loggerChat.debug('✔️  onTool callback completed')
               } else {
-                logChat('⚠️  No onTool callback registered')
+                loggerChat.debug('⚠️  No onTool callback registered')
               }
             }
             break
@@ -485,7 +499,7 @@ export class Toji extends EventEmitter {
 
           case 'message.updated': {
             // Message complete
-            logChat('Message updated event received')
+            loggerChat.debug('Message updated event received')
             break
           }
 
@@ -496,7 +510,7 @@ export class Toji extends EventEmitter {
               properties: { sessionID: string }
             }
             if (idleEvent.properties.sessionID === sessionId) {
-              logChat('Session idle - response complete (%d total chars)', fullText.length)
+              loggerChat.debug('Session idle - response complete (%d total chars)', fullText.length)
               isComplete = true
 
               if (callbacks.onComplete) {
@@ -516,7 +530,7 @@ export class Toji extends EventEmitter {
               properties: { sessionID?: string; error?: unknown }
             }
             if (errorEvent.properties.sessionID === sessionId) {
-              logChat('Session error event: %o', errorEvent.properties.error)
+              loggerChat.debug('Session error event: %o', errorEvent.properties.error)
               const error = new Error(
                 'Session error: ' + JSON.stringify(errorEvent.properties.error)
               )
@@ -530,17 +544,17 @@ export class Toji extends EventEmitter {
 
           default:
             // Log other events for debugging
-            logChat('Received event: %s', typedEvent.type)
+            loggerChat.debug('Received event: %s', typedEvent.type)
         }
       }
 
       // If we exit the loop without seeing session.idle, still call onComplete
       if (!isComplete && callbacks.onComplete && fullText) {
-        logChat('Event stream ended without session.idle, calling onComplete')
+        loggerChat.debug('Event stream ended without session.idle, calling onComplete')
         await callbacks.onComplete(fullText)
       }
     } catch (error) {
-      logChat('ERROR: Event subscription failed: %o', error)
+      loggerChat.debug('ERROR: Event subscription failed: %o', error)
       throw error
     }
   }
@@ -549,7 +563,7 @@ export class Toji extends EventEmitter {
   clearSession(): void {
     if (this.currentProjectDirectory) {
       const activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
-      logChat('Clearing current session: %s', activeSessionId || 'none')
+      loggerChat.debug('Clearing current session: %s', activeSessionId || 'none')
       if (activeSessionId) {
         this.sessions.invalidateMessageCache(activeSessionId, this.currentProjectDirectory)
       }
@@ -569,7 +583,7 @@ export class Toji extends EventEmitter {
     }
 
     if (!activeSessionId) {
-      logChat('No session ID provided or current session available')
+      loggerChat.debug('No session ID provided or current session available')
       return []
     }
 
@@ -586,7 +600,7 @@ export class Toji extends EventEmitter {
         useCache
       )
     } catch (error) {
-      logChat('ERROR: Failed to get session messages: %o', error)
+      loggerChat.debug('ERROR: Failed to get session messages: %o', error)
       throw error
     }
   }
@@ -612,14 +626,14 @@ export class Toji extends EventEmitter {
   // Set global configuration
   setGlobalConfig(): void {
     // TODO: Implement global config if needed
-    log('setGlobalConfig called but not implemented in simplified version')
+    logger.debug('setGlobalConfig called but not implemented in simplified version')
   }
 
   // Get available projects (from OpenCode SDK)
   async getAvailableProjects(): Promise<Array<Project>> {
     const client = this.getClient()
     if (!client) {
-      log('Client not connected, returning empty project list')
+      logger.debug('Client not connected, returning empty project list')
       return []
     }
     // Update project manager to use current client
@@ -629,13 +643,13 @@ export class Toji extends EventEmitter {
 
   // Switch to a project (uses multi-server architecture)
   async switchToProject(projectPath: string): Promise<{ success: boolean; projectPath: string }> {
-    log('Switching to project: %s', projectPath)
+    logger.debug('Switching to project: %s', projectPath)
 
     // CRITICAL: Check if projectPath ends with .git and fix it
     if (projectPath.endsWith('/.git') || projectPath.endsWith('\\.git')) {
       const originalPath = projectPath
       projectPath = projectPath.replace(/[/\\]\.git$/, '')
-      log(
+      logger.debug(
         'WARNING: Project path had .git suffix, corrected from %s to %s',
         originalPath,
         projectPath
@@ -644,9 +658,9 @@ export class Toji extends EventEmitter {
 
     try {
       // Get or create server for this project directory
-      log('Getting or creating server for project: %s', projectPath)
+      logger.debug('Getting or creating server for project: %s', projectPath)
       const serverInstance = await this.server.getOrCreateServer(projectPath)
-      log('Server ready on port %d for %s', serverInstance.port, projectPath)
+      logger.debug('Server ready on port %d for %s', serverInstance.port, projectPath)
 
       // Update the project directory and process.chdir()
       await this.changeWorkingDirectory(projectPath)
@@ -658,7 +672,7 @@ export class Toji extends EventEmitter {
       const client = this.getClient(projectPath)
       if (client) {
         const normalizedPath = projectPath.replace(/\\/g, '/')
-        log('Checking project discovery for: %s', normalizedPath)
+        logger.debug('Checking project discovery for: %s', normalizedPath)
 
         // Try to get current project with the directory parameter
         try {
@@ -672,13 +686,13 @@ export class Toji extends EventEmitter {
 
           // If project is assigned to "global", it wasn't properly discovered
           if (current?.id === 'global') {
-            log('Project not discovered (global project), limited functionality available')
+            logger.debug('Project not discovered (global project), limited functionality available')
             // Don't try to trigger discovery automatically - let user decide
           } else {
-            log('Project already discovered: %s', current?.worktree)
+            logger.debug('Project already discovered: %s', current?.worktree)
           }
         } catch (error) {
-          log('WARNING: Could not check project discovery: %o', error)
+          logger.debug('WARNING: Could not check project discovery: %o', error)
         }
       }
 
@@ -687,7 +701,7 @@ export class Toji extends EventEmitter {
         projectPath
       }
     } catch (error) {
-      log('ERROR: Failed to switch to project %s: %o', projectPath, error)
+      logger.debug('ERROR: Failed to switch to project %s: %o', projectPath, error)
       throw error
     }
   }
@@ -719,7 +733,7 @@ export class Toji extends EventEmitter {
 
       // Check if we got a valid session
       if (!response) {
-        logChat('Session %s not found', activeSessionId)
+        loggerChat.debug('Session %s not found', activeSessionId)
         return null
       }
 
@@ -728,17 +742,17 @@ export class Toji extends EventEmitter {
         directory: this.currentProjectDirectory
       }
     } catch (error) {
-      logChat('ERROR: Failed to get current session: %o', error)
+      loggerChat.debug('ERROR: Failed to get current session: %o', error)
       return null
     }
   }
 
   // Close the current project (stop server, clear client, reset state)
   async closeCurrentProject(): Promise<void> {
-    log('Closing current project: %s', this.currentProjectDirectory || 'none')
+    logger.debug('Closing current project: %s', this.currentProjectDirectory || 'none')
 
     if (!this.currentProjectDirectory) {
-      log('No current project to close')
+      logger.debug('No current project to close')
       return
     }
 
@@ -753,14 +767,14 @@ export class Toji extends EventEmitter {
     // Close MCP server for this project
     try {
       await this.mcp.closeServer(projectToClose)
-      log('Closed MCP server for %s', projectToClose)
+      logger.debug('Closed MCP server for %s', projectToClose)
     } catch (error) {
-      log('Warning: Failed to close MCP server: %o', error)
+      logger.debug('Warning: Failed to close MCP server: %o', error)
     }
 
     // Stop the server for this directory
     await this.server.stopServerForDirectory(projectToClose)
-    log('Stopped server for %s', projectToClose)
+    logger.debug('Stopped server for %s', projectToClose)
 
     // Clear current project directory
     this.currentProjectDirectory = undefined
@@ -769,7 +783,7 @@ export class Toji extends EventEmitter {
     // Clear from config
     if (this._config) {
       this._config.setCurrentProjectPath('')
-      log('Cleared current project from config')
+      logger.debug('Cleared current project from config')
     }
 
     // CRITICAL: Reconnect to a default global server
@@ -780,7 +794,7 @@ export class Toji extends EventEmitter {
       const { app } = await import('electron')
       const globalDirectory = app.getPath('userData') // AppData/Roaming/toji3
 
-      log('Reconnecting to global server at: %s', globalDirectory)
+      logger.debug('Reconnecting to global server at: %s', globalDirectory)
 
       // Connect to global server (this will create one if needed)
       await this.connectClient(globalDirectory)
@@ -788,9 +802,9 @@ export class Toji extends EventEmitter {
       // Set the currentProjectId to 'global' to indicate we're in global mode
       this.currentProjectId = 'global'
 
-      log('Successfully connected to global server')
+      logger.debug('Successfully connected to global server')
     } catch (error) {
-      log('ERROR: Failed to connect to global server: %o', error)
+      logger.debug('ERROR: Failed to connect to global server: %o', error)
       // Don't throw here - we've at least closed the project
     }
 
@@ -798,7 +812,7 @@ export class Toji extends EventEmitter {
     this.emit('project:closed', {
       path: projectToClose
     })
-    log('Emitted project:closed event for: %s', projectToClose)
+    logger.debug('Emitted project:closed event for: %s', projectToClose)
   }
 
   // Session management methods for IPC
@@ -873,7 +887,11 @@ export class Toji extends EventEmitter {
       this._config.setProjectActiveSession(this.currentProjectDirectory, sessionId)
     }
 
-    logChat('Switched to session: %s for project: %s', sessionId, this.currentProjectDirectory)
+    loggerChat.debug(
+      'Switched to session: %s for project: %s',
+      sessionId,
+      this.currentProjectDirectory
+    )
   }
 
   /**
@@ -890,7 +908,7 @@ export class Toji extends EventEmitter {
       const savedSessionId = this._config?.getProjectActiveSession(this.currentProjectDirectory)
 
       if (savedSessionId) {
-        log('Found saved active session: %s', savedSessionId)
+        logger.debug('Found saved active session: %s', savedSessionId)
         // Verify it still exists
         try {
           // Normalize path to forward slashes for OpenCode API
@@ -903,12 +921,12 @@ export class Toji extends EventEmitter {
 
           if (response) {
             this.sessions.setActiveSession(savedSessionId, this.currentProjectDirectory)
-            log('Loaded saved session: %s', savedSessionId)
+            logger.debug('Loaded saved session: %s', savedSessionId)
             return
           }
         } catch {
           // Saved session no longer exists, will load most recent
-          log('Saved session no longer exists: %s', savedSessionId)
+          logger.debug('Saved session no longer exists: %s', savedSessionId)
         }
       }
 
@@ -926,12 +944,12 @@ export class Toji extends EventEmitter {
           this._config.setProjectActiveSession(this.currentProjectDirectory, mostRecent.id)
         }
 
-        log('Loaded most recent session: %s', mostRecent.id)
+        logger.debug('Loaded most recent session: %s', mostRecent.id)
       } else {
-        log('No sessions found for project')
+        logger.debug('No sessions found for project')
       }
     } catch (error) {
-      log('ERROR: Failed to load most recent session: %o', error)
+      logger.debug('ERROR: Failed to load most recent session: %o', error)
       throw error
     }
   }
@@ -957,14 +975,14 @@ export class Toji extends EventEmitter {
       }
     }
 
-    log('Initializing project at: %s', this.currentProjectDirectory)
+    logger.debug('Initializing project at: %s', this.currentProjectDirectory)
     const result = await this.projectInitializer.initializeProject(
       this.currentProjectDirectory,
       config
     )
 
     if (result.success) {
-      log('Project initialized successfully, restarting server...')
+      logger.debug('Project initialized successfully, restarting server...')
 
       // Restart the server to pick up the new git repository
       await this.server.stopServerForDirectory(this.currentProjectDirectory)
@@ -986,9 +1004,9 @@ export class Toji extends EventEmitter {
         )
         const current = await response.json()
         this.currentProjectId = current?.id
-        log('Project now recognized as: %s', current?.id)
+        logger.debug('Project now recognized as: %s', current?.id)
       } catch (error) {
-        log('WARNING: Could not verify project after initialization: %o', error)
+        logger.debug('WARNING: Could not verify project after initialization: %o', error)
       }
     }
 
@@ -1027,14 +1045,14 @@ export class Toji extends EventEmitter {
 
   // Get available model providers from OpenCode
   async getModelProviders(): Promise<ConfigProvidersResponse> {
-    console.log('[Toji] getModelProviders: Fetching available model providers from OpenCode')
+    logger.debug('[Toji] getModelProviders: Fetching available model providers from OpenCode')
     const client = this.getClient()
     if (!client) {
-      console.error('[Toji] getModelProviders: No client connected to server')
+      logger.error('getModelProviders: No client connected to server')
       throw new Error('Client not connected to server')
     }
 
-    console.log('[Toji] getModelProviders: Calling client.config.providers()')
+    logger.debug('[Toji] getModelProviders: Calling client.config.providers()')
     const raw = await client.config.providers()
     const response =
       raw && typeof raw === 'object' && 'data' in raw
@@ -1042,17 +1060,17 @@ export class Toji extends EventEmitter {
         : (raw as ConfigProvidersResponse)
 
     const providerCount = response?.providers?.length ?? 0
-    log('Retrieved %d model providers', providerCount)
-    console.log(`[Toji] getModelProviders: Retrieved ${providerCount} providers from OpenCode`)
+    logger.debug('Retrieved %d model providers', providerCount)
+    logger.debug(`[Toji] getModelProviders: Retrieved ${providerCount} providers from OpenCode`)
 
     if (response?.providers && Array.isArray(response.providers)) {
       const providerIds = response.providers.map((p) => p.id)
-      console.log(`[Toji] getModelProviders: Provider IDs: [${providerIds.join(', ')}]`)
+      logger.debug(`[Toji] getModelProviders: Provider IDs: [${providerIds.join(', ')}]`)
 
       // Log model counts per provider
       response.providers.forEach((provider) => {
         const modelCount = Object.keys(provider.models || {}).length
-        console.log(`[Toji] getModelProviders: Provider '${provider.id}' has ${modelCount} models`)
+        logger.debug(`[Toji] getModelProviders: Provider '${provider.id}' has ${modelCount} models`)
       })
     }
 
@@ -1064,25 +1082,25 @@ export class Toji extends EventEmitter {
 
   // Get current project model selection (primary + optional small model)
   async getModelConfig(): Promise<ModelConfig> {
-    log('Getting current project model configuration')
+    logger.debug('Getting current project model configuration')
     try {
       const config = await this.configManager.getModelConfig()
-      log('Retrieved project model config: %o', config)
+      logger.debug('Retrieved project model config: %o', config)
       return config
     } catch (error) {
-      log('ERROR: Failed to get project model config: %o', error)
+      logger.debug('ERROR: Failed to get project model config: %o', error)
       throw error
     }
   }
 
   // Update project model selection and restart server
   async updateModelConfig(selection: Partial<ModelConfig>): Promise<void> {
-    log('Updating project model configuration: %o', selection)
+    logger.debug('Updating project model configuration: %o', selection)
     try {
       await this.configManager.updateModelConfig(selection)
-      log('Project model configuration updated successfully')
+      logger.debug('Project model configuration updated successfully')
     } catch (error) {
-      log('ERROR: Failed to update project model config: %o', error)
+      logger.debug('ERROR: Failed to update project model config: %o', error)
       throw error
     }
   }
@@ -1116,18 +1134,18 @@ export class Toji extends EventEmitter {
    * This makes the provider available for model selection
    */
   async registerApiKey(providerId: string, apiKey: string): Promise<void> {
-    log('Registering API key for provider: %s', providerId)
-    console.log(
+    logger.debug('Registering API key for provider: %s', providerId)
+    logger.debug(
       `[Toji] registerApiKey('${providerId}'): Starting registration (key length: ${apiKey.length})`
     )
     const client = this.getClient()
     if (!client) {
-      console.error('[Toji] registerApiKey: No client connected to server')
+      logger.error('registerApiKey: No client connected to server')
       throw new Error('Client not connected to server')
     }
 
     try {
-      console.log(`[Toji] Calling client.auth.set for provider '${providerId}'`)
+      logger.debug(`[Toji] Calling client.auth.set for provider '${providerId}'`)
       await client.auth.set({
         path: { id: providerId },
         body: {
@@ -1135,10 +1153,10 @@ export class Toji extends EventEmitter {
           key: apiKey
         }
       })
-      log('Successfully registered API key for provider: %s', providerId)
-      console.log(`[Toji] ✓ API key registered successfully for '${providerId}'`)
+      logger.debug('Successfully registered API key for provider: %s', providerId)
+      logger.debug(`[Toji] ✓ API key registered successfully for '${providerId}'`)
     } catch (error) {
-      log('ERROR: Failed to register API key for %s: %o', providerId, error)
+      logger.debug('ERROR: Failed to register API key for %s: %o', providerId, error)
       console.error(`[Toji] ✗ Failed to register API key for '${providerId}':`, error)
       throw error
     }
@@ -1149,22 +1167,22 @@ export class Toji extends EventEmitter {
    * Useful after server restart or project change
    */
   async syncApiKeys(): Promise<void> {
-    console.log('[Toji] syncApiKeys: Starting API key synchronization')
+    logger.debug('[Toji] syncApiKeys: Starting API key synchronization')
     const config = this._config
     if (!config) {
-      log('WARNING: No config provider, skipping API key sync')
+      logger.debug('WARNING: No config provider, skipping API key sync')
       console.warn('[Toji] syncApiKeys: No config provider available')
       return
     }
 
     const providers = config.getConfiguredProviders()
-    log('Syncing %d API keys with OpenCode server', providers.length)
-    console.log(
+    logger.debug('Syncing %d API keys with OpenCode server', providers.length)
+    logger.debug(
       `[Toji] syncApiKeys: Found ${providers.length} providers to sync: [${providers.join(', ')}]`
     )
 
     if (providers.length === 0) {
-      console.log('[Toji] syncApiKeys: No API keys configured, skipping sync')
+      logger.debug('[Toji] syncApiKeys: No API keys configured, skipping sync')
       return
     }
 
@@ -1172,11 +1190,11 @@ export class Toji extends EventEmitter {
       const apiKey = config.getOpencodeApiKey(providerId)
       if (apiKey) {
         try {
-          console.log(`[Toji] syncApiKeys: Syncing provider '${providerId}'...`)
+          logger.debug(`[Toji] syncApiKeys: Syncing provider '${providerId}'...`)
           await this.registerApiKey(providerId, apiKey)
-          console.log(`[Toji] syncApiKeys: ✓ Successfully synced '${providerId}'`)
+          logger.debug(`[Toji] syncApiKeys: ✓ Successfully synced '${providerId}'`)
         } catch (error) {
-          log('WARNING: Failed to sync API key for %s: %o', providerId, error)
+          logger.debug('WARNING: Failed to sync API key for %s: %o', providerId, error)
           console.error(`[Toji] syncApiKeys: ✗ Failed to sync '${providerId}':`, error)
           // Continue with other providers even if one fails
         }
@@ -1184,7 +1202,7 @@ export class Toji extends EventEmitter {
         console.warn(`[Toji] syncApiKeys: No API key found for provider '${providerId}'`)
       }
     }
-    console.log('[Toji] syncApiKeys: Synchronization complete')
+    logger.debug('[Toji] syncApiKeys: Synchronization complete')
   }
 }
 

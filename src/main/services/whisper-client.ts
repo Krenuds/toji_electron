@@ -3,9 +3,9 @@
  * Follows the pattern from Python's stt_client.py
  */
 
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('whisper-client')
+const logger = createLogger('whisper-client')
 
 export interface TranscriptionResult {
   text: string
@@ -23,7 +23,7 @@ export class WhisperClient {
 
   constructor(baseUrl: string = 'http://localhost:9000') {
     this.baseUrl = baseUrl
-    log('WhisperClient initialized with URL:', baseUrl)
+    logger.debug('WhisperClient initialized with URL:', baseUrl)
   }
 
   /**
@@ -36,7 +36,7 @@ export class WhisperClient {
     options: TranscriptionOptions = {}
   ): Promise<TranscriptionResult> {
     const startTime = Date.now()
-    log(`Transcribing ${audioData.length} bytes of audio...`)
+    logger.debug(`Transcribing ${audioData.length} bytes of audio...`)
 
     try {
       const formData = new FormData()
@@ -60,7 +60,7 @@ export class WhisperClient {
 
       if (!response.ok) {
         const errorText = await response.text()
-        log('Transcription failed:', response.status, errorText)
+        logger.debug('Transcription failed:', response.status, errorText)
         return {
           text: '',
           error: `HTTP ${response.status}: ${errorText}`
@@ -70,7 +70,7 @@ export class WhisperClient {
       const result = (await response.json()) as { text: string }
       const duration = Date.now() - startTime
 
-      log(`Transcription complete in ${duration}ms: "${result.text}"`)
+      logger.debug(`Transcription complete in ${duration}ms: "${result.text}"`)
 
       // Filter out Whisper hallucinations (repeated characters)
       const text = result.text || ''
@@ -78,7 +78,7 @@ export class WhisperClient {
         // Check for hallucinations (e.g., "aaaaaaa" or "...")
         const uniqueChars = new Set(text.replace(/\s/g, ''))
         if (uniqueChars.size <= 2) {
-          log('Detected hallucination (repeated characters), filtering out:', text)
+          logger.debug('Detected hallucination (repeated characters), filtering out:', text)
           return {
             text: '',
             error: 'Hallucination detected',
@@ -93,7 +93,7 @@ export class WhisperClient {
       }
     } catch (error) {
       const duration = Date.now() - startTime
-      log('Transcription error:', error)
+      logger.debug('Transcription error:', error)
 
       if (error instanceof Error) {
         return {
@@ -121,7 +121,7 @@ export class WhisperClient {
       })
       return response.ok
     } catch (error) {
-      log('Health check failed:', error)
+      logger.debug('Health check failed:', error)
       return false
     }
   }
@@ -141,7 +141,7 @@ export class WhisperClient {
 
       return (await response.json()) as Record<string, unknown>
     } catch (error) {
-      log('Failed to get service info:', error)
+      logger.debug('Failed to get service info:', error)
       return null
     }
   }
@@ -151,7 +151,7 @@ export class WhisperClient {
    */
   setBaseUrl(url: string): void {
     this.baseUrl = url
-    log('Base URL updated to:', url)
+    logger.debug('Base URL updated to:', url)
   }
 
   /**

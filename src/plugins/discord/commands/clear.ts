@@ -2,10 +2,10 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js'
 import type { Toji } from '../../../main/toji'
 import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 import { DISCORD_COLORS } from '../constants'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import { createErrorEmbed } from '../utils/errors'
 
-const log = createFileDebugLogger('discord:commands:clear')
+const logger = createLogger('discord:commands:clear')
 
 export const data = new SlashCommandBuilder()
   .setName('clear')
@@ -53,7 +53,7 @@ export async function execute(
 
     await interaction.editReply({ embeds: [successEmbed] })
   } catch (error) {
-    log('ERROR: Clear command failed: %o', error)
+    logger.debug('ERROR: Clear command failed: %o', error)
     const errorEmbed = createErrorEmbed(error, 'Clear Conversation')
 
     await interaction.editReply({ embeds: [errorEmbed] })

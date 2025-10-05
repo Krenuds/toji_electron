@@ -3,7 +3,7 @@
  * Based on Python's tts_handler.py from toji-services
  */
 
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import {
   type VoiceConnection,
   createAudioPlayer,
@@ -18,7 +18,7 @@ import { Readable } from 'stream'
 import { spawn } from 'child_process'
 import ffmpegPath from '@ffmpeg-installer/ffmpeg'
 
-const log = createFileDebugLogger('discord:tts-player')
+const logger = createLogger('discord:tts-player')
 
 export class TTSPlayer {
   private connection: VoiceConnection
@@ -35,23 +35,23 @@ export class TTSPlayer {
 
     // Handle player events
     this.player.on(AudioPlayerStatus.Idle, () => {
-      log('Player idle')
+      logger.debug('Player idle')
       this.isPlaying = false
       this.playNext()
     })
 
     this.player.on(AudioPlayerStatus.Playing, () => {
-      log('Player playing')
+      logger.debug('Player playing')
       this.isPlaying = true
     })
 
     this.player.on('error', (error) => {
-      log('Player error:', error)
+      logger.debug('Player error:', error)
       this.isPlaying = false
       this.playNext()
     })
 
-    log('TTS Player created')
+    logger.debug('TTS Player created')
   }
 
   /**
@@ -59,7 +59,7 @@ export class TTSPlayer {
    * @param audioBuffer - WAV audio buffer from Piper
    */
   async play(audioBuffer: Buffer): Promise<void> {
-    log(`Playing TTS audio: ${audioBuffer.length} bytes`)
+    logger.debug(`Playing TTS audio: ${audioBuffer.length} bytes`)
 
     // Add to queue
     this.queue.push(audioBuffer)
@@ -110,16 +110,16 @@ export class TTSPlayer {
 
       // Error handlers
       ffmpeg.stderr.on('data', (data) => {
-        log('FFmpeg error:', data.toString())
+        logger.debug('FFmpeg error:', data.toString())
       })
 
       ffmpeg.on('error', (err) => {
-        log('FFmpeg process error:', err)
+        logger.debug('FFmpeg process error:', err)
       })
 
       ffmpeg.on('exit', (code, signal) => {
         if (code !== 0 && code !== null) {
-          log(`FFmpeg exited with code ${code}, signal ${signal}`)
+          logger.debug(`FFmpeg exited with code ${code}, signal ${signal}`)
         }
       })
 
@@ -133,9 +133,9 @@ export class TTSPlayer {
 
       // Play the resource
       this.player.play(resource)
-      log('TTS audio playing')
+      logger.debug('TTS audio playing')
     } catch (error) {
-      log('Error playing TTS audio:', error)
+      logger.debug('Error playing TTS audio:', error)
       this.isPlaying = false
       this.playNext()
     }
@@ -145,7 +145,7 @@ export class TTSPlayer {
    * Stop playback and clear queue
    */
   stop(): void {
-    log('Stopping TTS player')
+    logger.debug('Stopping TTS player')
     this.player.stop()
     this.queue = []
     this.isPlaying = false
@@ -169,7 +169,7 @@ export class TTSPlayer {
    * Cleanup
    */
   destroy(): void {
-    log('Destroying TTS player')
+    logger.debug('Destroying TTS player')
     this.stop()
     // Player will be cleaned up when connection is destroyed
   }

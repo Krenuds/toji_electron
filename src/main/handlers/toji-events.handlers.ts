@@ -2,16 +2,16 @@
 // This decouples Toji from Electron BrowserWindow dependency
 import { BrowserWindow } from 'electron'
 import type { Toji } from '../toji'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('toji:events-handler')
+const logger = createLogger('toji:events-handler')
 
 /**
  * Register event listeners on Toji to forward events to the renderer process
  * This handler acts as the bridge between business logic (Toji) and UI (Electron renderer)
  */
 export function registerTojiEventForwarding(toji: Toji): void {
-  log('Registering Toji event forwarding handlers')
+  logger.debug('Registering Toji event forwarding handlers')
 
   // Forward project:opened events to renderer
   toji.on('project:opened', (data) => {
@@ -19,12 +19,12 @@ export function registerTojiEventForwarding(toji: Toji): void {
       const mainWindow = BrowserWindow.getAllWindows()[0]
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('project:opened', data)
-        log('Forwarded project:opened event: %s', data.path)
+        logger.debug('Forwarded project:opened event: %s', data.path)
       } else {
-        log('No window available to forward project:opened event')
+        logger.debug('No window available to forward project:opened event')
       }
     } catch (error) {
-      log('ERROR: Failed to forward project:opened event: %o', error)
+      logger.debug('ERROR: Failed to forward project:opened event: %o', error)
     }
   })
 
@@ -34,14 +34,14 @@ export function registerTojiEventForwarding(toji: Toji): void {
       const mainWindow = BrowserWindow.getAllWindows()[0]
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('project:closed', data)
-        log('Forwarded project:closed event: %s', data.path)
+        logger.debug('Forwarded project:closed event: %s', data.path)
       } else {
-        log('No window available to forward project:closed event')
+        logger.debug('No window available to forward project:closed event')
       }
     } catch (error) {
-      log('ERROR: Failed to forward project:closed event: %o', error)
+      logger.debug('ERROR: Failed to forward project:closed event: %o', error)
     }
   })
 
-  log('Toji event forwarding handlers registered successfully')
+  logger.debug('Toji event forwarding handlers registered successfully')
 }

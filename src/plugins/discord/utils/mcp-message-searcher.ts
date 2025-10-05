@@ -1,9 +1,9 @@
 // Discord message searcher for MCP integration
 import { Client, TextChannel } from 'discord.js'
 import type { DiscordMessageSearcher } from '../../../main/toji/mcp'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:mcp-message-searcher')
+const logger = createLogger('discord:mcp-message-searcher')
 
 /**
  * Creates a Discord message searcher that implements the MCP interface
@@ -11,7 +11,7 @@ const log = createFileDebugLogger('discord:mcp-message-searcher')
 export function createDiscordMessageSearcher(client: Client): DiscordMessageSearcher {
   return {
     async searchMessages(channelId: string, options) {
-      log(
+      logger.debug(
         'Searching messages in channel %s with query: %s, limit: %d',
         channelId,
         options.query || 'none',
@@ -85,10 +85,10 @@ export function createDiscordMessageSearcher(client: Client): DiscordMessageSear
             }))
           }))
 
-        log('Found %d messages matching search criteria', filteredMessages.length)
+        logger.debug('Found %d messages matching search criteria', filteredMessages.length)
         return filteredMessages
       } catch (error) {
-        log('Error searching messages: %o', error)
+        logger.debug('Error searching messages: %o', error)
         throw new Error(
           `Failed to search Discord messages: ${error instanceof Error ? error.message : 'Unknown error'}`
         )

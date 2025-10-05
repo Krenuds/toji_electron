@@ -12,11 +12,11 @@ import {
   type VoiceChannel
 } from 'discord.js'
 import { DISCORD_COLORS } from '../constants'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import type { VoiceModule } from '../voice/VoiceModule'
 import type { DiscordProjectManager } from '../modules/DiscordProjectManager'
 
-const log = createFileDebugLogger('discord:command:voice')
+const logger = createLogger('discord:command:voice')
 
 /**
  * Get or create a voice channel for a project
@@ -33,7 +33,7 @@ async function getOrCreateProjectVoiceChannel(
   // Generate voice channel name
   const voiceChannelName = `🎙️-${projectName}`
 
-  log(`Looking for voice channel: ${voiceChannelName}`)
+  logger.debug(`Looking for voice channel: ${voiceChannelName}`)
 
   // Check if voice channel already exists in the guild
   const existingVoiceChannel = guild.channels.cache.find(
@@ -41,7 +41,7 @@ async function getOrCreateProjectVoiceChannel(
   ) as VoiceChannel | undefined
 
   if (existingVoiceChannel) {
-    log(`Found existing voice channel: ${existingVoiceChannel.id}`)
+    logger.debug(`Found existing voice channel: ${existingVoiceChannel.id}`)
     return existingVoiceChannel
   }
 
@@ -49,7 +49,7 @@ async function getOrCreateProjectVoiceChannel(
   const textChannel = guild.channels.cache.get(textChannelId)
   const parentId = textChannel && 'parent' in textChannel ? textChannel.parent?.id : undefined
 
-  log(`Creating new voice channel: ${voiceChannelName} in category: ${parentId || 'none'}`)
+  logger.debug(`Creating new voice channel: ${voiceChannelName} in category: ${parentId || 'none'}`)
 
   try {
     const voiceChannel = await guild.channels.create({
@@ -66,10 +66,10 @@ async function getOrCreateProjectVoiceChannel(
       ]
     })
 
-    log(`Created voice channel: ${voiceChannel.id}`)
+    logger.debug(`Created voice channel: ${voiceChannel.id}`)
     return voiceChannel
   } catch (error) {
-    log(`Failed to create voice channel:`, error)
+    logger.debug(`Failed to create voice channel:`, error)
     return null
   }
 }
@@ -155,7 +155,7 @@ async function handleJoin(
       return
     }
 
-    log(
+    logger.debug(
       `User ${interaction.user.tag} requesting voice for project: ${project.projectName} (${project.projectPath})`
     )
 
@@ -193,7 +193,7 @@ async function handleJoin(
     const existingSession = voiceModule.getUserSession(interaction.user.id)
     const isSwitching = existingSession !== undefined
 
-    log(`Joining voice channel ${voiceChannel.id} for project ${project.projectName}`)
+    logger.debug(`Joining voice channel ${voiceChannel.id} for project ${project.projectName}`)
 
     // Join the voice channel with project context (auto-leaves previous session)
     const session = await voiceModule.joinVoiceChannel(
@@ -251,9 +251,9 @@ async function handleJoin(
       ]
     })
 
-    log(`Successfully connected user ${interaction.user.tag} to project voice channel`)
+    logger.debug(`Successfully connected user ${interaction.user.tag} to project voice channel`)
   } catch (error) {
-    log('Error in handleJoin:', error)
+    logger.debug('Error in handleJoin:', error)
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
 
@@ -304,9 +304,9 @@ async function handleLeave(
       ]
     })
 
-    log(`User ${interaction.user.tag} left voice`)
+    logger.debug(`User ${interaction.user.tag} left voice`)
   } catch (error) {
-    log('Error in handleLeave:', error)
+    logger.debug('Error in handleLeave:', error)
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
 
@@ -411,7 +411,7 @@ async function handleStatus(
       ]
     })
   } catch (error) {
-    log('Error in handleStatus:', error)
+    logger.debug('Error in handleStatus:', error)
 
     await interaction.editReply({
       embeds: [

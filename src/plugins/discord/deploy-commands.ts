@@ -5,9 +5,9 @@
 
 import { REST, Routes } from 'discord.js'
 import type { RESTPostAPIApplicationCommandsJSONBody } from 'discord.js'
-import { createFileDebugLogger } from '../../main/utils/logger'
+import { createLogger } from '../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:deploy-commands')
+const logger = createLogger('discord:deploy-commands')
 
 // Command deployment function
 export async function deployCommands(
@@ -38,7 +38,7 @@ export async function deployCommands(
   for (const command of commandModules) {
     if ('data' in command && 'execute' in command) {
       commands.push(command.data.toJSON())
-      log('Loaded command: %s', command.data.name)
+      logger.debug('Loaded command: %s', command.data.name)
     }
   }
 
@@ -46,20 +46,20 @@ export async function deployCommands(
   const rest = new REST().setToken(token)
 
   try {
-    log('Started refreshing %d application (/) commands', commands.length)
+    logger.debug('Started refreshing %d application (/) commands', commands.length)
 
     // Deploy commands
     if (guildId) {
       // Guild-specific commands (instant update, good for testing)
       await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands })
-      log('Successfully deployed %d guild commands to %s', commands.length, guildId)
+      logger.debug('Successfully deployed %d guild commands to %s', commands.length, guildId)
     } else {
       // Global commands (takes up to 1 hour to update)
       await rest.put(Routes.applicationCommands(clientId), { body: commands })
-      log('Successfully deployed %d global commands', commands.length)
+      logger.debug('Successfully deployed %d global commands', commands.length)
     }
   } catch (error) {
-    log('ERROR: Failed to deploy commands: %o', error)
+    logger.debug('ERROR: Failed to deploy commands: %o', error)
     throw error
   }
 }

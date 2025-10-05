@@ -3,16 +3,16 @@
 import { createOpencodeClient } from '@opencode-ai/sdk'
 import type { OpencodeClient } from '@opencode-ai/sdk'
 import type { ServerManager } from './server'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { normalizePath } from '../utils/path'
 
-const log = createFileDebugLogger('toji:client-manager')
+const logger = createLogger('toji:client-manager')
 
 export class ClientManager {
   private clients: Map<string, OpencodeClient> = new Map()
 
   constructor(private server: ServerManager) {
-    log('ClientManager initialized')
+    logger.debug('ClientManager initialized')
   }
 
   /**
@@ -22,13 +22,13 @@ export class ClientManager {
    */
   async connectClient(directory: string): Promise<OpencodeClient> {
     const normalized = normalizePath(directory)
-    log('Connecting client for directory: %s', normalized)
+    logger.debug('Connecting client for directory: %s', normalized)
 
     // Get or create server for this directory
     const serverInstance = await this.server.getOrCreateServer(directory)
     const serverUrl = serverInstance.server.url
 
-    log('Connecting to server URL: %s for directory: %s', serverUrl, directory)
+    logger.debug('Connecting to server URL: %s for directory: %s', serverUrl, directory)
 
     // Create client for this directory if not exists
     if (!this.clients.has(normalized)) {
@@ -37,9 +37,9 @@ export class ClientManager {
         responseStyle: 'data' // Get data directly without wrapper
       })
       this.clients.set(normalized, client)
-      log('Client created and connected for %s', normalized)
+      logger.debug('Client created and connected for %s', normalized)
     } else {
-      log('Reusing existing client for %s', normalized)
+      logger.debug('Reusing existing client for %s', normalized)
     }
 
     return this.clients.get(normalized)!
@@ -61,9 +61,9 @@ export class ClientManager {
   removeClient(directory: string): void {
     const normalized = normalizePath(directory)
     if (this.clients.delete(normalized)) {
-      log('Removed client for %s', normalized)
+      logger.debug('Removed client for %s', normalized)
     } else {
-      log('No client found to remove for %s', normalized)
+      logger.debug('No client found to remove for %s', normalized)
     }
   }
 

@@ -5,9 +5,9 @@
 
 import { EmbedBuilder } from 'discord.js'
 import { DISCORD_COLORS } from '../constants'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:utils:errors')
+const logger = createLogger('discord:utils:errors')
 
 /**
  * Get a safe error message from an unknown error value
@@ -82,7 +82,7 @@ export function createErrorEmbed(
   const errorMessage = getErrorMessage(error)
   const suggestions = getErrorSuggestions(error)
 
-  log('ERROR in %s: %s', context, errorMessage)
+  logger.debug('ERROR in %s: %s', context, errorMessage)
 
   const embed = new EmbedBuilder()
     .setColor(DISCORD_COLORS.ERROR)

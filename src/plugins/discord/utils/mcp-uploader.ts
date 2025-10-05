@@ -2,9 +2,9 @@
 import { existsSync } from 'fs'
 import { AttachmentBuilder, Client, TextChannel } from 'discord.js'
 import type { DiscordFileUploader } from '../../../main/toji/mcp'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:mcp-uploader')
+const logger = createLogger('discord:mcp-uploader')
 
 /**
  * Creates a Discord file uploader that implements the MCP interface
@@ -19,7 +19,7 @@ export function createDiscordFileUploader(client: Client): DiscordFileUploader &
   return {
     setCurrentChannel(channelId: string) {
       currentChannelId = channelId
-      log('Current channel set to: %s', channelId)
+      logger.debug('Current channel set to: %s', channelId)
     },
 
     getCurrentChannel() {
@@ -34,7 +34,7 @@ export function createDiscordFileUploader(client: Client): DiscordFileUploader &
         throw new Error('No channel ID provided and no current channel set')
       }
 
-      log('Uploading file %s to channel %s', filePath, targetChannelId)
+      logger.debug('Uploading file %s to channel %s', filePath, targetChannelId)
 
       // Verify file exists
       if (!existsSync(filePath)) {
@@ -67,10 +67,10 @@ export function createDiscordFileUploader(client: Client): DiscordFileUploader &
           attachmentUrl
         }
 
-        log('File uploaded successfully: %s', attachmentUrl)
+        logger.debug('File uploaded successfully: %s', attachmentUrl)
         return result
       } catch (error) {
-        log('Error uploading file: %o', error)
+        logger.debug('Error uploading file: %o', error)
         throw new Error(
           `Failed to upload file to Discord: ${error instanceof Error ? error.message : 'Unknown error'}`
         )

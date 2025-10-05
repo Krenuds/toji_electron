@@ -1,9 +1,9 @@
 // Discord channel listing tool for MCP
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createFileDebugLogger } from '../../../utils/logger'
+import { createLogger } from '../../../utils/logger'
 
-const log = createFileDebugLogger('mcp:discord-list-channels')
+const logger = createLogger('mcp:discord-list-channels')
 
 export interface DiscordChannelLister {
   listChannels(
@@ -29,7 +29,7 @@ export function registerDiscordListChannelsTool(
   server: McpServer,
   channelLister: DiscordChannelLister
 ): void {
-  log('Registering discord_list_channels tool')
+  logger.debug('Registering discord_list_channels tool')
 
   server.registerTool(
     'discord_list_channels',
@@ -68,7 +68,11 @@ export function registerDiscordListChannelsTool(
     },
     async ({ guildId, channelType = 'all' }) => {
       try {
-        log('Listing channels for guild %s with type filter: %s', guildId || 'default', channelType)
+        logger.debug(
+          'Listing channels for guild %s with type filter: %s',
+          guildId || 'default',
+          channelType
+        )
 
         const channels = await channelLister.listChannels(guildId, channelType)
 
@@ -79,7 +83,7 @@ export function registerDiscordListChannelsTool(
           channels
         }
 
-        log('Listed %d channels successfully', channels.length)
+        logger.debug('Listed %d channels successfully', channels.length)
 
         return {
           content: [
@@ -96,7 +100,7 @@ export function registerDiscordListChannelsTool(
           structuredContent: output
         }
       } catch (error) {
-        log('Error listing channels: %o', error)
+        logger.debug('Error listing channels: %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
         return {
@@ -112,5 +116,5 @@ export function registerDiscordListChannelsTool(
     }
   )
 
-  log('discord_list_channels tool registered successfully')
+  logger.debug('discord_list_channels tool registered successfully')
 }

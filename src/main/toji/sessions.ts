@@ -1,9 +1,9 @@
 // Session Management for OpenCode SDK
 import type { OpencodeClient, Message, Part, Session as SdkSession } from '@opencode-ai/sdk'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import type { Session } from './types'
 
-const log = createFileDebugLogger('toji:sessions')
+const logger = createLogger('toji:sessions')
 
 export class SessionManager {
   // Per-project session tracking
@@ -22,7 +22,7 @@ export class SessionManager {
    * List sessions for current project
    */
   async listSessions(client: OpencodeClient, projectPath?: string): Promise<Session[]> {
-    log('Listing sessions for project: %s', projectPath || 'default')
+    logger.debug('Listing sessions for project: %s', projectPath || 'default')
 
     try {
       // Normalize path to forward slashes for OpenCode API
@@ -34,7 +34,7 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        log('No sessions response (likely uninitialized project), returning empty array')
+        logger.debug('No sessions response (likely uninitialized project), returning empty array')
         return []
       }
 
@@ -62,10 +62,10 @@ export class SessionManager {
         this.sessionCache.set(projectPath, sessions)
       }
 
-      log('Found %d sessions for project %s', sessions.length, projectPath || 'default')
+      logger.debug('Found %d sessions for project %s', sessions.length, projectPath || 'default')
       return sessions
     } catch (error) {
-      log('ERROR: Failed to list sessions: %o', error)
+      logger.debug('ERROR: Failed to list sessions: %o', error)
       throw error
     }
   }
@@ -78,7 +78,11 @@ export class SessionManager {
     title?: string,
     projectPath?: string
   ): Promise<Session> {
-    log('Creating session: title="%s", project="%s"', title || 'untitled', projectPath || 'default')
+    logger.debug(
+      'Creating session: title="%s", project="%s"',
+      title || 'untitled',
+      projectPath || 'default'
+    )
 
     try {
       // Normalize path to forward slashes for OpenCode API
@@ -91,7 +95,7 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        log('No response when creating session (likely uninitialized project)')
+        logger.debug('No response when creating session (likely uninitialized project)')
         throw new Error('Cannot create session: Project not initialized')
       }
 
@@ -120,10 +124,10 @@ export class SessionManager {
         this.sessionCache.set(projectPath, [...cached, sessionInfo])
       }
 
-      log('Created session: %s', sessionInfo.id)
+      logger.debug('Created session: %s', sessionInfo.id)
       return sessionInfo
     } catch (error) {
-      log('ERROR: Failed to create session: %o', error)
+      logger.debug('ERROR: Failed to create session: %o', error)
       throw error
     }
   }
@@ -136,7 +140,7 @@ export class SessionManager {
     sessionId: string,
     projectPath?: string
   ): Promise<void> {
-    log('Deleting session: %s', sessionId)
+    logger.debug('Deleting session: %s', sessionId)
 
     try {
       await client.session.delete({
@@ -165,9 +169,9 @@ export class SessionManager {
         this.activeSessionPerProject.delete(projectPath)
       }
 
-      log('Deleted session: %s', sessionId)
+      logger.debug('Deleted session: %s', sessionId)
     } catch (error) {
-      log('ERROR: Failed to delete session: %o', error)
+      logger.debug('ERROR: Failed to delete session: %o', error)
       throw error
     }
   }
@@ -181,7 +185,7 @@ export class SessionManager {
     projectPath?: string,
     useCache = true
   ): Promise<Array<{ info: Message; parts: Part[] }>> {
-    log(
+    logger.debug(
       'Getting messages for session: %s in project: %s (useCache: %s)',
       sessionId,
       projectPath || 'default',
@@ -195,7 +199,7 @@ export class SessionManager {
     if (useCache && this.messageCache.has(cacheKey)) {
       const cached = this.messageCache.get(cacheKey)!
       if (Date.now() - cached.timestamp < this.CACHE_TTL) {
-        log(
+        logger.debug(
           'Returning cached messages for session: %s in project: %s',
           sessionId,
           projectPath || 'default'
@@ -212,7 +216,7 @@ export class SessionManager {
 
       // Check if we got a valid response
       if (!response) {
-        log(
+        logger.debug(
           'No response for session messages (likely uninitialized project), returning empty array'
         )
         return []
@@ -229,10 +233,10 @@ export class SessionManager {
         timestamp: Date.now()
       })
 
-      log('Retrieved %d messages for session: %s', messages.length, sessionId)
+      logger.debug('Retrieved %d messages for session: %s', messages.length, sessionId)
       return messages
     } catch (error) {
-      log('ERROR: Failed to get session messages: %o', error)
+      logger.debug('ERROR: Failed to get session messages: %o', error)
       throw error
     }
   }
@@ -241,7 +245,7 @@ export class SessionManager {
    * Set active session for project and update its lastActive time
    */
   setActiveSession(sessionId: string, projectPath: string): void {
-    log('Setting active session: %s for project: %s', sessionId, projectPath)
+    logger.debug('Setting active session: %s for project: %s', sessionId, projectPath)
     this.activeSessionPerProject.set(projectPath, sessionId)
 
     // Update lastActive time for this session in cache
@@ -258,7 +262,7 @@ export class SessionManager {
       if (sessionIndex !== -1) {
         cached[sessionIndex].lastActive = new Date()
         this.sessionCache.set(projectPath, cached)
-        log('Updated lastActive for session: %s', sessionId)
+        logger.debug('Updated lastActive for session: %s', sessionId)
       }
     }
   }
@@ -274,7 +278,7 @@ export class SessionManager {
    * Clear message cache for a session
    */
   invalidateMessageCache(sessionId: string, projectPath?: string): void {
-    log(
+    logger.debug(
       'Invalidating message cache for session: %s in project: %s',
       sessionId,
       projectPath || 'all'
@@ -297,7 +301,7 @@ export class SessionManager {
    * Clear session cache for a project
    */
   invalidateSessionCache(projectPath: string): void {
-    log('Invalidating session cache for project: %s', projectPath)
+    logger.debug('Invalidating session cache for project: %s', projectPath)
     this.sessionCache.delete(projectPath)
 
     // Also clear message caches for all sessions in this project
@@ -312,7 +316,7 @@ export class SessionManager {
    * Clear all caches
    */
   clearAllCaches(): void {
-    log('Clearing all caches')
+    logger.debug('Clearing all caches')
     this.sessionCache.clear()
     this.messageCache.clear()
     this.activeSessionPerProject.clear()

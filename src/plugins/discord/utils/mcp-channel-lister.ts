@@ -1,9 +1,9 @@
 // Discord channel lister for MCP integration
 import { ChannelType, Client, Guild } from 'discord.js'
 import type { DiscordChannelLister } from '../../../main/toji/mcp'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:mcp-channel-lister')
+const logger = createLogger('discord:mcp-channel-lister')
 
 /**
  * Creates a Discord channel lister that implements the MCP interface
@@ -11,7 +11,11 @@ const log = createFileDebugLogger('discord:mcp-channel-lister')
 export function createDiscordChannelLister(client: Client): DiscordChannelLister {
   return {
     async listChannels(guildId?: string, channelType?: string) {
-      log('Listing channels for guild %s with type filter: %s', guildId || 'default', channelType)
+      logger.debug(
+        'Listing channels for guild %s with type filter: %s',
+        guildId || 'default',
+        channelType
+      )
 
       try {
         // Get the guild
@@ -84,10 +88,10 @@ export function createDiscordChannelLister(client: Client): DiscordChannelLister
           .filter((c) => c.id !== '') // Remove any invalid channels
           .sort((a, b) => a.position - b.position)
 
-        log('Found %d channels matching criteria', filteredChannels.length)
+        logger.debug('Found %d channels matching criteria', filteredChannels.length)
         return filteredChannels
       } catch (error) {
-        log('Error listing channels: %o', error)
+        logger.debug('Error listing channels: %o', error)
         throw new Error(
           `Failed to list Discord channels: ${error instanceof Error ? error.message : 'Unknown error'}`
         )

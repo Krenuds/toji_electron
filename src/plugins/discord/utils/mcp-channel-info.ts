@@ -1,9 +1,9 @@
 // Discord channel info provider for MCP integration
 import { ChannelType, Client, PermissionFlagsBits } from 'discord.js'
 import type { DiscordChannelInfoProvider } from '../../../main/toji/mcp'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:mcp-channel-info')
+const logger = createLogger('discord:mcp-channel-info')
 
 /**
  * Creates a Discord channel info provider that implements the MCP interface
@@ -11,7 +11,7 @@ const log = createFileDebugLogger('discord:mcp-channel-info')
 export function createDiscordChannelInfoProvider(client: Client): DiscordChannelInfoProvider {
   return {
     async getChannelInfo(channelId: string) {
-      log('Getting info for channel %s', channelId)
+      logger.debug('Getting info for channel %s', channelId)
 
       try {
         const channel = await client.channels.fetch(channelId)
@@ -69,10 +69,10 @@ export function createDiscordChannelInfoProvider(client: Client): DiscordChannel
           createdAt: channel.createdAt?.toISOString() || new Date().toISOString()
         }
 
-        log('Retrieved channel info: %s (%s)', info.name, info.type)
+        logger.debug('Retrieved channel info: %s (%s)', info.name, info.type)
         return info
       } catch (error) {
-        log('Error getting channel info: %o', error)
+        logger.debug('Error getting channel info: %o', error)
         throw new Error(
           `Failed to get Discord channel info: ${error instanceof Error ? error.message : 'Unknown error'}`
         )

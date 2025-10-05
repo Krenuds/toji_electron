@@ -1,9 +1,9 @@
 // Discord message fetcher for MCP integration
 import type { Client, TextChannel, Message } from 'discord.js'
 import type { DiscordMessageFetcher } from '../../../main/toji/mcp'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:mcp-fetcher')
+const logger = createLogger('discord:mcp-fetcher')
 
 /**
  * Creates a Discord message fetcher that implements the MCP interface
@@ -18,7 +18,7 @@ export function createDiscordMessageFetcher(client: Client): DiscordMessageFetch
   return {
     setCurrentChannel(channelId: string) {
       currentChannelId = channelId
-      log('Current channel set to: %s', channelId)
+      logger.debug('Current channel set to: %s', channelId)
     },
 
     getCurrentChannel() {
@@ -32,7 +32,7 @@ export function createDiscordMessageFetcher(client: Client): DiscordMessageFetch
       if (!targetChannelId) {
         throw new Error('No channel ID provided and no current channel set')
       }
-      log('Fetching %d messages from channel %s', limit, targetChannelId)
+      logger.debug('Fetching %d messages from channel %s', limit, targetChannelId)
 
       try {
         // Get the channel
@@ -55,10 +55,10 @@ export function createDiscordMessageFetcher(client: Client): DiscordMessageFetch
             timestamp: msg.createdAt.toISOString()
           }))
 
-        log('Successfully fetched %d messages', result.length)
+        logger.debug('Successfully fetched %d messages', result.length)
         return result
       } catch (error) {
-        log('Error fetching messages: %o', error)
+        logger.debug('Error fetching messages: %o', error)
         throw new Error(
           `Failed to fetch Discord messages: ${error instanceof Error ? error.message : 'Unknown error'}`
         )

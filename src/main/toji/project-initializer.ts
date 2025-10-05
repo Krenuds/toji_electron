@@ -7,9 +7,9 @@ import { join } from 'path'
 import type { OpencodeConfig } from './config'
 import { defaultOpencodeConfig } from './config'
 import { DEFAULT_AGENTS_TEMPLATE } from './agents-template'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('toji:project-init')
+const logger = createLogger('toji:project-init')
 
 export interface InitializationResult {
   success: boolean
@@ -37,10 +37,10 @@ export class ProjectInitializer {
   async checkGitAvailable(): Promise<boolean> {
     try {
       await this.execAsync('git --version')
-      log('Git found in PATH')
+      logger.debug('Git found in PATH')
       return true
     } catch {
-      log('Git not found in PATH, checking common locations...')
+      logger.debug('Git not found in PATH, checking common locations...')
       // Windows: Check common Git installation locations
       if (process.platform === 'win32') {
         const commonPaths = [
@@ -51,7 +51,7 @@ export class ProjectInitializer {
         for (const gitPath of commonPaths) {
           try {
             await access(gitPath)
-            log('Git found at: %s', gitPath)
+            logger.debug('Git found at: %s', gitPath)
             // Update PATH for this session
             const binDir = gitPath.substring(0, gitPath.lastIndexOf('\\'))
             process.env.PATH = `${binDir};${process.env.PATH}`
@@ -61,7 +61,7 @@ export class ProjectInitializer {
           }
         }
       }
-      log('Git not available on system')
+      logger.debug('Git not available on system')
       return false
     }
   }
@@ -108,13 +108,13 @@ export class ProjectInitializer {
     config?: Partial<OpencodeConfig>
   ): Promise<InitializationResult> {
     const completedSteps: string[] = []
-    log('Starting project initialization for: %s', directory)
+    logger.debug('Starting project initialization for: %s', directory)
 
     try {
       // Step 1: Verify git is available
       const hasGit = await this.checkGitAvailable()
       if (!hasGit) {
-        log('Git not available, cannot initialize project')
+        logger.debug('Git not available, cannot initialize project')
         return {
           success: false,
           error: 'Git is not installed. Please install Git from https://git-scm.com',
@@ -124,7 +124,7 @@ export class ProjectInitializer {
 
       // Step 2: Check if already has git
       if (await this.hasGitRepository(directory)) {
-        log('Directory already has git repository')
+        logger.debug('Directory already has git repository')
         // Just add opencode.json if missing
         if (!(await this.hasOpenCodeConfig(directory))) {
           await this.createOpenCodeConfig(directory, config)
@@ -138,12 +138,12 @@ export class ProjectInitializer {
       }
 
       // Step 3: Git init
-      log('Initializing git repository...')
+      logger.debug('Initializing git repository...')
       await this.execAsync('git init', { cwd: directory })
       completedSteps.push('git-init')
 
       // Step 4: Create .gitignore
-      log('Creating .gitignore...')
+      logger.debug('Creating .gitignore...')
       const gitignoreContent = `# Dependencies
 node_modules/
 bower_components/
@@ -190,12 +190,12 @@ yarn-error.log*
       completedSteps.push('gitignore')
 
       // Step 5: Create opencode.json
-      log('Creating opencode.json configuration...')
+      logger.debug('Creating opencode.json configuration...')
       await this.createOpenCodeConfig(directory, config)
       completedSteps.push('opencode-config')
 
       // Step 5b: Create AGENTS.md if it doesn't exist
-      log('Ensuring AGENTS.md exists...')
+      logger.debug('Ensuring AGENTS.md exists...')
       const agentsCreated = await this.ensureAgentsFile(directory)
       if (agentsCreated) {
         completedSteps.push('agents-md')
@@ -204,7 +204,7 @@ yarn-error.log*
       // Step 6: Create README.md if doesn't exist
       const readmePath = join(directory, 'README.md')
       if (!existsSync(readmePath)) {
-        log('Creating README.md...')
+        logger.debug('Creating README.md...')
         const projectName = directory.split(/[/\\]/).pop() || 'Project'
         const readmeContent = `# ${projectName}
 
@@ -226,12 +226,12 @@ Project settings are stored in \`opencode.json\`.
       }
 
       // Step 7: Stage all files
-      log('Staging files for initial commit...')
+      logger.debug('Staging files for initial commit...')
       await this.execAsync('git add .', { cwd: directory })
       completedSteps.push('git-add')
 
       // Step 8: Create initial commit
-      log('Creating initial commit...')
+      logger.debug('Creating initial commit...')
       const commitEnv = {
         ...process.env,
         GIT_AUTHOR_NAME: 'Toji3',
@@ -246,14 +246,14 @@ Project settings are stored in \`opencode.json\`.
       })
       completedSteps.push('initial-commit')
 
-      log('Project initialization completed successfully')
+      logger.debug('Project initialization completed successfully')
       return {
         success: true,
         steps: completedSteps,
         projectPath: directory
       }
     } catch (error) {
-      log('ERROR: Project initialization failed: %o', error)
+      logger.debug('ERROR: Project initialization failed: %o', error)
       // Attempt rollback
       await this.rollback(directory, completedSteps)
       return {
@@ -281,7 +281,7 @@ Project settings are stored in \`opencode.json\`.
 
     const configPath = join(directory, 'opencode.json')
     await writeFile(configPath, JSON.stringify(opencodeConfig, null, 2), 'utf-8')
-    log('Created opencode.json at: %s', configPath)
+    logger.debug('Created opencode.json at: %s', configPath)
   }
 
   /**
@@ -292,18 +292,18 @@ Project settings are stored in \`opencode.json\`.
 
     // Check if AGENTS.md already exists
     if (existsSync(agentsPath)) {
-      log('AGENTS.md already exists at: %s', agentsPath)
+      logger.debug('AGENTS.md already exists at: %s', agentsPath)
       return false
     }
 
     try {
       // Write AGENTS.md to project directory using centralized template
       await writeFile(agentsPath, DEFAULT_AGENTS_TEMPLATE, 'utf-8')
-      log('Created AGENTS.md at: %s', agentsPath)
+      logger.debug('Created AGENTS.md at: %s', agentsPath)
 
       return true
     } catch (error) {
-      log('ERROR: Failed to create AGENTS.md: %o', error)
+      logger.debug('ERROR: Failed to create AGENTS.md: %o', error)
       // Don't throw - AGENTS.md creation is optional
       return false
     }
@@ -313,7 +313,7 @@ Project settings are stored in \`opencode.json\`.
    * Rollback initialization on failure
    */
   private async rollback(directory: string, completedSteps: string[]): Promise<void> {
-    log('Rolling back initialization steps...')
+    logger.debug('Rolling back initialization steps...')
 
     try {
       // Remove files in reverse order
@@ -331,9 +331,9 @@ Project settings are stored in \`opencode.json\`.
         const rmCommand = process.platform === 'win32' ? 'rmdir /s /q .git' : 'rm -rf .git'
         await this.execAsync(rmCommand, { cwd: directory }).catch(() => {})
       }
-      log('Rollback completed')
+      logger.debug('Rollback completed')
     } catch (error) {
-      log('ERROR: Rollback failed: %o', error)
+      logger.debug('ERROR: Rollback failed: %o', error)
     }
   }
 }

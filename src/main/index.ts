@@ -8,14 +8,14 @@ import { Toji } from './toji'
 import { OpenCodeService } from './services/opencode-service'
 import { DiscordService } from './services/discord-service'
 import { ConfigProvider } from './config/ConfigProvider'
-import { initializeFileLogging, createFileDebugLogger } from './utils/logger'
+import { initializeFileLogging, createLogger } from './utils/logger'
 
 // Initialize file logging as early as possible
 initializeFileLogging()
 
-// const log = createFileDebugLogger('toji:main') // Reserved for future use
-const logStartup = createFileDebugLogger('toji:startup')
-const logCleanup = createFileDebugLogger('toji:cleanup')
+// Loggers for different contexts
+const loggerStartup = createLogger('toji:startup')
+const loggerCleanup = createLogger('toji:cleanup')
 
 // Import modular handlers
 import {
@@ -86,56 +86,59 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
   // Initialize configuration provider
-  logStartup('Initializing ConfigProvider')
+  loggerStartup.debug('Initializing ConfigProvider')
   config = new ConfigProvider()
-  logStartup('Config initialized with working directory: %s', config.getOpencodeWorkingDirectory())
+  loggerStartup.debug(
+    'Config initialized with working directory: %s',
+    config.getOpencodeWorkingDirectory()
+  )
 
   // Initialize binary service
-  logStartup('Initializing OpenCodeService')
+  loggerStartup.debug('Initializing OpenCodeService')
   const openCodeService = new OpenCodeService()
 
   // Check binary status on startup
   const binaryInfo = openCodeService.getBinaryInfo()
-  logStartup('Binary status on startup: %o', binaryInfo)
+  loggerStartup.debug('Binary status on startup: %o', binaryInfo)
 
   // Initialize Toji API with binary service and config
-  logStartup('Initializing Toji API')
+  loggerStartup.debug('Initializing Toji API')
   toji = new Toji(openCodeService, config)
-  logStartup('Toji API initialized')
+  loggerStartup.debug('Toji API initialized')
 
   // Initialize Discord service with Toji and config
-  logStartup('Initializing Discord service')
+  loggerStartup.debug('Initializing Discord service')
   discordService = new DiscordService(toji, config)
-  logStartup('Discord service initialized')
+  loggerStartup.debug('Discord service initialized')
 
   // Auto-connect Discord bot if token is configured
   const discordToken = config.getDiscordToken()
   if (discordToken) {
-    logStartup('Discord token found, connecting bot...')
+    loggerStartup.debug('Discord token found, connecting bot...')
     try {
       await discordService.connect()
-      logStartup('Discord bot connected successfully')
+      loggerStartup.debug('Discord bot connected successfully')
     } catch (error) {
-      logStartup('WARNING: Failed to connect Discord bot: %o', error)
+      loggerStartup.debug('WARNING: Failed to connect Discord bot: %o', error)
       // Continue without Discord - it's not critical
     }
   } else {
-    logStartup('No Discord token configured, bot will not connect')
+    loggerStartup.debug('No Discord token configured, bot will not connect')
   }
 
   // Always try to start OpenCode server (simplified approach)
   try {
-    logStartup('Starting OpenCode server initialization')
+    loggerStartup.debug('Starting OpenCode server initialization')
 
     // First ensure binary is installed
     await openCodeService.ensureBinary()
-    logStartup('OpenCode binary installation checked')
+    loggerStartup.debug('OpenCode binary installation checked')
 
     // Load last project or use default
     const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
-    logStartup('========== APP STARTUP ==========')
-    logStartup('Loading project: %s', lastProject)
-    logStartup('Checking opencode.json in project directory...')
+    loggerStartup.debug('========== APP STARTUP ==========')
+    loggerStartup.debug('Loading project: %s', lastProject)
+    loggerStartup.debug('Checking opencode.json in project directory...')
     try {
       const { readFile: readFileAsync } = await import('fs/promises')
       const { existsSync } = await import('fs')
@@ -144,43 +147,43 @@ app.whenReady().then(async () => {
       const configExists = existsSync(configPath)
       if (configExists) {
         const configContent = await readFileAsync(configPath, 'utf-8')
-        logStartup('opencode.json EXISTS in project directory: %s', configPath)
-        logStartup('opencode.json content: %s', configContent)
+        loggerStartup.debug('opencode.json EXISTS in project directory: %s', configPath)
+        loggerStartup.debug('opencode.json content: %s', configContent)
       } else {
-        logStartup('opencode.json DOES NOT EXIST in project directory: %s', configPath)
+        loggerStartup.debug('opencode.json DOES NOT EXIST in project directory: %s', configPath)
       }
     } catch (error) {
-      logStartup('Error checking opencode.json: %o', error)
+      loggerStartup.debug('Error checking opencode.json: %o', error)
     }
 
     // Start the server from the project directory
-    logStartup('Starting OpenCode server from project directory')
-    logStartup('Config passed to server.start: undefined (should read from opencode.json)')
+    loggerStartup.debug('Starting OpenCode server from project directory')
+    loggerStartup.debug('Config passed to server.start: undefined (should read from opencode.json)')
     await toji.server.start(undefined, lastProject)
-    logStartup('OpenCode server ready (running from %s)', lastProject)
+    loggerStartup.debug('OpenCode server ready (running from %s)', lastProject)
 
     // Connect the client to the specific project directory
-    logStartup('Connecting OpenCode client for directory: %s', lastProject)
+    loggerStartup.debug('Connecting OpenCode client for directory: %s', lastProject)
     await toji.connectClient(lastProject)
-    logStartup('OpenCode client connected successfully')
+    loggerStartup.debug('OpenCode client connected successfully')
 
     // Set the working directory
     await toji.changeWorkingDirectory(lastProject)
-    logStartup('Project directory set: %s', lastProject)
+    loggerStartup.debug('Project directory set: %s', lastProject)
 
     // Try to load the most recent session for this project
     try {
       await toji.loadMostRecentSession()
-      logStartup('Loaded most recent session')
+      loggerStartup.debug('Loaded most recent session')
     } catch (sessionError) {
-      logStartup(
+      loggerStartup.debug(
         'Could not load most recent session (this is ok for new projects): %o',
         sessionError
       )
       // This is ok - might be a new project with no sessions
     }
   } catch (error) {
-    logStartup('ERROR: Failed during OpenCode initialization: %o', error)
+    loggerStartup.debug('ERROR: Failed during OpenCode initialization: %o', error)
     // Re-throw to prevent running with undefined state
     throw error
   }
@@ -226,37 +229,37 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', async () => {
-  logCleanup('All windows closed, starting cleanup sequence')
+  loggerCleanup.debug('All windows closed, starting cleanup sequence')
 
   // Disconnect Discord bot
   if (discordService) {
     try {
-      logCleanup('Disconnecting Discord bot...')
+      loggerCleanup.debug('Disconnecting Discord bot...')
       await discordService.disconnect()
-      logCleanup('Discord bot disconnected successfully')
+      loggerCleanup.debug('Discord bot disconnected successfully')
     } catch (error) {
-      logCleanup('ERROR: Failed to disconnect Discord: %o', error)
+      loggerCleanup.debug('ERROR: Failed to disconnect Discord: %o', error)
     }
   }
 
   // Stop ALL running OpenCode servers
   if (toji) {
     try {
-      logCleanup('Stopping all OpenCode servers...')
+      loggerCleanup.debug('Stopping all OpenCode servers...')
       await toji.server.stopAllServers()
-      logCleanup('All OpenCode servers stopped successfully')
+      loggerCleanup.debug('All OpenCode servers stopped successfully')
     } catch (error) {
-      logCleanup('ERROR: Failed to stop OpenCode servers: %o', error)
+      loggerCleanup.debug('ERROR: Failed to stop OpenCode servers: %o', error)
     }
   }
 
   // Cleanup voice services
   try {
-    logCleanup('Cleaning up voice services...')
+    loggerCleanup.debug('Cleaning up voice services...')
     await cleanupVoiceServices()
-    logCleanup('Voice services cleaned up successfully')
+    loggerCleanup.debug('Voice services cleaned up successfully')
   } catch (error) {
-    logCleanup('ERROR: Failed to cleanup voice services: %o', error)
+    loggerCleanup.debug('ERROR: Failed to cleanup voice services: %o', error)
   }
 
   if (process.platform !== 'darwin') {

@@ -3,11 +3,11 @@ import type { ToolEvent } from '../../../main/toji/types'
 import type { Client, TextChannel } from 'discord.js'
 import type { DiscordModule } from '../DiscordPlugin'
 import { CategoryManager } from './CategoryManager'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import { loadState, saveState } from '../utils/state'
 import type { DiscordBotState } from '../utils/state'
 
-const log = createFileDebugLogger('discord:project-manager')
+const logger = createLogger('discord:project-manager')
 
 export interface ProjectChannel {
   channelId: string
@@ -35,7 +35,7 @@ export class DiscordProjectManager implements DiscordModule {
    */
   async initialize(): Promise<void> {
     // We'll get the client from the plugin later when ready
-    log('DiscordProjectManager initialized with plugin')
+    logger.debug('DiscordProjectManager initialized with plugin')
   }
 
   /**
@@ -44,7 +44,7 @@ export class DiscordProjectManager implements DiscordModule {
   async initializeWithClient(client: Client): Promise<void> {
     this.client = client
     await this.categoryManager.initialize(client)
-    log('DiscordProjectManager initialized with Discord client')
+    logger.debug('DiscordProjectManager initialized with Discord client')
 
     // Load saved state and sync with Discord
     await this.loadAndSyncState()
@@ -54,7 +54,7 @@ export class DiscordProjectManager implements DiscordModule {
    * Load saved state from disk
    */
   async loadAndSyncState(): Promise<void> {
-    log('Loading saved state')
+    logger.debug('Loading saved state')
 
     const state = await loadState()
 
@@ -73,7 +73,7 @@ export class DiscordProjectManager implements DiscordModule {
       this.activeChannelId = state.activeProjectChannelId
     }
 
-    log('State loaded: %d projects', this.projectChannels.size)
+    logger.debug('State loaded: %d projects', this.projectChannels.size)
 
     // Note: No auto-sync or auto-import. Use /init to rebuild channels.
   }
@@ -83,11 +83,11 @@ export class DiscordProjectManager implements DiscordModule {
    */
   async syncWithDiscord(): Promise<void> {
     if (!this.client) {
-      log('Cannot sync - no Discord client')
+      logger.debug('Cannot sync - no Discord client')
       return
     }
 
-    log('Syncing with Discord channels')
+    logger.debug('Syncing with Discord channels')
 
     // Ensure category exists
     const category = await this.categoryManager.getOrCreateCategory()
@@ -102,12 +102,12 @@ export class DiscordProjectManager implements DiscordModule {
       if (!existingChannelIds.has(channelId)) {
         // Skip invalid project names that would cause issues
         if (!project.projectName || project.projectName === '/' || project.projectName.length < 2) {
-          log('Removing invalid project from state: %s', project.projectName)
+          logger.debug('Removing invalid project from state: %s', project.projectName)
           toRemove.push(channelId)
           continue
         }
 
-        log(
+        logger.debug(
           'Channel %s missing in Discord for project %s, removing from state',
           channelId,
           project.projectName
@@ -124,7 +124,7 @@ export class DiscordProjectManager implements DiscordModule {
     // Check for orphaned channels (in Discord but not in state)
     for (const channel of existingChannels) {
       if (!this.projectChannels.has(channel.id)) {
-        log('Orphaned channel found: %s (%s)', channel.name, channel.id)
+        logger.debug('Orphaned channel found: %s (%s)', channel.name, channel.id)
         // We'll keep orphaned channels but log them for manual cleanup
       }
     }
@@ -140,11 +140,11 @@ export class DiscordProjectManager implements DiscordModule {
    */
   async initializeChannels(): Promise<void> {
     if (!this.client) {
-      log('Cannot initialize - no Discord client')
+      logger.debug('Cannot initialize - no Discord client')
       return
     }
 
-    log('Rebuilding Discord channels from Toji projects')
+    logger.debug('Rebuilding Discord channels from Toji projects')
 
     // Step 1: Clear all existing channels and state
     await this.categoryManager.deleteAllProjectChannels()
@@ -153,7 +153,7 @@ export class DiscordProjectManager implements DiscordModule {
 
     // Step 2: Get all available projects from Toji
     const tojiProjects = await this.toji.getAvailableProjects()
-    log('Found %d projects in Toji to rebuild', tojiProjects.length)
+    logger.debug('Found %d projects in Toji to rebuild', tojiProjects.length)
 
     // Step 3: Create channels for each Toji project
     for (const project of tojiProjects) {
@@ -162,7 +162,7 @@ export class DiscordProjectManager implements DiscordModule {
 
         // Skip invalid project names
         if (!name || name === '/' || name.length < 2) {
-          log('Skipping invalid project: %s', project.worktree)
+          logger.debug('Skipping invalid project: %s', project.worktree)
           continue
         }
 
@@ -178,16 +178,16 @@ export class DiscordProjectManager implements DiscordModule {
         }
         this.projectChannels.set(channel.id, projectInfo)
 
-        log('Created channel for project: %s -> %s', name, channel.id)
+        logger.debug('Created channel for project: %s -> %s', name, channel.id)
       } catch (error) {
-        log('ERROR: Failed to create channel for project %s: %o', project.worktree, error)
+        logger.debug('ERROR: Failed to create channel for project %s: %o', project.worktree, error)
       }
     }
 
     // Step 4: Save the new state
     await this.persistState()
 
-    log('Channel rebuild complete: %d channels created', this.projectChannels.size)
+    logger.debug('Channel rebuild complete: %d channels created', this.projectChannels.size)
   }
 
   /**
@@ -218,7 +218,7 @@ export class DiscordProjectManager implements DiscordModule {
       throw new Error(`No project mapped to channel ${channelId}`)
     }
 
-    log('Switching to project: %s (path: %s)', project.projectName, project.projectPath)
+    logger.debug('Switching to project: %s (path: %s)', project.projectName, project.projectPath)
 
     try {
       // Use Toji's existing switchToProject method!
@@ -229,9 +229,9 @@ export class DiscordProjectManager implements DiscordModule {
 
       // No need for visual indicators - we auto-switch based on channel context
 
-      log('Successfully switched to project: %s', project.projectName)
+      logger.debug('Successfully switched to project: %s', project.projectName)
     } catch (error) {
-      log('ERROR: Failed to switch project: %o', error)
+      logger.debug('ERROR: Failed to switch project: %o', error)
       throw error
     }
   }
@@ -244,7 +244,7 @@ export class DiscordProjectManager implements DiscordModule {
     const name = projectName || projectPath.split(/[\\/]/).pop() || 'unnamed-project'
     const channelName = name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
 
-    log('Adding project: %s at path: %s', channelName, projectPath)
+    logger.debug('Adding project: %s at path: %s', channelName, projectPath)
 
     // Create Discord channel in the Toji Desktop category
     const channel = await this.categoryManager.createProjectChannel(channelName)
@@ -264,7 +264,7 @@ export class DiscordProjectManager implements DiscordModule {
     // Save state
     await this.persistState()
 
-    log('Project added successfully: %s', name)
+    logger.debug('Project added successfully: %s', name)
     return channel
   }
 
@@ -277,7 +277,7 @@ export class DiscordProjectManager implements DiscordModule {
       throw new Error(`No project mapped to channel ${channelId}`)
     }
 
-    log('Removing project: %s', project.projectName)
+    logger.debug('Removing project: %s', project.projectName)
 
     // Delete the Discord channel
     const channel = this.client?.channels.cache.get(channelId)
@@ -297,7 +297,7 @@ export class DiscordProjectManager implements DiscordModule {
     // Save state
     await this.persistState()
 
-    log('Project removed: %s', project.projectName)
+    logger.debug('Project removed: %s', project.projectName)
   }
 
   /**
@@ -386,7 +386,7 @@ export class DiscordProjectManager implements DiscordModule {
         isActive: false
       })
     }
-    log('Loaded %d project mappings from state', this.projectChannels.size)
+    logger.debug('Loaded %d project mappings from state', this.projectChannels.size)
   }
 
   /**
@@ -409,6 +409,6 @@ export class DiscordProjectManager implements DiscordModule {
   cleanup(): void {
     this.projectChannels.clear()
     this.activeChannelId = undefined
-    log('DiscordProjectManager cleaned up')
+    logger.debug('DiscordProjectManager cleaned up')
   }
 }

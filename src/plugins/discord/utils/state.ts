@@ -1,9 +1,9 @@
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { app } from 'electron'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:state')
+const logger = createLogger('discord:state')
 
 export interface DiscordBotState {
   activeProjectChannelId?: string
@@ -24,10 +24,10 @@ const STATE_FILE = path.join(app.getPath('userData'), 'discord-bot-state.json')
 export async function loadState(): Promise<DiscordBotState> {
   try {
     const data = await fs.readFile(STATE_FILE, 'utf-8')
-    log('Loaded state from %s', STATE_FILE)
+    logger.debug('Loaded state from %s', STATE_FILE)
     return JSON.parse(data)
   } catch {
-    log('No existing state found, starting fresh')
+    logger.debug('No existing state found, starting fresh')
     return {
       projects: {}
     }
@@ -40,9 +40,9 @@ export async function loadState(): Promise<DiscordBotState> {
 export async function saveState(state: DiscordBotState): Promise<void> {
   try {
     await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2))
-    log('Saved state to %s', STATE_FILE)
+    logger.debug('Saved state to %s', STATE_FILE)
   } catch (error) {
-    log('ERROR: Failed to save state: %o', error)
+    logger.debug('ERROR: Failed to save state: %o', error)
   }
 }
 
@@ -52,8 +52,8 @@ export async function saveState(state: DiscordBotState): Promise<void> {
 export async function clearState(): Promise<void> {
   try {
     await fs.unlink(STATE_FILE)
-    log('Cleared state file')
+    logger.debug('Cleared state file')
   } catch (error) {
-    log('ERROR: Failed to clear state: %o', error)
+    logger.debug('ERROR: Failed to clear state: %o', error)
   }
 }

@@ -6,9 +6,9 @@ import {
   PermissionFlagsBits,
   Guild
 } from 'discord.js'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:category-manager')
+const logger = createLogger('discord:category-manager')
 
 const CATEGORY_NAME = 'Toji Desktop'
 
@@ -21,7 +21,7 @@ export class CategoryManager {
 
   async initialize(client: Client): Promise<void> {
     this.client = client
-    log('CategoryManager initialized')
+    logger.debug('CategoryManager initialized')
   }
 
   /**
@@ -44,7 +44,7 @@ export class CategoryManager {
     ) as CategoryChannel | undefined
 
     if (!category) {
-      log('Creating Toji Desktop category in guild: %s', targetGuild.name)
+      logger.debug('Creating Toji Desktop category in guild: %s', targetGuild.name)
 
       // Create the category
       category = await targetGuild.channels.create({
@@ -61,7 +61,7 @@ export class CategoryManager {
         reason: 'Toji project management category'
       })
 
-      log('Category created: %s', category.id)
+      logger.debug('Category created: %s', category.id)
     }
 
     return category
@@ -77,7 +77,7 @@ export class CategoryManager {
 
     const category = await this.getOrCreateCategory()
 
-    log('Creating project channel: %s', projectName)
+    logger.debug('Creating project channel: %s', projectName)
 
     // Create channel - no indicators needed since we auto-switch
     const channel = await category.guild.channels.create({
@@ -98,7 +98,7 @@ export class CategoryManager {
       reason: `Project channel for ${projectName}`
     })
 
-    log('Project channel created: %s (%s)', projectName, channel.id)
+    logger.debug('Project channel created: %s (%s)', projectName, channel.id)
     return channel
   }
 
@@ -110,14 +110,14 @@ export class CategoryManager {
       throw new Error('CategoryManager not initialized')
     }
 
-    log('Ensuring Toji Desktop category exists in all guilds')
+    logger.debug('Ensuring Toji Desktop category exists in all guilds')
 
     for (const guild of this.client.guilds.cache.values()) {
       try {
         await this.getOrCreateCategory(guild)
-        log('Category ensured in guild: %s', guild.name)
+        logger.debug('Category ensured in guild: %s', guild.name)
       } catch (error) {
-        log('ERROR: Failed to create category in guild %s: %o', guild.name, error)
+        logger.debug('ERROR: Failed to create category in guild %s: %o', guild.name, error)
       }
     }
   }
@@ -146,13 +146,13 @@ export class CategoryManager {
       try {
         await channel.delete('Rebuilding Toji Desktop channels')
         deletedCount++
-        log('Deleted channel: %s', channel.name)
+        logger.debug('Deleted channel: %s', channel.name)
       } catch (error) {
-        log('ERROR: Failed to delete channel %s: %o', channel.name, error)
+        logger.debug('ERROR: Failed to delete channel %s: %o', channel.name, error)
       }
     }
 
-    log('Deleted %d project channels', deletedCount)
+    logger.debug('Deleted %d project channels', deletedCount)
     return deletedCount
   }
 
@@ -177,13 +177,13 @@ export class CategoryManager {
       }
     }
 
-    log('Channel order updated')
+    logger.debug('Channel order updated')
   }
 
   /**
    * Cleanup resources
    */
   cleanup(): void {
-    log('CategoryManager cleaned up')
+    logger.debug('CategoryManager cleaned up')
   }
 }

@@ -1,9 +1,9 @@
 // Discord message reading tool for MCP
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createFileDebugLogger } from '../../../utils/logger'
+import { createLogger } from '../../../utils/logger'
 
-const log = createFileDebugLogger('mcp:discord-messages')
+const logger = createLogger('mcp:discord-messages')
 
 export interface DiscordMessageFetcher {
   fetchMessages(
@@ -26,7 +26,7 @@ export function registerDiscordMessageTool(
   server: McpServer,
   messageFetcher: DiscordMessageFetcher
 ): void {
-  log('Registering discord_messages tool')
+  logger.debug('Registering discord_messages tool')
 
   server.registerTool(
     'discord_messages',
@@ -62,7 +62,7 @@ export function registerDiscordMessageTool(
     },
     async ({ channelId, limit = 10 }) => {
       try {
-        log('Fetching %d messages from channel %s', limit, channelId || 'current')
+        logger.debug('Fetching %d messages from channel %s', limit, channelId || 'current')
 
         const messages = await messageFetcher.fetchMessages(channelId, limit)
 
@@ -71,7 +71,7 @@ export function registerDiscordMessageTool(
           count: messages.length
         }
 
-        log('Retrieved %d messages successfully', messages.length)
+        logger.debug('Retrieved %d messages successfully', messages.length)
 
         return {
           content: [
@@ -83,7 +83,7 @@ export function registerDiscordMessageTool(
           structuredContent: output
         }
       } catch (error) {
-        log('Error fetching messages: %o', error)
+        logger.debug('Error fetching messages: %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
         return {
@@ -99,5 +99,5 @@ export function registerDiscordMessageTool(
     }
   )
 
-  log('discord_messages tool registered successfully')
+  logger.debug('discord_messages tool registered successfully')
 }

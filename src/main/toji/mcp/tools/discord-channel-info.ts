@@ -1,9 +1,9 @@
 // Discord channel info tool for MCP
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createFileDebugLogger } from '../../../utils/logger'
+import { createLogger } from '../../../utils/logger'
 
-const log = createFileDebugLogger('mcp:discord-channel-info')
+const logger = createLogger('mcp:discord-channel-info')
 
 export interface DiscordChannelInfoProvider {
   getChannelInfo(channelId: string): Promise<{
@@ -38,7 +38,7 @@ export function registerDiscordChannelInfoTool(
   server: McpServer,
   channelInfoProvider: DiscordChannelInfoProvider
 ): void {
-  log('Registering discord_get_channel_info tool')
+  logger.debug('Registering discord_get_channel_info tool')
 
   server.registerTool(
     'discord_get_channel_info',
@@ -75,11 +75,11 @@ export function registerDiscordChannelInfoTool(
     },
     async ({ channelId }) => {
       try {
-        log('Getting info for channel %s', channelId)
+        logger.debug('Getting info for channel %s', channelId)
 
         const info = await channelInfoProvider.getChannelInfo(channelId)
 
-        log('Retrieved channel info successfully: %s', info.name)
+        logger.debug('Retrieved channel info successfully: %s', info.name)
 
         return {
           content: [
@@ -100,7 +100,7 @@ export function registerDiscordChannelInfoTool(
           structuredContent: info
         }
       } catch (error) {
-        log('Error getting channel info: %o', error)
+        logger.debug('Error getting channel info: %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
         return {
@@ -116,5 +116,5 @@ export function registerDiscordChannelInfoTool(
     }
   )
 
-  log('discord_get_channel_info tool registered successfully')
+  logger.debug('discord_get_channel_info tool registered successfully')
 }

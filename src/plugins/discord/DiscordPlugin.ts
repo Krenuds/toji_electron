@@ -4,7 +4,7 @@ import type { Toji } from '../../main/toji'
 import type { DiscordProjectManager } from './modules/DiscordProjectManager'
 import type { SlashCommandModule } from './modules/SlashCommandModule'
 import { deployCommands } from './deploy-commands'
-import { createFileDebugLogger } from '../../main/utils/logger'
+import { createLogger } from '../../main/utils/logger'
 import {
   sendDiscordResponse,
   createProgressEmbed,
@@ -20,7 +20,7 @@ import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
 import { DISCORD_COLORS } from './constants'
 
-const log = createFileDebugLogger('discord:plugin')
+const logger = createLogger('discord:plugin')
 
 export interface DiscordPluginEvents {
   message: [message: Message]
@@ -62,11 +62,11 @@ export class DiscordPlugin extends EventEmitter {
    */
   async initialize(): Promise<void> {
     if (this.initialized) {
-      log('Already initialized')
+      logger.debug('Already initialized')
       return
     }
 
-    log('Initializing...')
+    logger.debug('Initializing...')
 
     // Import and register modules
     const { DiscordProjectManager } = await import('./modules/DiscordProjectManager')
@@ -85,14 +85,14 @@ export class DiscordPlugin extends EventEmitter {
     this.slashCommandModule.setVoiceModule(this.voiceModule)
 
     this.initialized = true
-    log('Initialized successfully')
+    logger.debug('Initialized successfully')
   }
 
   /**
    * Register a module with the plugin
    */
   private async registerModule(name: string, module: DiscordModule): Promise<void> {
-    log(`Registering module: ${name}`)
+    logger.debug(`Registering module: ${name}`)
     await module.initialize(this)
     this.modules.set(name, module)
   }
@@ -111,10 +111,10 @@ export class DiscordPlugin extends EventEmitter {
       if (!isTranscription) {
         return
       }
-      log(`Processing transcription message: "${message.content.substring(0, 50)}..."`)
+      logger.debug(`Processing transcription message: "${message.content.substring(0, 50)}..."`)
     }
 
-    log(`Handling message from ${message.author.tag} in channel ${message.channel.id}`)
+    logger.debug(`Handling message from ${message.author.tag} in channel ${message.channel.id}`)
 
     // Update current channel for MCP context
     if (this.messageFetcher) {
@@ -132,7 +132,7 @@ export class DiscordPlugin extends EventEmitter {
         // It's a project channel - auto-switch and process
         if (this.projectManager.isProjectChannel(message.channel.id)) {
           try {
-            log('Message in project channel, switching project...')
+            logger.debug('Message in project channel, switching project...')
             // Switch to the project
             await this.projectManager.switchToProject(message.channel.id)
 
@@ -141,7 +141,7 @@ export class DiscordPlugin extends EventEmitter {
               await message.channel.sendTyping()
             }
 
-            log('Calling streaming chat with message: %s', message.content)
+            logger.debug('Calling streaming chat with message: %s', message.content)
 
             // Process message through Toji with streaming progress embeds
             let progressMessage: Message | undefined
@@ -156,7 +156,7 @@ export class DiscordPlugin extends EventEmitter {
                 const charCount = text.length
                 const timeSinceLastUpdate = now - lastUpdate
 
-                log(
+                logger.debug(
                   '🔵 onChunk fired: %d chars (time since last: %dms, throttle: %dms)',
                   charCount,
                   timeSinceLastUpdate,
@@ -169,16 +169,16 @@ export class DiscordPlugin extends EventEmitter {
                   const embed = createProgressEmbed(updateCount, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
-                  log('✅ Sent initial progress embed')
+                  logger.debug('✅ Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
                   updateCount++
                   const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
-                  log('✅ Updated progress embed: %d chars', charCount)
+                  logger.debug('✅ Updated progress embed: %d chars', charCount)
                 } else {
-                  log(
+                  logger.debug(
                     '⏸️  Throttled: skipping update (need %dms more)',
                     UPDATE_THROTTLE - timeSinceLastUpdate
                   )
@@ -186,7 +186,7 @@ export class DiscordPlugin extends EventEmitter {
               },
 
               onTool: async (toolEvent) => {
-                log('🔧 Tool event: %s - %s', toolEvent.tool, toolEvent.state.status)
+                logger.debug('🔧 Tool event: %s - %s', toolEvent.tool, toolEvent.state.status)
                 updateToolActivity(toolActivity, toolEvent)
 
                 // Force update progress embed with tool info (not throttled for important tool events)
@@ -198,12 +198,15 @@ export class DiscordPlugin extends EventEmitter {
                   const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = Date.now()
-                  log('✅ Updated progress embed with tool info')
+                  logger.debug('✅ Updated progress embed with tool info')
                 }
               },
 
               onComplete: async (fullText) => {
-                log('Got complete response (%d chars), sending to Discord', fullText.length)
+                logger.debug(
+                  'Got complete response (%d chars), sending to Discord',
+                  fullText.length
+                )
                 // Delete progress message and send final response
                 if (progressMessage) {
                   await progressMessage.delete()
@@ -221,7 +224,7 @@ export class DiscordPlugin extends EventEmitter {
               },
 
               onError: async (error) => {
-                log('ERROR: Streaming chat failed: %o', error)
+                logger.debug('ERROR: Streaming chat failed: %o', error)
                 // Replace progress with error embed
                 if (progressMessage) {
                   const errorEmbed = createErrorEmbed(error, 'Chat')
@@ -232,7 +235,7 @@ export class DiscordPlugin extends EventEmitter {
               }
             })
           } catch (error) {
-            log('ERROR: Failed to process message in project channel: %o', error)
+            logger.debug('ERROR: Failed to process message in project channel: %o', error)
             await message.reply(
               '❌ Error: ' + (error instanceof Error ? error.message : 'Unknown error')
             )
@@ -263,7 +266,7 @@ export class DiscordPlugin extends EventEmitter {
               const charCount = text.length
               const timeSinceLastUpdate = now - lastUpdate
 
-              log(
+              logger.debug(
                 '🔵 onChunk fired (mention): %d chars (time since last: %dms, throttle: %dms)',
                 charCount,
                 timeSinceLastUpdate,
@@ -276,16 +279,16 @@ export class DiscordPlugin extends EventEmitter {
                 const embed = createProgressEmbed(updateCount, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
-                log('✅ Sent initial progress embed (mention)')
+                logger.debug('✅ Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
                 updateCount++
                 const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
-                log('✅ Updated progress embed: %d chars (mention)', charCount)
+                logger.debug('✅ Updated progress embed: %d chars (mention)', charCount)
               } else {
-                log(
+                logger.debug(
                   '⏸️  Throttled (mention): skipping update (need %dms more)',
                   UPDATE_THROTTLE - timeSinceLastUpdate
                 )
@@ -293,7 +296,11 @@ export class DiscordPlugin extends EventEmitter {
             },
 
             onTool: async (toolEvent) => {
-              log('🔧 Tool event (mention): %s - %s', toolEvent.tool, toolEvent.state.status)
+              logger.debug(
+                '🔧 Tool event (mention): %s - %s',
+                toolEvent.tool,
+                toolEvent.state.status
+              )
               updateToolActivity(toolActivity, toolEvent)
 
               // Force update progress embed with tool info
@@ -305,7 +312,7 @@ export class DiscordPlugin extends EventEmitter {
                 const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = Date.now()
-                log('✅ Updated progress embed with tool info (mention)')
+                logger.debug('✅ Updated progress embed with tool info (mention)')
               }
             },
 
@@ -327,7 +334,7 @@ export class DiscordPlugin extends EventEmitter {
             },
 
             onError: async (error) => {
-              log('ERROR: Streaming chat failed: %o', error)
+              logger.debug('ERROR: Streaming chat failed: %o', error)
               // Replace progress with error embed
               if (progressMessage) {
                 const errorEmbed = createErrorEmbed(error, 'Chat')
@@ -338,7 +345,7 @@ export class DiscordPlugin extends EventEmitter {
             }
           })
         } catch (error) {
-          log('ERROR: Failed to process mentioned message: %o', error)
+          logger.debug('ERROR: Failed to process mentioned message: %o', error)
           await message.reply(
             '❌ Please select a project first using `/project switch` or type in a project channel.'
           )
@@ -351,7 +358,7 @@ export class DiscordPlugin extends EventEmitter {
    * Handle interaction events from Discord
    */
   async handleInteraction(interaction: Interaction): Promise<void> {
-    log(`Handling interaction: ${interaction.type}`)
+    logger.debug(`Handling interaction: ${interaction.type}`)
 
     // Route to slash command module
     if (interaction.isChatInputCommand() && this.slashCommandModule) {
@@ -363,7 +370,7 @@ export class DiscordPlugin extends EventEmitter {
    * Handle Discord client ready event
    */
   async onReady(client: Client): Promise<void> {
-    log('Discord client is ready')
+    logger.debug('Discord client is ready')
 
     // Initialize project manager with client if not already initialized
     if (this.projectManager) {
@@ -379,59 +386,59 @@ export class DiscordPlugin extends EventEmitter {
     try {
       this.messageFetcher = createDiscordMessageFetcher(client)
       this.toji.setDiscordMessageFetcher(this.messageFetcher)
-      log('MCP Discord message fetcher configured')
+      logger.debug('MCP Discord message fetcher configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord message fetcher: %o', error)
+      logger.debug('Warning: Failed to configure MCP Discord message fetcher: %o', error)
     }
 
     // Configure MCP Discord file uploader
     try {
       this.fileUploader = createDiscordFileUploader(client)
       this.toji.setDiscordFileUploader(this.fileUploader)
-      log('MCP Discord file uploader configured')
+      logger.debug('MCP Discord file uploader configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord file uploader: %o', error)
+      logger.debug('Warning: Failed to configure MCP Discord file uploader: %o', error)
     }
 
     // Configure MCP Discord channel lister
     try {
       this.channelLister = createDiscordChannelLister(client)
       this.toji.setDiscordChannelLister(this.channelLister)
-      log('MCP Discord channel lister configured')
+      logger.debug('MCP Discord channel lister configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord channel lister: %o', error)
+      logger.debug('Warning: Failed to configure MCP Discord channel lister: %o', error)
     }
 
     // Configure MCP Discord channel info provider
     try {
       this.channelInfoProvider = createDiscordChannelInfoProvider(client)
       this.toji.setDiscordChannelInfoProvider(this.channelInfoProvider)
-      log('MCP Discord channel info provider configured')
+      logger.debug('MCP Discord channel info provider configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord channel info provider: %o', error)
+      logger.debug('Warning: Failed to configure MCP Discord channel info provider: %o', error)
     }
 
     // Configure MCP Discord message searcher
     try {
       this.messageSearcher = createDiscordMessageSearcher(client)
       this.toji.setDiscordMessageSearcher(this.messageSearcher)
-      log('MCP Discord message searcher configured')
+      logger.debug('MCP Discord message searcher configured')
     } catch (error) {
-      log('Warning: Failed to configure MCP Discord message searcher: %o', error)
+      logger.debug('Warning: Failed to configure MCP Discord message searcher: %o', error)
     }
 
     // Deploy slash commands if we have config
     if (this.config?.token && this.config?.clientId && client.user) {
       try {
-        log('Deploying slash commands...')
+        logger.debug('Deploying slash commands...')
         await deployCommands(
           this.config.token,
           this.config.clientId,
           this.config.guildId // Optional: guild-specific for faster updates
         )
-        log('Slash commands deployed successfully')
+        logger.debug('Slash commands deployed successfully')
       } catch (error) {
-        log('ERROR: Failed to deploy commands: %o', error)
+        logger.debug('ERROR: Failed to deploy commands: %o', error)
       }
     }
 
@@ -452,24 +459,29 @@ export class DiscordPlugin extends EventEmitter {
         const existingRole = guild.roles.cache.find((role) => role.name === DEFAULT_ADMIN_ROLE_NAME)
 
         if (!existingRole) {
-          log(`Creating ${DEFAULT_ADMIN_ROLE_NAME} role in guild: ${guild.name} (${guild.id})`)
+          logger.debug(
+            `Creating ${DEFAULT_ADMIN_ROLE_NAME} role in guild: ${guild.name} (${guild.id})`
+          )
           const newRole = await guild.roles.create({
             name: DEFAULT_ADMIN_ROLE_NAME,
             color: 0x33b42f, // Toji brand green
             reason: 'Auto-created by Toji Bot for permission management',
             permissions: [] // No Discord permissions - only for bot access control
           })
-          log(
+          logger.debug(
             `✅ Created ${DEFAULT_ADMIN_ROLE_NAME} role in ${guild.name} (role ID: ${newRole.id})`
           )
         } else {
-          log(
+          logger.debug(
             `${DEFAULT_ADMIN_ROLE_NAME} role already exists in ${guild.name} (role ID: ${existingRole.id})`
           )
         }
       } catch (error) {
-        log(`Warning: Could not create ${DEFAULT_ADMIN_ROLE_NAME} role in ${guild.name}: %o`, error)
-        log('Make sure the bot has "Manage Roles" permission')
+        logger.debug(
+          `Warning: Could not create ${DEFAULT_ADMIN_ROLE_NAME} role in ${guild.name}: %o`,
+          error
+        )
+        logger.debug('Make sure the bot has "Manage Roles" permission')
       }
     }
   }
@@ -485,7 +497,7 @@ export class DiscordPlugin extends EventEmitter {
    * Handle error events from DiscordService
    */
   onError(error: Error): void {
-    log('ERROR: Error received: %o', error)
+    logger.debug('ERROR: Error received: %o', error)
     this.emit('error', error)
   }
 
@@ -493,11 +505,11 @@ export class DiscordPlugin extends EventEmitter {
    * Cleanup plugin resources
    */
   async cleanup(): Promise<void> {
-    log('Cleaning up...')
+    logger.debug('Cleaning up...')
 
     // Cleanup all modules
     for (const [name, module] of this.modules.entries()) {
-      log(`Cleaning up module: ${name}`)
+      logger.debug(`Cleaning up module: ${name}`)
       module.cleanup()
     }
 

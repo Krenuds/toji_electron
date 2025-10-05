@@ -1,7 +1,7 @@
 import type { ChatInputCommandInteraction, GuildMember } from 'discord.js'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 
-const log = createFileDebugLogger('discord:permissions')
+const logger = createLogger('discord:permissions')
 
 /**
  * Configuration for permission checking
@@ -32,13 +32,13 @@ export function hasPermission(
 
   // Require guild context
   if (!guild || !member) {
-    log('Permission denied: No guild context')
+    logger.debug('Permission denied: No guild context')
     return false
   }
 
   // Server owner always has permission
   if (user.id === guild.ownerId) {
-    log(`Permission granted: ${user.tag} is server owner`)
+    logger.debug(`Permission granted: ${user.tag} is server owner`)
     return true
   }
 
@@ -48,11 +48,11 @@ export function hasPermission(
   const hasAdminRole = guildMember.roles.cache.some((role) => role.name === adminRoleName)
 
   if (hasAdminRole) {
-    log(`Permission granted: ${user.tag} has role "${adminRoleName}"`)
+    logger.debug(`Permission granted: ${user.tag} has role "${adminRoleName}"`)
     return true
   }
 
-  log(`Permission denied: ${user.tag} lacks required role "${adminRoleName}"`)
+  logger.debug(`Permission denied: ${user.tag} lacks required role "${adminRoleName}"`)
   return false
 }
 

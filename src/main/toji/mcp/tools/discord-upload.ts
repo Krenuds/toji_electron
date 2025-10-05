@@ -1,9 +1,9 @@
 // Discord file upload tool for MCP
 import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { createFileDebugLogger } from '../../../utils/logger'
+import { createLogger } from '../../../utils/logger'
 
-const log = createFileDebugLogger('mcp:discord-upload')
+const logger = createLogger('mcp:discord-upload')
 
 export interface DiscordFileUploader {
   uploadFile(
@@ -24,7 +24,7 @@ export function registerDiscordUploadTool(
   server: McpServer,
   fileUploader: DiscordFileUploader
 ): void {
-  log('Registering discord_upload tool')
+  logger.debug('Registering discord_upload tool')
 
   server.registerTool(
     'discord_upload',
@@ -53,7 +53,7 @@ export function registerDiscordUploadTool(
     },
     async ({ filePath, channelId, message }) => {
       try {
-        log(
+        logger.debug(
           'Uploading file %s to channel %s with message: %s',
           filePath,
           channelId || 'current',
@@ -67,7 +67,7 @@ export function registerDiscordUploadTool(
           success: true
         }
 
-        log('File uploaded successfully: %s', result.attachmentUrl)
+        logger.debug('File uploaded successfully: %s', result.attachmentUrl)
 
         return {
           content: [
@@ -79,7 +79,7 @@ export function registerDiscordUploadTool(
           structuredContent: output
         }
       } catch (error) {
-        log('Error uploading file: %o', error)
+        logger.debug('Error uploading file: %o', error)
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
         return {
@@ -95,5 +95,5 @@ export function registerDiscordUploadTool(
     }
   )
 
-  log('discord_upload tool registered successfully')
+  logger.debug('discord_upload tool registered successfully')
 }

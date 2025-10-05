@@ -11,14 +11,14 @@ import {
   getVoiceConnection
 } from '@discordjs/voice'
 import type { VoiceBasedChannel, Client, EmbedBuilder } from 'discord.js'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import type { VoiceSession, VoiceSessionConfig } from './types'
 import type { DiscordModule } from '../DiscordPlugin'
 import { AudioReceiver, DEFAULT_AUDIO_CONFIG } from './AudioReceiver'
 import { TTSPlayer } from './TTSPlayer'
 import { getVoiceServiceManager } from '../../../main/services/voice-service-manager'
 
-const log = createFileDebugLogger('discord:voice')
+const logger = createLogger('discord:voice')
 
 /**
  * VoiceModule - Handles voice channel connections
@@ -34,12 +34,12 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
   constructor() {
     super()
-    log('VoiceModule constructed')
+    logger.debug('VoiceModule constructed')
 
     // Listen to transcription events and send to Discord
     this.on('transcription', (event) => {
       this.handleTranscription(event).catch((error) => {
-        log('Error in transcription handler:', error)
+        logger.debug('Error in transcription handler:', error)
       })
     })
   }
@@ -49,33 +49,33 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   setBotUserId(userId: string): void {
     this.botUserId = userId
-    log('Bot user ID set:', userId)
+    logger.debug('Bot user ID set:', userId)
   }
 
   /**
    * Initialize the voice module
    */
   async initialize(): Promise<void> {
-    log('Initializing VoiceModule')
+    logger.debug('Initializing VoiceModule')
 
     // Log dependency report for debugging
     try {
       const { generateDependencyReport } = await import('@discordjs/voice')
-      log('Voice Dependencies Report:')
-      log(generateDependencyReport())
+      logger.debug('Voice Dependencies Report:')
+      logger.debug(generateDependencyReport())
     } catch (error) {
-      log('Failed to generate dependency report:', error)
+      logger.debug('Failed to generate dependency report:', error)
     }
 
     // Initialize voice services (Docker + HTTP clients)
     try {
-      log('Initializing voice services...')
+      logger.debug('Initializing voice services...')
       const voiceManager = getVoiceServiceManager()
       await voiceManager.initialize()
-      log('Voice services initialized successfully')
+      logger.debug('Voice services initialized successfully')
     } catch (error) {
-      log('Failed to initialize voice services (non-fatal):', error)
-      log('Voice transcription and TTS will not be available')
+      logger.debug('Failed to initialize voice services (non-fatal):', error)
+      logger.debug('Voice transcription and TTS will not be available')
     }
   }
 
@@ -84,14 +84,14 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   async initializeWithClient(client: Client): Promise<void> {
     this.client = client
-    log('VoiceModule initialized with Discord client')
+    logger.debug('VoiceModule initialized with Discord client')
   }
 
   /**
    * Cleanup the voice module
    */
   cleanup(): void {
-    log('Cleaning up VoiceModule')
+    logger.debug('Cleaning up VoiceModule')
 
     // Stop all audio receivers
     for (const sessionId of this.audioReceivers.keys()) {
@@ -107,9 +107,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     for (const [sessionId, session] of this.sessions) {
       try {
         session.connection.destroy()
-        log(`Destroyed session ${sessionId}`)
+        logger.debug(`Destroyed session ${sessionId}`)
       } catch (error) {
-        log(`Error destroying session ${sessionId}:`, error)
+        logger.debug(`Error destroying session ${sessionId}:`, error)
       }
     }
 
@@ -128,21 +128,21 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     projectPath?: string,
     projectChannelId?: string
   ): Promise<VoiceSession> {
-    log(`=== JOIN VOICE CHANNEL START ===`)
-    log(`User: ${userId}`)
-    log(`Channel ID: ${channel.id}`)
-    log(`Channel Name: ${channel.name}`)
-    log(`Guild ID: ${channel.guild.id}`)
-    log(`Guild Name: ${channel.guild.name}`)
-    log(`Project Path: ${projectPath || 'none'}`)
-    log(`Project Channel: ${projectChannelId || 'none'}`)
+    logger.debug(`=== JOIN VOICE CHANNEL START ===`)
+    logger.debug(`User: ${userId}`)
+    logger.debug(`Channel ID: ${channel.id}`)
+    logger.debug(`Channel Name: ${channel.name}`)
+    logger.debug(`Guild ID: ${channel.guild.id}`)
+    logger.debug(`Guild Name: ${channel.guild.name}`)
+    logger.debug(`Project Path: ${projectPath || 'none'}`)
+    logger.debug(`Project Channel: ${projectChannelId || 'none'}`)
 
     // Check if user already has a session - automatically leave it
     const existingSessionId = this.userSessions.get(userId)
     if (existingSessionId) {
       const existingSession = this.sessions.get(existingSessionId)
       if (existingSession) {
-        log(
+        logger.debug(
           `User ${userId} already has an active session: ${existingSessionId}, automatically leaving...`
         )
 
@@ -153,9 +153,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           this.sessions.delete(existingSessionId)
           this.userSessions.delete(userId)
           this.emit('sessionEnded', existingSessionId)
-          log(`Successfully left previous session ${existingSessionId}`)
+          logger.debug(`Successfully left previous session ${existingSessionId}`)
         } catch (error) {
-          log(`Error leaving previous session:`, error)
+          logger.debug(`Error leaving previous session:`, error)
           // Continue anyway - we'll create a new session
         }
       }
@@ -163,7 +163,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
     // Create session ID
     const sessionId = `voice-${userId}-${Date.now()}`
-    log(`Created session ID: ${sessionId}`)
+    logger.debug(`Created session ID: ${sessionId}`)
 
     // Create session config
     const config: VoiceSessionConfig = {
@@ -175,8 +175,10 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       wakeWord: 'listen' // Default wake word
     }
 
-    log(`Calling joinVoiceChannel from @discordjs/voice...`)
-    log(`Voice adapter available: ${typeof channel.guild.voiceAdapterCreator === 'function'}`)
+    logger.debug(`Calling joinVoiceChannel from @discordjs/voice...`)
+    logger.debug(
+      `Voice adapter available: ${typeof channel.guild.voiceAdapterCreator === 'function'}`
+    )
 
     // Join the voice channel with debug enabled
     const connection = joinVoiceChannel({
@@ -188,7 +190,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       debug: true // Enable debug logging
     })
 
-    log(`Connection object created, initial state: ${connection.state.status}`)
+    logger.debug(`Connection object created, initial state: ${connection.state.status}`)
 
     // Create session
     const session: VoiceSession = {
@@ -209,36 +211,36 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
     // Setup connection event handlers BEFORE waiting
     this.setupConnectionHandlers(session)
-    log(`Connection handlers setup complete`)
+    logger.debug(`Connection handlers setup complete`)
 
     try {
-      log(`Waiting for connection to reach Ready state (5s timeout)...`)
+      logger.debug(`Waiting for connection to reach Ready state (5s timeout)...`)
       const startTime = Date.now()
 
       await entersState(connection, VoiceConnectionStatus.Ready, 5000)
 
       const duration = Date.now() - startTime
       session.status = 'connected'
-      log(`✅ Successfully connected to voice channel ${channel.id} in ${duration}ms`)
-      log(`=== JOIN VOICE CHANNEL SUCCESS ===`)
+      logger.debug(`✅ Successfully connected to voice channel ${channel.id} in ${duration}ms`)
+      logger.debug(`=== JOIN VOICE CHANNEL SUCCESS ===`)
 
       // Auto-start audio capture for this session
-      log(`Auto-starting audio capture for session ${sessionId}`)
+      logger.debug(`Auto-starting audio capture for session ${sessionId}`)
       this.startAudioCapture(sessionId)
 
       // Auto-start TTS player for this session
-      log(`Auto-starting TTS player for session ${sessionId}`)
+      logger.debug(`Auto-starting TTS player for session ${sessionId}`)
       this.startTTSPlayer(sessionId)
 
       this.emit('sessionStarted', session)
       return session
     } catch (error) {
-      log(`❌ Failed to connect to voice channel after timeout`)
-      log(`Error type: ${error instanceof Error ? error.constructor.name : typeof error}`)
-      log(`Error message: ${error instanceof Error ? error.message : String(error)}`)
-      log(`Current connection state: ${connection.state.status}`)
-      log(`Connection state details:`, connection.state)
-      log(`=== JOIN VOICE CHANNEL FAILED ===`)
+      logger.debug(`❌ Failed to connect to voice channel after timeout`)
+      logger.debug(`Error type: ${error instanceof Error ? error.constructor.name : typeof error}`)
+      logger.debug(`Error message: ${error instanceof Error ? error.message : String(error)}`)
+      logger.debug(`Current connection state: ${connection.state.status}`)
+      logger.debug(`Connection state details:`, connection.state)
+      logger.debug(`=== JOIN VOICE CHANNEL FAILED ===`)
 
       session.status = 'error'
 
@@ -248,9 +250,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
       try {
         connection.destroy()
-        log(`Connection destroyed during cleanup`)
+        logger.debug(`Connection destroyed during cleanup`)
       } catch (destroyError) {
-        log(`Error destroying connection:`, destroyError)
+        logger.debug(`Error destroying connection:`, destroyError)
       }
 
       throw new Error(
@@ -275,7 +277,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       throw new Error('Voice session not found.')
     }
 
-    log(`Leaving voice channel for session ${sessionId}`)
+    logger.debug(`Leaving voice channel for session ${sessionId}`)
 
     try {
       // Stop audio capture and TTS for this session
@@ -289,9 +291,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       this.userSessions.delete(userId)
 
       this.emit('sessionEnded', sessionId)
-      log(`Successfully left voice channel`)
+      logger.debug(`Successfully left voice channel`)
     } catch (error) {
-      log(`Error leaving voice channel:`, error)
+      logger.debug(`Error leaving voice channel:`, error)
       throw new Error('Failed to leave voice channel.')
     }
   }
@@ -320,17 +322,17 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     // Log networking state if available
     const connectionAny = connection as unknown as { state?: { networking?: unknown } }
     if (connectionAny.state && 'networking' in connectionAny.state) {
-      log(`Networking state:`, connectionAny.state.networking)
+      logger.debug(`Networking state:`, connectionAny.state.networking)
     }
 
     connection.on('stateChange', (oldState, newState) => {
-      log(`🔄 State Change [${session.id}]: ${oldState.status} -> ${newState.status}`)
+      logger.debug(`🔄 State Change [${session.id}]: ${oldState.status} -> ${newState.status}`)
 
       // Log additional state info if it's a simple string/number property
       const oldStateInfo = `status: ${oldState.status}`
       const newStateInfo = `status: ${newState.status}`
-      log(`  Old: ${oldStateInfo}`)
-      log(`  New: ${newStateInfo}`)
+      logger.debug(`  Old: ${oldStateInfo}`)
+      logger.debug(`  New: ${newStateInfo}`)
 
       // Log additional details for disconnected state
       if (newState.status === VoiceConnectionStatus.Disconnected) {
@@ -338,20 +340,20 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           reason?: number
           closeCode?: number
         }
-        log(`Disconnect reason:`, disconnectedState.reason)
-        log(`Close code:`, disconnectedState.closeCode)
-        log(`Old state details:`, oldState)
-        log(`New state details:`, newState)
+        logger.debug(`Disconnect reason:`, disconnectedState.reason)
+        logger.debug(`Close code:`, disconnectedState.closeCode)
+        logger.debug(`Old state details:`, oldState)
+        logger.debug(`New state details:`, newState)
       }
 
       // Update session status based on connection state
       switch (newState.status) {
         case VoiceConnectionStatus.Ready:
-          log(`✅ Connection is READY`)
+          logger.debug(`✅ Connection is READY`)
           session.status = 'connected'
           break
         case VoiceConnectionStatus.Disconnected:
-          log(`⚠️ Connection DISCONNECTED`)
+          logger.debug(`⚠️ Connection DISCONNECTED`)
           session.status = 'disconnected'
           // Cleanup session
           this.sessions.delete(session.id)
@@ -359,7 +361,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           this.emit('sessionEnded', session.id)
           break
         case VoiceConnectionStatus.Destroyed:
-          log(`💀 Connection DESTROYED`)
+          logger.debug(`💀 Connection DESTROYED`)
           session.status = 'disconnected'
           // Cleanup session
           this.sessions.delete(session.id)
@@ -367,22 +369,22 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           this.emit('sessionEnded', session.id)
           break
         case VoiceConnectionStatus.Connecting:
-          log(`🔌 Connection is CONNECTING`)
+          logger.debug(`🔌 Connection is CONNECTING`)
           session.status = 'connecting'
           break
         case VoiceConnectionStatus.Signalling:
-          log(`📡 Connection is SIGNALLING`)
+          logger.debug(`📡 Connection is SIGNALLING`)
           session.status = 'connecting'
           break
       }
     })
 
     connection.on('error', (error) => {
-      log(`❌ Connection Error [${session.id}]:`)
-      log(`Error name: ${error.name}`)
-      log(`Error message: ${error.message}`)
-      log(`Error stack:`, error.stack)
-      log(`Full error object:`, error)
+      logger.debug(`❌ Connection Error [${session.id}]:`)
+      logger.debug(`Error name: ${error.name}`)
+      logger.debug(`Error message: ${error.message}`)
+      logger.debug(`Error stack:`, error.stack)
+      logger.debug(`Full error object:`, error)
       session.status = 'error'
       this.emit('connectionError', error, session.id)
     })
@@ -393,7 +395,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     }
     if (connectionWithDebug.on) {
       connectionWithDebug.on('debug', (message: string) => {
-        log(`🐛 Debug [${session.id}]: ${message}`)
+        logger.debug(`🐛 Debug [${session.id}]: ${message}`)
       })
     }
   }
@@ -404,18 +406,18 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   startAudioCapture(sessionId: string): boolean {
     const session = this.sessions.get(sessionId)
     if (!session) {
-      log(`Cannot start audio capture: session ${sessionId} not found`)
+      logger.debug(`Cannot start audio capture: session ${sessionId} not found`)
       return false
     }
 
     // Check if already capturing
     if (this.audioReceivers.has(sessionId)) {
-      log(`Audio capture already active for session ${sessionId}`)
+      logger.debug(`Audio capture already active for session ${sessionId}`)
       return true
     }
 
     try {
-      log(`Starting audio capture for session ${sessionId}`)
+      logger.debug(`Starting audio capture for session ${sessionId}`)
       const receiver = new AudioReceiver(session.connection, DEFAULT_AUDIO_CONFIG)
 
       // Set bot user ID if available
@@ -425,24 +427,26 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
       // Set callback for when audio is ready
       receiver.setOnAudioReady(async (userId, audioWav, duration) => {
-        log(`Audio ready from user ${userId}: ${audioWav.length} bytes, ${duration.toFixed(2)}s`)
+        logger.debug(
+          `Audio ready from user ${userId}: ${audioWav.length} bytes, ${duration.toFixed(2)}s`
+        )
 
         // Transcribe with Whisper
         try {
           const voiceManager = getVoiceServiceManager()
           if (!voiceManager.isAvailable()) {
-            log('Voice services not available, skipping transcription')
+            logger.debug('Voice services not available, skipping transcription')
             return
           }
 
           const result = await voiceManager.transcribe(audioWav)
           if (result.text) {
-            log(`Transcription: "${result.text}"`)
+            logger.debug(`Transcription: "${result.text}"`)
 
             // Get session to check listening state
             const session = this.sessions.get(sessionId)
             if (!session) {
-              log('Session not found, skipping transcription')
+              logger.debug('Session not found, skipping transcription')
               return
             }
 
@@ -453,7 +457,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
             if (!session.isListening) {
               // Not listening yet - check for wake word
               if (transcriptionLower.includes(wakeWord)) {
-                log(`🎤 Wake word "${session.wakeWord}" detected! Entering listening mode...`)
+                logger.debug(
+                  `🎤 Wake word "${session.wakeWord}" detected! Entering listening mode...`
+                )
                 session.isListening = true
 
                 // Extract text after wake word if present
@@ -464,7 +470,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
                 if (textAfterWakeWord.length > 0) {
                   // Process the text that came after the wake word
-                  log(`Processing text after wake word: "${textAfterWakeWord}"`)
+                  logger.debug(`Processing text after wake word: "${textAfterWakeWord}"`)
                   this.emit('transcription', {
                     sessionId,
                     userId,
@@ -472,14 +478,14 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
                     duration
                   })
                 } else {
-                  log('Wake word detected, waiting for next speech input...')
+                  logger.debug('Wake word detected, waiting for next speech input...')
                 }
               } else {
-                log(`Ignoring speech (no wake word): "${result.text}"`)
+                logger.debug(`Ignoring speech (no wake word): "${result.text}"`)
               }
             } else {
               // Already listening - process the transcription
-              log(`Processing transcription (listening mode active): "${result.text}"`)
+              logger.debug(`Processing transcription (listening mode active): "${result.text}"`)
               this.emit('transcription', {
                 sessionId,
                 userId,
@@ -490,22 +496,22 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
               // Reset listening state after processing
               // Bot will need wake word again for next interaction
               session.isListening = false
-              log('Listening mode reset - waiting for wake word again')
+              logger.debug('Listening mode reset - waiting for wake word again')
             }
           } else if (result.error) {
-            log(`Transcription error: ${result.error}`)
+            logger.debug(`Transcription error: ${result.error}`)
           }
         } catch (error) {
-          log('Error transcribing audio:', error)
+          logger.debug('Error transcribing audio:', error)
         }
       })
 
       receiver.start()
       this.audioReceivers.set(sessionId, receiver)
-      log(`✅ Audio capture started for session ${sessionId}`)
+      logger.debug(`✅ Audio capture started for session ${sessionId}`)
       return true
     } catch (error) {
-      log(`Failed to start audio capture for session ${sessionId}:`, error)
+      logger.debug(`Failed to start audio capture for session ${sessionId}:`, error)
       return false
     }
   }
@@ -516,7 +522,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   stopAudioCapture(sessionId: string): void {
     const receiver = this.audioReceivers.get(sessionId)
     if (receiver) {
-      log(`Stopping audio capture for session ${sessionId}`)
+      logger.debug(`Stopping audio capture for session ${sessionId}`)
       receiver.stop()
       this.audioReceivers.delete(sessionId)
     }
@@ -528,24 +534,24 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   startTTSPlayer(sessionId: string): boolean {
     const session = this.sessions.get(sessionId)
     if (!session) {
-      log(`Cannot start TTS player: session ${sessionId} not found`)
+      logger.debug(`Cannot start TTS player: session ${sessionId} not found`)
       return false
     }
 
     // Check if already exists
     if (this.ttsPlayers.has(sessionId)) {
-      log(`TTS player already active for session ${sessionId}`)
+      logger.debug(`TTS player already active for session ${sessionId}`)
       return true
     }
 
     try {
-      log(`Starting TTS player for session ${sessionId}`)
+      logger.debug(`Starting TTS player for session ${sessionId}`)
       const player = new TTSPlayer(session.connection)
       this.ttsPlayers.set(sessionId, player)
-      log(`✅ TTS player started for session ${sessionId}`)
+      logger.debug(`✅ TTS player started for session ${sessionId}`)
       return true
     } catch (error) {
-      log(`Failed to start TTS player for session ${sessionId}:`, error)
+      logger.debug(`Failed to start TTS player for session ${sessionId}:`, error)
       return false
     }
   }
@@ -556,7 +562,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   stopTTSPlayer(sessionId: string): void {
     const player = this.ttsPlayers.get(sessionId)
     if (player) {
-      log(`Stopping TTS player for session ${sessionId}`)
+      logger.debug(`Stopping TTS player for session ${sessionId}`)
       player.destroy()
       this.ttsPlayers.delete(sessionId)
     }
@@ -566,11 +572,11 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    * Speak text in a voice channel using TTS
    */
   async speak(sessionId: string, text: string): Promise<boolean> {
-    log(`Speaking in session ${sessionId}: ${text.substring(0, 50)}...`)
+    logger.debug(`Speaking in session ${sessionId}: ${text.substring(0, 50)}...`)
 
     const player = this.ttsPlayers.get(sessionId)
     if (!player) {
-      log(`Cannot speak: no TTS player for session ${sessionId}`)
+      logger.debug(`Cannot speak: no TTS player for session ${sessionId}`)
       return false
     }
 
@@ -578,13 +584,13 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       const voiceManager = getVoiceServiceManager()
 
       if (!voiceManager.isAvailable()) {
-        log('Voice services not available')
+        logger.debug('Voice services not available')
         return false
       }
 
       const audioBuffer = await voiceManager.speak({ text })
       if (!audioBuffer) {
-        log('Failed to generate TTS audio')
+        logger.debug('Failed to generate TTS audio')
         return false
       }
 
@@ -592,7 +598,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       await player.play(buffer)
       return true
     } catch (error) {
-      log('Error speaking:', error)
+      logger.debug('Error speaking:', error)
       return false
     }
   }
@@ -628,20 +634,20 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   }): Promise<void> {
     try {
       if (!this.client) {
-        log('Cannot send transcription: Discord client not available')
+        logger.debug('Cannot send transcription: Discord client not available')
         return
       }
 
       const session = this.sessions.get(event.sessionId)
       if (!session) {
-        log('Cannot send transcription: session not found')
+        logger.debug('Cannot send transcription: session not found')
         return
       }
 
       // Get project channel ID from session config
       const targetChannelId = session.config.projectChannelId
       if (!targetChannelId) {
-        log('Cannot send transcription: no project channel configured for session')
+        logger.debug('Cannot send transcription: no project channel configured for session')
         return
       }
 
@@ -649,7 +655,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
       const channel = await this.client.channels.fetch(targetChannelId)
       if (!channel?.isTextBased()) {
-        log('Cannot send transcription: channel not found or not text-based')
+        logger.debug('Cannot send transcription: channel not found or not text-based')
         return
       }
 
@@ -662,12 +668,12 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
           content: event.text,
           embeds: [embed]
         })
-        log(`✅ Sent transcription to channel ${targetChannelId}`)
+        logger.debug(`✅ Sent transcription to channel ${targetChannelId}`)
       } else {
-        log('Cannot send transcription: channel does not support sending messages')
+        logger.debug('Cannot send transcription: channel does not support sending messages')
       }
     } catch (error) {
-      log('Error sending transcription to Discord:', error)
+      logger.debug('Error sending transcription to Discord:', error)
     }
   }
 
@@ -692,7 +698,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
         avatarUrl = user.displayAvatarURL()
       }
     } catch (error) {
-      log('Failed to fetch user info:', error)
+      logger.debug('Failed to fetch user info:', error)
     }
 
     const embed = new EmbedBuilder()

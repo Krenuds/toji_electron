@@ -3,10 +3,10 @@ import { existsSync } from 'fs'
 import type { Config } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ServerStatus } from './types'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { normalizePath, getOpenCodeBinaryPath } from '../utils/path'
 
-const log = createFileDebugLogger('toji:server')
+const logger = createLogger('toji:server')
 
 interface ServerInstance {
   server: { close: () => void; url: string }
@@ -40,25 +40,25 @@ export class ServerManager {
    */
   async getOrCreateServer(directory: string, config?: Config): Promise<ServerInstance> {
     const targetDirectory = normalizePath(directory || process.cwd())
-    log('Getting or creating server for directory: %s', targetDirectory)
+    logger.debug('Getting or creating server for directory: %s', targetDirectory)
 
     // Check if we already have a server for this directory
     const existing = this.servers.get(targetDirectory)
     if (existing) {
-      log('Found existing server for %s on port %d', targetDirectory, existing.port)
+      logger.debug('Found existing server for %s on port %d', targetDirectory, existing.port)
       // Check if the server is still healthy
       const isHealthy = await this.checkServerHealth(existing)
       if (isHealthy) {
         return existing
       } else {
-        log('Existing server is unhealthy, will create new one')
+        logger.debug('Existing server is unhealthy, will create new one')
         this.stopServerForDirectory(targetDirectory)
       }
     }
 
     // Check if we've reached max servers
     if (this.servers.size >= this.MAX_SERVERS) {
-      log('Max servers reached (%d), stopping least recently used', this.MAX_SERVERS)
+      logger.debug('Max servers reached (%d), stopping least recently used', this.MAX_SERVERS)
       // Stop the oldest server (first in the map)
       const oldestKey = this.servers.keys().next().value
       if (oldestKey) {
@@ -68,13 +68,13 @@ export class ServerManager {
 
     // Find next available port
     const port = await this.findNextAvailablePort()
-    log('Creating new server for %s on port %d', targetDirectory, port)
+    logger.debug('Creating new server for %s on port %d', targetDirectory, port)
 
     // Ensure binary is available
     const binaryInfo = this.opencodeService.getBinaryInfo()
     if (!binaryInfo.installed) {
       const error = new Error('OpenCode binary not installed')
-      log('ERROR: %s', error.message)
+      logger.debug('ERROR: %s', error.message)
       throw error
     }
 
@@ -87,11 +87,15 @@ export class ServerManager {
     }
 
     try {
-      log('========== SPAWNING SERVER ==========')
-      log('Spawning OpenCode server from directory: %s', targetDirectory)
-      log('Server options config: %o', config)
+      logger.debug('========== SPAWNING SERVER ==========')
+      logger.debug('Spawning OpenCode server from directory: %s', targetDirectory)
+      logger.debug('Server options config: %o', config)
       const server = await this.spawnOpenCodeServer(serverOptions)
-      log('Server created successfully at %s for directory %s', server.url, targetDirectory)
+      logger.debug(
+        'Server created successfully at %s for directory %s',
+        server.url,
+        targetDirectory
+      )
 
       const instance: ServerInstance = {
         server,
@@ -108,10 +112,10 @@ export class ServerManager {
       // Start health monitoring
       this.startHealthMonitoring(instance)
 
-      log('Server started successfully on port %d for %s', port, targetDirectory)
+      logger.debug('Server started successfully on port %d for %s', port, targetDirectory)
       return instance
     } catch (error) {
-      log('ERROR: Failed to create server for %s: %o', targetDirectory, error)
+      logger.debug('ERROR: Failed to create server for %s: %o', targetDirectory, error)
       throw error
     }
   }
@@ -148,11 +152,11 @@ export class ServerManager {
     const instance = this.servers.get(normalized)
 
     if (!instance) {
-      log('No server to stop for directory: %s', normalized)
+      logger.debug('No server to stop for directory: %s', normalized)
       return
     }
 
-    log('Stopping server for directory: %s (port %d)', normalized, instance.port)
+    logger.debug('Stopping server for directory: %s (port %d)', normalized, instance.port)
 
     // Stop health monitoring
     if (instance.healthCheckInterval) {
@@ -162,9 +166,9 @@ export class ServerManager {
     // Close the server
     try {
       instance.server.close()
-      log('Server closed successfully for %s', normalized)
+      logger.debug('Server closed successfully for %s', normalized)
     } catch (error) {
-      log('ERROR: Failed to close server for %s: %o', normalized, error)
+      logger.debug('ERROR: Failed to close server for %s: %o', normalized, error)
     }
 
     // Remove from map
@@ -175,7 +179,7 @@ export class ServerManager {
    * Stop all servers
    */
   async stopAllServers(): Promise<void> {
-    log('Stopping all servers (%d total)', this.servers.size)
+    logger.debug('Stopping all servers (%d total)', this.servers.size)
     const directories = Array.from(this.servers.keys())
     for (const directory of directories) {
       await this.stopServerForDirectory(directory)
@@ -190,7 +194,7 @@ export class ServerManager {
    * This is a failsafe to ensure no processes are left running
    */
   private async forceKillAllOpenCodeProcesses(): Promise<void> {
-    log('Force killing any remaining OpenCode processes')
+    logger.debug('Force killing any remaining OpenCode processes')
 
     try {
       const { exec } = await import('child_process')
@@ -201,23 +205,23 @@ export class ServerManager {
         // On Windows, use taskkill to force kill all opencode.exe processes
         try {
           await execAsync('taskkill /F /IM opencode.exe')
-          log('Force killed all opencode.exe processes on Windows')
+          logger.debug('Force killed all opencode.exe processes on Windows')
         } catch {
           // Error is expected if no processes are running
-          log('No opencode.exe processes found to kill (this is ok)')
+          logger.debug('No opencode.exe processes found to kill (this is ok)')
         }
       } else {
         // On Unix-like systems, use pkill
         try {
           await execAsync('pkill -f opencode')
-          log('Force killed all opencode processes on Unix')
+          logger.debug('Force killed all opencode processes on Unix')
         } catch {
           // Error is expected if no processes are running
-          log('No opencode processes found to kill (this is ok)')
+          logger.debug('No opencode processes found to kill (this is ok)')
         }
       }
     } catch (error) {
-      log('Error during force kill (may be ok if no processes running): %o', error)
+      logger.debug('Error during force kill (may be ok if no processes running): %o', error)
     }
   }
 
@@ -256,12 +260,12 @@ export class ServerManager {
 
   async restart(config?: Config, cwd?: string): Promise<number> {
     const targetDir = normalizePath(cwd || process.cwd())
-    log('========== SERVER RESTART ==========')
-    log('Restarting server for directory: %s', targetDir)
-    log('Config passed to restart: %o', config)
+    logger.debug('========== SERVER RESTART ==========')
+    logger.debug('Restarting server for directory: %s', targetDir)
+    logger.debug('Config passed to restart: %o', config)
     await this.stopServerForDirectory(targetDir)
     const instance = await this.getOrCreateServer(targetDir, config)
-    log('Server restarted on port: %d', instance.port)
+    logger.debug('Server restarted on port: %d', instance.port)
     return instance.port
   }
 
@@ -337,7 +341,7 @@ export class ServerManager {
         signal: AbortSignal.timeout(1000)
       })
       // If we get a response, port is in use
-      log('Port %d is in use (got response)', port)
+      logger.debug('Port %d is in use (got response)', port)
       return false
     } catch {
       // Connection failed, port is likely available
@@ -355,7 +359,7 @@ export class ServerManager {
       })
       return true
     } catch (error) {
-      log('Health check failed for %s: %o', instance.directory, error)
+      logger.debug('Health check failed for %s: %o', instance.directory, error)
       return false
     }
   }
@@ -371,7 +375,7 @@ export class ServerManager {
       instance.lastHealthCheck = new Date()
 
       if (wasHealthy !== instance.isHealthy) {
-        log(
+        logger.debug(
           'Health status changed for %s: %s -> %s',
           instance.directory,
           wasHealthy,
@@ -423,10 +427,10 @@ export class ServerManager {
     }
 
     const configContent = opts.config ?? {}
-    log('========== SPAWN OPENCODE PROCESS ==========')
-    log('Working directory: %s', opts.cwd)
-    log('Config being passed via OPENCODE_CONFIG_CONTENT: %o', configContent)
-    log('Config JSON: %s', JSON.stringify(configContent))
+    logger.debug('========== SPAWN OPENCODE PROCESS ==========')
+    logger.debug('Working directory: %s', opts.cwd)
+    logger.debug('Config being passed via OPENCODE_CONFIG_CONTENT: %o', configContent)
+    logger.debug('Config JSON: %s', JSON.stringify(configContent))
 
     const proc = spawn(
       binaryPath,

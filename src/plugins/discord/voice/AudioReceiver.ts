@@ -3,12 +3,12 @@
  * Based on Python's discord_sink.py from toji-services
  */
 
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import { type VoiceConnection, EndBehaviorType, type AudioReceiveStream } from '@discordjs/voice'
 import { processDiscordAudio } from '../../../main/utils/audio-processor'
 import { opus } from 'prism-media'
 
-const log = createFileDebugLogger('discord:audio-receiver')
+const logger = createLogger('discord:audio-receiver')
 
 interface UserAudioBuffer {
   userId: string
@@ -50,7 +50,7 @@ export class AudioReceiver {
   constructor(connection: VoiceConnection, config: AudioReceiverConfig = DEFAULT_AUDIO_CONFIG) {
     this.connection = connection
     this.config = config
-    log('AudioReceiver created')
+    logger.debug('AudioReceiver created')
   }
 
   /**
@@ -58,7 +58,7 @@ export class AudioReceiver {
    */
   setBotUserId(userId: string): void {
     this.botUserId = userId
-    log('Bot user ID set:', userId)
+    logger.debug('Bot user ID set:', userId)
   }
 
   /**
@@ -75,11 +75,11 @@ export class AudioReceiver {
    */
   start(): void {
     if (this.isReceiving) {
-      log('Already receiving audio')
+      logger.debug('Already receiving audio')
       return
     }
 
-    log('Starting audio receiver...')
+    logger.debug('Starting audio receiver...')
     this.isReceiving = true
 
     // Get the receiver from the connection
@@ -97,7 +97,7 @@ export class AudioReceiver {
         return
       }
 
-      log(`New user ${userId} started speaking, creating subscription`)
+      logger.debug(`New user ${userId} started speaking, creating subscription`)
 
       // Create persistent subscription for this user
       const audioStream = receiver.subscribe(userId, {
@@ -109,14 +109,14 @@ export class AudioReceiver {
       this.handleAudioStream(userId, audioStream)
     })
 
-    log('Audio receiver started')
+    logger.debug('Audio receiver started')
   }
 
   /**
    * Handle audio stream from a user
    */
   private handleAudioStream(userId: string, stream: AudioReceiveStream): void {
-    log(`Subscribed to audio stream for user ${userId}`)
+    logger.debug(`Subscribed to audio stream for user ${userId}`)
 
     // Initialize buffer for this user if needed
     if (!this.userBuffers.has(userId)) {
@@ -160,19 +160,19 @@ export class AudioReceiver {
     })
 
     opusDecoder.on('error', (error) => {
-      log(`Opus decoder error for user ${userId}:`, error)
+      logger.debug(`Opus decoder error for user ${userId}:`, error)
       this.cancelUserTimers(userId)
     })
 
     stream.on('end', () => {
-      log(`Audio stream ended for user ${userId}`)
+      logger.debug(`Audio stream ended for user ${userId}`)
       opusDecoder.end()
       this.cancelUserTimers(userId)
       this.userBuffers.delete(userId)
     })
 
     stream.on('error', (error) => {
-      log(`Audio stream error for user ${userId}:`, error)
+      logger.debug(`Audio stream error for user ${userId}:`, error)
       opusDecoder.destroy()
       this.cancelUserTimers(userId)
       this.userBuffers.delete(userId)
@@ -188,13 +188,13 @@ export class AudioReceiver {
 
     // Speech end timer - fires after silence
     buffer.speechEndTimer = setTimeout(() => {
-      log(`Speech end detected for user ${userId}`)
+      logger.debug(`Speech end detected for user ${userId}`)
       this.processUserAudio(userId)
     }, this.config.speechEndDelay)
 
     // Force timer - fires if user talks too long
     buffer.forceTimer = setTimeout(() => {
-      log(`Force processing audio for user ${userId} (max duration reached)`)
+      logger.debug(`Force processing audio for user ${userId} (max duration reached)`)
       this.processUserAudio(userId)
     }, this.config.forceProcessThreshold)
   }
@@ -226,7 +226,7 @@ export class AudioReceiver {
       return
     }
 
-    log(`Processing audio for user ${userId}: ${buffer.pcmData.length} chunks`)
+    logger.debug(`Processing audio for user ${userId}: ${buffer.pcmData.length} chunks`)
 
     // Cancel timers
     this.cancelUserTimers(userId)
@@ -242,7 +242,7 @@ export class AudioReceiver {
     const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
 
     if (!result) {
-      log(`Audio from user ${userId} too short or silent, skipping`)
+      logger.debug(`Audio from user ${userId} too short or silent, skipping`)
       return
     }
 
@@ -253,7 +253,7 @@ export class AudioReceiver {
       try {
         await this.onAudioReady(userId, wavData, duration)
       } catch (error) {
-        log('Error in onAudioReady callback:', error)
+        logger.debug('Error in onAudioReady callback:', error)
       }
     }
   }
@@ -266,7 +266,7 @@ export class AudioReceiver {
       return
     }
 
-    log('Stopping audio receiver...')
+    logger.debug('Stopping audio receiver...')
     this.isReceiving = false
 
     // Cancel all timers
@@ -277,7 +277,7 @@ export class AudioReceiver {
     // Clear buffers
     this.userBuffers.clear()
 
-    log('Audio receiver stopped')
+    logger.debug('Audio receiver stopped')
   }
 
   /**

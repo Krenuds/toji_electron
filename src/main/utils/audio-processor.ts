@@ -4,9 +4,9 @@
  * Handles stereo→mono conversion, resampling, and WAV wrapping
  */
 
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 
-const log = createFileDebugLogger('audio-processor')
+const logger = createLogger('audio-processor')
 
 /**
  * Convert stereo PCM audio to mono by averaging channels
@@ -32,7 +32,7 @@ export function stereoToMono(stereoData: Buffer): Buffer {
     monoData.writeInt16LE(mono, i * 2)
   }
 
-  log(`Converted stereo (${stereoData.length} bytes) to mono (${monoData.length} bytes)`)
+  logger.debug(`Converted stereo (${stereoData.length} bytes) to mono (${monoData.length} bytes)`)
   return monoData
 }
 
@@ -61,7 +61,9 @@ export function resample(pcmData: Buffer, fromRate: number, toRate: number): Buf
     outputData.writeInt16LE(sample, i * sampleSize)
   }
 
-  log(`Resampled ${fromRate}Hz → ${toRate}Hz (${pcmData.length} → ${outputData.length} bytes)`)
+  logger.debug(
+    `Resampled ${fromRate}Hz → ${toRate}Hz (${pcmData.length} → ${outputData.length} bytes)`
+  )
   return outputData
 }
 
@@ -112,7 +114,7 @@ export function pcmToWav(
   // Concatenate header and audio data
   const wavBuffer = Buffer.concat([header, resampledData])
 
-  log(
+  logger.debug(
     `Created WAV: ${targetRate}Hz, ${channels}ch, ${bitsPerSample}-bit, ${wavBuffer.length} bytes`
   )
   return wavBuffer
@@ -143,7 +145,7 @@ export function trimSilence(pcmData: Buffer, threshold: number = 0.005): Buffer 
   }
 
   if (maxAmplitude === 0) {
-    log('Audio is silent, returning empty buffer')
+    logger.debug('Audio is silent, returning empty buffer')
     return Buffer.alloc(0)
   }
 
@@ -170,12 +172,12 @@ export function trimSilence(pcmData: Buffer, threshold: number = 0.005): Buffer 
   }
 
   if (start >= end) {
-    log('No speech detected in audio')
+    logger.debug('No speech detected in audio')
     return Buffer.alloc(0)
   }
 
   const trimmedData = pcmData.subarray(start * sampleSize, (end + 1) * sampleSize)
-  log(`Trimmed silence: ${pcmData.length} → ${trimmedData.length} bytes`)
+  logger.debug(`Trimmed silence: ${pcmData.length} → ${trimmedData.length} bytes`)
   return trimmedData
 }
 
@@ -211,7 +213,7 @@ export function processDiscordAudio(
     return null
   }
 
-  log(`Processing Discord audio: ${pcmData.length} bytes`)
+  logger.debug(`Processing Discord audio: ${pcmData.length} bytes`)
 
   // 1. Convert stereo to mono
   const monoData = stereoToMono(pcmData)
@@ -220,22 +222,22 @@ export function processDiscordAudio(
   const trimmedData = trimSilence(monoData, 0.005)
 
   if (trimmedData.length === 0) {
-    log('Audio is empty after silence trimming')
+    logger.debug('Audio is empty after silence trimming')
     return null
   }
 
   // 3. Check duration (at original 48kHz)
   const duration = getAudioDuration(trimmedData, 48000, 1)
-  log(`Audio duration: ${duration.toFixed(2)}s`)
+  logger.debug(`Audio duration: ${duration.toFixed(2)}s`)
 
   if (duration < minDuration) {
-    log(`Audio too short (${duration.toFixed(2)}s < ${minDuration}s)`)
+    logger.debug(`Audio too short (${duration.toFixed(2)}s < ${minDuration}s)`)
     return null
   }
 
   // 4. Wrap in WAV with resampling to 16kHz for Whisper
   const wavData = pcmToWav(trimmedData, 48000, 16000, 1)
 
-  log(`Processed audio ready: ${wavData.length} bytes, ${duration.toFixed(2)}s`)
+  logger.debug(`Processed audio ready: ${wavData.length} bytes, ${duration.toFixed(2)}s`)
   return { wavData, duration }
 }

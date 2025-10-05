@@ -3,19 +3,19 @@
  */
 
 import { ipcMain } from 'electron'
-import { createFileDebugLogger } from '../utils/logger'
+import { createLogger } from '../utils/logger'
 import { getVoiceServiceManager } from '../services/voice-service-manager'
 import type { VoiceServiceStatus } from '../services/voice-service-manager'
 import type { TranscriptionResult } from '../services/whisper-client'
 import type { VoiceInfo } from '../services/piper-client'
 
-const log = createFileDebugLogger('voice-handlers')
+const logger = createLogger('voice-handlers')
 
 /**
  * Register all voice-related IPC handlers
  */
 export function registerVoiceHandlers(): void {
-  log('Registering voice IPC handlers...')
+  logger.debug('Registering voice IPC handlers...')
 
   // Initialize voice services
   ipcMain.handle('voice:initialize', async (_event, onProgress?: boolean) => {
@@ -32,7 +32,7 @@ export function registerVoiceHandlers(): void {
 
       return await manager.initialize()
     } catch (error) {
-      log('Error initializing voice services:', error)
+      logger.debug('Error initializing voice services:', error)
       return {
         available: false,
         dockerInstalled: false,
@@ -50,7 +50,7 @@ export function registerVoiceHandlers(): void {
       const manager = getVoiceServiceManager()
       return await manager.getStatus()
     } catch (error) {
-      log('Error getting voice status:', error)
+      logger.debug('Error getting voice status:', error)
       return {
         available: false,
         dockerInstalled: false,
@@ -74,7 +74,7 @@ export function registerVoiceHandlers(): void {
       const manager = getVoiceServiceManager()
       return await manager.transcribe(audioBuffer)
     } catch (error) {
-      log('Error transcribing audio:', error)
+      logger.debug('Error transcribing audio:', error)
       return {
         text: '',
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -95,7 +95,7 @@ export function registerVoiceHandlers(): void {
       // Convert Buffer to Uint8Array for transfer
       return new Uint8Array(audioBuffer)
     } catch (error) {
-      log('Error generating speech:', error)
+      logger.debug('Error generating speech:', error)
       return null
     }
   })
@@ -106,7 +106,7 @@ export function registerVoiceHandlers(): void {
       const manager = getVoiceServiceManager()
       return await manager.listVoices()
     } catch (error) {
-      log('Error listing voices:', error)
+      logger.debug('Error listing voices:', error)
       return [] as VoiceInfo[]
     }
   })
@@ -118,7 +118,7 @@ export function registerVoiceHandlers(): void {
       manager.setDefaultVoice(voice)
       return true
     } catch (error) {
-      log('Error setting default voice:', error)
+      logger.debug('Error setting default voice:', error)
       return false
     }
   })
@@ -130,7 +130,7 @@ export function registerVoiceHandlers(): void {
       await manager.stop()
       return true
     } catch (error) {
-      log('Error stopping voice services:', error)
+      logger.debug('Error stopping voice services:', error)
       return false
     }
   })
@@ -149,7 +149,7 @@ export function registerVoiceHandlers(): void {
 
       return await manager.restart()
     } catch (error) {
-      log('Error restarting voice services:', error)
+      logger.debug('Error restarting voice services:', error)
       return {
         available: false,
         dockerInstalled: false,
@@ -167,7 +167,7 @@ export function registerVoiceHandlers(): void {
       const manager = getVoiceServiceManager()
       return manager.getBuildState()
     } catch (error) {
-      log('Error getting build state:', error)
+      logger.debug('Error getting build state:', error)
       return { imagesBuilt: false }
     }
   })
@@ -179,12 +179,12 @@ export function registerVoiceHandlers(): void {
       await manager.resetBuildState()
       return true
     } catch (error) {
-      log('Error resetting build state:', error)
+      logger.debug('Error resetting build state:', error)
       return false
     }
   })
 
-  log('Voice IPC handlers registered')
+  logger.debug('Voice IPC handlers registered')
 }
 
 /**
@@ -194,8 +194,8 @@ export async function cleanupVoiceServices(): Promise<void> {
   try {
     const manager = getVoiceServiceManager()
     await manager.cleanup()
-    log('Voice services cleaned up')
+    logger.debug('Voice services cleaned up')
   } catch (error) {
-    log('Error cleaning up voice services:', error)
+    logger.debug('Error cleaning up voice services:', error)
   }
 }

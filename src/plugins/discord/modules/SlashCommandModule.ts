@@ -3,11 +3,11 @@ import type { Toji } from '../../../main/toji'
 import type { DiscordModule } from '../DiscordPlugin'
 import type { DiscordProjectManager } from './DiscordProjectManager'
 import type { VoiceModule } from '../voice/VoiceModule'
-import { createFileDebugLogger } from '../../../main/utils/logger'
+import { createLogger } from '../../../main/utils/logger'
 import { hasPermission } from '../utils/permissions'
 import { DISCORD_COLORS, PERMISSION_MESSAGES, DEFAULT_ADMIN_ROLE_NAME } from '../constants'
 
-const log = createFileDebugLogger('discord:slash-commands')
+const logger = createLogger('discord:slash-commands')
 
 interface SlashCommand {
   data: {
@@ -41,7 +41,7 @@ export class SlashCommandModule implements DiscordModule {
    */
   setVoiceModule(voiceModule: VoiceModule): void {
     this.voiceModule = voiceModule
-    log('Voice module registered')
+    logger.debug('Voice module registered')
   }
 
   /**
@@ -49,14 +49,14 @@ export class SlashCommandModule implements DiscordModule {
    */
   async initialize(): Promise<void> {
     await this.loadCommands()
-    log('Initialized')
+    logger.debug('Initialized')
   }
 
   /**
    * Load all command files
    */
   private async loadCommands(): Promise<void> {
-    log('Loading commands via direct imports')
+    logger.debug('Loading commands via direct imports')
 
     try {
       // Import commands directly - this is the only way we load commands
@@ -74,9 +74,9 @@ export class SlashCommandModule implements DiscordModule {
       this.commands.set('admin', adminCommand)
       this.commands.set('voice', voiceCommand)
 
-      log(`Loaded ${this.commands.size} slash commands`)
+      logger.debug(`Loaded ${this.commands.size} slash commands`)
     } catch (error) {
-      log('ERROR: Failed to load commands: %o', error)
+      logger.debug('ERROR: Failed to load commands: %o', error)
     }
   }
 
@@ -87,20 +87,20 @@ export class SlashCommandModule implements DiscordModule {
     const command = this.commands.get(interaction.commandName)
 
     if (!command) {
-      log('ERROR: Unknown command %s', interaction.commandName)
+      logger.debug('ERROR: Unknown command %s', interaction.commandName)
       try {
         await interaction.reply({
           content: 'I don&apos;t know that command!',
           ephemeral: true
         })
       } catch (err) {
-        log('ERROR: Failed to send unknown command response: %o', err)
+        logger.debug('ERROR: Failed to send unknown command response: %o', err)
       }
       return
     }
 
     try {
-      log(
+      logger.debug(
         'Executing command %s by %s in %s',
         interaction.commandName,
         interaction.user.tag,
@@ -109,7 +109,7 @@ export class SlashCommandModule implements DiscordModule {
 
       // Check if interaction is still valid before executing
       if (interaction.replied) {
-        log('WARNING: Interaction already replied to, skipping')
+        logger.debug('WARNING: Interaction already replied to, skipping')
         return
       }
 
@@ -121,7 +121,7 @@ export class SlashCommandModule implements DiscordModule {
         !skipPermissionCheck &&
         !hasPermission(interaction, { adminRoleName: DEFAULT_ADMIN_ROLE_NAME })
       ) {
-        log(
+        logger.debug(
           'Permission denied for user %s on command %s',
           interaction.user.tag,
           interaction.commandName
@@ -154,7 +154,7 @@ export class SlashCommandModule implements DiscordModule {
       // Execute the command with projectManager and voiceModule
       await command.execute(interaction, this.toji, this.projectManager, this.voiceModule)
     } catch (error) {
-      log('ERROR: Error executing command %s: %o', interaction.commandName, error)
+      logger.debug('ERROR: Error executing command %s: %o', interaction.commandName, error)
 
       const errorMessage = `❌ Error executing command: ${
         error instanceof Error ? error.message : 'Unknown error'
@@ -174,7 +174,7 @@ export class SlashCommandModule implements DiscordModule {
           })
         }
       } catch (replyError) {
-        log('ERROR: Failed to send error response: %o', replyError)
+        logger.debug('ERROR: Failed to send error response: %o', replyError)
       }
     }
   }
@@ -183,7 +183,7 @@ export class SlashCommandModule implements DiscordModule {
    * Cleanup module resources
    */
   cleanup(): void {
-    log('Cleaning up')
+    logger.debug('Cleaning up')
     this.commands.clear()
   }
 }
