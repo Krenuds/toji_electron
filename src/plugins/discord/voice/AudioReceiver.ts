@@ -39,7 +39,6 @@ export class AudioReceiver {
   private connection: VoiceConnection
   private config: AudioReceiverConfig
   private userBuffers: Map<string, UserAudioBuffer> = new Map()
-  private activeSubscriptions: Map<string, AudioReceiveStream> = new Map()
   private botUserId?: string
   private onAudioReady?: (
     userId: string,
@@ -86,36 +85,26 @@ export class AudioReceiver {
     // Get the receiver from the connection
     const receiver = this.connection.receiver
 
-    // Subscribe to speaking events to know when users start/stop talking
+    // Subscribe to speaking events - fires once per user when they start speaking
     receiver.speaking.on('start', (userId) => {
       // Ignore bot's own audio
       if (this.botUserId && userId === this.botUserId) {
         return
       }
 
-      log(`User ${userId} started speaking`)
-
-      // Check if we already have an active subscription for this user
-      if (this.activeSubscriptions.has(userId)) {
-        log(`Already subscribed to user ${userId}, reusing existing subscription`)
-        // Just cancel the speech end timer to continue recording
-        const buffer = this.userBuffers.get(userId)
-        if (buffer && buffer.speechEndTimer) {
-          clearTimeout(buffer.speechEndTimer)
-          buffer.speechEndTimer = undefined
-        }
+      // Skip if we already have a buffer (subscription exists)
+      if (this.userBuffers.has(userId)) {
         return
       }
 
-      // Create NEW subscription for this user
+      log(`New user ${userId} started speaking, creating subscription`)
+
+      // Create persistent subscription for this user
       const audioStream = receiver.subscribe(userId, {
         end: {
           behavior: EndBehaviorType.Manual // We control when to end
         }
       })
-
-      // Store the active subscription
-      this.activeSubscriptions.set(userId, audioStream)
 
       this.handleAudioStream(userId, audioStream)
     })
@@ -140,45 +129,26 @@ export class AudioReceiver {
     }
 
     const buffer = this.userBuffers.get(userId)!
-    let chunkCount = 0
 
     // Create Opus decoder: Discord sends Opus packets, we need PCM
-    // 48kHz, stereo (2 channels), 20ms frame size
+    // Opus packets are ~150-200 bytes compressed
+    // Decoded PCM is 3840 bytes per 20ms frame (48kHz stereo 16-bit)
     const opusDecoder = new opus.Decoder({
       rate: 48000,
       channels: 2,
       frameSize: 960 // 20ms at 48kHz = 960 samples
     })
 
-    log(`Created Opus decoder for user ${userId} (48kHz stereo)`)
-
     // Pipe AudioReceiveStream (Opus packets) → OpusDecoder (PCM)
     stream.pipe(opusDecoder)
 
     opusDecoder.on('data', (chunk: Buffer) => {
-      // Ignore if bot's audio
+      // Ignore if bot's own audio
       if (this.botUserId && userId === this.botUserId) {
         return
       }
 
-      chunkCount++
-
-      // Discord sends Opus frames, but @discordjs/voice decodes to PCM
-      // PCM format: 48kHz, 16-bit signed, stereo
-      // Each Opus frame is typically 20ms of audio = 3840 bytes at 48kHz stereo 16-bit
-      // (48000 samples/sec * 0.02 sec * 2 channels * 2 bytes/sample = 3840 bytes)
-
-      if (chunkCount === 1) {
-        log(`First chunk from user ${userId}: ${chunk.length} bytes`)
-      } else if (chunkCount % 50 === 0) {
-        // Log every 50th chunk to avoid spam
-        const totalBytes = buffer.pcmData.reduce((sum, c) => sum + c.length, 0)
-        const durationMs = (totalBytes / (48000 * 2 * 2)) * 1000 // bytes / (samples/sec * channels * bytes/sample)
-        log(
-          `User ${userId}: ${chunkCount} chunks, ${totalBytes} bytes total (~${durationMs.toFixed(0)}ms)`
-        )
-      }
-
+      // Buffer the decoded PCM data
       buffer.pcmData.push(chunk)
       buffer.lastPacketTime = Date.now()
 
@@ -198,14 +168,14 @@ export class AudioReceiver {
       log(`Audio stream ended for user ${userId}`)
       opusDecoder.end()
       this.cancelUserTimers(userId)
-      this.activeSubscriptions.delete(userId)
+      this.userBuffers.delete(userId)
     })
 
     stream.on('error', (error) => {
       log(`Audio stream error for user ${userId}:`, error)
       opusDecoder.destroy()
       this.cancelUserTimers(userId)
-      this.activeSubscriptions.delete(userId)
+      this.userBuffers.delete(userId)
     })
   }
 
@@ -256,16 +226,7 @@ export class AudioReceiver {
       return
     }
 
-    const totalBytes = buffer.pcmData.reduce((sum, chunk) => sum + chunk.length, 0)
-    const expectedDurationMs = (totalBytes / (48000 * 2 * 2)) * 1000
-    const wallClockDurationMs = Date.now() - buffer.startTime
-
-    log(`Processing audio for user ${userId}:`)
-    log(`  - Chunks: ${buffer.pcmData.length}`)
-    log(`  - Total bytes: ${totalBytes}`)
-    log(`  - Expected duration (from bytes): ${expectedDurationMs.toFixed(2)}ms`)
-    log(`  - Wall clock duration: ${wallClockDurationMs}ms`)
-    log(`  - Average chunk size: ${(totalBytes / buffer.pcmData.length).toFixed(0)} bytes`)
+    log(`Processing audio for user ${userId}: ${buffer.pcmData.length} chunks`)
 
     // Cancel timers
     this.cancelUserTimers(userId)
@@ -273,13 +234,9 @@ export class AudioReceiver {
     // Concatenate all PCM chunks
     const allPcmData = Buffer.concat(buffer.pcmData)
 
-    // Clear buffer for next speech (but keep subscription alive!)
+    // Clear buffer for next speech (subscription stays alive)
     buffer.pcmData = []
     buffer.startTime = Date.now()
-
-    // NOTE: We do NOT delete activeSubscriptions here!
-    // The subscription stays alive to capture future speech from this user.
-    // Only remove it when the stream ends or user leaves.
 
     // Process audio (stereo→mono, trim, resample, WAV wrap)
     const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
@@ -317,9 +274,8 @@ export class AudioReceiver {
       this.cancelUserTimers(userId)
     }
 
-    // Clear buffers and active subscriptions
+    // Clear buffers
     this.userBuffers.clear()
-    this.activeSubscriptions.clear()
 
     log('Audio receiver stopped')
   }

@@ -6,7 +6,10 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['@opencode-ai/sdk', 'electron-store'] })],
     build: {
-      watch: {}
+      watch: {},
+      rollupOptions: {
+        external: ['prism-media', 'ffmpeg-static'] // Don't bundle these
+      }
     },
     resolve: {
       conditions: ['import', 'module', 'node', 'default'],
