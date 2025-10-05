@@ -44,7 +44,8 @@ export class WhisperClient {
       // Create a Blob from the Buffer for the FormData
       // Convert Buffer to Uint8Array for Blob compatibility
       const audioBlob = new Blob([new Uint8Array(audioData)], { type: 'audio/wav' })
-      formData.append('file', audioBlob, 'audio.wav')
+      // FastAPI expects 'audio_file' field name
+      formData.append('audio_file', audioBlob, 'audio.wav')
 
       // Add optional parameters
       if (options.language) {

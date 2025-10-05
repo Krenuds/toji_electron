@@ -207,19 +207,20 @@ export class AudioReceiver {
 
     // Concatenate all PCM chunks
     const allPcmData = Buffer.concat(buffer.pcmData)
-    const duration = (Date.now() - buffer.startTime) / 1000
 
     // Clear buffer for next speech
     buffer.pcmData = []
     buffer.startTime = Date.now()
 
     // Process audio (stereo→mono, trim, resample, WAV wrap)
-    const wavData = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
+    const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
 
-    if (!wavData) {
+    if (!result) {
       log(`Audio from user ${userId} too short or silent, skipping`)
       return
     }
+
+    const { wavData, duration } = result
 
     // Call callback if set
     if (this.onAudioReady) {

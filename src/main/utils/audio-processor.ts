@@ -201,9 +201,12 @@ export function getAudioDuration(
  * Complete pipeline: stereo→mono, resample, trim, wrap in WAV
  * @param stereoData - Raw stereo PCM from Discord (48kHz, 16-bit)
  * @param minDuration - Minimum duration in seconds (default 1.0)
- * @returns WAV audio buffer ready for Whisper, or null if too short
+ * @returns Object with WAV data and duration, or null if too short
  */
-export function processDiscordAudio(stereoData: Buffer, minDuration: number = 1.0): Buffer | null {
+export function processDiscordAudio(
+  stereoData: Buffer,
+  minDuration: number = 1.0
+): { wavData: Buffer; duration: number } | null {
   log(`Processing Discord audio: ${stereoData.length} bytes`)
 
   // 1. Convert stereo to mono
@@ -230,5 +233,5 @@ export function processDiscordAudio(stereoData: Buffer, minDuration: number = 1.
   const wavData = pcmToWav(trimmedData, 48000, 16000, 1)
 
   log(`Processed audio ready: ${wavData.length} bytes, ${duration.toFixed(2)}s`)
-  return wavData
+  return { wavData, duration }
 }
