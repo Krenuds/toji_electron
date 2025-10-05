@@ -98,7 +98,7 @@ export class TTSService {
       responseFormat: options.responseFormat || 'pcm', // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
       instructions:
         options.instructions ||
-        'Speak with a subtle Japanese accent, maintaining clarity and a calm tone.' // Japanese accent by default
+        'Voice: Deep and commanding, with a gravitas befitting an ancient Japanese samurai who has witnessed countless battles. Japanese accent with traditional pronunciation. Tone: Stoic yet wise, with measured intensity and quiet strength, making every word feel purposeful and profound. Dialect: Classical samurai speech patterns with formal honorifics, deliberate pacing, and occasional sharp emphasis on key words. Pronunciation: Precise and resonant, with controlled intensity, slight guttural undertones, and a rhythm that mirrors the discipline of the blade. Features: Uses thoughtful pauses for emphasis, maintains dignified composure, blends ancient wisdom with warrior spirit to create an immersive and honorable presence.' // Ancient samurai character by default
     }
 
     log('Generating TTS:')
