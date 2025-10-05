@@ -388,11 +388,9 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       outputBuffer.writeInt16LE(sample, outIdx + 6) // Right channel
     }
 
-    console.log(
-      `[upsamplePCM] Input: ${inputBuffer.length} bytes (${inputSamples} samples @ 24kHz mono)`
-    )
-    console.log(
-      `[upsamplePCM] Output: ${outputBuffer.length} bytes (${outputSamples / 2} samples @ 48kHz stereo)`
+    log(`upsamplePCM - Input: ${inputBuffer.length} bytes (${inputSamples} samples @ 24kHz mono)`)
+    log(
+      `upsamplePCM - Output: ${outputBuffer.length} bytes (${outputSamples / 2} samples @ 48kHz stereo)`
     )
 
     return outputBuffer
@@ -404,8 +402,8 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    * @param audioBuffer Audio data from TTS service (PCM format from OpenAI)
    */
   async playTTS(sessionId: string, audioBuffer: Buffer): Promise<void> {
-    console.log(`[playTTS] Starting playback for session ${sessionId}`)
-    console.log(`[playTTS] Audio buffer size: ${audioBuffer.length} bytes`)
+    log(`playTTS - Starting playback for session ${sessionId}`)
+    log(`playTTS - Audio buffer size: ${audioBuffer.length} bytes`)
 
     const session = this.sessions.get(sessionId)
     if (!session) {
@@ -417,40 +415,40 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       throw new Error(`No voice connection for session: ${sessionId}`)
     }
 
-    console.log(`[playTTS] Connection status: ${connection.state.status}`)
+    log(`playTTS - Connection status: ${connection.state.status}`)
 
     try {
       // Get or create audio player for this session
       let player = this.audioPlayers.get(sessionId)
       if (!player) {
-        console.log(`[playTTS] Creating new audio player...`)
+        log(`playTTS - Creating new audio player...`)
         player = createAudioPlayer()
         this.audioPlayers.set(sessionId, player)
 
         // Subscribe the connection to the player
         const subscription = connection.subscribe(player)
-        console.log(`[playTTS] Subscription result:`, subscription ? 'SUCCESS' : 'FAILED')
+        log(`playTTS - Subscription result:`, subscription ? 'SUCCESS' : 'FAILED')
 
         // Handle player state changes
         player.on('stateChange', (oldState, newState) => {
-          console.log(`[playTTS] Audio player state: ${oldState.status} -> ${newState.status}`)
+          log(`playTTS - Audio player state: ${oldState.status} -> ${newState.status}`)
         })
 
         // Handle player events
         player.on('error', (error) => {
-          console.log(`[playTTS] Audio player error for ${sessionId}:`, error)
+          log(`playTTS - Audio player error for ${sessionId}:`, error)
         })
 
-        console.log(`[playTTS] Created new audio player for session ${sessionId}`)
+        log(`playTTS - Created new audio player for session ${sessionId}`)
       }
 
-      console.log(`[playTTS] Current player state: ${player.state.status}`)
+      log(`playTTS - Current player state: ${player.state.status}`)
 
       // OpenAI PCM format: 24kHz, mono, signed 16-bit little-endian
       // Discord.js expects: 48kHz, stereo, signed 16-bit little-endian
       // Solution: Upsample from 24kHz mono to 48kHz stereo by duplicating samples
-      console.log(`[playTTS] Creating audio resource...`)
-      console.log(`[playTTS] Upsampling PCM from 24kHz mono to 48kHz stereo`)
+      log(`playTTS - Creating audio resource...`)
+      log(`playTTS - Upsampling PCM from 24kHz mono to 48kHz stereo`)
 
       const upsampledBuffer = this.upsamplePCM(audioBuffer)
       const upsampledStream = Readable.from(upsampledBuffer)
@@ -463,15 +461,15 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       // Set volume (optional, but good to verify control works)
       if (resource.volume) {
         resource.volume.setVolume(1.0)
-        console.log(`[playTTS] Volume set to 1.0`)
+        log(`playTTS - Volume set to 1.0`)
       }
 
-      console.log(`[playTTS] Resource created, playing...`)
+      log(`playTTS - Resource created, playing...`)
       // Play the audio
       player.play(resource)
-      console.log(`[playTTS] player.play() called successfully`)
+      log(`playTTS - player.play() called successfully`)
     } catch (error) {
-      console.log(`[playTTS] Failed to play TTS audio for ${sessionId}:`, error)
+      log(`playTTS - Failed to play TTS audio for ${sessionId}:`, error)
       throw error
     }
   }
@@ -495,14 +493,11 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    * @returns The voice session for that project, or undefined
    */
   getUserSessionByChannel(textChannelId: string): VoiceSession | undefined {
-    console.log(
-      '[getUserSessionByChannel] Looking for session with projectChannelId:',
-      textChannelId
-    )
-    console.log('[getUserSessionByChannel] Active sessions count:', this.sessions.size)
+    log('getUserSessionByChannel - Looking for session with projectChannelId:', textChannelId)
+    log('getUserSessionByChannel - Active sessions count:', this.sessions.size)
 
     for (const session of this.sessions.values()) {
-      console.log('[getUserSessionByChannel] Checking session:', {
+      log('getUserSessionByChannel - Checking session:', {
         id: session.id,
         projectChannelId: session.projectChannelId,
         voiceChannelId: session.config.channelId,
@@ -510,34 +505,12 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       })
 
       if (session.projectChannelId === textChannelId) {
-        console.log('[getUserSessionByChannel] ✅ MATCH FOUND!')
+        log('getUserSessionByChannel - Match found!')
         return session
       }
     }
 
-    console.log('[getUserSessionByChannel] ❌ No matching session found')
-    return undefined
-  }
-
-  /**
-   * Get a user's active voice session by their user ID
-   * This allows TTS to work regardless of which text channel they message from
-   */
-  getUserSessionByUserId(userId: string): VoiceSession | undefined {
-    console.log('[getUserSessionByUserId] Looking for session for user:', userId)
-    console.log('[getUserSessionByUserId] Active sessions count:', this.sessions.size)
-
-    const sessionId = this.userSessions.get(userId)
-    if (sessionId) {
-      const session = this.sessions.get(sessionId)
-      console.log(
-        '[getUserSessionByUserId]',
-        session ? '✅ Session found!' : '❌ Session ID exists but session not found'
-      )
-      return session
-    }
-
-    console.log('[getUserSessionByUserId] ❌ No session found for user')
+    log('getUserSessionByChannel - No matching session found')
     return undefined
   }
 }

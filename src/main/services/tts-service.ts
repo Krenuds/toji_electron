@@ -19,12 +19,12 @@ try {
       const match = line.match(/^OPENAI_TTS_API_KEY=(.+)$/)
       if (match && !process.env.OPENAI_TTS_API_KEY) {
         process.env.OPENAI_TTS_API_KEY = match[1].trim()
-        console.log('[TTS] Loaded OPENAI_TTS_API_KEY from .env file')
+        log('Loaded OPENAI_TTS_API_KEY from .env file')
       }
     })
   }
 } catch (err) {
-  console.log('[TTS] Could not load .env file:', err)
+  log('Could not load .env file:', err)
 }
 
 export interface TTSConfig {
