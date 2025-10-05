@@ -166,6 +166,8 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       channelId: channel.id,
       guildId: channel.guild.id,
       adapterCreator: channel.guild.voiceAdapterCreator,
+      selfDeaf: false, // IMPORTANT: Must be undeafened to receive audio
+      selfMute: false, // Must be unmuted to speak
       debug: true // Enable debug logging
     })
 
