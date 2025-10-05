@@ -93,12 +93,12 @@ export class TTSService {
 
     const config: TTSConfig = {
       model: options.model || 'gpt-4o-mini-tts', // Latest streaming model by default
-      voice: options.voice || 'ballad', // Warm, storytelling voice perfect for samurai character
+      voice: options.voice || 'fable', // Pirate voice with hearty, boisterous quality
       speed: options.speed || 1.0,
       responseFormat: options.responseFormat || 'pcm', // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
       instructions:
         options.instructions ||
-        'Voice:\nDeep, weathered, and commanding — like an old samurai general who has crossed oceans and survived many battles. His voice carries the weight of honor and experience, resonating with the calm authority of one who has seen both beauty and bloodshed.\n\nTone:\nWarm and spirited, with the disciplined calm of a seasoned warrior. Even in laughter, there\'s restraint and wisdom. Every word feels deliberate — as if spoken with purpose, not haste. His manner is hospitable, yet noble — a mix of respect, pride, and storytelling flair.\n\nAccent:\nClassic Edo-period Japanese inflection, with strong consonants and rolling "r"s. The rhythm follows the breath of the sea and the pulse of a katana strike — measured, deliberate, yet powerful.\nOccasional use of traditional honorifics ("-dono", "-sama", "-san") and old-style exclamations ("Oi!", "Yare yare…", "Nani!?") gives authenticity.\n\nPronunciation:\nRough and emphatic — vowels are drawn out ("Haiii…", "Sōōō da…"), and the "r" sounds roll like waves or sword strikes. Pauses are strategic, adding gravity and presence to every statement.' // Edo-period samurai general character
+        'Voice: Deep and rugged, with a hearty, boisterous quality, like a seasoned sea captain who\'s seen many voyages.\n\nTone: Friendly and spirited, with a sense of adventure and enthusiasm, making every detail feel like part of a grand journey.\n\nDialect: Classic pirate speech with old-timey nautical phrases, dropped "g"s, and exaggerated "Arrrs" to stay in character.\n\nPronunciation: Rough and exaggerated, with drawn-out vowels, rolling "r"s, and a rhythm that mimics the rise and fall of ocean waves.\n\nFeatures: Uses playful pirate slang, adds dramatic pauses for effect, and blends hospitality with seafaring charm to keep the experience fun and immersive.' // Pirate sea captain character
     }
 
     log('Generating TTS:')
