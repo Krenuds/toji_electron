@@ -38,6 +38,7 @@ export class AudioReceiver {
   private connection: VoiceConnection
   private config: AudioReceiverConfig
   private userBuffers: Map<string, UserAudioBuffer> = new Map()
+  private activeSubscriptions: Map<string, AudioReceiveStream> = new Map()
   private botUserId?: string
   private onAudioReady?: (
     userId: string,
@@ -93,12 +94,27 @@ export class AudioReceiver {
 
       log(`User ${userId} started speaking`)
 
-      // Create subscription for this user
+      // Check if we already have an active subscription for this user
+      if (this.activeSubscriptions.has(userId)) {
+        log(`Already subscribed to user ${userId}, reusing existing subscription`)
+        // Just cancel the speech end timer to continue recording
+        const buffer = this.userBuffers.get(userId)
+        if (buffer && buffer.speechEndTimer) {
+          clearTimeout(buffer.speechEndTimer)
+          buffer.speechEndTimer = undefined
+        }
+        return
+      }
+
+      // Create NEW subscription for this user
       const audioStream = receiver.subscribe(userId, {
         end: {
           behavior: EndBehaviorType.Manual // We control when to end
         }
       })
+
+      // Store the active subscription
+      this.activeSubscriptions.set(userId, audioStream)
 
       this.handleAudioStream(userId, audioStream)
     })
@@ -145,11 +161,13 @@ export class AudioReceiver {
     stream.on('end', () => {
       log(`Audio stream ended for user ${userId}`)
       this.cancelUserTimers(userId)
+      this.activeSubscriptions.delete(userId)
     })
 
     stream.on('error', (error) => {
       log(`Audio stream error for user ${userId}:`, error)
       this.cancelUserTimers(userId)
+      this.activeSubscriptions.delete(userId)
     })
   }
 
@@ -212,6 +230,9 @@ export class AudioReceiver {
     buffer.pcmData = []
     buffer.startTime = Date.now()
 
+    // Remove active subscription since we're done with this speech segment
+    this.activeSubscriptions.delete(userId)
+
     // Process audio (stereo→mono, trim, resample, WAV wrap)
     const result = processDiscordAudio(allPcmData, this.config.minSpeechDuration)
 
@@ -248,8 +269,9 @@ export class AudioReceiver {
       this.cancelUserTimers(userId)
     }
 
-    // Clear buffers
+    // Clear buffers and active subscriptions
     this.userBuffers.clear()
+    this.activeSubscriptions.clear()
 
     log('Audio receiver stopped')
   }
