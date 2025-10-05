@@ -1,0 +1,26 @@
+﻿# Core API framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Request/response models
+pydantic==2.5.0
+
+# Piper TTS core
+piper-tts==1.2.0
+
+# Audio processing
+# wave is included in Python standard library
+
+# HTTP client for model downloads
+urllib3==2.1.0
+
+# Async support
+asyncio
+
+# Standard library (included with Python, listed for clarity)
+# io
+# os
+# pathlib
+# typing
+# json
+# logging

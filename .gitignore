@@ -17,3 +17,17 @@ out
 .toji.project
 nul
 .env
+
+# Docker runtime artifacts
+resources/docker-services/whisper-service/__pycache__/
+resources/docker-services/piper-service/__pycache__/
+resources/docker-services/**/*.pyc
+resources/docker-services/**/*.pyo
+resources/docker-services/**/*.log
+resources/docker-services/**/logs/
+resources/docker-services/**/tmp/
+resources/docker-services/**/models/*.onnx
+resources/docker-services/**/models/*.bin
+
+# Docker volumes (managed by Docker, not tracked)
+# Note: Model files are downloaded at runtime, not committed

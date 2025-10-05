@@ -1,0 +1,16 @@
+﻿# Core web service dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# Speech processing - Whisper with GPU acceleration
+torch>=2.1.0
+torchaudio>=2.1.0
+faster-whisper>=1.0.0
+
+# Environment and configuration
+python-dotenv>=1.0.0
+
+# Utilities
+typing-extensions>=4.8.0
