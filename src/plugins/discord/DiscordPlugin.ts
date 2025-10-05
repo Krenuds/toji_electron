@@ -341,6 +341,11 @@ export class DiscordPlugin extends EventEmitter {
       await this.projectManager.initializeWithClient(client)
     }
 
+    // Initialize voice module with client
+    if (this.voiceModule) {
+      await this.voiceModule.initializeWithClient(client)
+    }
+
     // Configure MCP Discord message fetcher
     try {
       this.messageFetcher = createDiscordMessageFetcher(client)

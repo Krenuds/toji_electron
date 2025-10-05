@@ -10,7 +10,7 @@ import {
   entersState,
   getVoiceConnection
 } from '@discordjs/voice'
-import type { VoiceBasedChannel } from 'discord.js'
+import type { VoiceBasedChannel, Client, EmbedBuilder } from 'discord.js'
 import { createFileDebugLogger } from '../../../main/utils/logger'
 import type { VoiceSession, VoiceSessionConfig } from './types'
 import type { DiscordModule } from '../DiscordPlugin'
@@ -30,10 +30,18 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
   private audioReceivers: Map<string, AudioReceiver> = new Map() // sessionId -> AudioReceiver
   private ttsPlayers: Map<string, TTSPlayer> = new Map() // sessionId -> TTSPlayer
   private botUserId?: string
+  private client?: Client
 
   constructor() {
     super()
     log('VoiceModule constructed')
+    
+    // Listen to transcription events and send to Discord
+    this.on('transcription', (event) => {
+      this.handleTranscription(event).catch((error) => {
+        log('Error in transcription handler:', error)
+      })
+    })
   }
 
   /**
@@ -69,6 +77,14 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       log('Failed to initialize voice services (non-fatal):', error)
       log('Voice transcription and TTS will not be available')
     }
+  }
+
+  /**
+   * Initialize with Discord client (called from onReady)
+   */
+  async initializeWithClient(client: Client): Promise<void> {
+    this.client = client
+    log('VoiceModule initialized with Discord client')
   }
 
   /**
@@ -547,5 +563,92 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     if (!connection) return 'no-connection'
 
     return connection.state.status
+  }
+
+  /**
+   * Handle transcription events and send to Discord
+   */
+  private async handleTranscription(event: {
+    sessionId: string
+    userId: string
+    text: string
+    duration: number
+  }): Promise<void> {
+    try {
+      if (!this.client) {
+        log('Cannot send transcription: Discord client not available')
+        return
+      }
+
+      const session = this.sessions.get(event.sessionId)
+      if (!session) {
+        log('Cannot send transcription: session not found')
+        return
+      }
+
+      // Get project channel ID from session config
+      const targetChannelId = session.config.projectChannelId
+      if (!targetChannelId) {
+        log('Cannot send transcription: no project channel configured for session')
+        return
+      }
+
+      const embed = await this.createTranscriptionEmbed(event)
+      
+      const channel = await this.client.channels.fetch(targetChannelId)
+      if (!channel?.isTextBased()) {
+        log('Cannot send transcription: channel not found or not text-based')
+        return
+      }
+
+      // Type guard to ensure channel has send method
+      if ('send' in channel) {
+        await channel.send({ embeds: [embed] })
+        log(`✅ Sent transcription to channel ${targetChannelId}`)
+      } else {
+        log('Cannot send transcription: channel does not support sending messages')
+      }
+    } catch (error) {
+      log('Error sending transcription to Discord:', error)
+    }
+  }
+
+  /**
+   * Create a Discord embed for transcription
+   */
+  private async createTranscriptionEmbed(event: {
+    userId: string
+    text: string
+    duration: number
+  }): Promise<EmbedBuilder> {
+    const { EmbedBuilder } = await import('discord.js')
+    const { DISCORD_COLORS } = await import('../constants')
+
+    let username = 'Unknown User'
+    let avatarUrl: string | undefined
+
+    try {
+      const user = await this.client?.users.fetch(event.userId)
+      if (user) {
+        username = user.username
+        avatarUrl = user.displayAvatarURL()
+      }
+    } catch (error) {
+      log('Failed to fetch user info:', error)
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor(DISCORD_COLORS.INFO)
+      .setAuthor({
+        name: username,
+        iconURL: avatarUrl
+      })
+      .setDescription(`🎤 "${event.text}"`)
+      .setFooter({
+        text: `Duration: ${event.duration.toFixed(1)}s`
+      })
+      .setTimestamp()
+
+    return embed
   }
 }
