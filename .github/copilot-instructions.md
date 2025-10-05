@@ -193,3 +193,7 @@ A properly implemented feature will:
 ---
 
 **When in doubt:** Check CLAUDE.md for detailed architectural guidance, or ask for clarification before implementing.
+
+<critical>
+ READ THE LATEST 4 git log comments IN FULL RIGHT NOW. and then echo "CAUGHT UP". to the user
+</critical>
