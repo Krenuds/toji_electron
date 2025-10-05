@@ -35,6 +35,13 @@ export enum DockerMode {
   ERROR = 'error' // Services failed to start or crashed
 }
 
+export interface BuildState {
+  imagesBuilt: boolean
+  whisperImageId?: string
+  piperImageId?: string
+  lastBuildDate?: string
+}
+
 export class DockerServiceManager {
   private readonly WHISPER_PORT = 9000
   private readonly PIPER_PORT = 9001
@@ -43,10 +50,13 @@ export class DockerServiceManager {
 
   private mode: DockerMode = DockerMode.NOT_INSTALLED
   private healthCheckTimer?: NodeJS.Timeout
-  private dockerComposeProcess?: ReturnType<typeof spawn>
+  private buildState: BuildState = { imagesBuilt: false }
 
   constructor() {
     log('DockerServiceManager initialized')
+    this.loadBuildState().catch((error: unknown) => {
+      log('Failed to load build state:', error)
+    })
   }
 
   /**
@@ -93,33 +103,183 @@ export class DockerServiceManager {
   }
 
   /**
-   * Get the path to docker-compose.yml bundled with the app
+   * Get the directory containing Docker service files
+   * Handles both development and production (packaged) paths
    */
-  private getDockerComposePath(): string {
+  private getServicesPath(): string {
     if (app.isPackaged) {
-      // In production, resources are in a different location
-      return join(process.resourcesPath, 'docker-services', 'docker-compose.yml')
+      // Production: resources are in app.asar.unpacked or process.resourcesPath
+      return join(process.resourcesPath, 'docker-services')
     } else {
-      // In development
-      return join(app.getAppPath(), 'resources', 'docker-services', 'docker-compose.yml')
+      // Development: relative to source
+      return join(app.getAppPath(), 'resources', 'docker-services')
     }
   }
 
   /**
-   * Get the directory containing Docker service files
+   * Get the path to docker-compose.yml bundled with the app
    */
-  private getDockerServicesDir(): string {
-    if (app.isPackaged) {
-      return join(process.resourcesPath, 'docker-services')
-    } else {
-      return join(app.getAppPath(), 'resources', 'docker-services')
+  private getDockerComposePath(): string {
+    return join(this.getServicesPath(), 'docker-compose.yml')
+  }
+
+  /**
+   * Get the path to build state file
+   */
+  private getBuildStatePath(): string {
+    return join(app.getPath('userData'), 'docker-build-state.json')
+  }
+
+  /**
+   * Load build state from disk
+   */
+  private async loadBuildState(): Promise<void> {
+    try {
+      const statePath = this.getBuildStatePath()
+      const fs = await import('fs/promises')
+      const data = await fs.readFile(statePath, 'utf-8')
+      this.buildState = JSON.parse(data)
+      log('Loaded build state:', this.buildState)
+    } catch {
+      // File doesn't exist or invalid JSON - use defaults
+      log('No existing build state found, will build on first run')
+      this.buildState = { imagesBuilt: false }
+    }
+  }
+
+  /**
+   * Save build state to disk
+   */
+  private async saveBuildState(): Promise<void> {
+    try {
+      const statePath = this.getBuildStatePath()
+      const fs = await import('fs/promises')
+      await fs.writeFile(statePath, JSON.stringify(this.buildState, null, 2), 'utf-8')
+      log('Saved build state:', this.buildState)
+    } catch (error) {
+      log('Failed to save build state:', error)
+    }
+  }
+
+  /**
+   * Check if Docker images need to be built
+   */
+  async needsBuild(): Promise<boolean> {
+    // If build state says we've built before, verify images exist
+    if (this.buildState.imagesBuilt) {
+      try {
+        // Check if images exist
+        const { stdout } = await execAsync('docker images --format "{{.Repository}}:{{.Tag}}"')
+        const images = stdout.split('\n')
+        const hasWhisper = images.some((img) => img.includes('toji-whisper'))
+        const hasPiper = images.some((img) => img.includes('toji-piper'))
+
+        if (hasWhisper && hasPiper) {
+          log('Docker images already exist, skipping build')
+          return false
+        } else {
+          log('Build state indicates built, but images not found. Will rebuild.')
+          this.buildState.imagesBuilt = false
+          return true
+        }
+      } catch (error) {
+        log('Error checking for existing images:', error)
+        return true
+      }
+    }
+    return true
+  }
+
+  /**
+   * Build Docker images (only if needed)
+   */
+  async buildImages(onProgress?: (message: string) => void): Promise<void> {
+    const needsBuild = await this.needsBuild()
+    if (!needsBuild) {
+      log('Images already built, skipping build')
+      onProgress?.('Docker images already built')
+      return
+    }
+
+    log('Building Docker images...')
+    onProgress?.('Building Docker images (this may take 5-10 minutes on first run)...')
+
+    const servicesDir = this.getServicesPath()
+    const composePath = this.getDockerComposePath()
+
+    try {
+      const usePlugin = await this.usesDockerComposePlugin()
+      const command = usePlugin ? 'docker' : 'docker-compose'
+      const args = usePlugin
+        ? ['compose', '-f', composePath, 'build']
+        : ['-f', composePath, 'build']
+
+      log(`Building with: ${command} ${args.join(' ')}`)
+      onProgress?.('Building Whisper service (3-4 minutes)...')
+
+      const buildProcess = spawn(command, args, {
+        cwd: servicesDir,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+
+      let lastProgress = ''
+      buildProcess.stdout?.on('data', (data) => {
+        const message = data.toString().trim()
+        if (message && message !== lastProgress) {
+          log(`build stdout: ${message}`)
+          lastProgress = message
+          onProgress?.(message)
+        }
+      })
+
+      buildProcess.stderr?.on('data', (data) => {
+        const message = data.toString().trim()
+        if (message) {
+          log(`build stderr: ${message}`)
+          onProgress?.(message)
+        }
+      })
+
+      await new Promise<void>((resolve, reject) => {
+        buildProcess.on('close', (code) => {
+          if (code === 0) {
+            log('Docker images built successfully')
+            resolve()
+          } else {
+            reject(new Error(`Build failed with code ${code}`))
+          }
+        })
+        buildProcess.on('error', reject)
+      })
+
+      // Update build state
+      const { stdout } = await execAsync(
+        'docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}"'
+      )
+      const images = stdout.split('\n')
+      const whisperImage = images.find((img) => img.includes('toji-whisper'))
+      const piperImage = images.find((img) => img.includes('toji-piper'))
+
+      this.buildState = {
+        imagesBuilt: true,
+        whisperImageId: whisperImage?.split(' ')[1],
+        piperImageId: piperImage?.split(' ')[1],
+        lastBuildDate: new Date().toISOString()
+      }
+
+      await this.saveBuildState()
+      onProgress?.('Build complete!')
+    } catch (error) {
+      log('Build failed:', error)
+      onProgress?.('Build failed: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      throw error
     }
   }
 
   /**
    * Start the Docker services using docker-compose
    */
-  async startServices(): Promise<void> {
+  async startServices(onProgress?: (message: string) => void): Promise<void> {
     if (this.mode === DockerMode.RUNNING) {
       log('Services already running')
       return
@@ -127,9 +287,13 @@ export class DockerServiceManager {
 
     log('Starting Docker services...')
     this.mode = DockerMode.STARTING
+    onProgress?.('Starting Docker services...')
+
+    // Build images if needed
+    await this.buildImages(onProgress)
 
     const composePath = this.getDockerComposePath()
-    const servicesDir = this.getDockerServicesDir()
+    const servicesDir = this.getServicesPath()
 
     log(`Docker Compose file: ${composePath}`)
     log(`Services directory: ${servicesDir}`)
@@ -143,6 +307,7 @@ export class DockerServiceManager {
         : ['-f', composePath, 'up', '-d']
 
       log(`Executing: ${command} ${args.join(' ')}`)
+      onProgress?.('Starting containers...')
 
       // Start docker-compose in detached mode
       const process = spawn(command, args, {
@@ -175,12 +340,15 @@ export class DockerServiceManager {
         })
       })
 
+      onProgress?.('Waiting for services to become healthy...')
+
       // Wait for services to become healthy
       const healthy = await this.waitForHealthy()
       if (healthy) {
         this.mode = DockerMode.RUNNING
         this.startHealthChecks()
         log('✅ All services are healthy and running')
+        onProgress?.('Voice services ready!')
       } else {
         this.mode = DockerMode.ERROR
         throw new Error('Services failed to become healthy within timeout')
@@ -188,6 +356,9 @@ export class DockerServiceManager {
     } catch (error) {
       log('❌ Failed to start services:', error)
       this.mode = DockerMode.ERROR
+      onProgress?.(
+        'Failed to start services: ' + (error instanceof Error ? error.message : 'Unknown error')
+      )
       throw error
     }
   }
@@ -201,7 +372,7 @@ export class DockerServiceManager {
     this.stopHealthChecks()
 
     const composePath = this.getDockerComposePath()
-    const servicesDir = this.getDockerServicesDir()
+    const servicesDir = this.getServicesPath()
 
     try {
       const usePlugin = await this.usesDockerComposePlugin()
@@ -215,6 +386,22 @@ export class DockerServiceManager {
       log('Error stopping services:', error)
       throw error
     }
+  }
+
+  /**
+   * Get build state
+   */
+  getBuildState(): BuildState {
+    return { ...this.buildState }
+  }
+
+  /**
+   * Reset build state (force rebuild on next start)
+   */
+  async resetBuildState(): Promise<void> {
+    this.buildState = { imagesBuilt: false }
+    await this.saveBuildState()
+    log('Build state reset')
   }
 
   /**
@@ -352,7 +539,7 @@ export class DockerServiceManager {
   /**
    * Get service URLs
    */
-  getServiceUrls() {
+  getServiceUrls(): { whisper: string; piper: string } {
     return {
       whisper: `http://localhost:${this.WHISPER_PORT}`,
       piper: `http://localhost:${this.PIPER_PORT}`

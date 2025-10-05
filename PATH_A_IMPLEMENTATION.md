@@ -165,7 +165,7 @@ export class VoiceServiceManager {
   private whisperClient: WhisperClient
   private piperClient: PiperClient
   private dockerManager: DockerServiceManager
-  
+
   constructor() {
     this.dockerManager = new DockerServiceManager()
     // Clients created once services are running
@@ -180,7 +180,7 @@ export class VoiceServiceManager {
 
   async transcribe(audio: Buffer): Promise<string>
   async speak(text: string): Promise<Buffer>
-  
+
   getStatus(): VoiceServiceStatus
 }
 ```
@@ -256,12 +256,12 @@ Add voice settings panel:
 // Settings UI
 Voice Services:
   Status: ✅ Running | ⚠️ Disabled | ❌ Not Available
-  
+
   [x] Enable voice transcription (Whisper)
   [x] Enable text-to-speech (Piper)
-  
+
   [ Test Microphone ]  [ Test Speakers ]
-  
+
   [Restart Services]  [View Logs]
 ```
 
