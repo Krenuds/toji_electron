@@ -332,7 +332,7 @@ export class DiscordPlugin extends EventEmitter {
 
             onComplete: async (fullText) => {
               console.log('[onComplete] Callback fired with text length:', fullText.length)
-              
+
               // Delete progress message and send final response
               if (progressMessage) {
                 await progressMessage.delete()

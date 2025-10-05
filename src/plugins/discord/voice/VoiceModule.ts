@@ -374,23 +374,27 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     for (let i = 0; i < inputSamples; i++) {
       // Read 16-bit sample from input (mono, 24kHz)
       const sample = inputBuffer.readInt16LE(i * 2)
-      
+
       // Write to output twice (upsample 24kHz -> 48kHz)
       // and duplicate to both channels (mono -> stereo)
       const outIdx = i * 4 * 2 // 4 samples (2x rate, 2 channels), 2 bytes each
-      
+
       // First frame (same sample, both channels)
       outputBuffer.writeInt16LE(sample, outIdx + 0) // Left channel
       outputBuffer.writeInt16LE(sample, outIdx + 2) // Right channel
-      
+
       // Second frame (duplicate for 2x sample rate)
       outputBuffer.writeInt16LE(sample, outIdx + 4) // Left channel
       outputBuffer.writeInt16LE(sample, outIdx + 6) // Right channel
     }
 
-    console.log(`[upsamplePCM] Input: ${inputBuffer.length} bytes (${inputSamples} samples @ 24kHz mono)`)
-    console.log(`[upsamplePCM] Output: ${outputBuffer.length} bytes (${outputSamples / 2} samples @ 48kHz stereo)`)
-    
+    console.log(
+      `[upsamplePCM] Input: ${inputBuffer.length} bytes (${inputSamples} samples @ 24kHz mono)`
+    )
+    console.log(
+      `[upsamplePCM] Output: ${outputBuffer.length} bytes (${outputSamples / 2} samples @ 48kHz stereo)`
+    )
+
     return outputBuffer
   }
 
@@ -429,9 +433,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
         // Handle player state changes
         player.on('stateChange', (oldState, newState) => {
-          console.log(
-            `[playTTS] Audio player state: ${oldState.status} -> ${newState.status}`
-          )
+          console.log(`[playTTS] Audio player state: ${oldState.status} -> ${newState.status}`)
         })
 
         // Handle player events
@@ -449,10 +451,10 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       // Solution: Upsample from 24kHz mono to 48kHz stereo by duplicating samples
       console.log(`[playTTS] Creating audio resource...`)
       console.log(`[playTTS] Upsampling PCM from 24kHz mono to 48kHz stereo`)
-      
+
       const upsampledBuffer = this.upsamplePCM(audioBuffer)
       const upsampledStream = Readable.from(upsampledBuffer)
-      
+
       const resource = createAudioResource(upsampledStream, {
         inputType: StreamType.Raw, // Raw PCM s16le 48kHz stereo
         inlineVolume: true
