@@ -93,12 +93,12 @@ export class TTSService {
 
     const config: TTSConfig = {
       model: options.model || 'gpt-4o-mini-tts', // Latest streaming model by default
-      voice: options.voice || 'ash', // Clear, articulate voice
+      voice: options.voice || 'ballad', // Warm, storytelling voice perfect for samurai character
       speed: options.speed || 1.0,
       responseFormat: options.responseFormat || 'pcm', // PCM format: 24kHz mono s16le (upsampled to 48kHz stereo in VoiceModule)
       instructions:
         options.instructions ||
-        'Voice: Deep and commanding, with a gravitas befitting an ancient Japanese samurai who has witnessed countless battles. Japanese accent with traditional pronunciation. Tone: Stoic yet wise, with measured intensity and quiet strength, making every word feel purposeful and profound. Dialect: Classical samurai speech patterns with formal honorifics, deliberate pacing, and occasional sharp emphasis on key words. Pronunciation: Precise and resonant, with controlled intensity, slight guttural undertones, and a rhythm that mirrors the discipline of the blade. Features: Uses thoughtful pauses for emphasis, maintains dignified composure, blends ancient wisdom with warrior spirit to create an immersive and honorable presence.' // Ancient samurai character by default
+        'Voice:\nDeep, weathered, and commanding — like an old samurai general who has crossed oceans and survived many battles. His voice carries the weight of honor and experience, resonating with the calm authority of one who has seen both beauty and bloodshed.\n\nTone:\nWarm and spirited, with the disciplined calm of a seasoned warrior. Even in laughter, there\'s restraint and wisdom. Every word feels deliberate — as if spoken with purpose, not haste. His manner is hospitable, yet noble — a mix of respect, pride, and storytelling flair.\n\nAccent:\nClassic Edo-period Japanese inflection, with strong consonants and rolling "r"s. The rhythm follows the breath of the sea and the pulse of a katana strike — measured, deliberate, yet powerful.\nOccasional use of traditional honorifics ("-dono", "-sama", "-san") and old-style exclamations ("Oi!", "Yare yare…", "Nani!?") gives authenticity.\n\nPronunciation:\nRough and emphatic — vowels are drawn out ("Haiii…", "Sōōō da…"), and the "r" sounds roll like waves or sword strikes. Pauses are strategic, adding gravity and presence to every statement.' // Edo-period samurai general character
     }
 
     log('Generating TTS:')
