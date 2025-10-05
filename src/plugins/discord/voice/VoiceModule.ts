@@ -603,7 +603,11 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
       // Type guard to ensure channel has send method
       if ('send' in channel) {
-        await channel.send({ embeds: [embed] })
+        // Send both text (for bot processing) and embed (for visual formatting)
+        await channel.send({
+          content: event.text,
+          embeds: [embed]
+        })
         log(`✅ Sent transcription to channel ${targetChannelId}`)
       } else {
         log('Cannot send transcription: channel does not support sending messages')
