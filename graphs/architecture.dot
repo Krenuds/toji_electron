@@ -3,18 +3,8 @@ strict digraph "dependency-cruiser output"{
     node [shape="box" style="rounded, filled" height="0.2" color="black" fillcolor="#ffffcc" fontcolor="black" fontname="Helvetica" fontsize="9"]
     edge [arrowhead="normal" arrowsize="0.6" penwidth="2.0" color="#00000033" fontname="Helvetica" fontsize="9"]
 
-    "child_process" [label=<child_process> tooltip="child_process" URL="https://nodejs.org/api/child_process.html" color="grey" fontcolor="grey"]
-    "events" [label=<events> tooltip="events" URL="https://nodejs.org/api/events.html" color="grey" fontcolor="grey"]
-    "fs" [label=<fs> tooltip="fs" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"]
-    subgraph "cluster_fs" {label="fs" "fs/promises" [label=<promises> tooltip="promises" URL="https://nodejs.org/api/fs.html" color="grey" fontcolor="grey"] }
-    "http" [label=<http> tooltip="http" URL="https://nodejs.org/api/http.html" color="grey" fontcolor="grey"]
-    "os" [label=<os> tooltip="os" URL="https://nodejs.org/api/os.html" color="grey" fontcolor="grey"]
-    "path" [label=<path> tooltip="path" URL="https://nodejs.org/api/path.html" color="grey" fontcolor="grey"]
-    subgraph "cluster_resources" {label="resources" "resources/toji.png" [label=<toji.png> tooltip="toji.png" URL="resources/toji.png" ] }
-    subgraph "cluster_resources" {label="resources" "resources/toji_title.png" [label=<toji_title.png> tooltip="toji_title.png" URL="resources/toji_title.png" ] }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/config" {label="config" "src/main/config/ConfigProvider.ts" [label=<ConfigProvider.ts> tooltip="ConfigProvider.ts" URL="src/main/config/ConfigProvider.ts" fillcolor="#ddfeff"] } } }
     "src/main/config/ConfigProvider.ts" -> "src/main/toji/config.ts"
-    "src/main/config/ConfigProvider.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/binary.handlers.ts" [label=<binary.handlers.ts> tooltip="binary.handlers.ts" URL="src/main/handlers/binary.handlers.ts" fillcolor="#ddfeff"] } } }
     "src/main/handlers/binary.handlers.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/discord.handlers.ts" [label=<discord.handlers.ts> tooltip="discord.handlers.ts" URL="src/main/handlers/discord.handlers.ts" fillcolor="#ddfeff"] } } }
@@ -50,16 +40,12 @@ strict digraph "dependency-cruiser output"{
     "src/main/handlers/voice.handlers.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/handlers" {label="handlers" "src/main/handlers/window.handlers.ts" [label=<window.handlers.ts> tooltip="window.handlers.ts" URL="src/main/handlers/window.handlers.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" "src/main/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/index.ts" fillcolor="#ddfeff"] } }
-    "src/main/index.ts" -> "resources/toji.png"
     "src/main/index.ts" -> "src/main/config/ConfigProvider.ts"
     "src/main/index.ts" -> "src/main/handlers/index.ts"
     "src/main/index.ts" -> "src/main/services/discord-service.ts"
     "src/main/index.ts" -> "src/main/services/opencode-service.ts"
     "src/main/index.ts" -> "src/main/toji/index.ts"
     "src/main/index.ts" -> "src/main/utils/logger.ts"
-    "src/main/index.ts" -> "child_process" [style="dashed" penwidth="1.0"]
-    "src/main/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/index.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/discord-service.ts" [label=<discord-service.ts> tooltip="discord-service.ts" URL="src/main/services/discord-service.ts" fillcolor="#ddfeff"] } } }
     "src/main/services/discord-service.ts" -> "src/plugins/discord/DiscordPlugin.ts" [style="dashed"]
     "src/main/services/discord-service.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -67,17 +53,8 @@ strict digraph "dependency-cruiser output"{
     "src/main/services/discord-service.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/docker-service-manager.ts" [label=<docker-service-manager.ts> tooltip="docker-service-manager.ts" URL="src/main/services/docker-service-manager.ts" fillcolor="#ddfeff"] } } }
     "src/main/services/docker-service-manager.ts" -> "src/main/utils/logger.ts"
-    "src/main/services/docker-service-manager.ts" -> "child_process" [style="dashed" penwidth="1.0"]
-    "src/main/services/docker-service-manager.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
-    "src/main/services/docker-service-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
-    "src/main/services/docker-service-manager.ts" -> "util" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/opencode-service.ts" [label=<opencode-service.ts> tooltip="opencode-service.ts" URL="src/main/services/opencode-service.ts" fillcolor="#ddfeff"] } } }
     "src/main/services/opencode-service.ts" -> "src/main/utils/path.ts"
-    "src/main/services/opencode-service.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/services/opencode-service.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
-    "src/main/services/opencode-service.ts" -> "path" [style="dashed" penwidth="1.0"]
-    "src/main/services/opencode-service.ts" -> "stream" [style="dashed" penwidth="1.0"]
-    "src/main/services/opencode-service.ts" -> "stream/promises" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/piper-client.ts" [label=<piper-client.ts> tooltip="piper-client.ts" URL="src/main/services/piper-client.ts" fillcolor="#ddfeff"] } } }
     "src/main/services/piper-client.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/voice-service-manager.ts" [label=<voice-service-manager.ts> tooltip="voice-service-manager.ts" URL="src/main/services/voice-service-manager.ts" fillcolor="#ddfeff"] } } }
@@ -96,9 +73,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/config-manager.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/config-manager.ts" -> "src/main/toji/agents-template.ts"
     "src/main/toji/config-manager.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/main/toji/config-manager.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/toji/config-manager.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
-    "src/main/toji/config-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/config.ts" [label=<config.ts> tooltip="config.ts" URL="src/main/toji/config.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/index.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/index.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -113,8 +87,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/index.ts" -> "src/main/toji/server.ts"
     "src/main/toji/index.ts" -> "src/main/toji/sessions.ts"
     "src/main/toji/index.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/main/toji/index.ts" -> "events" [style="dashed" penwidth="1.0"]
-    "src/main/toji/index.ts" -> "fs" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/interfaces.ts" [label=<interfaces.ts> tooltip="interfaces.ts" URL="src/main/toji/interfaces.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/interfaces.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/interfaces.ts" -> "src/main/toji/project-initializer.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -141,9 +113,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/list-sessions.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/read-session.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/types.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/main/toji/mcp/mcp-manager.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/toji/mcp/mcp-manager.ts" -> "http" [style="dashed" penwidth="1.0" arrowhead="onormal"]
-    "src/main/toji/mcp/mcp-manager.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/clear-session.ts" [label=<clear-session.ts> tooltip="clear-session.ts" URL="src/main/toji/mcp/tools/clear-session.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/clear-session.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-channel-info.ts" [label=<discord-channel-info.ts> tooltip="discord-channel-info.ts" URL="src/main/toji/mcp/tools/discord-channel-info.ts" fillcolor="#ddfeff"] } } } } }
@@ -158,8 +127,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/mcp/tools/discord-upload.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/initialize-project.ts" [label=<initialize-project.ts> tooltip="initialize-project.ts" URL="src/main/toji/mcp/tools/initialize-project.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/initialize-project.ts" -> "src/main/toji/interfaces.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/main/toji/mcp/tools/initialize-project.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/toji/mcp/tools/initialize-project.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/list-sessions.ts" [label=<list-sessions.ts> tooltip="list-sessions.ts" URL="src/main/toji/mcp/tools/list-sessions.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/list-sessions.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/read-session.ts" [label=<read-session.ts> tooltip="read-session.ts" URL="src/main/toji/mcp/tools/read-session.ts" fillcolor="#ddfeff"] } } } } }
@@ -169,11 +136,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/project-initializer.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/project-initializer.ts" -> "src/main/toji/agents-template.ts"
     "src/main/toji/project-initializer.ts" -> "src/main/toji/config.ts"
-    "src/main/toji/project-initializer.ts" -> "child_process" [style="dashed" penwidth="1.0"]
-    "src/main/toji/project-initializer.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/toji/project-initializer.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
-    "src/main/toji/project-initializer.ts" -> "path" [style="dashed" penwidth="1.0"]
-    "src/main/toji/project-initializer.ts" -> "util" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/project.ts" [label=<project.ts> tooltip="project.ts" URL="src/main/toji/project.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/project.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/server.ts" [label=<server.ts> tooltip="server.ts" URL="src/main/toji/server.ts" fillcolor="#ddfeff"] } } }
@@ -181,9 +143,6 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/server.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/server.ts" -> "src/main/utils/path.ts"
     "src/main/toji/server.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/main/toji/server.ts" -> "child_process" [style="dashed" penwidth="1.0"]
-    "src/main/toji/server.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/toji/server.ts" -> "util" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/sessions.ts" [label=<sessions.ts> tooltip="sessions.ts" URL="src/main/toji/sessions.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/sessions.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/sessions.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
@@ -191,11 +150,7 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/audio-processor.ts" [label=<audio-processor.ts> tooltip="audio-processor.ts" URL="src/main/utils/audio-processor.ts" fillcolor="#ddfeff"] } } }
     "src/main/utils/audio-processor.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/logger.ts" [label=<logger.ts> tooltip="logger.ts" URL="src/main/utils/logger.ts" fillcolor="#ddfeff"] } } }
-    "src/main/utils/logger.ts" -> "fs" [style="dashed" penwidth="1.0"]
-    "src/main/utils/logger.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/utils" {label="utils" "src/main/utils/path.ts" [label=<path.ts> tooltip="path.ts" URL="src/main/utils/path.ts" fillcolor="#ddfeff"] } } }
-    "src/main/utils/path.ts" -> "os" [style="dashed" penwidth="1.0"]
-    "src/main/utils/path.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" "src/plugins/discord/DiscordPlugin.ts" [label=<DiscordPlugin.ts> tooltip="DiscordPlugin.ts" URL="src/plugins/discord/DiscordPlugin.ts" fillcolor="#ddfeff"] } } }
     "src/plugins/discord/DiscordPlugin.ts" -> "src/main/toji/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/main/utils/logger.ts"
@@ -212,7 +167,6 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-uploader.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/messages.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/voice/VoiceModule.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/plugins/discord/DiscordPlugin.ts" -> "events" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/admin.ts" [label=<admin.ts> tooltip="admin.ts" URL="src/plugins/discord/commands/admin.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/commands/admin.ts" -> "src/plugins/discord/constants.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/commands" {label="commands" "src/plugins/discord/commands/clear.ts" [label=<clear.ts> tooltip="clear.ts" URL="src/plugins/discord/commands/clear.ts" fillcolor="#ddfeff"] } } } }
@@ -287,7 +241,6 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-uploader.ts" [label=<mcp-uploader.ts> tooltip="mcp-uploader.ts" URL="src/plugins/discord/utils/mcp-uploader.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/mcp-uploader.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/utils/mcp-uploader.ts" -> "src/main/utils/logger.ts"
-    "src/plugins/discord/utils/mcp-uploader.ts" -> "fs" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/messages.ts" [label=<messages.ts> tooltip="messages.ts" URL="src/plugins/discord/utils/messages.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/messages.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/utils/messages.ts" -> "src/main/utils/logger.ts"
@@ -296,15 +249,11 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/utils/permissions.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/state.ts" [label=<state.ts> tooltip="state.ts" URL="src/plugins/discord/utils/state.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/state.ts" -> "src/main/utils/logger.ts"
-    "src/plugins/discord/utils/state.ts" -> "fs/promises" [style="dashed" penwidth="1.0"]
-    "src/plugins/discord/utils/state.ts" -> "path" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/AudioReceiver.ts" [label=<AudioReceiver.ts> tooltip="AudioReceiver.ts" URL="src/plugins/discord/voice/AudioReceiver.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/voice/AudioReceiver.ts" -> "src/main/utils/audio-processor.ts"
     "src/plugins/discord/voice/AudioReceiver.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/TTSPlayer.ts" [label=<TTSPlayer.ts> tooltip="TTSPlayer.ts" URL="src/plugins/discord/voice/TTSPlayer.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/voice/TTSPlayer.ts" -> "src/main/utils/logger.ts"
-    "src/plugins/discord/voice/TTSPlayer.ts" -> "child_process" [style="dashed" penwidth="1.0"]
-    "src/plugins/discord/voice/TTSPlayer.ts" -> "stream" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/VoiceModule.ts" [label=<VoiceModule.ts> tooltip="VoiceModule.ts" URL="src/plugins/discord/voice/VoiceModule.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/services/voice-service-manager.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/main/utils/logger.ts"
@@ -313,7 +262,6 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/AudioReceiver.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/TTSPlayer.ts"
     "src/plugins/discord/voice/VoiceModule.ts" -> "src/plugins/discord/voice/types.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/plugins/discord/voice/VoiceModule.ts" -> "events" [style="dashed" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/voice" {label="voice" "src/plugins/discord/voice/types.ts" [label=<types.ts> tooltip="types.ts" URL="src/plugins/discord/voice/types.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/binary.api.ts" [label=<binary.api.ts> tooltip="binary.api.ts" URL="src/preload/api/binary.api.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/preload" {label="preload" subgraph "cluster_src/preload/api" {label="api" "src/preload/api/discord.api.ts" [label=<discord.api.ts> tooltip="discord.api.ts" URL="src/preload/api/discord.api.ts" fillcolor="#ddfeff"] } } }
@@ -359,7 +307,6 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/PlaceholderViews.tsx" [label=<PlaceholderViews.tsx> tooltip="PlaceholderViews.tsx" URL="src/renderer/src/components/PlaceholderViews.tsx" fillcolor="#bbfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/SidebarContainer.tsx" [label=<SidebarContainer.tsx> tooltip="SidebarContainer.tsx" URL="src/renderer/src/components/SidebarContainer.tsx" fillcolor="#bbfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/TitleBar.tsx" [label=<TitleBar.tsx> tooltip="TitleBar.tsx" URL="src/renderer/src/components/TitleBar.tsx" fillcolor="#bbfeff"] } } } }
-    "src/renderer/src/components/TitleBar.tsx" -> "resources/toji_title.png"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/settings" {label="settings" "src/renderer/src/components/settings/SettingsDrawer.tsx" [label=<SettingsDrawer.tsx> tooltip="SettingsDrawer.tsx" URL="src/renderer/src/components/settings/SettingsDrawer.tsx" fillcolor="#bbfeff"] } } } } }
     "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "src/renderer/src/hooks/useAvailableModelsContext.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/ActionButton.tsx" [label=<ActionButton.tsx> tooltip="ActionButton.tsx" URL="src/renderer/src/components/shared/ActionButton.tsx" fillcolor="#bbfeff"] } } } } }
@@ -467,7 +414,4 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/theme.ts" [label=<theme.ts> tooltip="theme.ts" URL="src/renderer/src/theme.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/types" {label="types" "src/renderer/src/types/ViewTypes.ts" [label=<ViewTypes.ts> tooltip="ViewTypes.ts" URL="src/renderer/src/types/ViewTypes.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/utils" {label="utils" "src/renderer/src/utils/messageFormatter.ts" [label=<messageFormatter.ts> tooltip="messageFormatter.ts" URL="src/renderer/src/utils/messageFormatter.ts" fillcolor="#ddfeff"] } } } }
-    "stream" [label=<stream> tooltip="stream" URL="https://nodejs.org/api/stream.html" color="grey" fontcolor="grey"]
-    subgraph "cluster_stream" {label="stream" "stream/promises" [label=<promises> tooltip="promises" URL="https://nodejs.org/api/stream.html" color="grey" fontcolor="grey"] }
-    "util" [label=<util> tooltip="util" URL="https://nodejs.org/api/util.html" color="grey" fontcolor="grey"]
 }

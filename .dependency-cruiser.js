@@ -196,7 +196,15 @@ module.exports = {
     /* Which modules to exclude */
     exclude: {
       /* path: an array of regular expressions in strings to match against */
-      path: ['node_modules', 'node:']
+      path: [
+        'node_modules',
+        'node:',
+        // Hide Node.js built-in modules from graph
+        '^(child_process|events|fs|http|https|os|path|stream|util|crypto|net|tls|dns|url|querystring|zlib|buffer|assert|timers|constants|process|readline|repl|vm|tty|dgram|cluster|perf_hooks|v8|async_hooks|inspector|worker_threads|module)$',
+        '^(fs|stream)/promises$',
+        // Hide resources folder (images used in UI)
+        '^resources/'
+      ]
     },
 
     /* Which modules to exclusively include (array of regular expressions in strings)
