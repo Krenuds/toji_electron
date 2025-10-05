@@ -1,4 +1,4 @@
-name: Build macOS
+name: Build All Platforms
 
 on:
   push:
@@ -10,8 +10,24 @@ permissions:
   contents: write
 
 jobs:
-  build-mac:
-    runs-on: macos-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            artifact-name: macos-dmg
+            artifact-path: dist/*.dmg
+          - os: windows-latest
+            platform: win
+            artifact-name: windows-exe
+            artifact-path: dist/*.exe
+          - os: ubuntu-latest
+            platform: linux
+            artifact-name: linux-appimage
+            artifact-path: dist/*.AppImage
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
@@ -35,28 +51,41 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run build:mac -- --publish never
+        run: npm run build:${{ matrix.platform }} -- --publish never
 
-      - name: Upload DMG
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-dmg
-          path: dist/*.dmg
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
 
   release:
-    needs: build-mac
+    needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     
     steps:
-      - name: Download artifacts
+      - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
           name: macos-dmg
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-appimage
           
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "*.dmg"
+          files: |
+            *.dmg
+            *.exe
+            *.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
