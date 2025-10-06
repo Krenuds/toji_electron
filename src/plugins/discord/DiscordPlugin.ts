@@ -18,6 +18,7 @@ import { createDiscordFileUploader } from './utils/mcp-uploader'
 import { createDiscordChannelLister } from './utils/mcp-channel-lister'
 import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
+import { downloadAttachments, formatAttachmentMessage } from './utils/file-downloader'
 import { DISCORD_COLORS } from './constants'
 import type { DiscordModule, DiscordPluginEvents, IDiscordPlugin } from './interfaces'
 
@@ -133,7 +134,41 @@ export class DiscordPlugin extends EventEmitter {
               await message.channel.sendTyping()
             }
 
-            logger.debug('Calling streaming chat with message: %s', message.content)
+            // Handle file attachments - download to project directory
+            const projectPath = this.toji.getCurrentProjectDirectory()
+            let messageContent = message.content
+
+            if (message.attachments.size > 0 && projectPath) {
+              try {
+                logger.debug('Downloading %d attachment(s) to project', message.attachments.size)
+                const downloadedFiles = await downloadAttachments(message, projectPath)
+
+                if (downloadedFiles.length > 0) {
+                  const attachmentInfo = formatAttachmentMessage(downloadedFiles)
+                  // Prepend attachment info to message content
+                  messageContent = messageContent
+                    ? `${attachmentInfo}\n\n${messageContent}`
+                    : attachmentInfo
+                  logger.debug('Downloaded %d file(s) successfully', downloadedFiles.length)
+                }
+              } catch (error) {
+                logger.debug('ERROR: Failed to download attachments: %o', error)
+                await message.reply('⚠️ Warning: Failed to download some attachments')
+              }
+            }
+
+            // Skip if message is empty after processing
+            if (!messageContent || !messageContent.trim()) {
+              await message.reply(
+                '💬 Please include a message with your files, or just type something for me to respond to.'
+              )
+              return
+            }
+
+            logger.debug(
+              'Calling streaming chat with message: %s',
+              messageContent.substring(0, 100)
+            )
 
             // Process message through Toji with streaming progress embeds
             let progressMessage: Message | undefined
@@ -142,18 +177,10 @@ export class DiscordPlugin extends EventEmitter {
             const UPDATE_THROTTLE = 1000 // 1 second between updates
             const toolActivity = createToolActivity()
 
-            await this.projectManager.chatStreaming(message.content, {
+            await this.projectManager.chatStreaming(messageContent, {
               onChunk: async (text) => {
                 const now = Date.now()
                 const charCount = text.length
-                const timeSinceLastUpdate = now - lastUpdate
-
-                logger.debug(
-                  '🔵 onChunk fired: %d chars (time since last: %dms, throttle: %dms)',
-                  charCount,
-                  timeSinceLastUpdate,
-                  UPDATE_THROTTLE
-                )
 
                 if (!progressMessage) {
                   // Send initial progress embed
@@ -161,7 +188,7 @@ export class DiscordPlugin extends EventEmitter {
                   const embed = createProgressEmbed(updateCount, toolActivity)
                   progressMessage = await message.reply({ embeds: [embed] })
                   lastUpdate = now
-                  logger.debug('✅ Sent initial progress embed')
+                  logger.debug('Sent initial progress embed')
                 } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                   // Update progress embed (throttled to respect rate limits)
                   updateCount++
@@ -169,12 +196,8 @@ export class DiscordPlugin extends EventEmitter {
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
                   logger.debug('✅ Updated progress embed: %d chars', charCount)
-                } else {
-                  logger.debug(
-                    '⏸️  Throttled: skipping update (need %dms more)',
-                    UPDATE_THROTTLE - timeSinceLastUpdate
-                  )
                 }
+                // Throttled updates are silently skipped
               },
 
               onTool: async (toolEvent) => {
@@ -238,7 +261,29 @@ export class DiscordPlugin extends EventEmitter {
 
       // Outside Toji Desktop category - only respond to mentions
       if (message.mentions.has(message.client.user!.id)) {
-        const content = message.content.replace(/<@!?\d+>/g, '').trim()
+        let content = message.content.replace(/<@!?\d+>/g, '').trim()
+
+        // Handle file attachments if project is active
+        const projectPath = this.toji.getCurrentProjectDirectory()
+        if (message.attachments.size > 0 && projectPath) {
+          try {
+            logger.debug(
+              'Downloading %d attachment(s) to project (mention)',
+              message.attachments.size
+            )
+            const downloadedFiles = await downloadAttachments(message, projectPath)
+
+            if (downloadedFiles.length > 0) {
+              const attachmentInfo = formatAttachmentMessage(downloadedFiles)
+              content = content ? `${attachmentInfo}\n\n${content}` : attachmentInfo
+              logger.debug('Downloaded %d file(s) successfully (mention)', downloadedFiles.length)
+            }
+          } catch (error) {
+            logger.debug('ERROR: Failed to download attachments (mention): %o', error)
+            await message.reply('⚠️ Warning: Failed to download some attachments')
+          }
+        }
+
         if (!content) {
           await message.reply('Please provide a message for me to process.')
           return
@@ -256,14 +301,6 @@ export class DiscordPlugin extends EventEmitter {
             onChunk: async (text) => {
               const now = Date.now()
               const charCount = text.length
-              const timeSinceLastUpdate = now - lastUpdate
-
-              logger.debug(
-                '🔵 onChunk fired (mention): %d chars (time since last: %dms, throttle: %dms)',
-                charCount,
-                timeSinceLastUpdate,
-                UPDATE_THROTTLE
-              )
 
               if (!progressMessage) {
                 // Send initial progress embed
@@ -271,7 +308,7 @@ export class DiscordPlugin extends EventEmitter {
                 const embed = createProgressEmbed(updateCount, toolActivity)
                 progressMessage = await message.reply({ embeds: [embed] })
                 lastUpdate = now
-                logger.debug('✅ Sent initial progress embed (mention)')
+                logger.debug('Sent initial progress embed (mention)')
               } else if (now - lastUpdate >= UPDATE_THROTTLE) {
                 // Update progress embed (throttled to respect rate limits)
                 updateCount++
@@ -279,12 +316,8 @@ export class DiscordPlugin extends EventEmitter {
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
                 logger.debug('✅ Updated progress embed: %d chars (mention)', charCount)
-              } else {
-                logger.debug(
-                  '⏸️  Throttled (mention): skipping update (need %dms more)',
-                  UPDATE_THROTTLE - timeSinceLastUpdate
-                )
               }
+              // Throttled updates are silently skipped
             },
 
             onTool: async (toolEvent) => {
