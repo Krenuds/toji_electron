@@ -106,6 +106,9 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/clear-session.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-create-channel.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-delete-channel.ts"
+    "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-edit-channel.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-list-channels.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-messages.ts"
     "src/main/toji/mcp/mcp-manager.ts" -> "src/main/toji/mcp/tools/discord-search-messages.ts"
@@ -118,6 +121,12 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/mcp/tools/clear-session.ts" -> "src/main/toji/sessions.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-channel-info.ts" [label=<discord-channel-info.ts> tooltip="discord-channel-info.ts" URL="src/main/toji/mcp/tools/discord-channel-info.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/discord-channel-info.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-create-channel.ts" [label=<discord-create-channel.ts> tooltip="discord-create-channel.ts" URL="src/main/toji/mcp/tools/discord-create-channel.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-create-channel.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-delete-channel.ts" [label=<discord-delete-channel.ts> tooltip="discord-delete-channel.ts" URL="src/main/toji/mcp/tools/discord-delete-channel.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-delete-channel.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-edit-channel.ts" [label=<discord-edit-channel.ts> tooltip="discord-edit-channel.ts" URL="src/main/toji/mcp/tools/discord-edit-channel.ts" fillcolor="#ddfeff"] } } } } }
+    "src/main/toji/mcp/tools/discord-edit-channel.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-list-channels.ts" [label=<discord-list-channels.ts> tooltip="discord-list-channels.ts" URL="src/main/toji/mcp/tools/discord-list-channels.ts" fillcolor="#ddfeff"] } } } } }
     "src/main/toji/mcp/tools/discord-list-channels.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" subgraph "cluster_src/main/toji/mcp/tools" {label="tools" "src/main/toji/mcp/tools/discord-messages.ts" [label=<discord-messages.ts> tooltip="discord-messages.ts" URL="src/main/toji/mcp/tools/discord-messages.ts" fillcolor="#ddfeff"] } } } } }
@@ -163,6 +172,9 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/SlashCommandModule.ts" [style="dashed"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/errors.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/file-downloader.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-creator.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-deleter.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-editor.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-info.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-lister.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-fetcher.ts"
@@ -231,6 +243,12 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/utils/errors.ts" -> "src/plugins/discord/constants.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/file-downloader.ts" [label=<file-downloader.ts> tooltip="file-downloader.ts" URL="src/plugins/discord/utils/file-downloader.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/file-downloader.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-creator.ts" [label=<mcp-channel-creator.ts> tooltip="mcp-channel-creator.ts" URL="src/plugins/discord/utils/mcp-channel-creator.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-channel-creator.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-deleter.ts" [label=<mcp-channel-deleter.ts> tooltip="mcp-channel-deleter.ts" URL="src/plugins/discord/utils/mcp-channel-deleter.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-channel-deleter.ts" -> "src/main/utils/logger.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-editor.ts" [label=<mcp-channel-editor.ts> tooltip="mcp-channel-editor.ts" URL="src/plugins/discord/utils/mcp-channel-editor.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/mcp-channel-editor.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-info.ts" [label=<mcp-channel-info.ts> tooltip="mcp-channel-info.ts" URL="src/plugins/discord/utils/mcp-channel-info.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/utils/logger.ts"

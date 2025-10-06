@@ -19,6 +19,18 @@ import {
   registerDiscordSearchMessagesTool,
   type DiscordMessageSearcher
 } from './tools/discord-search-messages'
+import {
+  registerDiscordCreateChannelTool,
+  type DiscordChannelCreator
+} from './tools/discord-create-channel'
+import {
+  registerDiscordDeleteChannelTool,
+  type DiscordChannelDeleter
+} from './tools/discord-delete-channel'
+import {
+  registerDiscordEditChannelTool,
+  type DiscordChannelEditor
+} from './tools/discord-edit-channel'
 import { registerClearSessionTool } from './tools/clear-session'
 import { registerReadSessionTool } from './tools/read-session'
 import { registerListSessionsTool } from './tools/list-sessions'
@@ -98,6 +110,15 @@ export class McpManager {
         break
       case 'discord:search':
         registerDiscordSearchMessagesTool(server, service as DiscordMessageSearcher)
+        break
+      case 'discord:create-channel':
+        registerDiscordCreateChannelTool(server, service as DiscordChannelCreator)
+        break
+      case 'discord:delete-channel':
+        registerDiscordDeleteChannelTool(server, service as DiscordChannelDeleter)
+        break
+      case 'discord:edit-channel':
+        registerDiscordEditChannelTool(server, service as DiscordChannelEditor)
         break
       default:
         logger.debug('Unknown service type: %s', name)

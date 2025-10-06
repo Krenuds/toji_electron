@@ -18,6 +18,9 @@ import { createDiscordFileUploader } from './utils/mcp-uploader'
 import { createDiscordChannelLister } from './utils/mcp-channel-lister'
 import { createDiscordChannelInfoProvider } from './utils/mcp-channel-info'
 import { createDiscordMessageSearcher } from './utils/mcp-message-searcher'
+import { createDiscordChannelCreator } from './utils/mcp-channel-creator'
+import { createDiscordChannelDeleter } from './utils/mcp-channel-deleter'
+import { createDiscordChannelEditor } from './utils/mcp-channel-editor'
 import { downloadAttachments, formatAttachmentMessage } from './utils/file-downloader'
 import { DISCORD_COLORS } from './constants'
 import type { DiscordModule, DiscordPluginEvents, IDiscordPlugin } from './interfaces'
@@ -42,6 +45,9 @@ export class DiscordPlugin extends EventEmitter {
   private channelLister?: ReturnType<typeof createDiscordChannelLister>
   private channelInfoProvider?: ReturnType<typeof createDiscordChannelInfoProvider>
   private messageSearcher?: ReturnType<typeof createDiscordMessageSearcher>
+  private channelCreator?: ReturnType<typeof createDiscordChannelCreator>
+  private channelDeleter?: ReturnType<typeof createDiscordChannelDeleter>
+  private channelEditor?: ReturnType<typeof createDiscordChannelEditor>
 
   constructor(
     private toji: Toji,
@@ -446,6 +452,30 @@ export class DiscordPlugin extends EventEmitter {
       logger.debug('Registered Discord search MCP service')
     } catch (error) {
       logger.debug('Warning: Failed to register Discord search service: %o', error)
+    }
+
+    try {
+      this.channelCreator = createDiscordChannelCreator(client)
+      this.toji.registerMCPService('discord:create-channel', this.channelCreator)
+      logger.debug('Registered Discord create-channel MCP service')
+    } catch (error) {
+      logger.debug('Warning: Failed to register Discord create-channel service: %o', error)
+    }
+
+    try {
+      this.channelDeleter = createDiscordChannelDeleter(client)
+      this.toji.registerMCPService('discord:delete-channel', this.channelDeleter)
+      logger.debug('Registered Discord delete-channel MCP service')
+    } catch (error) {
+      logger.debug('Warning: Failed to register Discord delete-channel service: %o', error)
+    }
+
+    try {
+      this.channelEditor = createDiscordChannelEditor(client)
+      this.toji.registerMCPService('discord:edit-channel', this.channelEditor)
+      logger.debug('Registered Discord edit-channel MCP service')
+    } catch (error) {
+      logger.debug('Warning: Failed to register Discord edit-channel service: %o', error)
     }
 
     // Deploy slash commands if we have config
