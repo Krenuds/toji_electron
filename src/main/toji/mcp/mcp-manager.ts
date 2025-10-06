@@ -36,11 +36,7 @@ const BASE_PORT = 3100
 export class McpManager {
   private servers: Map<string, McpServerInstance> = new Map()
   private httpServers: Map<string, Server> = new Map()
-  private messageFetcher?: DiscordMessageFetcher
-  private fileUploader?: DiscordFileUploader
-  private channelLister?: DiscordChannelLister
-  private channelInfoProvider?: DiscordChannelInfoProvider
-  private messageSearcher?: DiscordMessageSearcher
+  private services = new Map<string, unknown>()
   private getClientFn?: () => OpencodeClient | null
   private getCurrentProjectPathFn?: () => string | undefined
   private sessionManager?: SessionManager
@@ -49,6 +45,63 @@ export class McpManager {
 
   constructor() {
     logger.debug('McpManager initialized')
+  }
+
+  /**
+   * Register a service for MCP tools
+   */
+  registerService<T>(name: string, service: T): void {
+    logger.debug('Registering service: %s', name)
+    this.services.set(name, service)
+
+    // Register tool with all existing MCP servers
+    this.registerServiceWithAllServers(name, service)
+  }
+
+  /**
+   * Get a registered service
+   */
+  getService<T>(name: string): T | undefined {
+    return this.services.get(name) as T | undefined
+  }
+
+  /**
+   * Register service with all existing MCP servers
+   */
+  private registerServiceWithAllServers(name: string, service: unknown): void {
+    for (const [dir, instance] of this.servers.entries()) {
+      try {
+        this.registerServiceWithServer(instance.server, name, service)
+        logger.debug('Registered service %s for existing server: %s', name, dir)
+      } catch (error) {
+        logger.debug('Warning: Failed to register service %s for %s: %o', name, dir, error)
+      }
+    }
+  }
+
+  /**
+   * Register service tool with a specific MCP server
+   */
+  private registerServiceWithServer(server: McpServer, name: string, service: unknown): void {
+    switch (name) {
+      case 'discord:messages':
+        registerDiscordMessageTool(server, service as DiscordMessageFetcher)
+        break
+      case 'discord:upload':
+        registerDiscordUploadTool(server, service as DiscordFileUploader)
+        break
+      case 'discord:channels':
+        registerDiscordListChannelsTool(server, service as DiscordChannelLister)
+        break
+      case 'discord:channel-info':
+        registerDiscordChannelInfoTool(server, service as DiscordChannelInfoProvider)
+        break
+      case 'discord:search':
+        registerDiscordSearchMessagesTool(server, service as DiscordMessageSearcher)
+        break
+      default:
+        logger.debug('Unknown service type: %s', name)
+    }
   }
 
   /**
@@ -108,109 +161,6 @@ export class McpManager {
   }
 
   /**
-   * Set the Discord message fetcher for all MCP servers
-   * This will register the Discord tool with all existing servers
-   */
-  setDiscordMessageFetcher(fetcher: DiscordMessageFetcher): void {
-    logger.debug('Discord message fetcher configured')
-    this.messageFetcher = fetcher
-
-    // Register Discord tool with all existing MCP servers
-    for (const [dir, instance] of this.servers.entries()) {
-      try {
-        registerDiscordMessageTool(instance.server, fetcher)
-        logger.debug('Registered Discord message tool for existing server: %s', dir)
-      } catch (error) {
-        logger.debug('Warning: Failed to register Discord message tool for %s: %o', dir, error)
-      }
-    }
-  }
-
-  /**
-   * Set the Discord file uploader for all MCP servers
-   * This will register the Discord upload tool with all existing servers
-   */
-  setDiscordFileUploader(uploader: DiscordFileUploader): void {
-    logger.debug('Discord file uploader configured')
-    this.fileUploader = uploader
-
-    // Register Discord upload tool with all existing MCP servers
-    for (const [dir, instance] of this.servers.entries()) {
-      try {
-        registerDiscordUploadTool(instance.server, uploader)
-        logger.debug('Registered Discord upload tool for existing server: %s', dir)
-      } catch (error) {
-        logger.debug('Warning: Failed to register Discord upload tool for %s: %o', dir, error)
-      }
-    }
-  }
-
-  /**
-   * Set the Discord channel lister for all MCP servers
-   * This will register the Discord list channels tool with all existing servers
-   */
-  setDiscordChannelLister(lister: DiscordChannelLister): void {
-    logger.debug('Discord channel lister configured')
-    this.channelLister = lister
-
-    // Register Discord list channels tool with all existing MCP servers
-    for (const [dir, instance] of this.servers.entries()) {
-      try {
-        registerDiscordListChannelsTool(instance.server, lister)
-        logger.debug('Registered Discord list channels tool for existing server: %s', dir)
-      } catch (error) {
-        logger.debug(
-          'Warning: Failed to register Discord list channels tool for %s: %o',
-          dir,
-          error
-        )
-      }
-    }
-  }
-
-  /**
-   * Set the Discord channel info provider for all MCP servers
-   * This will register the Discord channel info tool with all existing servers
-   */
-  setDiscordChannelInfoProvider(provider: DiscordChannelInfoProvider): void {
-    logger.debug('Discord channel info provider configured')
-    this.channelInfoProvider = provider
-
-    // Register Discord channel info tool with all existing MCP servers
-    for (const [dir, instance] of this.servers.entries()) {
-      try {
-        registerDiscordChannelInfoTool(instance.server, provider)
-        logger.debug('Registered Discord channel info tool for existing server: %s', dir)
-      } catch (error) {
-        logger.debug('Warning: Failed to register Discord channel info tool for %s: %o', dir, error)
-      }
-    }
-  }
-
-  /**
-   * Set the Discord message searcher for all MCP servers
-   * This will register the Discord search messages tool with all existing servers
-   */
-  setDiscordMessageSearcher(searcher: DiscordMessageSearcher): void {
-    logger.debug('Discord message searcher configured')
-    this.messageSearcher = searcher
-
-    // Register Discord search messages tool with all existing MCP servers
-    for (const [dir, instance] of this.servers.entries()) {
-      try {
-        registerDiscordSearchMessagesTool(instance.server, searcher)
-        logger.debug('Registered Discord search messages tool for existing server: %s', dir)
-      } catch (error) {
-        logger.debug(
-          'Warning: Failed to register Discord search messages tool for %s: %o',
-          dir,
-          error
-        )
-      }
-    }
-  }
-
-  /**
    * Get next available port for MCP server
    */
   private getNextPort(): number {
@@ -262,32 +212,17 @@ export class McpManager {
 
     const tools: string[] = ['read-session', 'list-sessions']
 
-    // Register Discord tools if available
-    if (this.messageFetcher) {
-      registerDiscordMessageTool(server, this.messageFetcher)
-      tools.push('discord-messages')
+    // Register all services with this server
+    for (const [name, service] of this.services.entries()) {
+      try {
+        this.registerServiceWithServer(server, name, service)
+        tools.push(name)
+      } catch (error) {
+        logger.debug('Warning: Failed to register service %s: %o', name, error)
+      }
     }
 
-    if (this.fileUploader) {
-      registerDiscordUploadTool(server, this.fileUploader)
-      tools.push('discord-upload')
-    }
-
-    if (this.channelLister) {
-      registerDiscordListChannelsTool(server, this.channelLister)
-      tools.push('discord-list-channels')
-    }
-
-    if (this.channelInfoProvider) {
-      registerDiscordChannelInfoTool(server, this.channelInfoProvider)
-      tools.push('discord-channel-info')
-    }
-
-    if (this.messageSearcher) {
-      registerDiscordSearchMessagesTool(server, this.messageSearcher)
-      tools.push('discord-search')
-    }
-
+    // Register project initialization tool if Toji instance available
     if (this.getTojiFn) {
       registerInitializeProjectTool(server, { getToji: this.getTojiFn })
       tools.push('init-project')

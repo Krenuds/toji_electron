@@ -1,4 +1,3 @@
-
 ### Architecture Summary
 
 ```text
@@ -29,6 +28,7 @@
 ### Summary
 
 **OpenCode SDK usage in our codebase:**
+
 - `session.command()` - **Used once** in `Toji.sendCommand()`
 - `session.prompt()` - **Never used**
 - MCP tools - **Use SessionsManager/DiscordService**, not SDK directly
@@ -163,6 +163,7 @@ From the README you're viewing:
 ```
 
 **Example AI usage:**
+
 ```text
 User: "Create a new project at C:\Projects\my-cool-app"
   ↓
@@ -209,11 +210,13 @@ Project created at: C:\Users\donth\OneDrive\Desktop\Work
 ### Detailed Flow
 
 **1. Tool Invocation** (1759791178):
+
 ```
 🔧 Tool event: toji_initialize_project - toolu_015nAd9DUMFJJH7RWybzNYVi (status: pending)
 ```
 
 **2. Execution Steps** (1759791182-1759791183):
+
 ```
 ✅ Switched to project: C:\Users\donth\OneDrive\Desktop\Work
 ✅ Created new OpenCode server on port 4097
@@ -227,6 +230,7 @@ Project created at: C:\Users\donth\OneDrive\Desktop\Work
 ```
 
 **3. Server Restart** (1759791183-1759791184):
+
 ```
 ✅ Stopped old server
 ✅ Restarted server to recognize new project
@@ -234,11 +238,13 @@ Project created at: C:\Users\donth\OneDrive\Desktop\Work
 ```
 
 **4. Tool Completion** (1759791185):
+
 ```
 🔧 Tool event: toji_initialize_project - completed
 ```
 
 **5. AI Response** (1759791189):
+
 ```
 "Done. The new project is now active at C:/Users/do..."
 ```
@@ -293,12 +299,14 @@ The log shows **excellent debug coverage** - every step is logged, making it eas
 **This is a textbook example of our MCP architecture working correctly!** 🎉
 
 The AI:
+
 - ✅ Understood natural language request
 - ✅ Called the right MCP tool
 - ✅ Waited for execution
 - ✅ Provided helpful response
 
 The tool:
+
 - ✅ Created directory structure
 - ✅ Initialized git
 - ✅ Wrote config files

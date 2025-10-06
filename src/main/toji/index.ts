@@ -10,13 +10,6 @@ import { ProjectInitializer } from './project-initializer'
 import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import { McpManager } from './mcp'
-import type {
-  DiscordMessageFetcher,
-  DiscordFileUploader,
-  DiscordChannelLister,
-  DiscordChannelInfoProvider,
-  DiscordMessageSearcher
-} from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
 import type { ServerStatus, Session, StreamCallbacks, ToolEvent, ToolState } from './types'
 import type {
@@ -116,39 +109,33 @@ export class Toji extends EventEmitter {
     logger.info('Toji initialized successfully')
   }
 
+  // ========================================================================================
+  // Service Registry (replaces old setters)
+  // ========================================================================================
+
+  private mcpServices = new Map<string, unknown>()
+
   /**
-   * Set the Discord message fetcher for MCP servers
+   * Register an MCP service for tool access
    */
-  setDiscordMessageFetcher(fetcher: DiscordMessageFetcher): void {
-    this.mcp.setDiscordMessageFetcher(fetcher)
+  registerMCPService<T>(name: string, service: T): void {
+    this.mcpServices.set(name, service)
+    this.mcp.registerService(name, service)
+    logger.debug(`Registered MCP service: ${name}`)
   }
 
   /**
-   * Set the Discord file uploader for MCP servers
+   * Get registered MCP service
    */
-  setDiscordFileUploader(uploader: DiscordFileUploader): void {
-    this.mcp.setDiscordFileUploader(uploader)
+  getMCPService<T>(name: string): T | undefined {
+    return this.mcpServices.get(name) as T | undefined
   }
 
   /**
-   * Set the Discord channel lister for MCP servers
+   * Check if MCP service is registered
    */
-  setDiscordChannelLister(lister: DiscordChannelLister): void {
-    this.mcp.setDiscordChannelLister(lister)
-  }
-
-  /**
-   * Set the Discord channel info provider for MCP servers
-   */
-  setDiscordChannelInfoProvider(provider: DiscordChannelInfoProvider): void {
-    this.mcp.setDiscordChannelInfoProvider(provider)
-  }
-
-  /**
-   * Set the Discord message searcher for MCP servers
-   */
-  setDiscordMessageSearcher(searcher: DiscordMessageSearcher): void {
-    this.mcp.setDiscordMessageSearcher(searcher)
+  hasMCPService(name: string): boolean {
+    return this.mcpServices.has(name)
   }
 
   async getServerStatus(): Promise<ServerStatus> {

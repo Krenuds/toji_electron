@@ -407,49 +407,45 @@ export class DiscordPlugin extends EventEmitter {
       await this.voiceModule.initializeWithClient(client)
     }
 
-    // Configure MCP Discord message fetcher
+    // Register Discord MCP services via service registry
     try {
       this.messageFetcher = createDiscordMessageFetcher(client)
-      this.toji.setDiscordMessageFetcher(this.messageFetcher)
-      logger.debug('MCP Discord message fetcher configured')
+      this.toji.registerMCPService('discord:messages', this.messageFetcher)
+      logger.debug('Registered Discord messages MCP service')
     } catch (error) {
-      logger.debug('Warning: Failed to configure MCP Discord message fetcher: %o', error)
+      logger.debug('Warning: Failed to register Discord messages service: %o', error)
     }
 
-    // Configure MCP Discord file uploader
     try {
       this.fileUploader = createDiscordFileUploader(client)
-      this.toji.setDiscordFileUploader(this.fileUploader)
-      logger.debug('MCP Discord file uploader configured')
+      this.toji.registerMCPService('discord:upload', this.fileUploader)
+      logger.debug('Registered Discord upload MCP service')
     } catch (error) {
-      logger.debug('Warning: Failed to configure MCP Discord file uploader: %o', error)
+      logger.debug('Warning: Failed to register Discord upload service: %o', error)
     }
 
-    // Configure MCP Discord channel lister
     try {
       this.channelLister = createDiscordChannelLister(client)
-      this.toji.setDiscordChannelLister(this.channelLister)
-      logger.debug('MCP Discord channel lister configured')
+      this.toji.registerMCPService('discord:channels', this.channelLister)
+      logger.debug('Registered Discord channels MCP service')
     } catch (error) {
-      logger.debug('Warning: Failed to configure MCP Discord channel lister: %o', error)
+      logger.debug('Warning: Failed to register Discord channels service: %o', error)
     }
 
-    // Configure MCP Discord channel info provider
     try {
       this.channelInfoProvider = createDiscordChannelInfoProvider(client)
-      this.toji.setDiscordChannelInfoProvider(this.channelInfoProvider)
-      logger.debug('MCP Discord channel info provider configured')
+      this.toji.registerMCPService('discord:channel-info', this.channelInfoProvider)
+      logger.debug('Registered Discord channel-info MCP service')
     } catch (error) {
-      logger.debug('Warning: Failed to configure MCP Discord channel info provider: %o', error)
+      logger.debug('Warning: Failed to register Discord channel-info service: %o', error)
     }
 
-    // Configure MCP Discord message searcher
     try {
       this.messageSearcher = createDiscordMessageSearcher(client)
-      this.toji.setDiscordMessageSearcher(this.messageSearcher)
-      logger.debug('MCP Discord message searcher configured')
+      this.toji.registerMCPService('discord:search', this.messageSearcher)
+      logger.debug('Registered Discord search MCP service')
     } catch (error) {
-      logger.debug('Warning: Failed to configure MCP Discord message searcher: %o', error)
+      logger.debug('Warning: Failed to register Discord search service: %o', error)
     }
 
     // Deploy slash commands if we have config
