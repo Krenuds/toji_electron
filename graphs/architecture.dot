@@ -162,6 +162,7 @@ strict digraph "dependency-cruiser output"{
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/DiscordProjectManager.ts" [style="dashed"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/modules/SlashCommandModule.ts" [style="dashed"]
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/errors.ts"
+    "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/file-downloader.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-info.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-channel-lister.ts"
     "src/plugins/discord/DiscordPlugin.ts" -> "src/plugins/discord/utils/mcp-fetcher.ts"
@@ -228,6 +229,8 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/errors.ts" [label=<errors.ts> tooltip="errors.ts" URL="src/plugins/discord/utils/errors.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/errors.ts" -> "src/main/utils/logger.ts"
     "src/plugins/discord/utils/errors.ts" -> "src/plugins/discord/constants.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/file-downloader.ts" [label=<file-downloader.ts> tooltip="file-downloader.ts" URL="src/plugins/discord/utils/file-downloader.ts" fillcolor="#ddfeff"] } } } }
+    "src/plugins/discord/utils/file-downloader.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/plugins" {label="plugins" subgraph "cluster_src/plugins/discord" {label="discord" subgraph "cluster_src/plugins/discord/utils" {label="utils" "src/plugins/discord/utils/mcp-channel-info.ts" [label=<mcp-channel-info.ts> tooltip="mcp-channel-info.ts" URL="src/plugins/discord/utils/mcp-channel-info.ts" fillcolor="#ddfeff"] } } } }
     "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/toji/mcp/index.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/plugins/discord/utils/mcp-channel-info.ts" -> "src/main/utils/logger.ts"

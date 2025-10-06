@@ -201,7 +201,7 @@ export class DiscordPlugin extends EventEmitter {
               },
 
               onTool: async (toolEvent) => {
-                logger.debug('🔧 Tool event: %s - %s', toolEvent.tool, toolEvent.state.status)
+                logger.debug('Tool event: %s - %s', toolEvent.tool, toolEvent.state.status)
                 updateToolActivity(toolActivity, toolEvent)
 
                 // Force update progress embed with tool info (not throttled for important tool events)

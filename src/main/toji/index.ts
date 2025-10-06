@@ -444,7 +444,7 @@ export class Toji extends EventEmitter {
                 messageID: string
               }
               loggerChat.debug(
-                '🔧 Tool event: %s - %s (status: %s)',
+                'Tool event: %s - %s (status: %s)',
                 toolPart.tool,
                 toolPart.callID,
                 toolPart.state.status
