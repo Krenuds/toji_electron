@@ -255,6 +255,23 @@ export class Toji extends EventEmitter {
     return Boolean(this.server.isRunning() && client)
   }
 
+  /**
+   * Parse @filename attachments from message if enabled
+   * @private
+   */
+  private parseMessageAttachments(
+    message: string,
+    parseAttachments: boolean,
+    images?: ImageAttachment[]
+  ): { message: string; images?: ImageAttachment[] } {
+    if (parseAttachments && !images) {
+      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
+      loggerChat.debug('Parsed %d attachments from message', parsed.images.length)
+      return { message: parsed.cleanMessage, images: parsed.images }
+    }
+    return { message, images }
+  }
+
   // Chat with the AI using session management
   async chat(
     message: string,
@@ -270,12 +287,9 @@ export class Toji extends EventEmitter {
     }
 
     // Parse @filename attachments if enabled
-    if (parseAttachments && !images) {
-      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
-      message = parsed.cleanMessage
-      images = parsed.images
-      loggerChat.debug('Parsed %d attachments from message', images.length)
-    }
+    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
+    message = parsed.message
+    images = parsed.images
 
     loggerChat.debug(
       'Chat request: message="%s", sessionId=%s, images=%d, parseAttachments=%s',
@@ -377,12 +391,9 @@ export class Toji extends EventEmitter {
     }
 
     // Parse @filename attachments if enabled
-    if (parseAttachments && !images) {
-      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
-      message = parsed.cleanMessage
-      images = parsed.images
-      loggerChat.debug('Parsed %d attachments from message', images.length)
-    }
+    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
+    message = parsed.message
+    images = parsed.images
 
     loggerChat.debug(
       'Streaming chat request: sessionId=%s, images=%d, parseAttachments=%s',
