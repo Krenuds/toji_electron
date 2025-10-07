@@ -1,8 +1,8 @@
 # Image Support in Toji
 
-**Status:** ✅ Implemented + Enhanced  
-**Date:** October 6, 2025  
-**Last Update:** October 6, 2025 (Added @filename parsing)  
+**Status:** ✅ Implemented + Enhanced
+**Date:** October 6, 2025
+**Last Update:** October 6, 2025 (Added @filename parsing)
 **Commits:** f2f07e0 (base), TBD (attachment parsing)
 
 ## Overview

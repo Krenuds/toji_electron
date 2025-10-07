@@ -346,7 +346,11 @@ export class Toji extends EventEmitter {
           .join('')
       }
 
-      loggerChat.debug('Chat response received: %d characters', responseText.length)
+      loggerChat.debug(
+        'Chat response received: %d characters - %s',
+        responseText.length,
+        responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
+      )
       return responseText
     } catch (error) {
       loggerChat.error('Chat failed: %o', error)
@@ -548,7 +552,11 @@ export class Toji extends EventEmitter {
               properties: { sessionID: string }
             }
             if (idleEvent.properties.sessionID === sessionId) {
-              loggerChat.debug('Session idle - response complete (%d total chars)', fullText.length)
+              loggerChat.debug(
+                'Session idle - response complete: %d chars - %s',
+                fullText.length,
+                fullText.substring(0, 200) + (fullText.length > 200 ? '...' : '')
+              )
               isComplete = true
 
               if (callbacks.onComplete) {

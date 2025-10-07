@@ -1,8 +1,8 @@
 # @filename Attachment Parsing - Quick Start
 
-**Feature:** Optional natural language image attachment parsing  
-**Status:** ✅ Implemented  
-**Commit:** 1799061  
+**Feature:** Optional natural language image attachment parsing
+**Status:** ✅ Implemented
+**Commit:** 1799061
 **Date:** October 6, 2025
 
 ## TL;DR
@@ -60,8 +60,8 @@ await toji.chat('Compare @before.png and @after.png', undefined, undefined, true
 
 ## Message Transformation
 
-**Input:** `"Analyze @screenshot.png"`  
-**Sent to AI:** `"Analyze [Attached: screenshot.png]"`  
+**Input:** `"Analyze @screenshot.png"`
+**Sent to AI:** `"Analyze [Attached: screenshot.png]"`
 **Attached:** Base64-encoded FilePart for screenshot.png
 
 ## Current Implementation Status

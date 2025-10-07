@@ -1,7 +1,7 @@
 # TUI Migration Analysis
 
-**Date:** October 6, 2025  
-**Status:** Research Phase  
+**Date:** October 6, 2025
+**Status:** Research Phase
 **Decision:** Pending
 
 ## Current Architecture
