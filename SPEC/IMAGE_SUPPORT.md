@@ -216,11 +216,12 @@ await toji.chatStreaming(
 | **Natural language requests** | Parsing  | User mentions file in conversation   |
 | **API/programmatic**          | Explicit | Clear intent, type-safe              |
 
-### Opt-In Design Rationale
+### Default Enabled Design
 
-- **Default:** `parseAttachments = false` (explicit is better than implicit)
-- **Why:** Prevents unexpected behavior when messages contain `@` symbols
-- **Example:** `"Email me @john@company.com"` shouldn't parse as file
+- **Default:** `parseAttachments = true` (just works™)
+- **Why:** Users expect "@filename" to work when they mention files
+- **Edge Cases:** Email addresses like `@john@company.com` are ignored (no file extension)
+- **Override:** Pass `false` to disable parsing if needed
 
 ## Limitations
 

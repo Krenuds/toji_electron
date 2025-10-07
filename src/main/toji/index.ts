@@ -260,7 +260,7 @@ export class Toji extends EventEmitter {
     message: string,
     sessionId?: string,
     images?: ImageAttachment[],
-    parseAttachments = false
+    parseAttachments = true
   ): Promise<string> {
     const client = this.getClient()
     if (!client) {
@@ -364,7 +364,7 @@ export class Toji extends EventEmitter {
     callbacks: StreamCallbacks,
     sessionId?: string,
     images?: ImageAttachment[],
-    parseAttachments = false
+    parseAttachments = true
   ): Promise<void> {
     const client = this.getClient()
     if (!client) {

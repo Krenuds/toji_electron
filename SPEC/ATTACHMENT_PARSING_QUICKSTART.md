@@ -39,11 +39,13 @@ await toji.chat('Compare @before.png and @after.png', undefined, undefined, true
 
 **Use when:** User mentions files in conversation
 
-## Why Opt-In?
+## Why Enabled By Default?
 
-**Default:** `parseAttachments = false`
+**Default:** `parseAttachments = true`
 
-**Reason:** Prevents surprises. `"Email @john@company.com"` shouldn't parse as file attachment.
+**Reason:** Users expect it to work. When you say "look at @image.png", it should look at the damn image.
+
+**Edge Cases Handled:** Email addresses like `@john@company.com` won't parse (no file extension).
 
 ## What Gets Parsed
 
