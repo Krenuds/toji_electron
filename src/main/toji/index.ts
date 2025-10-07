@@ -606,6 +606,26 @@ export class Toji extends EventEmitter {
                 JSON.stringify(errorEvent.properties.error, null, 2)
               )
               loggerChat.debug('Full event: %o', errorEvent)
+
+              // Check if this is an Unprocessable Entity error (corrupted session state)
+              const errorStr = JSON.stringify(errorEvent.properties.error)
+              const isUnprocessableEntity = errorStr.includes('Unprocessable Entity')
+
+              if (isUnprocessableEntity) {
+                loggerChat.warn('⚠️ Unprocessable Entity error detected - session may be corrupted')
+                loggerChat.warn('Clearing corrupted session %s', sessionId)
+                // Delete the session to force creating a new one on retry
+                try {
+                  await client.session.delete({ path: { id: sessionId } })
+                  loggerChat.info(
+                    '🔄 Corrupted session deleted - next request will create new session'
+                  )
+                } catch (deleteError) {
+                  loggerChat.warn('Failed to delete corrupted session: %o', deleteError)
+                  // Continue anyway - session may still be unusable
+                }
+              }
+
               const error = new Error(
                 'Session error: ' + JSON.stringify(errorEvent.properties.error)
               )
