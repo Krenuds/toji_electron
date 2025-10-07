@@ -1,7 +1,7 @@
 # Code Review: Attachment & Image Handling
 
-**Date:** October 7, 2025  
-**Reviewer:** GitHub Copilot  
+**Date:** October 7, 2025
+**Reviewer:** GitHub Copilot
 **Focus Area:** Attachment parsing and image handling architecture
 
 ---
@@ -58,7 +58,7 @@ toji/index.ts
   └─→ types.ts (ImageAttachment, ParseResult)
 ```
 
-**✅ No circular dependencies**  
+**✅ No circular dependencies**
 **✅ Clean layering: utilities → core → plugins**
 
 ---

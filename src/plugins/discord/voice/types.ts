@@ -24,6 +24,7 @@ export interface VoiceSession {
   projectChannelId?: string // Quick access to project text channel
   isListening: boolean // Whether bot is currently listening for input (after wake word)
   wakeWord: string // Wake word that triggers listening mode
+  isProcessing: boolean // Whether bot is currently processing a response (blocks new audio capture)
 }
 
 export interface VoiceModuleEvents {
