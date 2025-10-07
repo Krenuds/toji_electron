@@ -446,6 +446,16 @@ export class Toji extends EventEmitter {
 
       // Send message to session (this will trigger events)
       loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
+
+      // Log detailed request information for debugging
+      loggerChat.debug('=== SESSION PROMPT REQUEST ===')
+      loggerChat.debug('Session ID: %s', activeSessionId)
+      loggerChat.debug('Project: %s', this.currentProjectDirectory || 'none')
+      loggerChat.debug('Message length: %d chars', message.length)
+      loggerChat.debug('Message preview: %s', message.substring(0, 100))
+      loggerChat.debug('Total parts: %d', parts.length)
+      loggerChat.debug('Parts breakdown: %s', parts.map((p) => p.type).join(', '))
+
       await client.session.prompt({
         path: { id: activeSessionId },
         body: {
@@ -587,7 +597,15 @@ export class Toji extends EventEmitter {
               properties: { sessionID?: string; error?: unknown }
             }
             if (errorEvent.properties.sessionID === sessionId) {
-              loggerChat.debug('Session error event: %o', errorEvent.properties.error)
+              loggerChat.debug('=== SESSION ERROR DETAILS ===')
+              loggerChat.debug('Session ID: %s', sessionId)
+              loggerChat.debug('Error object: %o', errorEvent.properties.error)
+              loggerChat.debug('Error type: %s', typeof errorEvent.properties.error)
+              loggerChat.debug(
+                'Error stringified: %s',
+                JSON.stringify(errorEvent.properties.error, null, 2)
+              )
+              loggerChat.debug('Full event: %o', errorEvent)
               const error = new Error(
                 'Session error: ' + JSON.stringify(errorEvent.properties.error)
               )
