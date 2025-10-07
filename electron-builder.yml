@@ -2,6 +2,7 @@ appId: com.electron.app
 productName: toji3
 directories:
   buildResources: build
+icon: build/icons/toji-icon-1024.png
 files:
   - '!**/.vscode/*'
   - '!src/*'
