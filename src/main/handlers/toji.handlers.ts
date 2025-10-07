@@ -44,10 +44,11 @@ export function registerTojiHandlers(toji: Toji): void {
       _,
       message: string,
       sessionId?: string,
-      images?: Array<{ path: string; mimeType?: string }>
+      images?: Array<{ path: string; mimeType?: string }>,
+      parseAttachments?: boolean
     ) => {
       try {
-        return await toji.chat(message, sessionId, images)
+        return await toji.chat(message, sessionId, images, parseAttachments)
       } catch (error) {
         console.error('Chat error:', error)
         throw error

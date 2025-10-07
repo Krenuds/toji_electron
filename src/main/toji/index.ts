@@ -37,6 +37,7 @@ import type {
 } from './config'
 import { createLogger } from '../utils/logger'
 import { imageToFilePart } from './image-utils'
+import { parseFileAttachments } from './attachment-parser'
 
 const logger = createLogger('toji:core')
 const loggerClient = createLogger('toji:client')
@@ -255,20 +256,34 @@ export class Toji extends EventEmitter {
   }
 
   // Chat with the AI using session management
-  async chat(message: string, sessionId?: string, images?: ImageAttachment[]): Promise<string> {
-    loggerChat.debug(
-      'Chat request: message="%s", sessionId=%s, images=%d',
-      message,
-      sessionId || 'auto',
-      images?.length || 0
-    )
-
+  async chat(
+    message: string,
+    sessionId?: string,
+    images?: ImageAttachment[],
+    parseAttachments = false
+  ): Promise<string> {
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
       loggerChat.error('Chat failed - no client connected: %s', error.message)
       throw error
     }
+
+    // Parse @filename attachments if enabled
+    if (parseAttachments && !images) {
+      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
+      message = parsed.cleanMessage
+      images = parsed.images
+      loggerChat.debug('Parsed %d attachments from message', images.length)
+    }
+
+    loggerChat.debug(
+      'Chat request: message="%s", sessionId=%s, images=%d, parseAttachments=%s',
+      message,
+      sessionId || 'auto',
+      images?.length || 0,
+      parseAttachments
+    )
 
     try {
       // Get or create session using SessionManager
@@ -344,14 +359,9 @@ export class Toji extends EventEmitter {
     message: string,
     callbacks: StreamCallbacks,
     sessionId?: string,
-    images?: ImageAttachment[]
+    images?: ImageAttachment[],
+    parseAttachments = false
   ): Promise<void> {
-    loggerChat.debug(
-      'Streaming chat request: sessionId=%s, images=%d',
-      sessionId || 'auto',
-      images?.length || 0
-    )
-
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
@@ -361,6 +371,21 @@ export class Toji extends EventEmitter {
       }
       throw error
     }
+
+    // Parse @filename attachments if enabled
+    if (parseAttachments && !images) {
+      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
+      message = parsed.cleanMessage
+      images = parsed.images
+      loggerChat.debug('Parsed %d attachments from message', images.length)
+    }
+
+    loggerChat.debug(
+      'Streaming chat request: sessionId=%s, images=%d, parseAttachments=%s',
+      sessionId || 'auto',
+      images?.length || 0,
+      parseAttachments
+    )
 
     try {
       // Get or create session using SessionManager

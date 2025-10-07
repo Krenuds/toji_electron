@@ -36,8 +36,10 @@ export const tojiAPI = {
   chat: (
     message: string,
     sessionId?: string,
-    images?: Array<{ path: string; mimeType?: string }>
-  ): Promise<string> => ipcRenderer.invoke('toji:chat', message, sessionId, images),
+    images?: Array<{ path: string; mimeType?: string }>,
+    parseAttachments?: boolean
+  ): Promise<string> =>
+    ipcRenderer.invoke('toji:chat', message, sessionId, images, parseAttachments),
   clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
   // Message history operations
