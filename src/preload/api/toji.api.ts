@@ -33,8 +33,11 @@ export const tojiAPI = {
     void directory // Use parameter to satisfy TypeScript
     return Promise.resolve()
   },
-  chat: (message: string, sessionId?: string): Promise<string> =>
-    ipcRenderer.invoke('toji:chat', message, sessionId),
+  chat: (
+    message: string,
+    sessionId?: string,
+    images?: Array<{ path: string; mimeType?: string }>
+  ): Promise<string> => ipcRenderer.invoke('toji:chat', message, sessionId, images),
   clearSession: (): Promise<void> => ipcRenderer.invoke('toji:clear-session'),
 
   // Message history operations

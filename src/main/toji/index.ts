@@ -1,6 +1,15 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
 import { EventEmitter } from 'events'
-import type { OpencodeClient, Part, Message, Project, Provider, Event } from '@opencode-ai/sdk'
+import type {
+  OpencodeClient,
+  Part,
+  Message,
+  Project,
+  Provider,
+  Event,
+  TextPartInput,
+  FilePartInput
+} from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -11,7 +20,14 @@ import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import { McpManager } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type { ServerStatus, Session, StreamCallbacks, ToolEvent, ToolState } from './types'
+import type {
+  ServerStatus,
+  Session,
+  StreamCallbacks,
+  ToolEvent,
+  ToolState,
+  ImageAttachment
+} from './types'
 import type {
   OpencodeConfig,
   PermissionConfig,
@@ -20,6 +36,7 @@ import type {
   ModelConfig
 } from './config'
 import { createLogger } from '../utils/logger'
+import { imageToFilePart } from './image-utils'
 
 const logger = createLogger('toji:core')
 const loggerClient = createLogger('toji:client')
@@ -238,8 +255,13 @@ export class Toji extends EventEmitter {
   }
 
   // Chat with the AI using session management
-  async chat(message: string, sessionId?: string): Promise<string> {
-    loggerChat.debug('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+  async chat(message: string, sessionId?: string, images?: ImageAttachment[]): Promise<string> {
+    loggerChat.debug(
+      'Chat request: message="%s", sessionId=%s, images=%d',
+      message,
+      sessionId || 'auto',
+      images?.length || 0
+    )
 
     const client = this.getClient()
     if (!client) {
@@ -272,12 +294,27 @@ export class Toji extends EventEmitter {
         loggerChat.debug('Created session: %s', activeSessionId)
       }
 
+      // Build parts array with text and optional images
+      const parts: Array<TextPartInput | FilePartInput> = []
+
+      // Add image parts first if provided
+      if (images && images.length > 0) {
+        loggerChat.debug('Converting %d images to FileParts', images.length)
+        for (const image of images) {
+          const filePart = await imageToFilePart(image.path, image.mimeType)
+          parts.push(filePart as FilePartInput)
+        }
+      }
+
+      // Add text message
+      parts.push({ type: 'text', text: message } as TextPartInput)
+
       // Send message to session
-      loggerChat.debug('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
       const response = await client.session.prompt({
         path: { id: activeSessionId },
         body: {
-          parts: [{ type: 'text', text: message }]
+          parts
         },
         query: this.currentProjectDirectory
           ? { directory: this.currentProjectDirectory }
@@ -306,9 +343,14 @@ export class Toji extends EventEmitter {
   async chatStreaming(
     message: string,
     callbacks: StreamCallbacks,
-    sessionId?: string
+    sessionId?: string,
+    images?: ImageAttachment[]
   ): Promise<void> {
-    loggerChat.debug('Streaming chat request: sessionId=%s', sessionId || 'auto')
+    loggerChat.debug(
+      'Streaming chat request: sessionId=%s, images=%d',
+      sessionId || 'auto',
+      images?.length || 0
+    )
 
     const client = this.getClient()
     if (!client) {
@@ -347,12 +389,27 @@ export class Toji extends EventEmitter {
       // Subscribe to events FIRST
       const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
 
+      // Build parts array with text and optional images
+      const parts: Array<TextPartInput | FilePartInput> = []
+
+      // Add image parts first if provided
+      if (images && images.length > 0) {
+        loggerChat.debug('Converting %d images to FileParts', images.length)
+        for (const image of images) {
+          const filePart = await imageToFilePart(image.path, image.mimeType)
+          parts.push(filePart as FilePartInput)
+        }
+      }
+
+      // Add text message
+      parts.push({ type: 'text', text: message } as TextPartInput)
+
       // Send message to session (this will trigger events)
-      loggerChat.debug('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
       await client.session.prompt({
         path: { id: activeSessionId },
         body: {
-          parts: [{ type: 'text', text: message }]
+          parts
         },
         query: this.currentProjectDirectory
           ? { directory: this.currentProjectDirectory }

@@ -12,6 +12,12 @@ export interface ToolEvent {
   messageID: string
 }
 
+// Image attachment for multimodal prompts
+export interface ImageAttachment {
+  path: string // Absolute path to image file
+  mimeType?: string // Optional: will be auto-detected if not provided
+}
+
 // Event streaming types
 export interface StreamCallbacks {
   onChunk?: (text: string, partId: string) => void | Promise<void>

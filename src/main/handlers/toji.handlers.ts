@@ -38,14 +38,22 @@ export function registerTojiHandlers(toji: Toji): void {
   })
 
   // Chat handlers
-  ipcMain.handle('toji:chat', async (_, message: string, sessionId?: string) => {
-    try {
-      return await toji.chat(message, sessionId)
-    } catch (error) {
-      console.error('Chat error:', error)
-      throw error
+  ipcMain.handle(
+    'toji:chat',
+    async (
+      _,
+      message: string,
+      sessionId?: string,
+      images?: Array<{ path: string; mimeType?: string }>
+    ) => {
+      try {
+        return await toji.chat(message, sessionId, images)
+      } catch (error) {
+        console.error('Chat error:', error)
+        throw error
+      }
     }
-  })
+  )
 
   ipcMain.handle('toji:clear-session', () => {
     toji.clearSession()
