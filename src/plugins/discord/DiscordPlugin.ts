@@ -201,7 +201,7 @@ export class DiscordPlugin extends EventEmitter {
                   const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = now
-                  logger.debug('✅ Updated progress embed: %d chars', charCount)
+                  logger.debug('Updated progress embed: %d chars', charCount)
                 }
                 // Throttled updates are silently skipped
               },
@@ -219,7 +219,7 @@ export class DiscordPlugin extends EventEmitter {
                   const embed = updateProgressEmbed(updateCount, toolActivity)
                   await progressMessage.edit({ embeds: [embed] })
                   lastUpdate = Date.now()
-                  logger.debug('✅ Updated progress embed with tool info')
+                  logger.debug('Updated progress embed with tool info')
                 }
               },
 
@@ -332,7 +332,7 @@ export class DiscordPlugin extends EventEmitter {
                 const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = now
-                logger.debug('✅ Updated progress embed: %d chars (mention)', charCount)
+                logger.debug('Updated progress embed: %d chars (mention)', charCount)
               }
               // Throttled updates are silently skipped
             },
@@ -354,7 +354,7 @@ export class DiscordPlugin extends EventEmitter {
                 const embed = updateProgressEmbed(updateCount, toolActivity)
                 await progressMessage.edit({ embeds: [embed] })
                 lastUpdate = Date.now()
-                logger.debug('✅ Updated progress embed with tool info (mention)')
+                logger.debug('Updated progress embed with tool info (mention)')
               }
             },
 

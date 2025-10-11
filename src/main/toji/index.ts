@@ -156,6 +156,10 @@ export class Toji extends EventEmitter {
     return this.mcpServices.has(name)
   }
 
+  // ========================================================================================
+  // Server & Client Management - Connection, server lifecycle, directory management
+  // ========================================================================================
+
   async getServerStatus(): Promise<ServerStatus> {
     return this.server.getStatus()
   }
@@ -249,10 +253,37 @@ export class Toji extends EventEmitter {
     loggerClient.info('Emitted project:opened event for: %s', projectName)
   }
 
+  // ========================================================================================
+  // Utility & Accessor Methods - Status checks, directory getters
+  // ========================================================================================
+
   // Check if ready
   isReady(): boolean {
     const client = this.getClient()
     return Boolean(this.server.isRunning() && client)
+  }
+
+  getCurrentProjectDirectory(): string | undefined {
+    return this.currentProjectDirectory
+  }
+
+  getCurrentWorkingDirectory(): string {
+    return process.cwd()
+  }
+
+  getCurrentSessionId(): string | undefined {
+    if (!this.currentProjectDirectory) {
+      return undefined
+    }
+    return this.sessions.getActiveSession(this.currentProjectDirectory)
+  }
+
+  setGlobalConfig(): void {
+    // TODO: Implement global config if needed
+  }
+
+  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
+    return this.server.getAllServers()
   }
 
   /**
@@ -272,6 +303,104 @@ export class Toji extends EventEmitter {
     return { message, images }
   }
 
+  // ========================================================================================
+  // Private Helper Methods - Reusable logic extracted from public methods
+  // ========================================================================================
+
+  /**
+   * Get the current client or throw an error if not connected
+   * @private
+   */
+  private requireClient(): OpencodeClient {
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+    return client
+  }
+
+  /**
+   * Get normalized project path (forward slashes for OpenCode API)
+   * @private
+   */
+  private getNormalizedProjectPath(): string | undefined {
+    return this.currentProjectDirectory?.replace(/\\/g, '/')
+  }
+
+  /**
+   * Build directory query parameter for OpenCode API calls
+   * @private
+   */
+  private getDirectoryQuery(): { directory: string } | undefined {
+    const normalizedPath = this.getNormalizedProjectPath()
+    return normalizedPath ? { directory: normalizedPath } : undefined
+  }
+
+  /**
+   * Resolve the active session ID - get existing or create new
+   * @private
+   */
+  private async resolveActiveSession(client: OpencodeClient, sessionId?: string): Promise<string> {
+    // Use provided session ID if available
+    let activeSessionId = sessionId
+
+    // Try to get active session from current project
+    if (!activeSessionId && this.currentProjectDirectory) {
+      activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+    }
+
+    // Create new session if none exists
+    if (!activeSessionId) {
+      loggerChat.debug(
+        'Creating new session for project: %s',
+        this.currentProjectDirectory || 'unknown'
+      )
+      const sessionInfo = await this.sessions.createSession(
+        client,
+        undefined, // title
+        this.currentProjectDirectory
+      )
+      activeSessionId = sessionInfo.id
+
+      // Set as active session
+      if (this.currentProjectDirectory) {
+        this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
+      }
+      loggerChat.debug('Created session: %s', activeSessionId)
+    }
+
+    return activeSessionId
+  }
+
+  /**
+   * Build parts array from message and optional images
+   * @private
+   */
+  private async buildMessageParts(
+    message: string,
+    images?: ImageAttachment[]
+  ): Promise<Array<TextPartInput | FilePartInput>> {
+    const parts: Array<TextPartInput | FilePartInput> = []
+
+    // Add image parts first if provided
+    if (images && images.length > 0) {
+      loggerChat.debug('Converting %d images to FileParts', images.length)
+      for (const image of images) {
+        const filePart = await imageToFilePart(image.path, image.mimeType)
+        parts.push(filePart as FilePartInput)
+      }
+    }
+
+    // Add text message
+    parts.push({ type: 'text', text: message } as TextPartInput)
+
+    return parts
+  }
+
+  // ========================================================================================
+  // Chat Methods - AI Interaction
+  // ========================================================================================
+
   // Chat with the AI using session management
   async chat(
     message: string,
@@ -279,12 +408,7 @@ export class Toji extends EventEmitter {
     images?: ImageAttachment[],
     parseAttachments = true
   ): Promise<string> {
-    const client = this.getClient()
-    if (!client) {
-      const error = new Error('Client not connected to server')
-      loggerChat.error('Chat failed - no client connected: %s', error.message)
-      throw error
-    }
+    const client = this.requireClient()
 
     // Parse @filename attachments if enabled
     const parsed = this.parseMessageAttachments(message, parseAttachments, images)
@@ -300,54 +424,18 @@ export class Toji extends EventEmitter {
     )
 
     try {
-      // Get or create session using SessionManager
-      let activeSessionId = sessionId
-      if (!activeSessionId && this.currentProjectDirectory) {
-        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
-      }
+      // Resolve session (get existing or create new)
+      const activeSessionId = await this.resolveActiveSession(client, sessionId)
 
-      if (!activeSessionId) {
-        loggerChat.debug(
-          'Creating new session for project: %s',
-          this.currentProjectDirectory || 'unknown'
-        )
-        const sessionInfo = await this.sessions.createSession(
-          client,
-          undefined, // title
-          this.currentProjectDirectory
-        )
-        activeSessionId = sessionInfo.id
-        if (this.currentProjectDirectory) {
-          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
-        }
-        loggerChat.debug('Created session: %s', activeSessionId)
-      }
-
-      // Build parts array with text and optional images
-      const parts: Array<TextPartInput | FilePartInput> = []
-
-      // Add image parts first if provided
-      if (images && images.length > 0) {
-        loggerChat.debug('Converting %d images to FileParts', images.length)
-        for (const image of images) {
-          const filePart = await imageToFilePart(image.path, image.mimeType)
-          parts.push(filePart as FilePartInput)
-        }
-      }
-
-      // Add text message
-      parts.push({ type: 'text', text: message } as TextPartInput)
+      // Build message parts (text + optional images)
+      const parts = await this.buildMessageParts(message, images)
 
       // Send message to session
       loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
       const response = await client.session.prompt({
         path: { id: activeSessionId },
-        body: {
-          parts
-        },
-        query: this.currentProjectDirectory
-          ? { directory: this.currentProjectDirectory }
-          : undefined
+        body: { parts },
+        query: this.getDirectoryQuery()
       })
 
       // Extract text from response parts
@@ -380,15 +468,7 @@ export class Toji extends EventEmitter {
     images?: ImageAttachment[],
     parseAttachments = true
   ): Promise<void> {
-    const client = this.getClient()
-    if (!client) {
-      const error = new Error('Client not connected to server')
-      loggerChat.error('Streaming chat failed - no client connected: %s', error.message)
-      if (callbacks.onError) {
-        await callbacks.onError(error)
-      }
-      throw error
-    }
+    const client = this.requireClient()
 
     // Parse @filename attachments if enabled
     const parsed = this.parseMessageAttachments(message, parseAttachments, images)
@@ -403,49 +483,14 @@ export class Toji extends EventEmitter {
     )
 
     try {
-      // Get or create session using SessionManager
-      let activeSessionId = sessionId
-      if (!activeSessionId && this.currentProjectDirectory) {
-        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
-      }
-
-      if (!activeSessionId) {
-        loggerChat.debug(
-          'Creating new session for project: %s',
-          this.currentProjectDirectory || 'unknown'
-        )
-        const sessionInfo = await this.sessions.createSession(
-          client,
-          undefined, // title
-          this.currentProjectDirectory
-        )
-        activeSessionId = sessionInfo.id
-        if (this.currentProjectDirectory) {
-          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
-        }
-        loggerChat.info('Created session: %s', activeSessionId)
-      }
+      // Resolve session (get existing or create new)
+      const activeSessionId = await this.resolveActiveSession(client, sessionId)
 
       // Subscribe to events FIRST
       const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
 
-      // Build parts array with text and optional images
-      const parts: Array<TextPartInput | FilePartInput> = []
-
-      // Add image parts first if provided
-      if (images && images.length > 0) {
-        loggerChat.debug('Converting %d images to FileParts', images.length)
-        for (const image of images) {
-          const filePart = await imageToFilePart(image.path, image.mimeType)
-          parts.push(filePart as FilePartInput)
-        }
-      }
-
-      // Add text message
-      parts.push({ type: 'text', text: message } as TextPartInput)
-
-      // Send message to session (this will trigger events)
-      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
+      // Build message parts (text + optional images)
+      const parts = await this.buildMessageParts(message, images)
 
       // Log detailed request information for debugging
       loggerChat.debug('=== SESSION PROMPT REQUEST ===')
@@ -456,14 +501,11 @@ export class Toji extends EventEmitter {
       loggerChat.debug('Total parts: %d', parts.length)
       loggerChat.debug('Parts breakdown: %s', parts.map((p) => p.type).join(', '))
 
+      // Send message to session (this will trigger events)
       await client.session.prompt({
         path: { id: activeSessionId },
-        body: {
-          parts
-        },
-        query: this.currentProjectDirectory
-          ? { directory: this.currentProjectDirectory }
-          : undefined
+        body: { parts },
+        query: this.getDirectoryQuery()
       })
 
       // Wait for events to complete
@@ -482,18 +524,13 @@ export class Toji extends EventEmitter {
     sessionId: string,
     callbacks: StreamCallbacks
   ): Promise<void> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     loggerChat.debug('Subscribing to events for session: %s', sessionId)
 
     try {
       const events = await client.event.subscribe({
-        query: this.currentProjectDirectory
-          ? { directory: this.currentProjectDirectory }
-          : undefined
+        query: this.getDirectoryQuery()
       })
 
       let fullText = ''
@@ -680,10 +717,7 @@ export class Toji extends EventEmitter {
       return []
     }
 
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     try {
       return await this.sessions.getSessionMessages(
@@ -809,18 +843,12 @@ export class Toji extends EventEmitter {
       return null
     }
 
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     try {
-      // Normalize path to forward slashes for OpenCode API
-      const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
-
       const response = await client.session.get({
         path: { id: activeSessionId },
-        query: normalizedPath ? { directory: normalizedPath } : undefined
+        query: this.getDirectoryQuery()
       })
 
       // Check if we got a valid session
@@ -909,20 +937,12 @@ export class Toji extends EventEmitter {
 
   // Session management methods for IPC
   async listSessions(): Promise<Session[]> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
-
-    const sessions = await this.sessions.listSessions(client, this.currentProjectDirectory)
-    return sessions
+    const client = this.requireClient()
+    return this.sessions.listSessions(client, this.currentProjectDirectory)
   }
 
   async createSession(title?: string): Promise<Session> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     const sessionInfo = await this.sessions.createSession(
       client,
@@ -939,11 +959,7 @@ export class Toji extends EventEmitter {
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
-
+    const client = this.requireClient()
     await this.sessions.deleteSession(client, sessionId, this.currentProjectDirectory)
   }
 
@@ -953,17 +969,11 @@ export class Toji extends EventEmitter {
     }
 
     // Verify session exists by trying to get it
-    const client = this.getClient()
-    if (!client) {
-      throw new Error('Client not connected to server')
-    }
-
-    // Normalize path to forward slashes for OpenCode API
-    const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+    const client = this.requireClient()
 
     const response = await client.session.get({
       path: { id: sessionId },
-      query: normalizedPath ? { directory: normalizedPath } : undefined
+      query: this.getDirectoryQuery()
     })
 
     // Check if we got a valid session
@@ -990,9 +1000,9 @@ export class Toji extends EventEmitter {
    * Load the most recent session for the current project
    */
   async loadMostRecentSession(): Promise<void> {
-    const client = this.getClient()
-    if (!client || !this.currentProjectDirectory) {
-      throw new Error('Cannot load session: client not connected or no project directory')
+    const client = this.requireClient()
+    if (!this.currentProjectDirectory) {
+      throw new Error('Cannot load session: no project directory')
     }
 
     try {
@@ -1003,12 +1013,9 @@ export class Toji extends EventEmitter {
         logger.debug('Found saved active session: %s', savedSessionId)
         // Verify it still exists
         try {
-          // Normalize path to forward slashes for OpenCode API
-          const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
-
           const response = await client.session.get({
             path: { id: savedSessionId },
-            query: normalizedPath ? { directory: normalizedPath } : undefined
+            query: this.getDirectoryQuery()
           })
 
           if (response) {
@@ -1137,11 +1144,7 @@ export class Toji extends EventEmitter {
 
   // Get available model providers from OpenCode
   async getModelProviders(): Promise<ConfigProvidersResponse> {
-    const client = this.getClient()
-    if (!client) {
-      logger.error('No client connected to server')
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     const raw = await client.config.providers()
     const response =
@@ -1219,11 +1222,7 @@ export class Toji extends EventEmitter {
    * This makes the provider available for model selection
    */
   async registerApiKey(providerId: string, apiKey: string): Promise<void> {
-    const client = this.getClient()
-    if (!client) {
-      logger.error('No client connected to server')
-      throw new Error('Client not connected to server')
-    }
+    const client = this.requireClient()
 
     try {
       await client.auth.set({

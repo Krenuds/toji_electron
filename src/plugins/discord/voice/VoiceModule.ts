@@ -509,7 +509,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
                   // Lock processing to prevent concurrent requests
                   session.isProcessing = true
-                  logger.debug('🔒 Processing lock engaged - blocking new audio input')
+                  logger.debug('Processing lock engaged - blocking new audio input')
 
                   this.emit('transcription', {
                     sessionId,
@@ -529,7 +529,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
 
               // Lock processing to prevent concurrent requests
               session.isProcessing = true
-              logger.debug('🔒 Processing lock engaged - blocking new audio input')
+              logger.debug('Processing lock engaged - blocking new audio input')
 
               this.emit('transcription', {
                 sessionId,
@@ -655,7 +655,7 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     const session = this.sessions.get(sessionId)
     if (session && session.isProcessing) {
       session.isProcessing = false
-      logger.debug('🔓 Processing lock released - ready for new audio input')
+      logger.debug('Processing lock released - ready for new audio input')
     }
   }
 

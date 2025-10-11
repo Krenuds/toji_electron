@@ -72,7 +72,7 @@ if (session.isProcessing) {
 ```typescript
 // Lock processing to prevent concurrent requests
 session.isProcessing = true
-logger.debug('🔒 Processing lock engaged - blocking new audio input')
+logger.debug('Processing lock engaged - blocking new audio input')
 
 this.emit('transcription', { ... })
 ```
@@ -84,7 +84,7 @@ unlockProcessing(sessionId: string): void {
   const session = this.sessions.get(sessionId)
   if (session && session.isProcessing) {
     session.isProcessing = false
-    logger.debug('🔓 Processing lock released - ready for new audio input')
+    logger.debug('Processing lock released - ready for new audio input')
   }
 }
 ```
@@ -223,9 +223,9 @@ onError: async (error) => {
 Look for these log messages:
 
 ```
-🔒 Processing lock engaged - blocking new audio input
+Processing lock engaged - blocking new audio input
 ⏸️  Bot is processing previous request, ignoring new audio: "..."
-🔓 Processing lock released - ready for new audio input
+Processing lock released - ready for new audio input
 ```
 
 ## Files Modified
