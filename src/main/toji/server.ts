@@ -492,12 +492,38 @@ export class ServerManager {
 
       proc.on('error', (error) => {
         clearTimeout(id)
-        const enhancedError = new Error(
-          `Failed to spawn OpenCode server: ${error.message}\n` +
-            `Binary path: ${binaryPath}\n` +
-            `Working directory: ${opts.cwd}`
-        )
-        reject(enhancedError)
+
+        // Provide specific diagnostics for ENOENT errors
+        if (error.message.includes('ENOENT')) {
+          const binaryExists = existsSync(binaryPath)
+          const cwdExists = existsSync(opts.cwd)
+
+          let specificMessage = 'Failed to spawn OpenCode server: '
+
+          if (!binaryExists) {
+            specificMessage +=
+              `Binary missing at ${binaryPath}\n` +
+              'Please reinstall OpenCode or check installation path.'
+          } else if (!cwdExists) {
+            specificMessage +=
+              `Working directory does not exist: ${opts.cwd}\n` +
+              'The project directory may have been deleted or moved.'
+          } else {
+            specificMessage +=
+              `Spawn failed with ENOENT but both binary and directory exist.\n` +
+              'This may be a permissions issue or missing dependencies.'
+          }
+
+          reject(new Error(specificMessage))
+        } else {
+          // For non-ENOENT errors, use generic enhanced message
+          const enhancedError = new Error(
+            `Failed to spawn OpenCode server: ${error.message}\n` +
+              `Binary path: ${binaryPath}\n` +
+              `Working directory: ${opts.cwd}`
+          )
+          reject(enhancedError)
+        }
       })
 
       if (opts.signal) {

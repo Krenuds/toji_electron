@@ -1,0 +1,95 @@
+// Startup Failure Flow - Visualizing the problem
+digraph startup_failure {
+  rankdir=TB
+  node [shape=box, style="rounded,filled", fontname="Helvetica"]
+
+  // Color scheme
+  // Green = working correctly
+  // Yellow = potential issue
+  // Red = failure point
+  // Blue = proposed fix location
+
+  subgraph cluster_startup {
+    label="src/main/index.ts - APP STARTUP"
+    style=filled
+    color=lightgrey
+
+    startup [label="Line 138:\nconst lastProject = config.getCurrentProjectPath()\n|| config.getOpencodeWorkingDirectory()" fillcolor=yellow]
+    check [label="❌ MISSING:\nNo validation if lastProject exists on disk" fillcolor=red]
+    server_start [label="Line 165:\nawait toji.server.start(undefined, lastProject)" fillcolor=yellow]
+    catch_block [label="Line 196-198:\ncatch (error) {\n  logger.debug(...)\n  throw error  // App continues running!\n}" fillcolor=red]
+
+    startup -> check [label="No check!"]
+    check -> server_start [label="Passes stale path:\nC:/Users/donth/testwork"]
+    server_start -> catch_block [label="ENOENT thrown"]
+  }
+
+  subgraph cluster_config {
+    label="src/main/config/ConfigProvider.ts"
+    style=filled
+    color=lightblue
+
+    get_current [label="Line 240:\ngetCurrentProjectPath(): string | undefined {\n  return this.store.get('projects.current')\n}" fillcolor=yellow]
+    store [label="electron-store\nC:/Users/donth/AppData/Roaming/toji3/config.json\n\nStored value: 'C:/Users/donth/testwork'\n(directory was DELETED)" fillcolor=red]
+
+    get_current -> store [label="Reads from\nencrypted store"]
+  }
+
+  subgraph cluster_server {
+    label="src/main/toji/server.ts - ServerManager"
+    style=filled
+    color=lightyellow
+
+    get_or_create [label="Line 44:\ngetOrCreateServer(directory, config)" fillcolor=lightgreen]
+    normalize [label="targetDirectory = normalizePath(directory)\nResult: C:/Users/donth/testwork" fillcolor=lightgreen]
+    spawn_call [label="Line 91:\nconst server = await this.spawnOpenCodeServer(options)" fillcolor=yellow]
+    spawn_impl [label="spawnOpenCodeServer(options: ServerOptions)\noptions.cwd = 'C:/Users/donth/testwork'" fillcolor=yellow]
+    node_spawn [label="child_process.spawn('opencode.exe', [...], {\n  cwd: 'C:/Users/donth/testwork'  // DOESN'T EXIST!\n})" fillcolor=red]
+    enoent [label="❌ ENOENT Error:\n'spawn C:\\Users\\donth\\.local\\share\\opencode\\bin\\opencode.exe ENOENT'\n\nMisleading message!\nBinary EXISTS, but working directory DOESN'T!" fillcolor=red]
+
+    get_or_create -> normalize
+    normalize -> spawn_call
+    spawn_call -> spawn_impl
+    spawn_impl -> node_spawn
+    node_spawn -> enoent [label="Error emitted"]
+  }
+
+  subgraph cluster_result {
+    label="Result: App Running But Broken"
+    style=filled
+    color="#ffcccc"
+
+    no_server [label="No OpenCode server running" fillcolor=red]
+    no_client [label="No client connection" fillcolor=red]
+    error_msgs [label="All operations fail:\n'Client not connected to server'" fillcolor=red]
+
+    no_server -> no_client -> error_msgs
+  }
+
+  // Cross-cluster connections
+  startup -> get_current [label="Calls"]
+  store -> startup [label="Returns:\nC:/Users/donth/testwork\n(deleted!)"]
+  server_start -> get_or_create [label="Forwards to"]
+  enoent -> catch_block [label="Thrown up\nthe stack"]
+  catch_block -> no_server [label="Error logged,\napp continues\nwithout server"]
+
+  // Proposed fixes (in blue)
+  fix1 [label="FIX 1 (Prevention):\nValidate project exists\nbefore server.start()" fillcolor=lightblue shape=note]
+  fix2 [label="FIX 2 (Fallback):\nIf server.start() fails,\nstart global server on CWD" fillcolor=lightblue shape=note]
+  fix3 [label="FIX 3 (Better Errors):\nDetect ENOENT cause:\n- Binary missing?\n- Working dir missing?\n- Permissions issue?" fillcolor=lightblue shape=note]
+
+  check -> fix1 [style=dashed color=blue label="Add here"]
+  catch_block -> fix2 [style=dashed color=blue label="Add here"]
+  enoent -> fix3 [style=dashed color=blue label="Improve here"]
+
+  // Legend
+  subgraph cluster_legend {
+    label="Legend"
+    rank=sink
+
+    legend_ok [label="Working" fillcolor=lightgreen]
+    legend_warn [label="Potential Issue" fillcolor=yellow]
+    legend_error [label="Failure Point" fillcolor=red]
+    legend_fix [label="Proposed Fix" fillcolor=lightblue]
+  }
+}

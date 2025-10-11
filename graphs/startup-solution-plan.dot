@@ -1,0 +1,100 @@
+// Startup Failure SOLUTION - Implementation Plan
+digraph startup_solution {
+  rankdir=TB
+  node [shape=box, style="rounded,filled", fontname="Helvetica"]
+
+  // Solution flow with all three fixes applied
+
+  subgraph cluster_fix1 {
+    label="FIX 1: Validate Project Path (src/main/index.ts)"
+    style=filled
+    color=lightblue
+
+    load_project [label="Line 138:\nconst lastProject = config.getCurrentProjectPath()\n|| config.getOpencodeWorkingDirectory()" fillcolor=lightgreen]
+    validate [label="NEW CODE:\nif (lastProject && !existsSync(lastProject)) {\n  logger.warn('Stored project deleted: %s', lastProject)\n  config.setCurrentProjectPath('')\n  lastProject = config.getOpencodeWorkingDirectory()\n}" fillcolor=lightblue]
+    clean_path [label="Result: lastProject is guaranteed\nto be a valid directory" fillcolor=lightgreen]
+
+    load_project -> validate -> clean_path
+  }
+
+  subgraph cluster_fix2 {
+    label="FIX 2: Fallback Server (src/main/index.ts)"
+    style=filled
+    color=lightblue
+
+    try_start [label="try {\n  await toji.server.start(undefined, lastProject)\n}" fillcolor=lightgreen]
+    catch_enoent [label="catch (error) {\n  if (error.message.includes('ENOENT')) {\n    logger.warn('Failed to start project server')\n    // Fallback logic here\n  }\n}" fillcolor=lightblue]
+    fallback_server [label="NEW CODE:\nlogger.info('Starting fallback global server')\nconst cwdPath = process.cwd()\nawait toji.server.start(undefined, cwdPath)" fillcolor=lightblue]
+    connect_fallback [label="await toji.connectClient(cwdPath)\nawait toji.changeWorkingDirectory(cwdPath)" fillcolor=lightblue]
+    success [label="App functional with global server" fillcolor=lightgreen]
+
+    try_start -> catch_enoent [label="ENOENT error"]
+    catch_enoent -> fallback_server
+    fallback_server -> connect_fallback
+    connect_fallback -> success
+  }
+
+  subgraph cluster_fix3 {
+    label="FIX 3: Better Error Messages (src/main/toji/server.ts)"
+    style=filled
+    color=lightblue
+
+    spawn_error [label="spawnOpenCodeServer catch block" fillcolor=yellow]
+    check_binary [label="NEW CODE:\nconst binaryExists = existsSync(binaryPath)" fillcolor=lightblue]
+    check_cwd [label="NEW CODE:\nconst cwdExists = existsSync(options.cwd)" fillcolor=lightblue]
+    detailed_error [label="NEW CODE:\nif (!binaryExists) {\n  throw new Error('OpenCode binary missing at: ' + binaryPath)\n}\nif (!cwdExists) {\n  throw new Error('Working directory missing: ' + options.cwd)\n}\nthrow new Error('Unknown spawn error: ' + originalError)" fillcolor=lightblue]
+    clear_message [label="User sees specific, actionable error" fillcolor=lightgreen]
+
+    spawn_error -> check_binary
+    check_binary -> check_cwd
+    check_cwd -> detailed_error
+    detailed_error -> clear_message
+  }
+
+  subgraph cluster_implementation {
+    label="Implementation Order"
+    style=filled
+    color="#e6f3ff"
+
+    step1 [label="STEP 1: Implement Fix 3\n(Better diagnostics)\n\nFile: src/main/toji/server.ts\nLines: ~280-310 (error handling)\n\nBenefit: Understand errors better" fillcolor="#cce6ff"]
+    step2 [label="STEP 2: Implement Fix 1\n(Prevention)\n\nFile: src/main/index.ts\nLines: ~138-142 (after getCurrentProjectPath)\n\nBenefit: Stop bad paths early" fillcolor="#cce6ff"]
+    step3 [label="STEP 3: Implement Fix 2\n(Safety net)\n\nFile: src/main/index.ts  \nLines: ~196-210 (in catch block)\n\nBenefit: Always have working server" fillcolor="#cce6ff"]
+    test [label="STEP 4: Test Scenarios\n\n1. Normal startup (existing project)\n2. Deleted project startup\n3. Missing binary\n4. Permission errors" fillcolor="#b3d9ff"]
+
+    step1 -> step2 -> step3 -> test [penwidth=3]
+  }
+
+  subgraph cluster_files {
+    label="Files to Modify"
+    style=filled
+    color="#fff0e6"
+
+    file1 [label="src/main/toji/server.ts\n\nModify: spawnOpenCodeServer()\nAdd: Detailed ENOENT checking\nLines affected: ~3-5 new lines" fillcolor="#ffe6cc"]
+    file2 [label="src/main/index.ts\n\nModify: Startup sequence\nAdd: Path validation + fallback\nLines affected: ~15-20 new lines" fillcolor="#ffe6cc"]
+
+    step1 -> file1 [style=dashed]
+    step2 -> file2 [style=dashed]
+    step3 -> file2 [style=dashed]
+  }
+
+  subgraph cluster_expected {
+    label="Expected Outcomes"
+    style=filled
+    color="#e6ffe6"
+
+    outcome1 [label="✅ Stale projects detected & cleared" fillcolor="#ccffcc"]
+    outcome2 [label="✅ Fallback server always available" fillcolor="#ccffcc"]
+    outcome3 [label="✅ Clear, actionable error messages" fillcolor="#ccffcc"]
+    outcome4 [label="✅ App never in broken state" fillcolor="#ccffcc"]
+
+    clean_path -> outcome1 [style=dashed color=green]
+    success -> outcome2 [style=dashed color=green]
+    clear_message -> outcome3 [style=dashed color=green]
+    test -> outcome4 [style=dashed color=green]
+  }
+
+  // Quality gates
+  qa [label="Quality Gates (MANDATORY)\n\nnpm run format\nnpm run lint\nnpm run typecheck:node\n\nAll must pass!" fillcolor="#ffcccc" shape=hexagon]
+
+  test -> qa [penwidth=2 color=red]
+}
