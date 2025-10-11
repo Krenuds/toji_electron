@@ -16,7 +16,24 @@ export type PermissionConfig = NonNullable<Config['permission']>
 // Model selection structure (primary + optional small model)
 export type ModelConfig = Pick<Config, 'model' | 'small_model'>
 
+/**
+ * Default OpenCode configuration for new projects
+ * Sets reasonable defaults including temperature for balanced AI responses
+ */
 export const defaultOpencodeConfig: Config = {
-  model: 'opencode/grok-code'
-  // Minimal config - only model is required
+  model: 'opencode/grok-code',
+  // Configure agents with default temperature of 0.5 (balanced responses)
+  // Temperature range: 0.0-0.2 (focused), 0.3-0.5 (balanced), 0.6-1.0 (creative)
+  // See: https://opencode.ai/docs/modes/#temperature
+  agent: {
+    build: {
+      temperature: 0.5
+    },
+    plan: {
+      temperature: 0.5
+    },
+    general: {
+      temperature: 0.5
+    }
+  }
 }
