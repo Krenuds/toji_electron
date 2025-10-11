@@ -28,14 +28,6 @@ export function registerInitializeProjectTool(
           .describe(
             'Full absolute path where the project should be initialized. Will be created if it does not exist.'
           ),
-        projectName: z
-          .string()
-          .optional()
-          .describe('Optional project name for opencode.json (defaults to directory name)'),
-        description: z
-          .string()
-          .optional()
-          .describe('Optional project description for opencode.json'),
         model: z
           .string()
           .optional()
@@ -57,7 +49,7 @@ export function registerInitializeProjectTool(
         message: z.string()
       }
     },
-    async ({ path: projectPath, projectName, description, model, autoSwitch = true }) => {
+    async ({ path: projectPath, model, autoSwitch = true }) => {
       const { getToji } = dependencies
 
       const toji = getToji()
@@ -107,9 +99,9 @@ export function registerInitializeProjectTool(
         }
 
         // Build config object first
+        // Note: Only 'model' is a valid OpenCode config field
+        // projectName and description are NOT valid OpenCode config fields per schema
         const config: Record<string, unknown> = {}
-        if (projectName) config.name = projectName
-        if (description) config.description = description
         if (model) config.model = model
 
         // Switch to the directory to set context
