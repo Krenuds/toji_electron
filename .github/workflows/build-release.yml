@@ -58,6 +58,7 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.artifact-path }}
+          retention-days: 1  # Delete artifacts after 1 day (only needed for release creation)
 
   release:
     needs: build
