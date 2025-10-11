@@ -9,23 +9,6 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand.setName('list').setDescription('List all available projects')
   )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName('add')
-      .setDescription('Add a new project')
-      .addStringOption((option) =>
-        option
-          .setName('path')
-          .setDescription('The absolute path to the project directory')
-          .setRequired(true)
-      )
-      .addStringOption((option) =>
-        option
-          .setName('name')
-          .setDescription('Optional custom name for the project')
-          .setRequired(false)
-      )
-  )
 
 export async function execute(
   interaction: ChatInputCommandInteraction,
@@ -45,10 +28,6 @@ export async function execute(
   switch (subcommand) {
     case 'list':
       await handleList(interaction, projectManager, toji)
-      break
-
-    case 'add':
-      await handleAdd(interaction)
       break
 
     default:
@@ -95,7 +74,7 @@ async function handleList(
     } else {
       embed.fields.push({
         name: 'No Discord Projects',
-        value: 'Use `/project add` to add a project',
+        value: 'Use `/init` to create channels from Toji projects',
         inline: false
       })
     }
@@ -107,16 +86,4 @@ async function handleList(
         '❌ Failed to list projects: ' + (error instanceof Error ? error.message : 'Unknown error')
     })
   }
-}
-
-async function handleAdd(interaction: ChatInputCommandInteraction): Promise<void> {
-  await interaction.deferReply()
-
-  const projectPath = interaction.options.getString('path', true)
-  const customName = interaction.options.getString('name') || undefined
-
-  // TODO: Implement proper project addition logic
-  await interaction.editReply({
-    content: `🚧 **Project Add - Coming Soon**\n\nRequested:\n- **Path:** \`${projectPath}\`\n- **Name:** ${customName || 'Auto-generated'}\n\n*This feature will be implemented in a future update. For now, use \`/init\` to rebuild channels from discovered projects.*`
-  })
 }

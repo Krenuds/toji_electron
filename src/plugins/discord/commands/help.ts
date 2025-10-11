@@ -43,12 +43,7 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
         value: 'List all available projects with their paths and Discord channels',
         inline: false
       },
-      {
-        name: '📂 /project add',
-        value:
-          'Add a new project to Toji and create its Discord channel\n• **path**: Absolute path to project directory (required)\n• **name**: Custom channel name (optional)',
-        inline: false
-      },
+
       {
         name: '──────────',
         value: '**Conversation Management**',
