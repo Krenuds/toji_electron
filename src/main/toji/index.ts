@@ -732,29 +732,6 @@ export class Toji extends EventEmitter {
     }
   }
 
-  // Get current session ID
-  getCurrentSessionId(): string | undefined {
-    if (!this.currentProjectDirectory) {
-      return undefined
-    }
-    return this.sessions.getActiveSession(this.currentProjectDirectory)
-  }
-
-  // Get current project directory
-  getCurrentProjectDirectory(): string | undefined {
-    return this.currentProjectDirectory
-  }
-
-  // Get the actual Node.js working directory
-  getCurrentWorkingDirectory(): string {
-    return process.cwd()
-  }
-
-  // Set global configuration
-  setGlobalConfig(): void {
-    // TODO: Implement global config if needed
-  }
-
   // Get available projects (from OpenCode SDK)
   async getAvailableProjects(): Promise<Array<Project>> {
     const client = this.getClient()
@@ -1110,11 +1087,6 @@ export class Toji extends EventEmitter {
     }
 
     return result
-  }
-
-  // Get all running servers info
-  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
-    return this.server.getAllServers()
   }
 
   // Get current project's configuration from OpenCode

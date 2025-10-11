@@ -1,6 +1,6 @@
 {
   "name": "toji3",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI-Powered Development Desktop Application with OpenCode Integration",
   "main": "./out/main/index.js",
   "author": "Toji Development Team",
