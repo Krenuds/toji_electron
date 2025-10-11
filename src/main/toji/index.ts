@@ -1,6 +1,15 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
 import { EventEmitter } from 'events'
-import type { OpencodeClient, Part, Message, Project, Provider, Event } from '@opencode-ai/sdk'
+import type {
+  OpencodeClient,
+  Part,
+  Message,
+  Project,
+  Provider,
+  Event,
+  TextPartInput,
+  FilePartInput
+} from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -11,7 +20,14 @@ import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import { McpManager } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type { ServerStatus, Session, StreamCallbacks, ToolEvent, ToolState } from './types'
+import type {
+  ServerStatus,
+  Session,
+  StreamCallbacks,
+  ToolEvent,
+  ToolState,
+  ImageAttachment
+} from './types'
 import type {
   OpencodeConfig,
   PermissionConfig,
@@ -20,6 +36,8 @@ import type {
   ModelConfig
 } from './config'
 import { createLogger } from '../utils/logger'
+import { imageToFilePart } from './image-utils'
+import { parseFileAttachments } from './attachment-parser'
 
 const logger = createLogger('toji:core')
 const loggerClient = createLogger('toji:client')
@@ -237,16 +255,49 @@ export class Toji extends EventEmitter {
     return Boolean(this.server.isRunning() && client)
   }
 
-  // Chat with the AI using session management
-  async chat(message: string, sessionId?: string): Promise<string> {
-    loggerChat.debug('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
+  /**
+   * Parse @filename attachments from message if enabled
+   * @private
+   */
+  private parseMessageAttachments(
+    message: string,
+    parseAttachments: boolean,
+    images?: ImageAttachment[]
+  ): { message: string; images?: ImageAttachment[] } {
+    if (parseAttachments && !images) {
+      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
+      loggerChat.debug('Parsed %d attachments from message', parsed.images.length)
+      return { message: parsed.cleanMessage, images: parsed.images }
+    }
+    return { message, images }
+  }
 
+  // Chat with the AI using session management
+  async chat(
+    message: string,
+    sessionId?: string,
+    images?: ImageAttachment[],
+    parseAttachments = true
+  ): Promise<string> {
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
       loggerChat.error('Chat failed - no client connected: %s', error.message)
       throw error
     }
+
+    // Parse @filename attachments if enabled
+    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
+    message = parsed.message
+    images = parsed.images
+
+    loggerChat.debug(
+      'Chat request: message="%s", sessionId=%s, images=%d, parseAttachments=%s',
+      message,
+      sessionId || 'auto',
+      images?.length || 0,
+      parseAttachments
+    )
 
     try {
       // Get or create session using SessionManager
@@ -272,12 +323,27 @@ export class Toji extends EventEmitter {
         loggerChat.debug('Created session: %s', activeSessionId)
       }
 
+      // Build parts array with text and optional images
+      const parts: Array<TextPartInput | FilePartInput> = []
+
+      // Add image parts first if provided
+      if (images && images.length > 0) {
+        loggerChat.debug('Converting %d images to FileParts', images.length)
+        for (const image of images) {
+          const filePart = await imageToFilePart(image.path, image.mimeType)
+          parts.push(filePart as FilePartInput)
+        }
+      }
+
+      // Add text message
+      parts.push({ type: 'text', text: message } as TextPartInput)
+
       // Send message to session
-      loggerChat.debug('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
       const response = await client.session.prompt({
         path: { id: activeSessionId },
         body: {
-          parts: [{ type: 'text', text: message }]
+          parts
         },
         query: this.currentProjectDirectory
           ? { directory: this.currentProjectDirectory }
@@ -294,7 +360,11 @@ export class Toji extends EventEmitter {
           .join('')
       }
 
-      loggerChat.debug('Chat response received: %d characters', responseText.length)
+      loggerChat.debug(
+        'Chat response received: %d characters - %s',
+        responseText.length,
+        responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
+      )
       return responseText
     } catch (error) {
       loggerChat.error('Chat failed: %o', error)
@@ -306,10 +376,10 @@ export class Toji extends EventEmitter {
   async chatStreaming(
     message: string,
     callbacks: StreamCallbacks,
-    sessionId?: string
+    sessionId?: string,
+    images?: ImageAttachment[],
+    parseAttachments = true
   ): Promise<void> {
-    loggerChat.debug('Streaming chat request: sessionId=%s', sessionId || 'auto')
-
     const client = this.getClient()
     if (!client) {
       const error = new Error('Client not connected to server')
@@ -319,6 +389,18 @@ export class Toji extends EventEmitter {
       }
       throw error
     }
+
+    // Parse @filename attachments if enabled
+    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
+    message = parsed.message
+    images = parsed.images
+
+    loggerChat.debug(
+      'Streaming chat request: sessionId=%s, images=%d, parseAttachments=%s',
+      sessionId || 'auto',
+      images?.length || 0,
+      parseAttachments
+    )
 
     try {
       // Get or create session using SessionManager
@@ -347,12 +429,37 @@ export class Toji extends EventEmitter {
       // Subscribe to events FIRST
       const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
 
+      // Build parts array with text and optional images
+      const parts: Array<TextPartInput | FilePartInput> = []
+
+      // Add image parts first if provided
+      if (images && images.length > 0) {
+        loggerChat.debug('Converting %d images to FileParts', images.length)
+        for (const image of images) {
+          const filePart = await imageToFilePart(image.path, image.mimeType)
+          parts.push(filePart as FilePartInput)
+        }
+      }
+
+      // Add text message
+      parts.push({ type: 'text', text: message } as TextPartInput)
+
       // Send message to session (this will trigger events)
-      loggerChat.debug('Sending message to session %s', activeSessionId)
+      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
+
+      // Log detailed request information for debugging
+      loggerChat.debug('=== SESSION PROMPT REQUEST ===')
+      loggerChat.debug('Session ID: %s', activeSessionId)
+      loggerChat.debug('Project: %s', this.currentProjectDirectory || 'none')
+      loggerChat.debug('Message length: %d chars', message.length)
+      loggerChat.debug('Message preview: %s', message.substring(0, 100))
+      loggerChat.debug('Total parts: %d', parts.length)
+      loggerChat.debug('Parts breakdown: %s', parts.map((p) => p.type).join(', '))
+
       await client.session.prompt({
         path: { id: activeSessionId },
         body: {
-          parts: [{ type: 'text', text: message }]
+          parts
         },
         query: this.currentProjectDirectory
           ? { directory: this.currentProjectDirectory }
@@ -466,7 +573,11 @@ export class Toji extends EventEmitter {
               properties: { sessionID: string }
             }
             if (idleEvent.properties.sessionID === sessionId) {
-              loggerChat.debug('Session idle - response complete (%d total chars)', fullText.length)
+              loggerChat.debug(
+                'Session idle - response complete: %d chars - %s',
+                fullText.length,
+                fullText.substring(0, 200) + (fullText.length > 200 ? '...' : '')
+              )
               isComplete = true
 
               if (callbacks.onComplete) {
@@ -486,7 +597,35 @@ export class Toji extends EventEmitter {
               properties: { sessionID?: string; error?: unknown }
             }
             if (errorEvent.properties.sessionID === sessionId) {
-              loggerChat.debug('Session error event: %o', errorEvent.properties.error)
+              loggerChat.debug('=== SESSION ERROR DETAILS ===')
+              loggerChat.debug('Session ID: %s', sessionId)
+              loggerChat.debug('Error object: %o', errorEvent.properties.error)
+              loggerChat.debug('Error type: %s', typeof errorEvent.properties.error)
+              loggerChat.debug(
+                'Error stringified: %s',
+                JSON.stringify(errorEvent.properties.error, null, 2)
+              )
+              loggerChat.debug('Full event: %o', errorEvent)
+
+              // Check if this is an Unprocessable Entity error (corrupted session state)
+              const errorStr = JSON.stringify(errorEvent.properties.error)
+              const isUnprocessableEntity = errorStr.includes('Unprocessable Entity')
+
+              if (isUnprocessableEntity) {
+                loggerChat.warn('⚠️ Unprocessable Entity error detected - session may be corrupted')
+                loggerChat.warn('Clearing corrupted session %s', sessionId)
+                // Delete the session to force creating a new one on retry
+                try {
+                  await client.session.delete({ path: { id: sessionId } })
+                  loggerChat.info(
+                    '🔄 Corrupted session deleted - next request will create new session'
+                  )
+                } catch (deleteError) {
+                  loggerChat.warn('Failed to delete corrupted session: %o', deleteError)
+                  // Continue anyway - session may still be unusable
+                }
+              }
+
               const error = new Error(
                 'Session error: ' + JSON.stringify(errorEvent.properties.error)
               )

@@ -65,6 +65,9 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/services" {label="services" "src/main/services/whisper-client.ts" [label=<whisper-client.ts> tooltip="whisper-client.ts" URL="src/main/services/whisper-client.ts" fillcolor="#ddfeff"] } } }
     "src/main/services/whisper-client.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/agents-template.ts" [label=<agents-template.ts> tooltip="agents-template.ts" URL="src/main/toji/agents-template.ts" fillcolor="#ddfeff"] } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/attachment-parser.ts" [label=<attachment-parser.ts> tooltip="attachment-parser.ts" URL="src/main/toji/attachment-parser.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/attachment-parser.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/attachment-parser.ts" -> "src/main/toji/types.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/client-manager.ts" [label=<client-manager.ts> tooltip="client-manager.ts" URL="src/main/toji/client-manager.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/client-manager.ts" -> "src/main/utils/logger.ts"
     "src/main/toji/client-manager.ts" -> "src/main/utils/path.ts"
@@ -75,13 +78,17 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/config-manager.ts" -> "src/main/toji/agents-template.ts"
     "src/main/toji/config-manager.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/config.ts" [label=<config.ts> tooltip="config.ts" URL="src/main/toji/config.ts" fillcolor="#ddfeff"] } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/image-utils.ts" [label=<image-utils.ts> tooltip="image-utils.ts" URL="src/main/toji/image-utils.ts" fillcolor="#ddfeff"] } } }
+    "src/main/toji/image-utils.ts" -> "src/main/utils/logger.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" "src/main/toji/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/index.ts" fillcolor="#ddfeff"] } } }
     "src/main/toji/index.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/utils/logger.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/attachment-parser.ts"
     "src/main/toji/index.ts" -> "src/main/toji/client-manager.ts"
     "src/main/toji/index.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/toji/config-manager.ts"
+    "src/main/toji/index.ts" -> "src/main/toji/image-utils.ts"
     "src/main/toji/index.ts" -> "src/main/toji/mcp/index.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project-initializer.ts"

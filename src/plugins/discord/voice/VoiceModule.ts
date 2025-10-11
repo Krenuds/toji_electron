@@ -103,6 +103,13 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
    */
   async initializeWithClient(client: Client): Promise<void> {
     this.client = client
+
+    // Set bot user ID so AudioReceiver can filter out bot's own audio
+    if (client.user) {
+      this.botUserId = client.user.id
+      logger.debug('Bot user ID set:', this.botUserId)
+    }
+
     logger.debug('VoiceModule initialized with Discord client')
   }
 
@@ -221,7 +228,8 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
       projectPath,
       projectChannelId,
       isListening: false, // Start in non-listening mode
-      wakeWord: config.wakeWord || 'listen'
+      wakeWord: config.wakeWord || 'listen',
+      isProcessing: false // Not processing any requests yet
     }
 
     // Store session
@@ -469,6 +477,14 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
               return
             }
 
+            // Check if bot is currently processing a previous request
+            if (session.isProcessing) {
+              logger.debug(
+                `⏸️  Bot is processing previous request, ignoring new audio: "${result.text}"`
+              )
+              return
+            }
+
             // Check for wake word in transcription
             const transcriptionLower = result.text.toLowerCase()
             const wakeWord = session.wakeWord.toLowerCase()
@@ -490,6 +506,11 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
                 if (textAfterWakeWord.length > 0) {
                   // Process the text that came after the wake word
                   logger.debug(`Processing text after wake word: "${textAfterWakeWord}"`)
+
+                  // Lock processing to prevent concurrent requests
+                  session.isProcessing = true
+                  logger.debug('🔒 Processing lock engaged - blocking new audio input')
+
                   this.emit('transcription', {
                     sessionId,
                     userId,
@@ -505,6 +526,11 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
             } else {
               // Already listening - process the transcription
               logger.debug(`Processing transcription (listening mode active): "${result.text}"`)
+
+              // Lock processing to prevent concurrent requests
+              session.isProcessing = true
+              logger.debug('🔒 Processing lock engaged - blocking new audio input')
+
               this.emit('transcription', {
                 sessionId,
                 userId,
@@ -619,6 +645,17 @@ export class VoiceModule extends EventEmitter implements DiscordModule {
     } catch (error) {
       logger.debug('Error speaking:', error)
       return false
+    }
+  }
+
+  /**
+   * Unlock processing for a session (allow new audio input)
+   */
+  unlockProcessing(sessionId: string): void {
+    const session = this.sessions.get(sessionId)
+    if (session && session.isProcessing) {
+      session.isProcessing = false
+      logger.debug('🔓 Processing lock released - ready for new audio input')
     }
   }
 

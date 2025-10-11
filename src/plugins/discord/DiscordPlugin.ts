@@ -240,6 +240,8 @@ export class DiscordPlugin extends EventEmitter {
                   const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
                   if (guildSession) {
                     await this.voiceModule.speak(guildSession.id, fullText)
+                    // Unlock processing after speaking completes
+                    this.voiceModule.unlockProcessing(guildSession.id)
                   }
                 }
               },
@@ -252,6 +254,15 @@ export class DiscordPlugin extends EventEmitter {
                   await progressMessage.edit({ embeds: [errorEmbed] })
                 } else {
                   await message.reply('❌ Error: ' + error.message)
+                }
+
+                // Unlock processing on error
+                if (this.voiceModule && message.guildId) {
+                  const sessions = this.voiceModule.getAllSessions()
+                  const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
+                  if (guildSession) {
+                    this.voiceModule.unlockProcessing(guildSession.id)
+                  }
                 }
               }
             })
@@ -360,6 +371,8 @@ export class DiscordPlugin extends EventEmitter {
                 const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
                 if (guildSession) {
                   await this.voiceModule.speak(guildSession.id, fullText)
+                  // Unlock processing after speaking completes
+                  this.voiceModule.unlockProcessing(guildSession.id)
                 }
               }
             },
@@ -372,6 +385,15 @@ export class DiscordPlugin extends EventEmitter {
                 await progressMessage.edit({ embeds: [errorEmbed] })
               } else {
                 await message.reply('❌ Error: ' + error.message)
+              }
+
+              // Unlock processing on error
+              if (this.voiceModule && message.guildId) {
+                const sessions = this.voiceModule.getAllSessions()
+                const guildSession = sessions.find((s) => s.config.guildId === message.guildId)
+                if (guildSession) {
+                  this.voiceModule.unlockProcessing(guildSession.id)
+                }
               }
             }
           })
