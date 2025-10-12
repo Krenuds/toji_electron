@@ -32,4 +32,9 @@ export function registerProjectHandlers(toji: Toji): void {
       throw error
     }
   })
+
+  // Delete a project
+  ipcMain.handle('toji:project:delete', async (_, projectPath: string) => {
+    return await toji.project.deleteProject(projectPath)
+  })
 }

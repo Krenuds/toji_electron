@@ -1,6 +1,9 @@
 // Project management module for Toji
 import type { OpencodeClient, Project } from '@opencode-ai/sdk'
 import { createLogger } from '../utils/logger'
+import * as fs from 'fs/promises'
+import * as path from 'path'
+import * as os from 'os'
 
 const logger = createLogger('toji:project')
 
@@ -66,5 +69,53 @@ export class ProjectManager {
       name: project.worktree.split(/[/\\]/).pop() || project.worktree,
       sdkProject: project
     }))
+  }
+
+  /**
+   * Delete a project from OpenCode storage
+   * This removes the project JSON file from ~/.local/share/opencode/storage/project/
+   */
+  async deleteProject(projectPath: string): Promise<void> {
+    logger.info('Deleting project: %s', projectPath)
+
+    // Get the projects storage directory
+    const homeDir = os.homedir()
+    const projectsDir = path.join(homeDir, '.local', 'share', 'opencode', 'storage', 'project')
+
+    try {
+      // Read all project JSON files
+      const files = await fs.readdir(projectsDir)
+      const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'global.json')
+
+      // Find the file that contains this project path
+      for (const file of jsonFiles) {
+        const filePath = path.join(projectsDir, file)
+        try {
+          const content = await fs.readFile(filePath, 'utf-8')
+          const projectData = JSON.parse(content)
+
+          // Normalize paths for comparison (handle forward/backslashes)
+          const normalizedWorktree = projectData.worktree?.replace(/\\/g, '/')
+          const normalizedProjectPath = projectPath.replace(/\\/g, '/')
+
+          if (normalizedWorktree === normalizedProjectPath) {
+            // Found the matching project file - delete it
+            await fs.unlink(filePath)
+            logger.info('Successfully deleted project file: %s', file)
+            return
+          }
+        } catch (err) {
+          // Skip files that can't be read or parsed
+          logger.debug('Skipping file %s: %o', file, err)
+        }
+      }
+
+      // If we get here, project wasn't found
+      logger.warn('Project not found in storage: %s', projectPath)
+      throw new Error(`Project not found: ${projectPath}`)
+    } catch (error) {
+      logger.error('Failed to delete project: %o', error)
+      throw error
+    }
   }
 }

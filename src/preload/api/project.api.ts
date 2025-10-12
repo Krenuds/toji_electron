@@ -16,5 +16,9 @@ export const projectAPI = {
   // Core SDK methods
   list: (): Promise<Project[]> => ipcRenderer.invoke('toji:project:list'),
   current: (): Promise<Project | null> => ipcRenderer.invoke('toji:project:current'),
-  getAll: (): Promise<ProjectInfo[]> => ipcRenderer.invoke('toji:project:get-all')
+  getAll: (): Promise<ProjectInfo[]> => ipcRenderer.invoke('toji:project:get-all'),
+
+  // Project management
+  delete: (projectPath: string): Promise<void> =>
+    ipcRenderer.invoke('toji:project:delete', projectPath)
 }
