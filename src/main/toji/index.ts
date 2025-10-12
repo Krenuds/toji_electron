@@ -632,17 +632,21 @@ export class Toji extends EventEmitter {
                   query: this.getDirectoryQuery()
                 })
 
-                // Get the last assistant message
-                if (messages.data && messages.data.length > 0) {
-                  const lastMessage = messages.data[messages.data.length - 1]
-                  if (lastMessage.info.role === 'assistant') {
-                    agentMode = lastMessage.info.mode
-                    modelId = lastMessage.info.modelID
-                    providerId = lastMessage.info.providerID
+                // SDK returns array directly, not wrapped in .data
+                if (Array.isArray(messages) && messages.length > 0) {
+                  // Find the last assistant message
+                  for (let i = messages.length - 1; i >= 0; i--) {
+                    const msg = messages[i]
+                    if (msg.info && msg.info.role === 'assistant') {
+                      agentMode = msg.info.mode || 'unknown'
+                      modelId = msg.info.modelID || 'unknown'
+                      providerId = msg.info.providerID || 'unknown'
+                      break
+                    }
                   }
                 }
               } catch (error) {
-                loggerChat.debug('Could not fetch message info for agent mode: %o', error)
+                loggerChat.debug('ERROR: Could not fetch message info for agent mode: %o', error)
               }
 
               loggerChat.debug(

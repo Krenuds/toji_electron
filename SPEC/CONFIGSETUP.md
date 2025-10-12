@@ -39,17 +39,19 @@ npm r> toji3@0.2.0 typecheck
 src/main/toji/index.ts:266:3 - error TS2393: Duplicate function implementation.
 
 266 getCurrentProjectDirectory(): string | undefined {
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+```
 
 src/main/toji/index.ts:270:3 - error TS2393: Duplicate function implementation.
 
 270 getCurrentWorkingDirectory(): string {
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 src/main/toji/index.ts:274:3 - error TS2393: Duplicate function implementation.
 
 274 getCurrentSessionId(): string | undefined {
-~~~~~~~~~~~~~~~~~~~
+
+```
 
 src/main/toji/index.ts:281:3 - error TS2393: Duplicate function implementation.
 
@@ -64,22 +66,24 @@ src/main/toji/index.ts:285:3 - error TS2393: Duplicate function implementation.
 src/main/toji/index.ts:736:3 - error TS2393: Duplicate function implementation.
 
 736 getCurrentSessionId(): string | undefined {
-~~~~~~~~~~~~~~~~~~~
+```
 
 src/main/toji/index.ts:744:3 - error TS2393: Duplicate function implementation.
 
 744 getCurrentProjectDirectory(): string | undefined {
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+```
 
 src/main/toji/index.ts:749:3 - error TS2393: Duplicate function implementation.
 
 749 getCurrentWorkingDirectory(): string {
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 src/main/toji/index.ts:754:3 - error TS2393: Duplicate function implementation.
 
 754 setGlobalConfig(): void {
-~~~~~~~~~~~~~~~
+
+````
 
 src/main/toji/index.ts:1116:3 - error TS2393: Duplicate function implementation.
 
@@ -701,3 +705,4 @@ Instead of just creating static templates, we should:
 
 Should I create a plan for expanding the SettingsDrawer to cover more configuration options, or focus first on implementing the template system?
 </assistant>
+````
