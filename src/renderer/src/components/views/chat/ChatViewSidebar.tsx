@@ -29,22 +29,6 @@ export function ChatViewSidebar(): React.JSX.Element {
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null)
   const [switchingSessionId, setSwitchingSessionId] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  // const [workingDirectory, setWorkingDirectory] = useState<string | undefined>() // Not currently used
-
-  // Fetch working directory on mount and when project changes
-  // Currently not used, but keeping for future use
-  // useEffect(() => {
-  //   const fetchWorkingDirectory = async (): Promise<void> => {
-  //     try {
-  //       const info = await window.api.toji.getCurrentProject()
-  //       setWorkingDirectory(info.workingDirectory)
-  //     } catch (error) {
-  //       console.error('Failed to get working directory:', error)
-  //     }
-  //   }
-  //
-  //   fetchWorkingDirectory()
-  // }, [currentProject])
 
   const handleDeleteSession = async (sessionId: string): Promise<void> => {
     if (deletingSessionId) return
