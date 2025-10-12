@@ -16,16 +16,13 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
-            artifact-name: macos-dmg
-            artifact-path: dist/*.dmg
+            file-pattern: '*.dmg'
           - os: windows-latest
             platform: win
-            artifact-name: windows-exe
-            artifact-path: dist/*.exe
+            file-pattern: '*.exe'
           - os: ubuntu-latest
             platform: linux
-            artifact-name: linux-appimage
-            artifact-path: dist/*.AppImage
+            file-pattern: '*.AppImage'
 
     runs-on: ${{ matrix.os }}
 
@@ -53,40 +50,10 @@ jobs:
       - name: Build
         run: npm run build:${{ matrix.platform }} -- --publish never
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact-name }}
-          path: ${{ matrix.artifact-path }}
-          retention-days: 1 # Delete artifacts after 1 day (only needed for release creation)
-
-  release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-dmg
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-exe
-
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-appimage
-
-      - name: Create Release
+      - name: Upload to Release (no artifacts)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            *.dmg
-            *.exe
-            *.AppImage
+          files: dist/${{ matrix.file-pattern }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
