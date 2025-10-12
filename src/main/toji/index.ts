@@ -438,22 +438,33 @@ export class Toji extends EventEmitter {
         query: this.getDirectoryQuery()
       })
 
+      // Extract agent mode and model info from response
+      const agentMode = response?.data?.info?.mode || 'unknown'
+      const modelId = response?.data?.info?.modelID || 'unknown'
+      const providerId = response?.data?.info?.providerID || 'unknown'
+
       // Extract text from response parts
       let responseText = ''
-      if (response && 'parts' in response) {
-        const parts = (response as { parts: Part[] }).parts
+      if (response && 'data' in response && response.data && 'parts' in response.data) {
+        const parts = response.data.parts
         responseText = parts
           .filter((part: Part) => part.type === 'text')
           .map((part: Part) => (part as { text: string }).text)
           .join('')
       }
 
+      // Append agent mode to response for user visibility
+      const responseWithMode = `[${agentMode}] ${responseText}`
+
       loggerChat.debug(
-        'Chat response received: %d characters - %s',
+        'Chat response: agent=%s, model=%s/%s, %d characters - %s',
+        agentMode,
+        providerId,
+        modelId,
         responseText.length,
         responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
       )
-      return responseText
+      return responseWithMode
     } catch (error) {
       loggerChat.error('Chat failed: %o', error)
       throw error
@@ -610,15 +621,45 @@ export class Toji extends EventEmitter {
               properties: { sessionID: string }
             }
             if (idleEvent.properties.sessionID === sessionId) {
+              // Fetch the latest message to get agent mode info
+              let agentMode = 'unknown'
+              let modelId = 'unknown'
+              let providerId = 'unknown'
+
+              try {
+                const messages = await client.session.messages({
+                  path: { id: sessionId },
+                  query: this.getDirectoryQuery()
+                })
+
+                // Get the last assistant message
+                if (messages.data && messages.data.length > 0) {
+                  const lastMessage = messages.data[messages.data.length - 1]
+                  if (lastMessage.info.role === 'assistant') {
+                    agentMode = lastMessage.info.mode
+                    modelId = lastMessage.info.modelID
+                    providerId = lastMessage.info.providerID
+                  }
+                }
+              } catch (error) {
+                loggerChat.debug('Could not fetch message info for agent mode: %o', error)
+              }
+
               loggerChat.debug(
-                'Session idle - response complete: %d chars - %s',
+                'Session idle: agent=%s, model=%s/%s, %d chars - %s',
+                agentMode,
+                providerId,
+                modelId,
                 fullText.length,
                 fullText.substring(0, 200) + (fullText.length > 200 ? '...' : '')
               )
               isComplete = true
 
+              // Append agent mode to response text
+              const responseWithMode = `[${agentMode}] ${fullText}`
+
               if (callbacks.onComplete) {
-                await callbacks.onComplete(fullText)
+                await callbacks.onComplete(responseWithMode)
               }
 
               // Exit the event loop
