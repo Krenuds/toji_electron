@@ -1,15 +1,7 @@
 // Minimal Toji implementation with multi-server OpenCode SDK usage
 import { EventEmitter } from 'events'
-import type {
-  OpencodeClient,
-  Part,
-  Message,
-  Project,
-  Provider,
-  Event,
-  TextPartInput,
-  FilePartInput
-} from '@opencode-ai/sdk'
+import { platform } from 'os'
+import type { OpencodeClient, Part, Message, Project, Provider, Event } from '@opencode-ai/sdk'
 import type { OpenCodeService } from '../services/opencode-service'
 import type { ConfigProvider } from '../config/ConfigProvider'
 import { ProjectManager } from './project'
@@ -20,14 +12,7 @@ import { ConfigManager } from './config-manager'
 import { ClientManager } from './client-manager'
 import { McpManager } from './mcp'
 import type { ProjectStatus, InitializationResult } from './project-initializer'
-import type {
-  ServerStatus,
-  Session,
-  StreamCallbacks,
-  ToolEvent,
-  ToolState,
-  ImageAttachment
-} from './types'
+import type { ServerStatus, Session, StreamCallbacks, ToolEvent, ToolState } from './types'
 import type {
   OpencodeConfig,
   PermissionConfig,
@@ -36,8 +21,6 @@ import type {
   ModelConfig
 } from './config'
 import { createLogger } from '../utils/logger'
-import { imageToFilePart } from './image-utils'
-import { parseFileAttachments } from './attachment-parser'
 
 const logger = createLogger('toji:core')
 const loggerClient = createLogger('toji:client')
@@ -47,6 +30,20 @@ const DEFAULT_PERMISSION_TEMPLATE: PermissionConfig = {
   edit: 'ask',
   bash: 'ask',
   webfetch: 'ask'
+}
+
+/**
+ * Check if a directory is a protected system location that requires elevated permissions
+ * @param directory The directory path to check
+ * @returns True if the directory is protected (root drive on Windows, / on Unix)
+ */
+function isProtectedDirectory(directory: string): boolean {
+  if (platform() === 'win32') {
+    // Check if it's a root drive (C:\, D:\, etc.) - requires admin rights
+    return /^[A-Z]:\\?$/i.test(directory)
+  }
+  // On Unix-like systems, check for root
+  return directory === '/'
 }
 
 type ConfigProvidersResponse = {
@@ -128,18 +125,19 @@ export class Toji extends EventEmitter {
   }
 
   // ========================================================================================
-  // Service Registry (replaces old setters)
+  // Service Registry (MCP Service Registration)
   // ========================================================================================
 
   private mcpServices = new Map<string, unknown>()
 
   /**
    * Register an MCP service for tool access
+   * Replaces old direct setters for better extensibility
    */
   registerMCPService<T>(name: string, service: T): void {
     this.mcpServices.set(name, service)
     this.mcp.registerService(name, service)
-    logger.debug(`Registered MCP service: ${name}`)
+    logger.debug('Registered MCP service: %s', name)
   }
 
   /**
@@ -156,10 +154,6 @@ export class Toji extends EventEmitter {
     return this.mcpServices.has(name)
   }
 
-  // ========================================================================================
-  // Server & Client Management - Connection, server lifecycle, directory management
-  // ========================================================================================
-
   async getServerStatus(): Promise<ServerStatus> {
     return this.server.getStatus()
   }
@@ -169,22 +163,14 @@ export class Toji extends EventEmitter {
     const targetDirectory = directory || process.cwd()
     loggerClient.debug('Connecting client for directory: %s', targetDirectory)
 
-    // Create MCP server and register it via ConfigManager
+    // Create MCP server FIRST so opencode.json is ready when OpenCode starts
     try {
-      const mcpInstance = await this.mcp.createServerForProject({
+      await this.mcp.createServerForProject({
         projectDirectory: targetDirectory
       })
-      logger.debug(
-        'MCP server created on port %d for project: %s',
-        mcpInstance.port,
-        targetDirectory
-      )
-
-      // Register MCP in opencode.json via ConfigManager (single source of truth)
-      await this.configManager.registerMcpServer(targetDirectory, mcpInstance.port)
-      logger.debug('MCP server registered in opencode.json for: %s', targetDirectory)
+      logger.debug('MCP server created for project: %s', targetDirectory)
     } catch (error) {
-      logger.warn('Failed to create/register MCP server: %o', error)
+      logger.warn('Failed to create MCP server: %o', error)
       // Don't throw - MCP is optional functionality
     }
 
@@ -233,8 +219,16 @@ export class Toji extends EventEmitter {
     this.currentProjectDirectory = directory
     loggerClient.info('Project directory set to: %s', directory)
 
-    // Note: MCP server is created in connectClient(), not here
-    // This method just changes the working directory and updates config
+    // Try to create MCP server for this project
+    try {
+      await this.mcp.createServerForProject({
+        projectDirectory: directory
+      })
+      logger.debug('MCP server created for project: %s', directory)
+    } catch (error) {
+      logger.debug('Warning: Failed to create MCP server: %o', error)
+      // Don't throw - MCP is optional functionality
+    }
 
     // Save as current project in config
     const config = this._config
@@ -253,218 +247,71 @@ export class Toji extends EventEmitter {
     loggerClient.info('Emitted project:opened event for: %s', projectName)
   }
 
-  // ========================================================================================
-  // Utility & Accessor Methods - Status checks, directory getters
-  // ========================================================================================
-
   // Check if ready
   isReady(): boolean {
     const client = this.getClient()
     return Boolean(this.server.isRunning() && client)
   }
 
-  getCurrentProjectDirectory(): string | undefined {
-    return this.currentProjectDirectory
-  }
+  // Chat with the AI using session management
+  async chat(message: string, sessionId?: string): Promise<string> {
+    loggerChat.debug('Chat request: message="%s", sessionId=%s', message, sessionId || 'auto')
 
-  getCurrentWorkingDirectory(): string {
-    return process.cwd()
-  }
-
-  getCurrentSessionId(): string | undefined {
-    if (!this.currentProjectDirectory) {
-      return undefined
-    }
-    return this.sessions.getActiveSession(this.currentProjectDirectory)
-  }
-
-  setGlobalConfig(): void {
-    // TODO: Implement global config if needed
-  }
-
-  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
-    return this.server.getAllServers()
-  }
-
-  /**
-   * Parse @filename attachments from message if enabled
-   * @private
-   */
-  private parseMessageAttachments(
-    message: string,
-    parseAttachments: boolean,
-    images?: ImageAttachment[]
-  ): { message: string; images?: ImageAttachment[] } {
-    if (parseAttachments && !images) {
-      const parsed = parseFileAttachments(message, this.currentProjectDirectory)
-      loggerChat.debug('Parsed %d attachments from message', parsed.images.length)
-      return { message: parsed.cleanMessage, images: parsed.images }
-    }
-    return { message, images }
-  }
-
-  // ========================================================================================
-  // Private Helper Methods - Reusable logic extracted from public methods
-  // ========================================================================================
-
-  /**
-   * Get the current client or throw an error if not connected
-   * @private
-   */
-  private requireClient(): OpencodeClient {
     const client = this.getClient()
     if (!client) {
-      throw new Error('Client not connected to server')
+      const error = new Error('Client not connected to server')
+      loggerChat.error('Chat failed - no client connected: %s', error.message)
+      throw error
     }
-    return client
-  }
-
-  /**
-   * Get normalized project path (forward slashes for OpenCode API)
-   * @private
-   */
-  private getNormalizedProjectPath(): string | undefined {
-    return this.currentProjectDirectory?.replace(/\\/g, '/')
-  }
-
-  /**
-   * Build directory query parameter for OpenCode API calls
-   * @private
-   */
-  private getDirectoryQuery(): { directory: string } | undefined {
-    const normalizedPath = this.getNormalizedProjectPath()
-    return normalizedPath ? { directory: normalizedPath } : undefined
-  }
-
-  /**
-   * Resolve the active session ID - get existing or create new
-   * @private
-   */
-  private async resolveActiveSession(client: OpencodeClient, sessionId?: string): Promise<string> {
-    // Use provided session ID if available
-    let activeSessionId = sessionId
-
-    // Try to get active session from current project
-    if (!activeSessionId && this.currentProjectDirectory) {
-      activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
-    }
-
-    // Create new session if none exists
-    if (!activeSessionId) {
-      loggerChat.debug(
-        'Creating new session for project: %s',
-        this.currentProjectDirectory || 'unknown'
-      )
-      const sessionInfo = await this.sessions.createSession(
-        client,
-        undefined, // title
-        this.currentProjectDirectory
-      )
-      activeSessionId = sessionInfo.id
-
-      // Set as active session
-      if (this.currentProjectDirectory) {
-        this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
-      }
-      loggerChat.debug('Created session: %s', activeSessionId)
-    }
-
-    return activeSessionId
-  }
-
-  /**
-   * Build parts array from message and optional images
-   * @private
-   */
-  private async buildMessageParts(
-    message: string,
-    images?: ImageAttachment[]
-  ): Promise<Array<TextPartInput | FilePartInput>> {
-    const parts: Array<TextPartInput | FilePartInput> = []
-
-    // Add image parts first if provided
-    if (images && images.length > 0) {
-      loggerChat.debug('Converting %d images to FileParts', images.length)
-      for (const image of images) {
-        const filePart = await imageToFilePart(image.path, image.mimeType)
-        parts.push(filePart as FilePartInput)
-      }
-    }
-
-    // Add text message
-    parts.push({ type: 'text', text: message } as TextPartInput)
-
-    return parts
-  }
-
-  // ========================================================================================
-  // Chat Methods - AI Interaction
-  // ========================================================================================
-
-  // Chat with the AI using session management
-  async chat(
-    message: string,
-    sessionId?: string,
-    images?: ImageAttachment[],
-    parseAttachments = true
-  ): Promise<string> {
-    const client = this.requireClient()
-
-    // Parse @filename attachments if enabled
-    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
-    message = parsed.message
-    images = parsed.images
-
-    loggerChat.debug(
-      'Chat request: message="%s", sessionId=%s, images=%d, parseAttachments=%s',
-      message,
-      sessionId || 'auto',
-      images?.length || 0,
-      parseAttachments
-    )
 
     try {
-      // Resolve session (get existing or create new)
-      const activeSessionId = await this.resolveActiveSession(client, sessionId)
+      // Get or create session using SessionManager
+      let activeSessionId = sessionId
+      if (!activeSessionId && this.currentProjectDirectory) {
+        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+      }
 
-      // Build message parts (text + optional images)
-      const parts = await this.buildMessageParts(message, images)
+      if (!activeSessionId) {
+        loggerChat.debug(
+          'Creating new session for project: %s',
+          this.currentProjectDirectory || 'unknown'
+        )
+        const sessionInfo = await this.sessions.createSession(
+          client,
+          undefined, // title
+          this.currentProjectDirectory
+        )
+        activeSessionId = sessionInfo.id
+        if (this.currentProjectDirectory) {
+          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
+        }
+        loggerChat.debug('Created session: %s', activeSessionId)
+      }
 
       // Send message to session
-      loggerChat.debug('Sending message to session %s with %d parts', activeSessionId, parts.length)
+      loggerChat.debug('Sending message to session %s', activeSessionId)
       const response = await client.session.prompt({
         path: { id: activeSessionId },
-        body: { parts },
-        query: this.getDirectoryQuery()
+        body: {
+          parts: [{ type: 'text', text: message }]
+        },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
       })
-
-      // Extract agent mode and model info from response
-      const agentMode = response?.data?.info?.mode || 'unknown'
-      const modelId = response?.data?.info?.modelID || 'unknown'
-      const providerId = response?.data?.info?.providerID || 'unknown'
 
       // Extract text from response parts
       let responseText = ''
-      if (response && 'data' in response && response.data && 'parts' in response.data) {
-        const parts = response.data.parts
+      if (response && 'parts' in response) {
+        const parts = (response as { parts: Part[] }).parts
         responseText = parts
           .filter((part: Part) => part.type === 'text')
           .map((part: Part) => (part as { text: string }).text)
           .join('')
       }
 
-      // Append agent mode to response for user visibility
-      const responseWithMode = `[${agentMode}] ${responseText}`
-
-      loggerChat.debug(
-        'Chat response: agent=%s, model=%s/%s, %d characters - %s',
-        agentMode,
-        providerId,
-        modelId,
-        responseText.length,
-        responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
-      )
-      return responseWithMode
+      loggerChat.debug('Chat response received: %d characters', responseText.length)
+      return responseText
     } catch (error) {
       loggerChat.error('Chat failed: %o', error)
       throw error
@@ -475,48 +322,57 @@ export class Toji extends EventEmitter {
   async chatStreaming(
     message: string,
     callbacks: StreamCallbacks,
-    sessionId?: string,
-    images?: ImageAttachment[],
-    parseAttachments = true
+    sessionId?: string
   ): Promise<void> {
-    const client = this.requireClient()
+    loggerChat.debug('Streaming chat request: sessionId=%s', sessionId || 'auto')
 
-    // Parse @filename attachments if enabled
-    const parsed = this.parseMessageAttachments(message, parseAttachments, images)
-    message = parsed.message
-    images = parsed.images
-
-    loggerChat.debug(
-      'Streaming chat request: sessionId=%s, images=%d, parseAttachments=%s',
-      sessionId || 'auto',
-      images?.length || 0,
-      parseAttachments
-    )
+    const client = this.getClient()
+    if (!client) {
+      const error = new Error('Client not connected to server')
+      loggerChat.error('Streaming chat failed - no client connected: %s', error.message)
+      if (callbacks.onError) {
+        await callbacks.onError(error)
+      }
+      throw error
+    }
 
     try {
-      // Resolve session (get existing or create new)
-      const activeSessionId = await this.resolveActiveSession(client, sessionId)
+      // Get or create session using SessionManager
+      let activeSessionId = sessionId
+      if (!activeSessionId && this.currentProjectDirectory) {
+        activeSessionId = this.sessions.getActiveSession(this.currentProjectDirectory)
+      }
+
+      if (!activeSessionId) {
+        loggerChat.debug(
+          'Creating new session for project: %s',
+          this.currentProjectDirectory || 'unknown'
+        )
+        const sessionInfo = await this.sessions.createSession(
+          client,
+          undefined, // title
+          this.currentProjectDirectory
+        )
+        activeSessionId = sessionInfo.id
+        if (this.currentProjectDirectory) {
+          this.sessions.setActiveSession(activeSessionId, this.currentProjectDirectory)
+        }
+        loggerChat.info('Created session: %s', activeSessionId)
+      }
 
       // Subscribe to events FIRST
       const eventPromise = this.subscribeToSessionEvents(activeSessionId, callbacks)
 
-      // Build message parts (text + optional images)
-      const parts = await this.buildMessageParts(message, images)
-
-      // Log detailed request information for debugging
-      loggerChat.debug('=== SESSION PROMPT REQUEST ===')
-      loggerChat.debug('Session ID: %s', activeSessionId)
-      loggerChat.debug('Project: %s', this.currentProjectDirectory || 'none')
-      loggerChat.debug('Message length: %d chars', message.length)
-      loggerChat.debug('Message preview: %s', message.substring(0, 100))
-      loggerChat.debug('Total parts: %d', parts.length)
-      loggerChat.debug('Parts breakdown: %s', parts.map((p) => p.type).join(', '))
-
       // Send message to session (this will trigger events)
+      loggerChat.debug('Sending message to session %s', activeSessionId)
       await client.session.prompt({
         path: { id: activeSessionId },
-        body: { parts },
-        query: this.getDirectoryQuery()
+        body: {
+          parts: [{ type: 'text', text: message }]
+        },
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
       })
 
       // Wait for events to complete
@@ -535,13 +391,18 @@ export class Toji extends EventEmitter {
     sessionId: string,
     callbacks: StreamCallbacks
   ): Promise<void> {
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
 
     loggerChat.debug('Subscribing to events for session: %s', sessionId)
 
     try {
       const events = await client.event.subscribe({
-        query: this.getDirectoryQuery()
+        query: this.currentProjectDirectory
+          ? { directory: this.currentProjectDirectory }
+          : undefined
       })
 
       let fullText = ''
@@ -586,7 +447,7 @@ export class Toji extends EventEmitter {
                 messageID: string
               }
               loggerChat.debug(
-                'Tool event: %s - %s (status: %s)',
+                '🔧 Tool event: %s - %s (status: %s)',
                 toolPart.tool,
                 toolPart.callID,
                 toolPart.state.status
@@ -621,49 +482,11 @@ export class Toji extends EventEmitter {
               properties: { sessionID: string }
             }
             if (idleEvent.properties.sessionID === sessionId) {
-              // Fetch the latest message to get agent mode info
-              let agentMode = 'unknown'
-              let modelId = 'unknown'
-              let providerId = 'unknown'
-
-              try {
-                const messages = await client.session.messages({
-                  path: { id: sessionId },
-                  query: this.getDirectoryQuery()
-                })
-
-                // SDK returns array directly, not wrapped in .data
-                if (Array.isArray(messages) && messages.length > 0) {
-                  // Find the last assistant message
-                  for (let i = messages.length - 1; i >= 0; i--) {
-                    const msg = messages[i]
-                    if (msg.info && msg.info.role === 'assistant') {
-                      agentMode = msg.info.mode || 'unknown'
-                      modelId = msg.info.modelID || 'unknown'
-                      providerId = msg.info.providerID || 'unknown'
-                      break
-                    }
-                  }
-                }
-              } catch (error) {
-                loggerChat.debug('ERROR: Could not fetch message info for agent mode: %o', error)
-              }
-
-              loggerChat.debug(
-                'Session idle: agent=%s, model=%s/%s, %d chars - %s',
-                agentMode,
-                providerId,
-                modelId,
-                fullText.length,
-                fullText.substring(0, 200) + (fullText.length > 200 ? '...' : '')
-              )
+              loggerChat.debug('Session idle - response complete (%d total chars)', fullText.length)
               isComplete = true
 
-              // Append agent mode to response text
-              const responseWithMode = `[${agentMode}] ${fullText}`
-
               if (callbacks.onComplete) {
-                await callbacks.onComplete(responseWithMode)
+                await callbacks.onComplete(fullText)
               }
 
               // Exit the event loop
@@ -679,35 +502,7 @@ export class Toji extends EventEmitter {
               properties: { sessionID?: string; error?: unknown }
             }
             if (errorEvent.properties.sessionID === sessionId) {
-              loggerChat.debug('=== SESSION ERROR DETAILS ===')
-              loggerChat.debug('Session ID: %s', sessionId)
-              loggerChat.debug('Error object: %o', errorEvent.properties.error)
-              loggerChat.debug('Error type: %s', typeof errorEvent.properties.error)
-              loggerChat.debug(
-                'Error stringified: %s',
-                JSON.stringify(errorEvent.properties.error, null, 2)
-              )
-              loggerChat.debug('Full event: %o', errorEvent)
-
-              // Check if this is an Unprocessable Entity error (corrupted session state)
-              const errorStr = JSON.stringify(errorEvent.properties.error)
-              const isUnprocessableEntity = errorStr.includes('Unprocessable Entity')
-
-              if (isUnprocessableEntity) {
-                loggerChat.warn('⚠️ Unprocessable Entity error detected - session may be corrupted')
-                loggerChat.warn('Clearing corrupted session %s', sessionId)
-                // Delete the session to force creating a new one on retry
-                try {
-                  await client.session.delete({ path: { id: sessionId } })
-                  loggerChat.info(
-                    '🔄 Corrupted session deleted - next request will create new session'
-                  )
-                } catch (deleteError) {
-                  loggerChat.warn('Failed to delete corrupted session: %o', deleteError)
-                  // Continue anyway - session may still be unusable
-                }
-              }
-
+              loggerChat.debug('Session error event: %o', errorEvent.properties.error)
               const error = new Error(
                 'Session error: ' + JSON.stringify(errorEvent.properties.error)
               )
@@ -762,7 +557,10 @@ export class Toji extends EventEmitter {
       return []
     }
 
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
 
     try {
       return await this.sessions.getSessionMessages(
@@ -775,6 +573,29 @@ export class Toji extends EventEmitter {
       loggerChat.debug('ERROR: Failed to get session messages: %o', error)
       throw error
     }
+  }
+
+  // Get current session ID
+  getCurrentSessionId(): string | undefined {
+    if (!this.currentProjectDirectory) {
+      return undefined
+    }
+    return this.sessions.getActiveSession(this.currentProjectDirectory)
+  }
+
+  // Get current project directory
+  getCurrentProjectDirectory(): string | undefined {
+    return this.currentProjectDirectory
+  }
+
+  // Get the actual Node.js working directory
+  getCurrentWorkingDirectory(): string {
+    return process.cwd()
+  }
+
+  // Set global configuration
+  setGlobalConfig(): void {
+    // TODO: Implement global config if needed
   }
 
   // Get available projects (from OpenCode SDK)
@@ -801,6 +622,20 @@ export class Toji extends EventEmitter {
         'WARNING: Project path had .git suffix, corrected from %s to %s',
         originalPath,
         projectPath
+      )
+    }
+
+    // Warn if using a protected directory (root drive) - limited functionality
+    if (isProtectedDirectory(projectPath)) {
+      logger.warn(
+        'Warning: Using protected directory as project: %s - Some features may not work due to permission restrictions',
+        projectPath
+      )
+      logger.warn(
+        'Consider creating projects in user directories like: %s',
+        platform() === 'win32'
+          ? 'C:\\Users\\YourName\\Documents\\my-project'
+          : '/home/user/projects/my-project'
       )
     }
 
@@ -865,12 +700,18 @@ export class Toji extends EventEmitter {
       return null
     }
 
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
 
     try {
+      // Normalize path to forward slashes for OpenCode API
+      const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+
       const response = await client.session.get({
         path: { id: activeSessionId },
-        query: this.getDirectoryQuery()
+        query: normalizedPath ? { directory: normalizedPath } : undefined
       })
 
       // Check if we got a valid session
@@ -959,12 +800,20 @@ export class Toji extends EventEmitter {
 
   // Session management methods for IPC
   async listSessions(): Promise<Session[]> {
-    const client = this.requireClient()
-    return this.sessions.listSessions(client, this.currentProjectDirectory)
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    const sessions = await this.sessions.listSessions(client, this.currentProjectDirectory)
+    return sessions
   }
 
   async createSession(title?: string): Promise<Session> {
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
 
     const sessionInfo = await this.sessions.createSession(
       client,
@@ -981,7 +830,11 @@ export class Toji extends EventEmitter {
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
     await this.sessions.deleteSession(client, sessionId, this.currentProjectDirectory)
   }
 
@@ -991,11 +844,17 @@ export class Toji extends EventEmitter {
     }
 
     // Verify session exists by trying to get it
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      throw new Error('Client not connected to server')
+    }
+
+    // Normalize path to forward slashes for OpenCode API
+    const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
 
     const response = await client.session.get({
       path: { id: sessionId },
-      query: this.getDirectoryQuery()
+      query: normalizedPath ? { directory: normalizedPath } : undefined
     })
 
     // Check if we got a valid session
@@ -1022,9 +881,9 @@ export class Toji extends EventEmitter {
    * Load the most recent session for the current project
    */
   async loadMostRecentSession(): Promise<void> {
-    const client = this.requireClient()
-    if (!this.currentProjectDirectory) {
-      throw new Error('Cannot load session: no project directory')
+    const client = this.getClient()
+    if (!client || !this.currentProjectDirectory) {
+      throw new Error('Cannot load session: client not connected or no project directory')
     }
 
     try {
@@ -1035,9 +894,12 @@ export class Toji extends EventEmitter {
         logger.debug('Found saved active session: %s', savedSessionId)
         // Verify it still exists
         try {
+          // Normalize path to forward slashes for OpenCode API
+          const normalizedPath = this.currentProjectDirectory?.replace(/\\/g, '/')
+
           const response = await client.session.get({
             path: { id: savedSessionId },
-            query: this.getDirectoryQuery()
+            query: normalizedPath ? { directory: normalizedPath } : undefined
           })
 
           if (response) {
@@ -1134,6 +996,11 @@ export class Toji extends EventEmitter {
     return result
   }
 
+  // Get all running servers info
+  getAllServers(): Array<{ directory: string; port: number; url: string; isHealthy: boolean }> {
+    return this.server.getAllServers()
+  }
+
   // Get current project's configuration from OpenCode
   async getProjectConfig(): Promise<OpencodeConfig> {
     return this.configManager.getProjectConfig()
@@ -1161,7 +1028,11 @@ export class Toji extends EventEmitter {
 
   // Get available model providers from OpenCode
   async getModelProviders(): Promise<ConfigProvidersResponse> {
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      logger.error('No client connected to server')
+      throw new Error('Client not connected to server')
+    }
 
     const raw = await client.config.providers()
     const response =
@@ -1239,7 +1110,11 @@ export class Toji extends EventEmitter {
    * This makes the provider available for model selection
    */
   async registerApiKey(providerId: string, apiKey: string): Promise<void> {
-    const client = this.requireClient()
+    const client = this.getClient()
+    if (!client) {
+      logger.error('No client connected to server')
+      throw new Error('Client not connected to server')
+    }
 
     try {
       await client.auth.set({

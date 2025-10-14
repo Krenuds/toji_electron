@@ -424,12 +424,7 @@ export class ServerManager {
       throw new Error(`OpenCode binary not found at ${binaryPath}. Please ensure it is installed.`)
     }
 
-    // Only set OPENCODE_CONFIG_CONTENT if config is explicitly provided
-    // Otherwise let OpenCode SDK read opencode.json from cwd
-    const envVars = { ...process.env }
-    if (opts.config) {
-      envVars.OPENCODE_CONFIG_CONTENT = JSON.stringify(opts.config)
-    }
+    const configContent = opts.config ?? {}
 
     const proc = spawn(
       binaryPath,
@@ -437,7 +432,10 @@ export class ServerManager {
       {
         cwd: opts.cwd, // Critical: Set the working directory for multi-project support
         signal: opts.signal,
-        env: envVars
+        env: {
+          ...process.env,
+          OPENCODE_CONFIG_CONTENT: JSON.stringify(configContent)
+        }
       }
     )
 
@@ -492,38 +490,12 @@ export class ServerManager {
 
       proc.on('error', (error) => {
         clearTimeout(id)
-
-        // Provide specific diagnostics for ENOENT errors
-        if (error.message.includes('ENOENT')) {
-          const binaryExists = existsSync(binaryPath)
-          const cwdExists = existsSync(opts.cwd)
-
-          let specificMessage = 'Failed to spawn OpenCode server: '
-
-          if (!binaryExists) {
-            specificMessage +=
-              `Binary missing at ${binaryPath}\n` +
-              'Please reinstall OpenCode or check installation path.'
-          } else if (!cwdExists) {
-            specificMessage +=
-              `Working directory does not exist: ${opts.cwd}\n` +
-              'The project directory may have been deleted or moved.'
-          } else {
-            specificMessage +=
-              `Spawn failed with ENOENT but both binary and directory exist.\n` +
-              'This may be a permissions issue or missing dependencies.'
-          }
-
-          reject(new Error(specificMessage))
-        } else {
-          // For non-ENOENT errors, use generic enhanced message
-          const enhancedError = new Error(
-            `Failed to spawn OpenCode server: ${error.message}\n` +
-              `Binary path: ${binaryPath}\n` +
-              `Working directory: ${opts.cwd}`
-          )
-          reject(enhancedError)
-        }
+        const enhancedError = new Error(
+          `Failed to spawn OpenCode server: ${error.message}\n` +
+            `Binary path: ${binaryPath}\n` +
+            `Working directory: ${opts.cwd}`
+        )
+        reject(enhancedError)
       })
 
       if (opts.signal) {

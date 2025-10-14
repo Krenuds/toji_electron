@@ -39,11 +39,28 @@ import type { SessionManager } from '../sessions'
 import type { ITojiCore } from '../interfaces'
 import { createLogger } from '../../utils/logger'
 import { normalizePath } from '../../utils/path'
+import { promises as fs, existsSync } from 'fs'
+import path from 'path'
+import { platform } from 'os'
 
 const logger = createLogger('mcp:manager')
 
 // Start port range for MCP servers
 const BASE_PORT = 3100
+
+/**
+ * Check if a directory is a protected system location that requires elevated permissions
+ * @param directory The directory path to check
+ * @returns True if the directory is protected (root drive on Windows, / on Unix)
+ */
+function isProtectedDirectory(directory: string): boolean {
+  if (platform() === 'win32') {
+    // Check if it's a root drive (C:\, D:\, etc.) - requires admin rights
+    return /^[A-Z]:\\?$/i.test(directory)
+  }
+  // On Unix-like systems, check for root
+  return directory === '/'
+}
 
 export class McpManager {
   private servers: Map<string, McpServerInstance> = new Map()
@@ -59,8 +76,13 @@ export class McpManager {
     logger.debug('McpManager initialized')
   }
 
+  // ========================================================================================
+  // Service Registry
+  // ========================================================================================
+
   /**
    * Register a service for MCP tools
+   * This replaces the old individual setters for better extensibility
    */
   registerService<T>(name: string, service: T): void {
     logger.debug('Registering service: %s', name)
@@ -92,7 +114,7 @@ export class McpManager {
   }
 
   /**
-   * Register service tool with a specific MCP server
+   * Register service tool with a specific MCP server based on service name
    */
   private registerServiceWithServer(server: McpServer, name: string, service: unknown): void {
     switch (name) {
@@ -121,7 +143,7 @@ export class McpManager {
         registerDiscordEditChannelTool(server, service as DiscordChannelEditor)
         break
       default:
-        logger.debug('Unknown service type: %s', name)
+        logger.debug('Unknown service name: %s', name)
     }
   }
 
@@ -186,6 +208,57 @@ export class McpManager {
    */
   private getNextPort(): number {
     return this.portCounter++
+  }
+
+  /**
+   * Write opencode.json configuration with MCP server
+   * IMPORTANT: Merges with existing config to preserve user settings
+   * Skips writing for protected directories (root drives) to avoid permission errors
+   */
+  private async writeOpencodeConfig(projectDirectory: string, mcpPort: number): Promise<void> {
+    // Skip writing for protected directories (root drives on Windows, / on Unix)
+    if (isProtectedDirectory(projectDirectory)) {
+      logger.debug(
+        'Skipping opencode.json write for protected directory: %s (requires elevation)',
+        projectDirectory
+      )
+      return
+    }
+
+    const configPath = path.join(projectDirectory, 'opencode.json')
+    logger.debug('Writing opencode.json to %s', configPath)
+
+    // Read existing config if it exists
+    let existingConfig: Record<string, unknown> = {}
+    try {
+      if (existsSync(configPath)) {
+        const existingContent = await fs.readFile(configPath, 'utf-8')
+        existingConfig = JSON.parse(existingContent)
+        logger.debug('Loaded existing opencode.json config for merging')
+      }
+    } catch (error) {
+      logger.debug('Warning: Could not read existing opencode.json, creating new: %o', error)
+    }
+
+    // Merge MCP config with existing config
+    const config = {
+      $schema: 'https://opencode.ai/config.json',
+      ...existingConfig, // Preserve all existing settings
+      mcp: {
+        toji: {
+          type: 'remote',
+          url: `http://localhost:${mcpPort}/mcp`,
+          enabled: true
+        }
+      }
+    }
+
+    try {
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8')
+      logger.debug('Successfully wrote opencode.json with MCP config (merged with existing)')
+    } catch (error) {
+      logger.debug('Warning: Failed to write opencode.json: %o', error)
+    }
   }
 
   /**
@@ -281,6 +354,9 @@ export class McpManager {
     const httpServer = app.listen(port, () => {
       logger.debug('MCP HTTP server listening on port %d for project %s', port, normalized)
     })
+
+    // Write opencode.json with MCP configuration
+    await this.writeOpencodeConfig(normalized, port)
 
     const instance: McpServerInstance = {
       server,

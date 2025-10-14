@@ -135,21 +135,7 @@ app.whenReady().then(async () => {
     loggerStartup.debug('OpenCode binary installation checked')
 
     // Load last project or use default
-    let lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
-
-    // FIX 1: Validate that the stored project path still exists
-    const { existsSync: checkExists } = await import('fs')
-    if (lastProject && !checkExists(lastProject)) {
-      loggerStartup.warn(
-        'Stored project directory no longer exists: %s (may have been deleted)',
-        lastProject
-      )
-      // Clear the stale reference and use default
-      config.setCurrentProjectPath('')
-      lastProject = config.getOpencodeWorkingDirectory()
-      loggerStartup.info('Switched to default working directory: %s', lastProject)
-    }
-
+    const lastProject = config.getCurrentProjectPath() || config.getOpencodeWorkingDirectory()
     loggerStartup.debug('========== APP STARTUP ==========')
     loggerStartup.debug('Loading project: %s', lastProject)
     loggerStartup.debug('Checking opencode.json in project directory...')
@@ -168,14 +154,8 @@ app.whenReady().then(async () => {
     }
 
     // Start the server from the project directory
-    // NOTE: We pass undefined config so OpenCode SDK reads opencode.json from disk
-    // This allows the server to pick up the initial config including MCP servers
-    // Toji will manage config updates through ConfigManager which uses deep merging
     loggerStartup.debug('Starting OpenCode server from project directory')
-    loggerStartup.debug(
-      'Not passing config to server.start - OpenCode SDK will read opencode.json from: %s',
-      lastProject
-    )
+    loggerStartup.debug('Config passed to server.start: undefined (should read from opencode.json)')
     await toji.server.start(undefined, lastProject)
     loggerStartup.debug('OpenCode server ready (running from %s)', lastProject)
 
@@ -200,45 +180,9 @@ app.whenReady().then(async () => {
       // This is ok - might be a new project with no sessions
     }
   } catch (error) {
-    loggerStartup.error('ERROR: Failed during OpenCode initialization: %o', error)
-
-    // FIX 2: If server failed to start, try starting a fallback global server
-    const errorMessage = error instanceof Error ? error.message : String(error)
-
-    if (errorMessage.includes('Working directory does not exist')) {
-      loggerStartup.warn('Project-specific server failed due to missing directory')
-      loggerStartup.info('Attempting to start fallback global server on current directory')
-
-      try {
-        // Start server on the current working directory (toji_electron folder)
-        const fallbackDir = config.getOpencodeWorkingDirectory()
-        loggerStartup.debug('Fallback directory: %s', fallbackDir)
-
-        await toji.server.start(undefined, fallbackDir)
-        loggerStartup.info('✅ Fallback server started successfully on: %s', fallbackDir)
-
-        // Connect client to fallback directory
-        await toji.connectClient(fallbackDir)
-        await toji.changeWorkingDirectory(fallbackDir)
-        loggerStartup.info('✅ Connected to fallback server')
-
-        // Clear the bad project reference
-        config.setCurrentProjectPath('')
-
-        // Don't throw - we recovered successfully
-      } catch (fallbackError) {
-        loggerStartup.error('❌ Fallback server also failed: %o', fallbackError)
-        throw new Error(
-          'Failed to start OpenCode server. Both project-specific and fallback attempts failed.\n' +
-            `Original error: ${errorMessage}\n` +
-            `Fallback error: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`
-        )
-      }
-    } else {
-      // For other errors (binary missing, permissions, etc.), don't try fallback
-      loggerStartup.error('Critical startup error (not recoverable with fallback)')
-      throw error
-    }
+    loggerStartup.debug('ERROR: Failed during OpenCode initialization: %o', error)
+    // Re-throw to prevent running with undefined state
+    throw error
   }
 
   // Register modular IPC handlers
