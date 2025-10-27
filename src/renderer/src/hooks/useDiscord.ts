@@ -24,7 +24,8 @@ export function useDiscord(): UseDiscordReturn {
   const [hasToken, setHasToken] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const checkToken = async (): Promise<void> => {
+  // Memoize checkToken to prevent stale closures
+  const checkToken = useCallback(async (): Promise<void> => {
     try {
       const tokenExists = await window.api.discord.hasToken()
       setHasToken(tokenExists)
@@ -32,8 +33,9 @@ export function useDiscord(): UseDiscordReturn {
       // Backend handles error logging
       setError('Failed to check Discord token')
     }
-  }
+  }, [])
 
+  // Include checkToken in dependencies to prevent stale closures
   const refreshStatus = useCallback(async (): Promise<void> => {
     try {
       // Check both token and status when refreshing
@@ -44,13 +46,13 @@ export function useDiscord(): UseDiscordReturn {
       // Backend handles error logging
       setStatus({ connected: false })
     }
-  }, [])
+  }, [checkToken])
 
   // Check for token on mount
   useEffect(() => {
     checkToken()
     refreshStatus()
-  }, [refreshStatus])
+  }, [checkToken, refreshStatus])
 
   const connect = useCallback(async () => {
     if (isConnecting) return

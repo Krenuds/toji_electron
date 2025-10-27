@@ -31,6 +31,7 @@ export class ServerManager {
   private servers: Map<string, ServerInstance> = new Map()
   private readonly BASE_PORT = 4096
   private readonly MAX_SERVERS = 10
+  private portReservations: Set<number> = new Set()
 
   constructor(private opencodeService: OpenCodeService) {}
 
@@ -66,13 +67,18 @@ export class ServerManager {
       }
     }
 
-    // Find next available port
+    // Find next available port and reserve it atomically
     const port = await this.findNextAvailablePort()
     logger.debug('Creating new server for %s on port %d', targetDirectory, port)
+
+    // Reserve the port immediately to prevent race conditions
+    this.portReservations.add(port)
 
     // Ensure binary is available
     const binaryInfo = this.opencodeService.getBinaryInfo()
     if (!binaryInfo.installed) {
+      // Release port reservation on error
+      this.portReservations.delete(port)
       const error = new Error('OpenCode binary not installed')
       logger.debug('ERROR: %s', error.message)
       throw error
@@ -86,6 +92,7 @@ export class ServerManager {
       cwd: targetDirectory // Spawn FROM the target directory
     }
 
+    let instance: ServerInstance | undefined
     try {
       logger.debug('Spawning OpenCode server for %s on port %d', targetDirectory, port)
       const server = await this.spawnOpenCodeServer(serverOptions)
@@ -95,7 +102,7 @@ export class ServerManager {
         targetDirectory
       )
 
-      const instance: ServerInstance = {
+      instance = {
         server,
         port,
         directory: targetDirectory,
@@ -113,6 +120,14 @@ export class ServerManager {
       logger.debug('Server started successfully on port %d for %s', port, targetDirectory)
       return instance
     } catch (error) {
+      // Critical: Clean up health check interval if it was started
+      if (instance?.healthCheckInterval) {
+        clearInterval(instance.healthCheckInterval)
+        instance.healthCheckInterval = undefined
+      }
+
+      // Release port reservation on error
+      this.portReservations.delete(port)
       logger.debug('ERROR: Failed to create server for %s: %o', targetDirectory, error)
       throw error
     }
@@ -168,6 +183,9 @@ export class ServerManager {
     } catch (error) {
       logger.debug('ERROR: Failed to close server for %s: %o', normalized, error)
     }
+
+    // Release port reservation
+    this.portReservations.delete(instance.port)
 
     // Remove from map
     this.servers.delete(normalized)
@@ -303,11 +321,17 @@ export class ServerManager {
 
   /**
    * Find the next available port
+   * Checks both active servers and reserved ports to prevent race conditions
    */
   private async findNextAvailablePort(): Promise<number> {
     const maxPort = this.BASE_PORT + this.MAX_SERVERS
 
     for (let port = this.BASE_PORT; port < maxPort; port++) {
+      // Check if port is reserved (prevents race conditions)
+      if (this.portReservations.has(port)) {
+        continue
+      }
+
       // Check if any of our servers is using this port
       let portInUse = false
       for (const instance of this.servers.values()) {

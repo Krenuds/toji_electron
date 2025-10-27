@@ -580,10 +580,10 @@ export class DiscordPlugin extends EventEmitter {
   async cleanup(): Promise<void> {
     logger.debug('Cleaning up...')
 
-    // Cleanup all modules
+    // Cleanup all modules - await async cleanup operations
     for (const [name, module] of this.modules.entries()) {
       logger.debug(`Cleaning up module: ${name}`)
-      module.cleanup()
+      await module.cleanup()
     }
 
     this.modules.clear()

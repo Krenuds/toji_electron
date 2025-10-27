@@ -13,7 +13,7 @@ import type { Client, Message, Interaction } from 'discord.js'
  */
 export interface DiscordModule {
   initialize(plugin?: IDiscordPlugin): void | Promise<void>
-  cleanup(): void
+  cleanup(): void | Promise<void>
 }
 
 /**

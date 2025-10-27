@@ -3,6 +3,7 @@ import { Box, Flex, Stack } from '@chakra-ui/react'
 import { LuMessageCircle, LuPlug } from 'react-icons/lu'
 import { IconButton } from './components/IconButton'
 import { TitleBar } from './components/TitleBar'
+import { ErrorBoundary } from './components/shared'
 import { AppViewProvider } from './contexts/AppViewContext'
 import { AvailableModelsProvider } from './contexts/AvailableModelsContext'
 import { ChatCoordinatorProvider } from './contexts/ChatCoordinatorContext'
@@ -85,13 +86,15 @@ function AppContent(): React.JSX.Element {
 
 function App(): React.JSX.Element {
   return (
-    <AppViewProvider>
-      <AvailableModelsProvider>
-        <ChatCoordinatorProvider>
-          <AppContent />
-        </ChatCoordinatorProvider>
-      </AvailableModelsProvider>
-    </AppViewProvider>
+    <ErrorBoundary>
+      <AppViewProvider>
+        <AvailableModelsProvider>
+          <ChatCoordinatorProvider>
+            <AppContent />
+          </ChatCoordinatorProvider>
+        </AvailableModelsProvider>
+      </AppViewProvider>
+    </ErrorBoundary>
   )
 }
 

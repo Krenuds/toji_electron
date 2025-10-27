@@ -200,9 +200,10 @@ export class SessionManager {
       const cached = this.messageCache.get(cacheKey)!
       if (Date.now() - cached.timestamp < this.CACHE_TTL) {
         logger.debug(
-          'Returning cached messages for session: %s in project: %s',
+          'Returning cached messages for session: %s in project: %s (cache key: %s)',
           sessionId,
-          projectPath || 'default'
+          projectPath || 'default',
+          cacheKey
         )
         return cached.messages
       }
@@ -226,14 +227,18 @@ export class SessionManager {
       // TypeScript needs explicit type assertion due to SDK type definitions
       const messages = (response as unknown as Array<{ info: Message; parts: Part[] }>) || []
 
-      // Cache the results with composite key
-      const cacheKey = projectPath ? `${projectPath}:${sessionId}` : sessionId
+      // Cache the results with composite key (reuse the same key variable)
       this.messageCache.set(cacheKey, {
         messages: messages,
         timestamp: Date.now()
       })
 
-      logger.debug('Retrieved %d messages for session: %s', messages.length, sessionId)
+      logger.debug(
+        'Retrieved %d messages for session: %s (cache key: %s)',
+        messages.length,
+        sessionId,
+        cacheKey
+      )
       return messages
     } catch (error) {
       logger.debug('ERROR: Failed to get session messages: %o', error)

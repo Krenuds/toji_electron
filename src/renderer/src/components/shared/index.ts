@@ -1,5 +1,6 @@
 // Shared component exports for easy importing
 export { ActionButton } from './ActionButton'
+export { ErrorBoundary } from './ErrorBoundary'
 export { IntegrationCard } from './IntegrationCard'
 export { LabelRow } from './LabelRow'
 export { MainContentContainer } from './MainContentContainer'

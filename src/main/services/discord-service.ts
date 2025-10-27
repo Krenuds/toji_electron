@@ -127,7 +127,16 @@ export class DiscordService {
 
     // Initialize plugin before connecting (ensure commands are loaded)
     logger.debug('Initializing Discord plugin')
-    await this.initializePlugin()
+    try {
+      await this.initializePlugin()
+    } catch (error) {
+      // Critical: Clean up on plugin initialization failure
+      logger.error('Plugin initialization failed, cleaning up', error)
+      this.connectionState = 'error'
+      this.lastError = error as Error
+      this.plugin = undefined
+      throw error
+    }
 
     // Create Discord client with necessary intents
     logger.debug('Creating Discord client with intents')
@@ -145,6 +154,11 @@ export class DiscordService {
       logger.error('Failed to create client', error)
       this.connectionState = 'error'
       this.lastError = error as Error
+      // Clean up plugin on client creation failure
+      if (this.plugin) {
+        await this.plugin.cleanup()
+        this.plugin = undefined
+      }
       throw error
     }
 
@@ -164,7 +178,17 @@ export class DiscordService {
       })
       this.connectionState = 'error'
       this.lastError = error as Error
-      this.client = null
+
+      // Critical: Clean up client and plugin on login failure
+      if (this.client) {
+        this.client.destroy()
+        this.client = null
+      }
+      if (this.plugin) {
+        await this.plugin.cleanup()
+        this.plugin = undefined
+      }
+
       throw new Error(
         `Failed to connect to Discord: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
