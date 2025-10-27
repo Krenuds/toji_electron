@@ -1,9 +1,25 @@
-import React from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { useChatCoordinator } from '../hooks/useChatCoordinator'
-import { ChatCoordinatorContext } from './ChatCoordinatorContextDef'
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+// The return type of useChatCoordinator
+export type ChatCoordinatorContextType = ReturnType<typeof useChatCoordinator>
+
+// ============================================================================
+// Context Creation
+// ============================================================================
+
+const ChatCoordinatorContext = createContext<ChatCoordinatorContextType | undefined>(undefined)
+
+// ============================================================================
+// Provider Component
+// ============================================================================
 
 interface ChatCoordinatorProviderProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export function ChatCoordinatorProvider({
@@ -17,4 +33,16 @@ export function ChatCoordinatorProvider({
       {children}
     </ChatCoordinatorContext.Provider>
   )
+}
+
+// ============================================================================
+// Custom Hook
+// ============================================================================
+
+export function useChatCoordinatorContext(): ChatCoordinatorContextType {
+  const context = useContext(ChatCoordinatorContext)
+  if (!context) {
+    throw new Error('useChatCoordinatorContext must be used within ChatCoordinatorProvider')
+  }
+  return context
 }

@@ -1,11 +1,36 @@
-import { useState, useEffect, useCallback, type ReactNode } from 'react'
-import { AvailableModelsContext } from '../contexts/AvailableModelsContext'
-import type {
-  AvailableModelsContextValue,
-  ModelOption
-} from '../contexts/AvailableModelsContextDef'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 
-// Define types for OpenCode provider data
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
+export interface ModelOption {
+  value: string // provider_id/model_id format
+  label: string // Human readable name
+  providerId: string
+  modelId: string
+  providerName: string
+  displayLabel?: string // Optional enhanced label with provider info for duplicates
+}
+
+export interface AvailableModelsContextValue {
+  models: ModelOption[]
+  loading: boolean
+  error: string | null
+  refresh: () => Promise<void>
+  isReady: boolean
+}
+
+// ============================================================================
+// Context Creation
+// ============================================================================
+
+const AvailableModelsContext = createContext<AvailableModelsContextValue | undefined>(undefined)
+
+// ============================================================================
+// Provider Types
+// ============================================================================
+
 interface Provider {
   id: string
   name: string
@@ -18,7 +43,14 @@ interface Provider {
   >
 }
 
-// Fallback models if API is unavailable
+interface AvailableModelsProviderProps {
+  children: ReactNode
+}
+
+// ============================================================================
+// Fallback Models
+// ============================================================================
+
 const FALLBACK_MODELS: ModelOption[] = [
   {
     value: 'opencode/grok-code-fast-1',
@@ -43,9 +75,9 @@ const FALLBACK_MODELS: ModelOption[] = [
   }
 ]
 
-interface AvailableModelsProviderProps {
-  children: ReactNode
-}
+// ============================================================================
+// Provider Component
+// ============================================================================
 
 export function AvailableModelsProvider({
   children
@@ -128,4 +160,16 @@ export function AvailableModelsProvider({
   }
 
   return <AvailableModelsContext.Provider value={value}>{children}</AvailableModelsContext.Provider>
+}
+
+// ============================================================================
+// Custom Hook
+// ============================================================================
+
+export function useAvailableModelsContext(): AvailableModelsContextValue {
+  const context = useContext(AvailableModelsContext)
+  if (!context) {
+    throw new Error('useAvailableModelsContext must be used within AvailableModelsProvider')
+  }
+  return context
 }

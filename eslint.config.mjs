@@ -28,7 +28,12 @@ export default tseslint.config(
       // Stricter TypeScript rules (without type checking required)
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/explicit-function-return-type': 'error'
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      // Allow exporting hooks alongside components in context files
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true, allowExportNames: ['use*'] }
+      ]
     }
   },
   eslintConfigPrettier

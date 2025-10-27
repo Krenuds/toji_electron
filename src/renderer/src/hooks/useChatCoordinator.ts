@@ -1,6 +1,14 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { formatMessagesFromSDK, type ChatMessage } from '../utils/messageFormatter'
+import { useCallback, useEffect } from 'react'
+import { useProjectManager } from './chat/useProjectManager'
+import { useSessionManager } from './chat/useSessionManager'
+import { useMessageManager } from './chat/useMessageManager'
+import { useServerStatus } from './chat/useServerStatus'
+import type { ChatMessage } from '../utils/messageFormatter'
 import type { Session } from '../../../preload/index.d'
+
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
 interface Project {
   worktree: string
@@ -68,229 +76,37 @@ interface UseChatCoordinatorReturn extends ChatState {
 
 // Cache keys for localStorage
 const CACHE_KEYS = {
-  LAST_PROJECT: 'toji3_last_project',
   LAST_SESSION: 'toji3_last_session',
   CACHED_MESSAGES: 'toji3_cached_messages'
 } as const
 
+// ============================================================================
+// Hook Implementation
+// ============================================================================
+
 export function useChatCoordinator(): UseChatCoordinatorReturn {
-  // Core state
-  const [state, setState] = useState<ChatState>({
-    projects: [],
-    currentProject: null,
-    projectStatus: null,
-    sessions: [],
-    currentSessionId: undefined,
-    messages: [],
-    serverStatus: 'offline',
-    isLoadingProjects: false,
-    isLoadingSessions: false,
-    isLoadingMessages: false,
-    isSendingMessage: false,
-    isInitializingProject: false,
-    projectError: null,
-    sessionError: null,
-    messageError: null
-  })
-
-  // Refs to track ongoing operations and prevent race conditions
-  const initializingRef = useRef(false)
-  const switchingProjectRef = useRef(false)
-  const switchingSessionRef = useRef(false)
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const loadMessagesAbortRef = useRef<AbortController | null>(null)
-
-  // Helper to update state partially
-  const updateState = useCallback((updates: Partial<ChatState>) => {
-    setState((prev) => ({ ...prev, ...updates }))
-  }, [])
-
-  // Load cached data for instant UI
-  const loadCachedData = useCallback(() => {
-    try {
-      const cachedProject = localStorage.getItem(CACHE_KEYS.LAST_PROJECT)
-      const cachedSession = localStorage.getItem(CACHE_KEYS.LAST_SESSION)
-      const cachedMessages = localStorage.getItem(CACHE_KEYS.CACHED_MESSAGES)
-
-      if (cachedProject) {
-        const project = JSON.parse(cachedProject) as CurrentProject
-        updateState({ currentProject: project })
-      }
-
-      if (cachedSession) {
-        updateState({ currentSessionId: cachedSession })
-      }
-
-      if (cachedMessages) {
-        const messages = JSON.parse(cachedMessages) as ChatMessage[]
-        // Recreate Date objects
-        const hydratedMessages = messages.map((msg) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-        updateState({ messages: hydratedMessages })
-      }
-    } catch (error) {
-      console.error('Failed to load cached data:', error)
-    }
-  }, [updateState])
-
-  // Save data to cache
-  const saveToCache = useCallback((key: string, value: unknown) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      // Cache errors are non-critical, backend handles error logging
-    }
-  }, [])
-
-  // Check server status
-  const checkServerStatus = useCallback(async (): Promise<boolean> => {
-    try {
-      const isRunning = await window.api.toji.isRunning()
-      updateState({ serverStatus: isRunning ? 'online' : 'offline' })
-      return isRunning
-    } catch {
-      // Backend handles error logging
-      updateState({ serverStatus: 'offline' })
-      return false
-    }
-  }, [updateState])
-
-  // Load projects
-  const loadProjects = useCallback(async () => {
-    console.log('[ChatCoordinator.loadProjects] Loading projects...')
-    try {
-      const projectList = await window.api.toji.getProjects()
-      console.log('[ChatCoordinator.loadProjects] Loaded projects:', projectList)
-      updateState({ projects: (projectList as unknown as Project[]) || [] })
-      console.log(
-        '[ChatCoordinator.loadProjects] State updated with',
-        projectList?.length || 0,
-        'projects'
-      )
-    } catch (error) {
-      console.error('[ChatCoordinator.loadProjects] Error loading projects:', error)
-      updateState({ projectError: 'Failed to load projects' })
-    }
-  }, [updateState])
-
-  // Load sessions for current project
-  const loadSessions = useCallback(async (): Promise<Session[]> => {
-    console.log('[ChatCoordinator.loadSessions] Current project:', state.currentProject)
-    if (!state.currentProject) {
-      console.log('[ChatCoordinator.loadSessions] No current project, clearing sessions')
-      updateState({ sessions: [], currentSessionId: undefined })
-      return []
-    }
-
-    console.log(
-      '[ChatCoordinator.loadSessions] Loading sessions for project:',
-      state.currentProject.path
-    )
-    updateState({ isLoadingSessions: true, sessionError: null })
-
-    try {
-      const sessions = await window.api.toji.listSessions()
-      console.log('[ChatCoordinator.loadSessions] Loaded sessions:', sessions)
-      updateState({ sessions: sessions || [] })
-
-      // Get current session from backend
-      const currentId = await window.api.toji.getCurrentSessionId()
-      console.log('[ChatCoordinator.loadSessions] Current session ID:', currentId)
-      updateState({ currentSessionId: currentId })
-
-      if (currentId) {
-        saveToCache(CACHE_KEYS.LAST_SESSION, currentId)
-      }
-
-      return sessions || []
-    } catch {
-      // Backend handles error logging
-      updateState({
-        sessions: [],
-        sessionError: 'Failed to load sessions'
-      })
-      return []
-    } finally {
-      updateState({ isLoadingSessions: false })
-    }
-  }, [state.currentProject, updateState, saveToCache])
-
-  // Load messages for specific session
-  const loadMessages = useCallback(
-    async (sessionId?: string, forceRefresh = false) => {
-      // Cancel any in-flight message loading
-      if (loadMessagesAbortRef.current) {
-        loadMessagesAbortRef.current.abort()
-      }
-
-      // Create new abort controller for this request
-      const abortController = new AbortController()
-      loadMessagesAbortRef.current = abortController
-
-      // Use provided sessionId or fall back to current state
-      const targetSessionId = sessionId || state.currentSessionId
-
-      if (!targetSessionId) {
-        updateState({ messages: [] })
-        saveToCache(CACHE_KEYS.CACHED_MESSAGES, [])
-        return
-      }
-
-      // If a specific sessionId is provided, we're explicitly loading for that session
-      // This happens during project/session switches before state is updated
-      // So we should NOT skip based on currentSessionId comparison
-      if (!sessionId && !state.currentSessionId) {
-        return
-      }
-      updateState({ isLoadingMessages: true, messageError: null })
-
-      try {
-        const sdkMessages = await window.api.toji.getSessionMessages(targetSessionId, !forceRefresh)
-
-        // Check if request was aborted
-        if (abortController.signal.aborted) {
-          return
-        }
-
-        const messages = formatMessagesFromSDK(sdkMessages)
-
-        // If we explicitly requested this session's messages, update state
-        // OR if it matches the current session
-        if (sessionId || targetSessionId === state.currentSessionId) {
-          updateState({ messages })
-          saveToCache(CACHE_KEYS.CACHED_MESSAGES, messages)
-        }
-      } catch {
-        // Don't log errors for aborted requests
-        if (!abortController.signal.aborted) {
-          // Backend handles error logging
-          updateState({ messageError: 'Failed to load messages' })
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          updateState({ isLoadingMessages: false })
-        }
-        // Clear the abort controller reference if it's still this one
-        if (loadMessagesAbortRef.current === abortController) {
-          loadMessagesAbortRef.current = null
-        }
-      }
-    },
-    [state.currentSessionId, updateState, saveToCache]
+  // Compose focused hooks
+  const projectManager = useProjectManager()
+  const sessionManager = useSessionManager(projectManager.currentProject)
+  const serverStatus = useServerStatus()
+  const messageManager = useMessageManager(
+    sessionManager.currentSessionId,
+    serverStatus.setServerStatus,
+    serverStatus.checkServerStatus
   )
 
-  // Initialize on mount
-  const initialize = useCallback(async () => {
-    if (initializingRef.current) return
-    initializingRef.current = true
+  // ============================================================================
+  // Initialization
+  // ============================================================================
 
+  const initialize = useCallback(async () => {
     // Load cached data first for instant UI
-    loadCachedData()
+    projectManager.loadCachedProject()
+    sessionManager.loadCachedSession()
+    messageManager.loadCachedMessages()
 
     // Check server status
-    await checkServerStatus()
+    await serverStatus.checkServerStatus()
 
     try {
       // Load current project from backend
@@ -298,73 +114,64 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
       if (current?.path) {
         const project = { path: current.path, sessionId: current.sessionId }
-        updateState({ currentProject: project })
-        saveToCache(CACHE_KEYS.LAST_PROJECT, project)
+        projectManager.setCurrentProject(project)
+        localStorage.setItem('toji3_last_project', JSON.stringify(project))
 
-        // Check project status (global vs proper project) - CRITICAL!
+        // Check project status (global vs proper project)
         console.log('[ChatCoordinator.initialize] Loading project status...')
         const status = await window.api.toji.getProjectStatus()
         console.log('[ChatCoordinator.initialize] Project status:', status)
-        updateState({ projectStatus: status })
+        projectManager.setProjectStatus(status)
 
         // Load sessions for this project
-        await loadSessions()
+        await sessionManager.loadSessions()
 
         // Get current session from backend
         const currentSessionId = await window.api.toji.getCurrentSessionId()
 
         if (currentSessionId) {
-          updateState({ currentSessionId })
-          saveToCache(CACHE_KEYS.LAST_SESSION, currentSessionId)
-          await loadMessages(currentSessionId)
+          sessionManager.setCurrentSessionId(currentSessionId)
+          localStorage.setItem(CACHE_KEYS.LAST_SESSION, currentSessionId)
+          await messageManager.loadMessages(currentSessionId)
         }
       }
 
       // Load all projects
-      await loadProjects()
+      await projectManager.loadProjects()
     } catch {
       // Backend handles error logging
-    } finally {
-      initializingRef.current = false
     }
-  }, [
-    loadCachedData,
-    checkServerStatus,
-    loadProjects,
-    loadSessions,
-    loadMessages,
-    updateState,
-    saveToCache
-  ])
+  }, [projectManager, sessionManager, messageManager, serverStatus])
 
-  // Switch project with proper sequencing
+  // Initialize on mount
+  useEffect(() => {
+    initialize()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
+
+  // ============================================================================
+  // Coordinated Actions
+  // ============================================================================
+
+  // Enhanced switchProject that coordinates with sessions and messages
   const switchProject = useCallback(
     async (projectPath: string) => {
-      if (switchingProjectRef.current || state.currentProject?.path === projectPath) {
+      if (projectManager.currentProject?.path === projectPath) {
         return
       }
-      switchingProjectRef.current = true
 
-      // Cancel any in-flight message loading
-      if (loadMessagesAbortRef.current) {
-        loadMessagesAbortRef.current.abort()
-        loadMessagesAbortRef.current = null
-      }
-
-      updateState({
-        isLoadingProjects: true,
-        isLoadingSessions: true,
-        isLoadingMessages: true,
-        projectError: null
-      })
+      projectManager.setIsLoadingProjects(true)
+      sessionManager.setIsLoadingSessions(true)
+      messageManager.setIsLoadingMessages(true)
+      projectManager.setProjectError(null)
 
       try {
         // First ensure server is ready
-        const serverReady = await checkServerStatus()
+        const serverReady = await serverStatus.checkServerStatus()
         if (!serverReady) {
-          updateState({ serverStatus: 'initializing' })
+          serverStatus.setServerStatus('initializing')
           await window.api.toji.ensureReadyForChat()
-          await checkServerStatus()
+          await serverStatus.checkServerStatus()
         }
 
         // Switch project in backend
@@ -372,33 +179,27 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
 
         if (result.success) {
           const project = { path: projectPath }
-          updateState({ currentProject: project })
-          saveToCache(CACHE_KEYS.LAST_PROJECT, project)
+          projectManager.setCurrentProject(project)
+          localStorage.setItem('toji3_last_project', JSON.stringify(project))
 
-          // Check project status (global vs proper project)
+          // Check project status
           const status = await window.api.toji.getProjectStatus()
-          updateState({ projectStatus: status })
-
-          if (status?.isGlobalProject) {
-            // Project is global (non-git), limited functionality
-          }
+          projectManager.setProjectStatus(status)
 
           // Clear old session/messages immediately
-          updateState({
-            sessions: [],
-            currentSessionId: undefined,
-            messages: []
-          })
+          sessionManager.setSessions([])
+          sessionManager.setCurrentSessionId(undefined)
+          messageManager.clearMessages()
 
-          // Clear message cache to prevent showing stale data
+          // Clear caches
           localStorage.removeItem(CACHE_KEYS.CACHED_MESSAGES)
           localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
 
           // Load new project's sessions
-          const sessions = await loadSessions()
+          const sessions = await sessionManager.loadSessions()
 
           // Load projects list (might have new project)
-          await loadProjects()
+          await projectManager.loadProjects()
 
           // Auto-select or create a session
           if (sessions && sessions.length > 0) {
@@ -413,14 +214,14 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
             const mostRecentSession = sortedSessions[0]
 
             // Update state FIRST so loadMessages has the right context
-            updateState({ currentSessionId: mostRecentSession.id })
-            saveToCache(CACHE_KEYS.LAST_SESSION, mostRecentSession.id)
+            sessionManager.setCurrentSessionId(mostRecentSession.id)
+            localStorage.setItem(CACHE_KEYS.LAST_SESSION, mostRecentSession.id)
 
             // Then switch in backend
             await window.api.toji.switchSession(mostRecentSession.id)
 
             // Load messages for the selected session
-            await loadMessages(mostRecentSession.id, true)
+            await messageManager.loadMessages(mostRecentSession.id, true)
           } else {
             // No sessions exist - create one automatically
             const projectName = projectPath.split(/[/\\]/).pop() || 'Project'
@@ -429,12 +230,10 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
             try {
               const newSession = await window.api.toji.createSession(sessionName)
               if (newSession) {
-                updateState({
-                  sessions: [newSession],
-                  currentSessionId: newSession.id
-                })
+                sessionManager.setSessions([newSession])
+                sessionManager.setCurrentSessionId(newSession.id)
                 await window.api.toji.switchSession(newSession.id)
-                saveToCache(CACHE_KEYS.LAST_SESSION, newSession.id)
+                localStorage.setItem(CACHE_KEYS.LAST_SESSION, newSession.id)
               }
             } catch {
               // Backend handles error logging
@@ -446,372 +245,191 @@ export function useChatCoordinator(): UseChatCoordinatorReturn {
         }
       } catch {
         // Backend handles error logging
-        updateState({ projectError: 'Failed to switch project' })
+        projectManager.setProjectError('Failed to switch project')
       } finally {
-        updateState({
-          isLoadingProjects: false,
-          isLoadingSessions: false,
-          isLoadingMessages: false
-        })
-        switchingProjectRef.current = false
+        projectManager.setIsLoadingProjects(false)
+        sessionManager.setIsLoadingSessions(false)
+        messageManager.setIsLoadingMessages(false)
       }
     },
-    [
-      state.currentProject,
-      checkServerStatus,
-      loadSessions,
-      loadProjects,
-      loadMessages,
-      updateState,
-      saveToCache
-    ]
+    [projectManager, sessionManager, messageManager, serverStatus]
   )
 
-  // Open project dialog
-  const openProjectDialog = useCallback(async () => {
-    try {
-      const result = await window.api.dialog.showOpenDialog({
-        properties: ['openDirectory']
-      })
-
-      if (!result.canceled && result.filePaths[0]) {
-        await switchProject(result.filePaths[0])
-      }
-    } catch {
-      // Backend handles error logging
-      updateState({ projectError: 'Failed to open project dialog' })
-    }
-  }, [switchProject, updateState])
-
-  // Close current project
-  const closeProject = useCallback(async () => {
-    try {
-      // Clear UI state immediately for responsiveness
-      updateState({
-        currentProject: undefined,
-        sessions: [],
-        currentSessionId: undefined,
-        messages: [],
-        serverStatus: 'offline',
-        projectError: null,
-        sessionError: null,
-        messageError: null
-      })
-
-      // Clear all cache
-      localStorage.removeItem(CACHE_KEYS.CACHED_MESSAGES)
-      localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
-      localStorage.removeItem(CACHE_KEYS.LAST_PROJECT)
-
-      // Close project in backend (this will stop the project server and reconnect to global server)
-      await window.api.toji.closeProject()
-
-      // Wait a moment for the global server to be ready
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Check if global server is ready
-      const serverReady = await checkServerStatus()
-      if (!serverReady) {
-        updateState({ serverStatus: 'initializing' })
-        // Give it more time for the global server to start
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-        await checkServerStatus()
-      }
-
-      // Reload projects list (from the global server)
-      await loadProjects()
-    } catch (error) {
-      console.error('[ChatCoordinator.closeProject] Failed to close project:', error)
-      updateState({ projectError: 'Failed to close project' })
-    }
-  }, [loadProjects, updateState, checkServerStatus])
-
-  // Initialize project with git and opencode.json
-  const initializeProject = useCallback(async () => {
-    if (!state.currentProject) {
-      console.error('[ChatCoordinator.initializeProject] No current project')
-      return
-    }
-    updateState({ isInitializingProject: true, projectError: null })
-
-    try {
-      const result = await window.api.toji.initializeProject()
-
-      if (result.success) {
-        console.log('[ChatCoordinator.initializeProject] ✅ Success! Result:', result)
-        console.log(
-          '[ChatCoordinator.initializeProject] Current project before refresh:',
-          state.currentProject
-        )
-
-        // Clear stale status immediately
-        console.log('[ChatCoordinator.initializeProject] Clearing stale project status...')
-        updateState({ projectStatus: null })
-
-        // Wait a moment for the backend to fully process
-        console.log('[ChatCoordinator.initializeProject] Waiting 500ms for backend processing...')
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // Reload the full project list - THIS IS KEY!
-        // This updates the OpenCode SDK's internal project cache
-        console.log('[ChatCoordinator.initializeProject] 🔄 Reloading projects list...')
-        await loadProjects()
-        console.log('[ChatCoordinator.initializeProject] ✅ Projects list reloaded')
-
-        // Refresh project status
-        console.log('[ChatCoordinator.initializeProject] 🔄 Getting fresh project status...')
-        const status = await window.api.toji.getProjectStatus()
-        console.log('[ChatCoordinator.initializeProject] Fresh project status:', status)
-        updateState({ projectStatus: status })
-
-        // Reload sessions (project should now be recognized)
-        console.log('[ChatCoordinator.initializeProject] 🔄 Reloading sessions...')
-        await loadSessions()
-        console.log('[ChatCoordinator.initializeProject] ✅ Sessions reloaded')
-
-        console.log('[ChatCoordinator.initializeProject] ✅✅✅ All state refreshed successfully!')
-
-        // Show success message
-        updateState({ projectError: null })
-      } else {
-        console.error('[ChatCoordinator.initializeProject] Initialization failed:', result.error)
-        updateState({
-          projectError: result.needsGitInstall
-            ? 'Git is not installed. Please install Git from https://git-scm.com'
-            : result.error || 'Failed to initialize project'
-        })
-      }
-    } catch (error) {
-      console.error('[ChatCoordinator.initializeProject] Error:', error)
-      updateState({ projectError: 'Failed to initialize project' })
-    } finally {
-      updateState({ isInitializingProject: false })
-    }
-  }, [state.currentProject, loadSessions, loadProjects, updateState])
-
-  // Create session
-  const createSession = useCallback(
-    async (name?: string) => {
-      if (!state.currentProject) return
-
-      updateState({ isLoadingSessions: true, sessionError: null })
-
-      try {
-        const newSession = await window.api.toji.createSession(
-          name || `Session ${new Date().toLocaleTimeString()}`
-        )
-
-        if (newSession) {
-          // Optimistically add to list
-          setState((prev) => ({
-            ...prev,
-            sessions: [...prev.sessions, newSession],
-            currentSessionId: newSession.id
-          }))
-
-          // Switch to new session
-          await window.api.toji.switchSession(newSession.id)
-
-          // Clear messages for new session
-          updateState({ messages: [] })
-          saveToCache(CACHE_KEYS.CACHED_MESSAGES, [])
-          saveToCache(CACHE_KEYS.LAST_SESSION, newSession.id)
-
-          // Reload sessions to ensure sync
-          await loadSessions()
-        }
-      } catch (error) {
-        console.error('Failed to create session:', error)
-        updateState({ sessionError: 'Failed to create session' })
-        // Reload to restore correct state
-        await loadSessions()
-      } finally {
-        updateState({ isLoadingSessions: false })
-      }
-    },
-    [state.currentProject, loadSessions, updateState, saveToCache]
-  )
-
-  // Delete session
-  const deleteSession = useCallback(
-    async (sessionId: string) => {
-      updateState({ sessionError: null })
-
-      // Optimistically remove from list
-      setState((prev) => ({
-        ...prev,
-        sessions: prev.sessions.filter((s) => s.id !== sessionId)
-      }))
-
-      try {
-        await window.api.toji.deleteSession(sessionId)
-
-        // If we deleted the current session, clear messages
-        if (state.currentSessionId === sessionId) {
-          updateState({
-            currentSessionId: undefined,
-            messages: []
-          })
-          saveToCache(CACHE_KEYS.CACHED_MESSAGES, [])
-          localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
-        }
-
-        // Reload sessions
-        await loadSessions()
-      } catch (error) {
-        console.error('Failed to delete session:', error)
-        updateState({ sessionError: 'Failed to delete session' })
-        // Reload to restore correct state
-        await loadSessions()
-      }
-    },
-    [state.currentSessionId, loadSessions, updateState, saveToCache]
-  )
-
-  // Switch session
+  // Enhanced switchSession that coordinates with messages
   const switchSession = useCallback(
     async (sessionId: string) => {
-      if (switchingSessionRef.current || state.currentSessionId === sessionId) {
+      if (sessionManager.currentSessionId === sessionId) {
         return
       }
-      switchingSessionRef.current = true
 
-      updateState({ isLoadingMessages: true, sessionError: null })
+      messageManager.setIsLoadingMessages(true)
+      sessionManager.setSessionError(null)
 
       try {
         // Update state FIRST so loadMessages has the right context
-        updateState({ currentSessionId: sessionId })
-        saveToCache(CACHE_KEYS.LAST_SESSION, sessionId)
+        sessionManager.setCurrentSessionId(sessionId)
+        localStorage.setItem(CACHE_KEYS.LAST_SESSION, sessionId)
 
         // Then switch in backend
         await window.api.toji.switchSession(sessionId)
 
         // Load messages for new session
-        await loadMessages(sessionId, true)
+        await messageManager.loadMessages(sessionId, true)
       } catch (error) {
         console.error('Failed to switch session:', error)
-        updateState({ sessionError: 'Failed to switch session' })
+        sessionManager.setSessionError('Failed to switch session')
       } finally {
-        updateState({ isLoadingMessages: false })
-        switchingSessionRef.current = false
+        messageManager.setIsLoadingMessages(false)
       }
     },
-    [state.currentSessionId, loadMessages, updateState, saveToCache]
+    [sessionManager, messageManager]
   )
 
-  // Send message
-  const sendMessage = useCallback(
-    async (message: string) => {
-      if (!message.trim() || state.isSendingMessage) return
+  // Enhanced closeProject that coordinates cleanup
+  const closeProject = useCallback(async () => {
+    try {
+      // Clear UI state immediately for responsiveness
+      projectManager.setCurrentProject(null)
+      sessionManager.setSessions([])
+      sessionManager.setCurrentSessionId(undefined)
+      messageManager.clearMessages()
+      serverStatus.setServerStatus('offline')
+      projectManager.setProjectError(null)
+      sessionManager.setSessionError(null)
+      messageManager.setMessageError(null)
 
-      updateState({ isSendingMessage: true, messageError: null })
+      // Clear all cache
+      localStorage.removeItem(CACHE_KEYS.CACHED_MESSAGES)
+      localStorage.removeItem(CACHE_KEYS.LAST_SESSION)
+      localStorage.removeItem('toji3_last_project')
 
-      try {
-        // Ensure server is ready
-        if (state.serverStatus === 'offline') {
-          updateState({ serverStatus: 'initializing' })
-          await window.api.toji.ensureReadyForChat()
-          await checkServerStatus()
-        }
+      // Close project in backend
+      await window.api.toji.closeProject()
 
-        // Send message
-        const response = await window.api.toji.chat(message)
+      // Wait for global server
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-        if (response) {
-          // Reload messages to get the complete conversation
-          await loadMessages(state.currentSessionId, true)
-        }
-      } catch (error) {
-        console.error('Failed to send message:', error)
-        updateState({ messageError: 'Failed to send message' })
-      } finally {
-        updateState({ isSendingMessage: false })
+      // Check if global server is ready
+      const serverReady = await serverStatus.checkServerStatus()
+      if (!serverReady) {
+        serverStatus.setServerStatus('initializing')
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        await serverStatus.checkServerStatus()
       }
-    },
-    [
-      state.isSendingMessage,
-      state.serverStatus,
-      state.currentSessionId,
-      checkServerStatus,
-      loadMessages,
-      updateState
-    ]
-  )
+
+      // Reload projects list
+      await projectManager.loadProjects()
+    } catch (error) {
+      console.error('[ChatCoordinator.closeProject] Failed to close project:', error)
+      projectManager.setProjectError('Failed to close project')
+    }
+  }, [projectManager, sessionManager, messageManager, serverStatus])
+
+  // Enhanced initializeProject that reloads sessions
+  const initializeProject = useCallback(async () => {
+    await projectManager.initializeProject()
+    // Reload sessions after initialization
+    await sessionManager.loadSessions()
+  }, [projectManager, sessionManager])
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
-    const [, , sessions] = await Promise.all([checkServerStatus(), loadProjects(), loadSessions()])
+    const [, , sessions] = await Promise.all([
+      serverStatus.checkServerStatus(),
+      projectManager.loadProjects(),
+      sessionManager.loadSessions()
+    ])
     // Load messages separately with current session ID from sessions
-    const currentId = sessions.find((s) => s.id === state.currentSessionId)?.id
+    const currentId = sessions.find((s) => s.id === sessionManager.currentSessionId)?.id
     if (currentId) {
-      await loadMessages(currentId, true)
+      await messageManager.loadMessages(currentId, true)
     }
-  }, [checkServerStatus, loadProjects, loadSessions, loadMessages, state.currentSessionId])
+  }, [serverStatus, projectManager, sessionManager, messageManager])
 
   // Clear all errors
   const clearErrors = useCallback(() => {
-    updateState({
-      projectError: null,
-      sessionError: null,
-      messageError: null
-    })
-  }, [updateState])
+    projectManager.setProjectError(null)
+    sessionManager.setSessionError(null)
+    messageManager.setMessageError(null)
+  }, [projectManager, sessionManager, messageManager])
 
-  // Initialize on mount
-  useEffect(() => {
-    initialize()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run once on mount
+  // Wrap sendMessage to pass server status
+  const sendMessage = useCallback(
+    async (message: string) => {
+      await messageManager.sendMessage(message, serverStatus.serverStatus)
+    },
+    [messageManager, serverStatus.serverStatus]
+  )
 
-  // Set up polling for server status
-  useEffect(() => {
-    pollingIntervalRef.current = setInterval(() => {
-      checkServerStatus()
-    }, 5000)
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current)
-      }
-    }
-  }, [checkServerStatus])
+  // ============================================================================
+  // Event Listeners
+  // ============================================================================
 
   // Listen for session restoration from backend
   useEffect(() => {
     const cleanup = window.api.toji.onSessionRestored(async (data) => {
-      updateState({
-        currentSessionId: data.sessionId,
-        serverStatus: 'online'
-      })
-      saveToCache(CACHE_KEYS.LAST_SESSION, data.sessionId)
+      sessionManager.setCurrentSessionId(data.sessionId)
+      serverStatus.setServerStatus('online')
+      localStorage.setItem(CACHE_KEYS.LAST_SESSION, data.sessionId)
 
       // Load messages for restored session
-      await loadMessages(data.sessionId, true)
+      await messageManager.loadMessages(data.sessionId, true)
     })
 
     return cleanup
-  }, [loadMessages, updateState, saveToCache])
+  }, [sessionManager, serverStatus, messageManager])
 
   // Watch for project changes to reload sessions
   useEffect(() => {
-    if (state.currentProject && !switchingProjectRef.current) {
-      loadSessions()
+    if (projectManager.currentProject) {
+      sessionManager.loadSessions()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.currentProject]) // Only depend on currentProject
+  }, [projectManager.currentProject])
 
-  // Removed duplicate useEffect - messages are loaded explicitly in switchSession and switchProject
+  // ============================================================================
+  // Return Combined Interface
+  // ============================================================================
 
   return {
-    ...state,
+    // Project state
+    projects: projectManager.projects,
+    currentProject: projectManager.currentProject,
+    projectStatus: projectManager.projectStatus,
+    isLoadingProjects: projectManager.isLoadingProjects,
+    isInitializingProject: projectManager.isInitializingProject,
+    projectError: projectManager.projectError,
+
+    // Session state
+    sessions: sessionManager.sessions,
+    currentSessionId: sessionManager.currentSessionId,
+    isLoadingSessions: sessionManager.isLoadingSessions,
+    sessionError: sessionManager.sessionError,
+
+    // Message state
+    messages: messageManager.messages,
+    isLoadingMessages: messageManager.isLoadingMessages,
+    isSendingMessage: messageManager.isSendingMessage,
+    messageError: messageManager.messageError,
+
+    // Server status
+    serverStatus: serverStatus.serverStatus,
+
+    // Project actions
     switchProject,
-    openProjectDialog,
+    openProjectDialog: projectManager.openProjectDialog,
     closeProject,
     initializeProject,
-    createSession,
-    deleteSession,
+
+    // Session actions
+    createSession: sessionManager.createSession,
+    deleteSession: sessionManager.deleteSession,
     switchSession,
+
+    // Message actions
     sendMessage,
+
+    // Utility actions
     refreshAll,
     clearErrors
   }

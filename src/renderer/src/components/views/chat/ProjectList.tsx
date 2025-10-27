@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { VStack, HStack, Text, Button, Box, IconButton, Spinner } from '@chakra-ui/react'
 import { LuFolderOpen, LuCheck, LuTrash2 } from 'react-icons/lu'
-import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
+import { useChatCoordinatorContext } from '../../../contexts/ChatCoordinatorContext'
 import { SidebarSection } from '../../shared/SidebarSection'
 import { Tooltip } from '../../shared/Tooltip'
 

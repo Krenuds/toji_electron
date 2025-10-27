@@ -21,7 +21,7 @@ import {
   LuSettings,
   LuFolderOpen
 } from 'react-icons/lu'
-import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
+import { useChatCoordinatorContext } from '../../../contexts/ChatCoordinatorContext'
 import { SettingsDrawer } from '../../settings/SettingsDrawer'
 
 export function ChatViewMain(): React.JSX.Element {

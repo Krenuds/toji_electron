@@ -8,7 +8,7 @@ import { Tooltip } from '../../shared/Tooltip'
 // import { StatusBadge } from '../../StatusBadge' // Not currently used
 import { ProjectList } from './ProjectList'
 import { SettingsDrawer } from '../../settings/SettingsDrawer'
-import { useChatCoordinatorContext } from '../../../hooks/useChatCoordinatorContext'
+import { useChatCoordinatorContext } from '../../../contexts/ChatCoordinatorContext'
 import type { Session } from '../../../../../preload/index.d'
 
 export function ChatViewSidebar(): React.JSX.Element {

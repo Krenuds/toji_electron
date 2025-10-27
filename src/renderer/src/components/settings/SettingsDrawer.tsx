@@ -11,7 +11,7 @@ import {
   Field
 } from '@chakra-ui/react'
 import { LuX, LuSave, LuRotateCcw } from 'react-icons/lu'
-import { useAvailableModelsContext } from '../../hooks/useAvailableModelsContext'
+import { useAvailableModelsContext } from '../../contexts/AvailableModelsContext'
 
 // Define types locally since we can't import from preload directly
 interface LocalPermissionConfig {

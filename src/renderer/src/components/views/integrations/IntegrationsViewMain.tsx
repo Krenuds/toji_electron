@@ -25,7 +25,7 @@ import { FaDiscord } from 'react-icons/fa6'
 import { MainContentContainer, SectionDivider, StatusBox, ThemedInput } from '../../shared'
 import { useDiscord } from '../../../hooks/useDiscord'
 import { useOpencodeApiKeys } from '../../../hooks/useOpencodeApiKeys'
-import { useAvailableModelsContext } from '../../../hooks/useAvailableModelsContext'
+import { useAvailableModelsContext } from '../../../contexts/AvailableModelsContext'
 
 export function IntegrationsViewMain(): React.JSX.Element {
   const { status, hasToken, isConnecting, error, connect, disconnect, refreshStatus } = useDiscord()

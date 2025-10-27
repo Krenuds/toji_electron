@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAppView } from './useAppView'
+import { useAppView } from '../contexts/AppViewContext'
 import { ViewType, ViewStateData } from '../types/ViewTypes'
 import { ChatViewSidebar } from '../components/views/chat/ChatViewSidebar'
 import { ChatViewMain } from '../components/views/chat/ChatViewMain'
