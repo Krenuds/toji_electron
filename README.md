@@ -213,6 +213,11 @@ toji3/
 │       ├── whisper-service/    # Speech-to-text (Whisper)
 │       └── piper-service/      # Text-to-speech (Piper)
 │
+├── docs/                        # Project documentation
+│   ├── refactoring/            # Refactoring initiative docs
+│   ├── guides/                 # Usage guides and best practices
+│   └── README.md               # Documentation index
+│
 ├── SPEC/                        # Technical specifications
 │   ├── OPENCODE.md             # OpenCode SDK integration
 │   ├── DISCORD_VOICE_SYSTEM.md # Voice feature architecture
@@ -442,9 +447,27 @@ See LICENSE file for details.
 - **Whisper**: [github.com/openai/whisper](https://github.com/openai/whisper)
 - **Piper TTS**: [github.com/rhasspy/piper](https://github.com/rhasspy/piper)
 
+## Documentation
+
+### 📚 Complete Documentation Index
+See [`docs/README.md`](docs/README.md) for the complete documentation index.
+
+### 🔧 Refactoring Documentation
+- **Architecture Assessment**: [`docs/refactoring/ARCHITECTURAL_ASSESSMENT.md`](docs/refactoring/ARCHITECTURAL_ASSESSMENT.md)
+- **Bug Inventory**: [`docs/refactoring/BUGS_AND_ISSUES.md`](docs/refactoring/BUGS_AND_ISSUES.md)
+- **Refactoring Plan**: [`docs/refactoring/REFACTORING_PLAN.md`](docs/refactoring/REFACTORING_PLAN.md)
+- **Complete Summary**: [`docs/refactoring/REFACTORING_COMPLETE_SUMMARY.md`](docs/refactoring/REFACTORING_COMPLETE_SUMMARY.md)
+
+### 📖 Usage Guides
+- **Kilo Code Usage**: [`docs/guides/KILO_CODE_USAGE.md`](docs/guides/KILO_CODE_USAGE.md)
+- **Context Optimization**: [`docs/guides/KILO_CODE_CONTEXT_OPTIMIZATION.md`](docs/guides/KILO_CODE_CONTEXT_OPTIMIZATION.md)
+
+### 📋 Technical Specifications
+See [`SPEC/`](SPEC/) folder for detailed technical specifications.
+
 ## Support
 
-- **Documentation**: See `SPEC/` folder for detailed technical specs
+- **Documentation**: See [`docs/`](docs/) and [`SPEC/`](SPEC/) folders
 - **Issues**: [GitHub Issues](https://github.com/krenuds/toji3/issues)
 - **Architecture Diagrams**: Run `npm run graph` to generate
 
