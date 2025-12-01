@@ -10,7 +10,9 @@
 ### When to Use Each Mode
 
 #### 🏗️ Architect Mode
+
 **Use for:**
+
 - Planning new features
 - Designing system architecture
 - Creating technical specifications
@@ -18,18 +20,22 @@
 - Breaking down complex problems
 
 **Best Practices:**
+
 - Open SPEC files in tabs
 - Close source code files
 - Use natural language queries
 - Focus on high-level design
 
 **Example:**
+
 ```
 "Design an architecture for adding real-time collaboration features"
 ```
 
 #### 💻 Code Mode
+
 **Use for:**
+
 - Implementing features
 - Fixing bugs
 - Refactoring code
@@ -37,18 +43,22 @@
 - Making code changes
 
 **Best Practices:**
+
 - Open relevant source files in tabs
 - Use codebase_search before reading files
 - Read related files together (up to 5 at once)
 - Keep documentation closed unless needed
 
 **Example:**
+
 ```
 "Fix the Discord service race condition in discord-service.ts"
 ```
 
 #### 🐛 Debug Mode
+
 **Use for:**
+
 - Investigating errors
 - Analyzing logs
 - Troubleshooting issues
@@ -56,18 +66,22 @@
 - Understanding error flows
 
 **Best Practices:**
+
 - Open log files if available
 - Open error-prone source files
 - Use search_files for error patterns
 - Check recent git changes
 
 **Example:**
+
 ```
 "Why is the server health check failing intermittently?"
 ```
 
 #### 🎯 Ask Mode
+
 **Use for:**
+
 - Understanding existing code
 - Learning about features
 - Getting explanations
@@ -75,12 +89,14 @@
 - Documentation questions
 
 **Best Practices:**
+
 - Be specific about what you want to understand
 - Reference specific files or features
 - Ask follow-up questions
 - Request examples
 
 **Example:**
+
 ```
 "Explain how the Discord embed system works and show me the key files"
 ```
@@ -93,43 +109,43 @@
 
 ```typescript
 // ✅ GOOD - Natural language
-codebase_search("How does Discord handle voice connections?")
+codebase_search('How does Discord handle voice connections?')
 
 // ❌ LESS EFFECTIVE - Keywords only
-codebase_search("Discord voice handler")
+codebase_search('Discord voice handler')
 ```
 
 ### 2. Scope to Relevant Directories
 
 ```typescript
 // ✅ GOOD - Scoped search
-codebase_search("session management", "src/main/toji")
+codebase_search('session management', 'src/main/toji')
 
 // ⚠️ OK BUT SLOWER - Searches everything
-codebase_search("session management")
+codebase_search('session management')
 ```
 
 ### 3. Use Project Terminology
 
 ```typescript
 // ✅ GOOD - Uses project terms
-codebase_search("OpenCode SDK session lifecycle and message handling")
+codebase_search('OpenCode SDK session lifecycle and message handling')
 
 // ❌ GENERIC - May miss context
-codebase_search("session lifecycle")
+codebase_search('session lifecycle')
 ```
 
 ### 4. Combine Search Types
 
 ```typescript
 // 1. Start with semantic search
-codebase_search("Discord message embed updates")
+codebase_search('Discord message embed updates')
 
 // 2. Then use regex for specific patterns
-search_files("createProgressEmbed", "src/plugins/discord", "*.ts")
+search_files('createProgressEmbed', 'src/plugins/discord', '*.ts')
 
 // 3. Finally read the specific files
-read_file("src/plugins/discord/utils/messages.ts")
+read_file('src/plugins/discord/utils/messages.ts')
 ```
 
 ---
@@ -139,16 +155,19 @@ read_file("src/plugins/discord/utils/messages.ts")
 ### Keep Relevant Tabs Open
 
 **High Priority (Always Open):**
+
 - File you're currently editing
 - Related type definition files
 - Interface files for the feature
 
 **Medium Priority (Open When Relevant):**
+
 - Related service files
 - Handler files for IPC
 - Test files
 
 **Low Priority (Close Unless Needed):**
+
 - Documentation files
 - Configuration files
 - Unrelated features
@@ -175,6 +194,7 @@ read_file("src/plugins/discord/utils/messages.ts")
 ### Understanding Token Usage
 
 **Your Project:**
+
 - Source Code: ~50,000 tokens
 - SPEC Files: ~15,000 tokens
 - Documentation: ~20,000 tokens
@@ -187,18 +207,21 @@ read_file("src/plugins/discord/utils/messages.ts")
 ### When to Optimize
 
 **Normal Usage (No Action Needed):**
+
 - Working on single feature
 - 5-10 open tabs
 - Standard conversation length
 - Budget: ~100K tokens used
 
 **Heavy Usage (Optimize):**
+
 - Large refactoring across many files
 - 20+ open tabs
 - Long conversation history
 - Budget: >150K tokens used
 
 **Optimization Actions:**
+
 1. Close unnecessary tabs
 2. Start new conversation for new topic
 3. Use scoped searches instead of reading all files
@@ -271,6 +294,7 @@ read_file("src/plugins/discord/utils/messages.ts")
 ### Common Patterns
 
 **Pattern 1: Adding New Feature**
+
 ```
 1. Architect mode: Design the feature
 2. Code mode: Implement in main process
@@ -282,6 +306,7 @@ read_file("src/plugins/discord/utils/messages.ts")
 ```
 
 **Pattern 2: Fixing Bug**
+
 ```
 1. Debug mode: Identify root cause
 2. Code mode: Implement fix
@@ -290,6 +315,7 @@ read_file("src/plugins/discord/utils/messages.ts")
 ```
 
 **Pattern 3: Refactoring**
+
 ```
 1. Architect mode: Design new structure
 2. Code mode: Create new files
@@ -328,36 +354,45 @@ read_file("src/plugins/discord/utils/messages.ts")
 ## Troubleshooting
 
 ### "Kilo Code seems slow"
+
 **Causes:**
+
 - Too many open tabs
 - Large files in context
 - Long conversation history
 
 **Solutions:**
+
 1. Close unnecessary tabs
 2. Start new conversation
 3. Use scoped searches
 4. Check `.kilocodeignore` is working
 
 ### "Kilo Code can't find relevant code"
+
 **Causes:**
+
 - Not using codebase_search
 - Search query too generic
 - Relevant files excluded
 
 **Solutions:**
+
 1. Use codebase_search with natural language
 2. Be more specific in queries
 3. Check `.kilocodeignore` isn't excluding needed files
 4. Use project-specific terminology
 
 ### "Kilo Code suggests wrong files"
+
 **Causes:**
+
 - Irrelevant files in open tabs
 - Poor search scoping
 - Missing context
 
 **Solutions:**
+
 1. Close irrelevant tabs
 2. Scope searches to specific directories
 3. Read related files together
@@ -370,20 +405,24 @@ read_file("src/plugins/discord/utils/messages.ts")
 ### File Locations
 
 **Core Logic:**
+
 - `src/main/toji/` - Main Toji orchestrator
 - `src/main/handlers/` - IPC handlers
 - `src/main/services/` - Service layer
 
 **UI:**
+
 - `src/renderer/src/components/` - React components
 - `src/renderer/src/hooks/` - Custom hooks
 - `src/renderer/src/contexts/` - React contexts
 
 **Discord:**
+
 - `src/plugins/discord/` - Discord bot plugin
 - `src/plugins/discord/voice/` - Voice features
 
 **Documentation:**
+
 - `SPEC/` - Technical specifications
 - `*REFACTORING*.md` - Refactoring docs
 - `ARCHITECTURAL_ASSESSMENT.md` - Architecture review
@@ -412,6 +451,7 @@ npm run build
 ## Success Indicators
 
 **Good Kilo Code Usage:**
+
 - ✅ Fast, relevant responses
 - ✅ Correct file references
 - ✅ Minimal unnecessary reads
@@ -419,6 +459,7 @@ npm run build
 - ✅ Efficient token usage
 
 **Needs Improvement:**
+
 - ❌ Slow responses
 - ❌ Irrelevant suggestions
 - ❌ Many "need more context" messages

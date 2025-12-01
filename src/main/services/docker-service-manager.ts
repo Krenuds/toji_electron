@@ -218,7 +218,8 @@ export class DockerServiceManager {
 
       const buildProcess = spawn(command, args, {
         cwd: servicesDir,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true // Required for PATH resolution on Windows packaged apps
       })
 
       let lastProgress = ''
@@ -311,7 +312,8 @@ export class DockerServiceManager {
       // Start docker-compose in detached mode
       const process = spawn(command, args, {
         cwd: servicesDir,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
+        shell: true // Required for PATH resolution on Windows packaged apps
       })
 
       // Capture output

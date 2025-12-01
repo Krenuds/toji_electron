@@ -15,6 +15,7 @@ Kilo Code is an AI coding assistant that operates within VSCode, using context f
 ## Current Project Analysis
 
 ### Project Structure
+
 ```
 toji_electron/
 ├── src/
@@ -29,6 +30,7 @@ toji_electron/
 ```
 
 ### Key Characteristics
+
 - **Language:** TypeScript (100%)
 - **Framework:** Electron + React 19 + Chakra UI v3
 - **Architecture:** Main-process-first with IPC boundaries
@@ -42,6 +44,7 @@ toji_electron/
 ### 1. Context Window Management
 
 Kilo Code uses a **token-based context window** (typically 200K tokens for Claude Sonnet). Context includes:
+
 - **Workspace files** - Automatically indexed
 - **Open tabs** - Higher priority
 - **Recently modified files** - Tracked automatically
@@ -51,6 +54,7 @@ Kilo Code uses a **token-based context window** (typically 200K tokens for Claud
 ### 2. File Inclusion Patterns
 
 Kilo Code automatically includes:
+
 - Files in current workspace directory
 - Files matching `.kilocodemodes` patterns
 - Files referenced in conversation
@@ -59,6 +63,7 @@ Kilo Code automatically includes:
 ### 3. Workspace Awareness
 
 Kilo Code is aware of:
+
 - **Project root:** `c:/Users/donth/Documents/toji_electron`
 - **File structure:** Recursive directory listing provided
 - **Git status:** Can detect modified files
@@ -71,13 +76,16 @@ Kilo Code is aware of:
 ### Existing Files
 
 #### `.kilocodemodes`
+
 **Purpose:** Define custom modes for Kilo Code
 **Current State:** Present in project
 **Recommendation:** Review and optimize mode definitions
 
 #### `.gitignore`
+
 **Purpose:** Exclude files from Git (also affects some AI tools)
 **Current Patterns:**
+
 ```
 node_modules/
 dist/
@@ -85,9 +93,11 @@ out/
 *.log
 .DS_Store
 ```
+
 **Recommendation:** ✅ Good - excludes build artifacts and dependencies
 
 #### `.prettierignore`
+
 **Purpose:** Exclude files from formatting
 **Recommendation:** Ensure consistency with .gitignore
 
@@ -100,6 +110,7 @@ out/
 **Purpose:** Explicitly exclude files from Kilo Code's context
 
 **Recommended `.kilocodeignore`:**
+
 ```gitignore
 # Dependencies
 node_modules/
@@ -156,6 +167,7 @@ coverage/
 **Current State:** Unknown (need to review)
 
 **Recommended Structure:**
+
 ```json
 {
   "modes": {
@@ -180,6 +192,7 @@ coverage/
 ```
 
 **Benefits:**
+
 - Mode-specific file filtering
 - Reduced context per mode
 - Faster responses
@@ -188,6 +201,7 @@ coverage/
 ### Strategy 3: Workspace Settings
 
 **Create/Update `.vscode/settings.json`:**
+
 ```json
 {
   "files.exclude": {
@@ -216,6 +230,7 @@ coverage/
 ```
 
 **Benefits:**
+
 - Improves VSCode performance
 - Reduces file watcher overhead
 - Kilo Code respects these exclusions
@@ -223,6 +238,7 @@ coverage/
 ### Strategy 4: Context Prioritization
 
 **High Priority Files (Always Include):**
+
 ```
 src/main/toji/index.ts          # Core Toji class
 src/main/toji/types.ts          # Type definitions
@@ -233,6 +249,7 @@ SPEC/*.md                       # Technical specs
 ```
 
 **Medium Priority (Include When Relevant):**
+
 ```
 src/main/services/*.ts          # Services
 src/plugins/discord/*.ts        # Discord plugin
@@ -241,6 +258,7 @@ src/renderer/src/contexts/*.ts  # React contexts
 ```
 
 **Low Priority (Exclude Unless Needed):**
+
 ```
 resources/docker-services/      # Docker configs
 graphs/                         # Generated diagrams
@@ -253,30 +271,33 @@ build/                          # Build artifacts
 **Best Practices for `codebase_search`:**
 
 1. **Use Natural Language Queries:**
+
    ```typescript
    // ✅ Good
-   codebase_search("How does Discord message handling work?")
+   codebase_search('How does Discord message handling work?')
 
    // ❌ Less effective
-   codebase_search("Discord message handler function")
+   codebase_search('Discord message handler function')
    ```
 
 2. **Scope Searches to Relevant Directories:**
+
    ```typescript
    // ✅ Good - Scoped search
-   codebase_search("session management", "src/main/toji")
+   codebase_search('session management', 'src/main/toji')
 
    // ❌ Less efficient - Searches everything
-   codebase_search("session management")
+   codebase_search('session management')
    ```
 
 3. **Use Specific Terminology:**
+
    ```typescript
    // ✅ Good - Uses project terminology
-   codebase_search("OpenCode SDK session lifecycle")
+   codebase_search('OpenCode SDK session lifecycle')
 
    // ❌ Generic
-   codebase_search("session lifecycle")
+   codebase_search('session lifecycle')
    ```
 
 ---
@@ -284,6 +305,7 @@ build/                          # Build artifacts
 ## Recommended Implementation Plan
 
 ### Step 1: Create `.kilocodeignore`
+
 **Effort:** 5 minutes
 **Impact:** High - Immediate 40% context reduction
 
@@ -295,6 +317,7 @@ touch .kilocodeignore
 ```
 
 ### Step 2: Optimize `.kilocodemodes`
+
 **Effort:** 15 minutes
 **Impact:** Medium - Better mode-specific context
 
@@ -306,6 +329,7 @@ cat .kilocodemodes
 ```
 
 ### Step 3: Update VSCode Settings
+
 **Effort:** 10 minutes
 **Impact:** Medium - Improves overall performance
 
@@ -315,10 +339,12 @@ cat .kilocodemodes
 ```
 
 ### Step 4: Document Context Strategy
+
 **Effort:** 20 minutes
 **Impact:** High - Team alignment
 
 Create `KILO_CODE_USAGE.md` with:
+
 - When to use which mode
 - How to scope searches effectively
 - File prioritization guidelines
@@ -331,11 +357,13 @@ Create `KILO_CODE_USAGE.md` with:
 ### Understanding Token Limits
 
 **Kilo Code Context Window:**
+
 - **Input:** ~200,000 tokens (Claude Sonnet)
 - **Output:** ~8,000 tokens per response
 - **File Size:** ~1 token per 4 characters
 
 **Project Token Estimates:**
+
 ```
 Source Code:        ~50,000 tokens (150 files × ~333 tokens avg)
 SPEC Files:         ~15,000 tokens (8 files × ~1,875 tokens avg)
@@ -349,6 +377,7 @@ Total Typical:      ~100,000 tokens (50% of budget)
 ### Optimization Impact
 
 **With Recommended Exclusions:**
+
 ```
 Source Code:        ~50,000 tokens (unchanged - all relevant)
 SPEC Files:         ~15,000 tokens (unchanged - all relevant)
@@ -370,6 +399,7 @@ Headroom:           ~100,000 tokens for AI responses and reasoning
 ### Automatic Prioritization
 
 Kilo Code automatically prioritizes:
+
 1. **Currently open file** - Highest priority
 2. **Files in open tabs** - High priority
 3. **Recently modified files** - Medium-high priority
@@ -380,17 +410,19 @@ Kilo Code automatically prioritizes:
 ### Manual Prioritization
 
 **Use Explicit File Reads:**
+
 ```typescript
 // High priority - explicitly read critical files
-read_file("src/main/toji/index.ts")
-read_file("src/main/toji/types.ts")
+read_file('src/main/toji/index.ts')
+read_file('src/main/toji/types.ts')
 
 // Medium priority - search first, then read matches
-codebase_search("Discord message handling")
+codebase_search('Discord message handling')
 // Then read specific files from results
 ```
 
 **Keep Relevant Tabs Open:**
+
 - Open key architecture files in VSCode tabs
 - Kilo Code gives these higher priority
 - Close irrelevant tabs to reduce noise
@@ -402,6 +434,7 @@ codebase_search("Discord message handling")
 ### `.github/` Integration
 
 **Current `.github/` Structure:**
+
 ```
 .github/
 ├── copilot-instructions.md
@@ -423,6 +456,7 @@ codebase_search("Discord message handling")
    - Prevents confusion between tool-specific instructions
 
 2. **Add Kilo Code Specific Instructions:**
+
    ```
    .github/
    └── kilo-code/
@@ -432,6 +466,7 @@ codebase_search("Discord message handling")
    ```
 
 3. **Update `.kilocodeignore`:**
+
    ```gitignore
    # Exclude tool-specific instructions
    .github/copilot-instructions.md
@@ -446,43 +481,51 @@ codebase_search("Discord message handling")
 ## Recommended Configuration Files
 
 ### 1. `.kilocodeignore` (NEW)
+
 **Location:** Project root
 **Purpose:** Exclude files from Kilo Code context
 **Content:** See Strategy 1 above
 
 ### 2. `.kilocodemodes` (UPDATE)
+
 **Location:** Project root
 **Purpose:** Define custom modes with file restrictions
 **Content:** See Strategy 2 above
 
 ### 3. `.vscode/settings.json` (UPDATE)
+
 **Location:** `.vscode/` directory
 **Purpose:** VSCode-wide exclusions
 **Content:** See Strategy 3 above
 
 ### 4. `KILO_CODE_USAGE.md` (NEW)
+
 **Location:** Project root
 **Purpose:** Team guidelines for using Kilo Code effectively
 
 **Recommended Content:**
+
 ```markdown
 # Kilo Code Usage Guidelines
 
 ## When to Use Each Mode
 
 ### Architect Mode
+
 - Planning new features
 - Designing system architecture
 - Creating technical specifications
 - Reviewing existing architecture
 
 ### Code Mode
+
 - Implementing features
 - Fixing bugs
 - Refactoring code
 - Writing tests
 
 ### Debug Mode
+
 - Investigating errors
 - Analyzing logs
 - Troubleshooting issues
@@ -514,6 +557,7 @@ codebase_search("Discord message handling")
 ## Context Consumption Analysis
 
 ### High-Value Context (Keep)
+
 ```
 ✅ src/main/toji/*.ts           # Core business logic
 ✅ src/main/handlers/*.ts       # IPC layer
@@ -524,6 +568,7 @@ codebase_search("Discord message handling")
 ```
 
 ### Low-Value Context (Exclude)
+
 ```
 ❌ node_modules/                # Dependencies (huge, irrelevant)
 ❌ dist/, out/, build/          # Build artifacts
@@ -534,6 +579,7 @@ codebase_search("Discord message handling")
 ```
 
 ### Conditional Context (Mode-Specific)
+
 ```
 🔀 resources/docker-services/   # Only for voice/STT/TTS work
 🔀 graphs/                      # Only for architecture work
@@ -570,6 +616,7 @@ codebase_search("Discord message handling")
 ### VSCode Settings Impact on Kilo Code
 
 **Settings That Help Kilo Code:**
+
 ```json
 {
   // Exclude from file explorer (reduces visual noise)
@@ -604,24 +651,29 @@ codebase_search("Discord message handling")
 ## Specific Recommendations for Toji Project
 
 ### 1. Create `.kilocodeignore` ✅ HIGH PRIORITY
+
 **Why:** Immediate 40% context reduction
 **Effort:** 5 minutes
 **Files to exclude:** See Strategy 1
 
 ### 2. Optimize Mode Definitions ✅ MEDIUM PRIORITY
+
 **Why:** Better context per mode
 **Effort:** 15 minutes
 **Action:** Update `.kilocodemodes` with file restrictions
 
 ### 3. Update VSCode Settings ✅ MEDIUM PRIORITY
+
 **Why:** Improves overall performance
 **Effort:** 10 minutes
 **Action:** Add exclusions to `.vscode/settings.json`
 
 ### 4. Organize Documentation ✅ LOW PRIORITY
+
 **Why:** Clearer context hierarchy
 **Effort:** 30 minutes
 **Action:**
+
 ```
 Current:
 ├── SPEC/                    # Technical specs
@@ -638,6 +690,7 @@ Recommended:
 ```
 
 ### 5. Add Context Hints to Key Files ✅ LOW PRIORITY
+
 **Why:** Help Kilo Code understand relationships
 **Effort:** 1 hour
 **Action:** Add JSDoc comments with context:
@@ -662,9 +715,10 @@ export class Toji {
 ### For Daily Development
 
 1. **Start with Semantic Search:**
+
    ```typescript
    // Always use codebase_search first for new areas
-   codebase_search("Discord voice connection handling")
+   codebase_search('Discord voice connection handling')
    // Then read specific files from results
    ```
 
@@ -681,19 +735,17 @@ export class Toji {
 ### For Large Refactoring
 
 1. **Batch Related Files:**
+
    ```typescript
    // Read related files together (up to 5 at once)
-   read_file([
-     "src/main/toji/index.ts",
-     "src/main/toji/types.ts",
-     "src/main/toji/interfaces.ts"
-   ])
+   read_file(['src/main/toji/index.ts', 'src/main/toji/types.ts', 'src/main/toji/interfaces.ts'])
    ```
 
 2. **Use Targeted Searches:**
+
    ```typescript
    // Scope to specific directories
-   search_files("session", "src/main/toji", "*.ts")
+   search_files('session', 'src/main/toji', '*.ts')
    ```
 
 3. **Close Unnecessary Tabs:**
@@ -725,12 +777,14 @@ export class Toji {
 ### Optimization Indicators
 
 **Good Context Management:**
+
 - ✅ Kilo Code finds relevant code quickly
 - ✅ Suggestions reference correct files
 - ✅ Minimal unnecessary file reads
 - ✅ Fast response times
 
 **Poor Context Management:**
+
 - ❌ Frequent "I need more context" messages
 - ❌ Suggestions reference wrong files
 - ❌ Many unnecessary file reads
@@ -755,12 +809,14 @@ export class Toji {
 ## Expected Results
 
 ### Before Optimization
+
 - Context includes build artifacts and dependencies
 - Slower search and file operations
 - Higher token consumption
 - Less focused AI responses
 
 ### After Optimization
+
 - ~40% reduction in irrelevant context
 - Faster search and file operations
 - Lower token consumption
@@ -772,12 +828,14 @@ export class Toji {
 ## Maintenance
 
 ### Regular Reviews (Monthly)
+
 1. Review `.kilocodeignore` for new patterns
 2. Check if new directories need exclusion
 3. Update mode definitions as project evolves
 4. Monitor token usage trends
 
 ### When to Re-optimize
+
 - Project grows significantly (>50% more files)
 - New major features added (new directories)
 - Context budget consistently exceeded
