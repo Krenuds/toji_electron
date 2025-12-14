@@ -84,11 +84,9 @@ strict digraph "dependency-cruiser output"{
     "src/main/toji/index.ts" -> "src/main/config/ConfigProvider.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/services/opencode-service.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/utils/logger.ts"
-    "src/main/toji/index.ts" -> "src/main/toji/attachment-parser.ts"
     "src/main/toji/index.ts" -> "src/main/toji/client-manager.ts"
     "src/main/toji/index.ts" -> "src/main/toji/config.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/index.ts" -> "src/main/toji/config-manager.ts"
-    "src/main/toji/index.ts" -> "src/main/toji/image-utils.ts"
     "src/main/toji/index.ts" -> "src/main/toji/mcp/index.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project.ts"
     "src/main/toji/index.ts" -> "src/main/toji/project-initializer.ts"
@@ -101,6 +99,9 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/main" {label="main" subgraph "cluster_src/main/toji" {label="toji" subgraph "cluster_src/main/toji/mcp" {label="mcp" "src/main/toji/mcp/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/main/toji/mcp/index.ts" fillcolor="#ddfeff"] } } } }
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/mcp-manager.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-channel-info.ts" [arrowhead="inv"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-create-channel.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-delete-channel.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-edit-channel.ts" [arrowhead="onormal" penwidth="1.0"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-list-channels.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-messages.ts" [arrowhead="inv"]
     "src/main/toji/mcp/index.ts" -> "src/main/toji/mcp/tools/discord-search-messages.ts" [arrowhead="inv"]
@@ -324,12 +325,13 @@ strict digraph "dependency-cruiser output"{
     "src/preload/index.ts" -> "src/preload/api/index.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/App.tsx" [label=<App.tsx> tooltip="App.tsx" URL="src/renderer/src/App.tsx" fillcolor="#bbfeff"] } } }
     "src/renderer/src/App.tsx" -> "src/renderer/src/components/IconButton.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/components/shared/index.ts"
     "src/renderer/src/App.tsx" -> "src/renderer/src/components/TitleBar.tsx"
     "src/renderer/src/App.tsx" -> "src/renderer/src/contexts/AppViewContext.tsx"
+    "src/renderer/src/App.tsx" -> "src/renderer/src/contexts/AvailableModelsContext.tsx"
     "src/renderer/src/App.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContext.tsx"
     "src/renderer/src/App.tsx" -> "src/renderer/src/hooks/useViewCoordination.tsx"
     "src/renderer/src/App.tsx" -> "src/renderer/src/hooks/useWindowControls.ts"
-    "src/renderer/src/App.tsx" -> "src/renderer/src/providers/AvailableModelsProvider.tsx"
     "src/renderer/src/App.tsx" -> "src/renderer/src/types/ViewTypes.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/IconButton.tsx" [label=<IconButton.tsx> tooltip="IconButton.tsx" URL="src/renderer/src/components/IconButton.tsx" fillcolor="#bbfeff"] } } } }
     "src/renderer/src/components/IconButton.tsx" -> "src/renderer/src/types/ViewTypes.ts"
@@ -338,8 +340,9 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/SidebarContainer.tsx" [label=<SidebarContainer.tsx> tooltip="SidebarContainer.tsx" URL="src/renderer/src/components/SidebarContainer.tsx" fillcolor="#bbfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" "src/renderer/src/components/TitleBar.tsx" [label=<TitleBar.tsx> tooltip="TitleBar.tsx" URL="src/renderer/src/components/TitleBar.tsx" fillcolor="#bbfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/settings" {label="settings" "src/renderer/src/components/settings/SettingsDrawer.tsx" [label=<SettingsDrawer.tsx> tooltip="SettingsDrawer.tsx" URL="src/renderer/src/components/settings/SettingsDrawer.tsx" fillcolor="#bbfeff"] } } } } }
-    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "src/renderer/src/hooks/useAvailableModelsContext.ts"
+    "src/renderer/src/components/settings/SettingsDrawer.tsx" -> "src/renderer/src/contexts/AvailableModelsContext.tsx"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/ActionButton.tsx" [label=<ActionButton.tsx> tooltip="ActionButton.tsx" URL="src/renderer/src/components/shared/ActionButton.tsx" fillcolor="#bbfeff"] } } } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/ErrorBoundary.tsx" [label=<ErrorBoundary.tsx> tooltip="ErrorBoundary.tsx" URL="src/renderer/src/components/shared/ErrorBoundary.tsx" fillcolor="#bbfeff"] } } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/IntegrationCard.tsx" [label=<IntegrationCard.tsx> tooltip="IntegrationCard.tsx" URL="src/renderer/src/components/shared/IntegrationCard.tsx" fillcolor="#bbfeff"] } } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/LabelRow.tsx" [label=<LabelRow.tsx> tooltip="LabelRow.tsx" URL="src/renderer/src/components/shared/LabelRow.tsx" fillcolor="#bbfeff"] } } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/MainContentContainer.tsx" [label=<MainContentContainer.tsx> tooltip="MainContentContainer.tsx" URL="src/renderer/src/components/shared/MainContentContainer.tsx" fillcolor="#bbfeff"] } } } } }
@@ -355,6 +358,7 @@ strict digraph "dependency-cruiser output"{
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/Tooltip.tsx" [label=<Tooltip.tsx> tooltip="Tooltip.tsx" URL="src/renderer/src/components/shared/Tooltip.tsx" fillcolor="#bbfeff"] } } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/shared" {label="shared" "src/renderer/src/components/shared/index.ts" [label=<index.ts> tooltip="index.ts" URL="src/renderer/src/components/shared/index.ts" fillcolor="#ddfeff"] } } } } }
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/ActionButton.tsx" [arrowhead="inv"]
+    "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/ErrorBoundary.tsx" [arrowhead="inv"]
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/IntegrationCard.tsx" [arrowhead="inv"]
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/LabelRow.tsx" [arrowhead="inv"]
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/MainContentContainer.tsx" [arrowhead="inv"]
@@ -369,11 +373,11 @@ strict digraph "dependency-cruiser output"{
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/ThemedInput.tsx" [arrowhead="inv"]
     "src/renderer/src/components/shared/index.ts" -> "src/renderer/src/components/shared/Tooltip.tsx" [arrowhead="inv"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ChatViewMain.tsx" [label=<ChatViewMain.tsx> tooltip="ChatViewMain.tsx" URL="src/renderer/src/components/views/chat/ChatViewMain.tsx" fillcolor="#bbfeff"] } } } } } }
-    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContext.tsx"
     "src/renderer/src/components/views/chat/ChatViewMain.tsx" -> "src/renderer/src/components/settings/SettingsDrawer.tsx"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" [label=<ChatViewSidebar.tsx> tooltip="ChatViewSidebar.tsx" URL="src/renderer/src/components/views/chat/ChatViewSidebar.tsx" fillcolor="#bbfeff"] } } } } } }
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContext.tsx"
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/settings/SettingsDrawer.tsx"
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarHeader.tsx"
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarSection.tsx"
@@ -381,11 +385,11 @@ strict digraph "dependency-cruiser output"{
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/SidebarContainer.tsx"
     "src/renderer/src/components/views/chat/ChatViewSidebar.tsx" -> "src/renderer/src/components/views/chat/ProjectList.tsx"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/chat" {label="chat" "src/renderer/src/components/views/chat/ProjectList.tsx" [label=<ProjectList.tsx> tooltip="ProjectList.tsx" URL="src/renderer/src/components/views/chat/ProjectList.tsx" fillcolor="#bbfeff"] } } } } } }
-    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/hooks/useChatCoordinatorContext.ts"
+    "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContext.tsx"
     "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/components/shared/SidebarSection.tsx"
     "src/renderer/src/components/views/chat/ProjectList.tsx" -> "src/renderer/src/components/shared/Tooltip.tsx"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/components" {label="components" subgraph "cluster_src/renderer/src/components/views" {label="views" subgraph "cluster_src/renderer/src/components/views/integrations" {label="integrations" "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" [label=<IntegrationsViewMain.tsx> tooltip="IntegrationsViewMain.tsx" URL="src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" fillcolor="#bbfeff"] } } } } } }
-    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useAvailableModelsContext.ts"
+    "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/contexts/AvailableModelsContext.tsx"
     "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useDiscord.ts"
     "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/hooks/useOpencodeApiKeys.ts"
     "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx" -> "src/renderer/src/components/shared/index.ts"
@@ -394,53 +398,50 @@ strict digraph "dependency-cruiser output"{
     "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/hooks/useOpencodeApiKeys.ts"
     "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/components/shared/SidebarCard.tsx"
     "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx" -> "src/renderer/src/components/SidebarContainer.tsx"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/constants" {label="constants" "src/renderer/src/constants/cacheKeys.ts" [label=<cacheKeys.ts> tooltip="cacheKeys.ts" URL="src/renderer/src/constants/cacheKeys.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AppViewContext.tsx" [label=<AppViewContext.tsx> tooltip="AppViewContext.tsx" URL="src/renderer/src/contexts/AppViewContext.tsx" fillcolor="#bbfeff"] } } } }
-    "src/renderer/src/contexts/AppViewContext.tsx" -> "src/renderer/src/providers/AppViewProvider.tsx" [arrowhead="inv"]
-    "src/renderer/src/contexts/AppViewContext.tsx" -> "src/renderer/src/contexts/AppViewContextDef.ts" [arrowhead="inv"]
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AppViewContextDef.ts" [label=<AppViewContextDef.ts> tooltip="AppViewContextDef.ts" URL="src/renderer/src/contexts/AppViewContextDef.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/contexts/AppViewContextDef.ts" -> "src/renderer/src/types/ViewTypes.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AvailableModelsContext.ts" [label=<AvailableModelsContext.ts> tooltip="AvailableModelsContext.ts" URL="src/renderer/src/contexts/AvailableModelsContext.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/contexts/AvailableModelsContext.ts" -> "src/renderer/src/contexts/AvailableModelsContextDef.ts" [arrowhead="onormal" penwidth="1.0"]
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AvailableModelsContextDef.ts" [label=<AvailableModelsContextDef.ts> tooltip="AvailableModelsContextDef.ts" URL="src/renderer/src/contexts/AvailableModelsContextDef.ts" fillcolor="#ddfeff"] } } } }
+    "src/renderer/src/contexts/AppViewContext.tsx" -> "src/renderer/src/types/ViewTypes.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/AvailableModelsContext.tsx" [label=<AvailableModelsContext.tsx> tooltip="AvailableModelsContext.tsx" URL="src/renderer/src/contexts/AvailableModelsContext.tsx" fillcolor="#bbfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/ChatCoordinatorContext.tsx" [label=<ChatCoordinatorContext.tsx> tooltip="ChatCoordinatorContext.tsx" URL="src/renderer/src/contexts/ChatCoordinatorContext.tsx" fillcolor="#bbfeff"] } } } }
     "src/renderer/src/contexts/ChatCoordinatorContext.tsx" -> "src/renderer/src/hooks/useChatCoordinator.ts"
-    "src/renderer/src/contexts/ChatCoordinatorContext.tsx" -> "src/renderer/src/contexts/ChatCoordinatorContextDef.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/contexts" {label="contexts" "src/renderer/src/contexts/ChatCoordinatorContextDef.ts" [label=<ChatCoordinatorContextDef.ts> tooltip="ChatCoordinatorContextDef.ts" URL="src/renderer/src/contexts/ChatCoordinatorContextDef.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/contexts/ChatCoordinatorContextDef.ts" -> "src/renderer/src/hooks/useChatCoordinator.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/env.d.ts" [label=<env.d.ts> tooltip="env.d.ts" URL="src/renderer/src/env.d.ts" fillcolor="#ccffcc"] } } }
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useAppView.ts" [label=<useAppView.ts> tooltip="useAppView.ts" URL="src/renderer/src/hooks/useAppView.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/hooks/useAppView.ts" -> "src/renderer/src/contexts/AppViewContextDef.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useAvailableModelsContext.ts" [label=<useAvailableModelsContext.ts> tooltip="useAvailableModelsContext.ts" URL="src/renderer/src/hooks/useAvailableModelsContext.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/hooks/useAvailableModelsContext.ts" -> "src/renderer/src/contexts/AvailableModelsContext.ts"
-    "src/renderer/src/hooks/useAvailableModelsContext.ts" -> "src/renderer/src/contexts/AvailableModelsContextDef.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" subgraph "cluster_src/renderer/src/hooks/chat" {label="chat" "src/renderer/src/hooks/chat/useMessageManager.ts" [label=<useMessageManager.ts> tooltip="useMessageManager.ts" URL="src/renderer/src/hooks/chat/useMessageManager.ts" fillcolor="#ddfeff"] } } } } }
+    "src/renderer/src/hooks/chat/useMessageManager.ts" -> "src/renderer/src/constants/cacheKeys.ts"
+    "src/renderer/src/hooks/chat/useMessageManager.ts" -> "src/renderer/src/utils/messageFormatter.ts"
+    "src/renderer/src/hooks/chat/useMessageManager.ts" -> "src/renderer/src/hooks/usePersistedState.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" subgraph "cluster_src/renderer/src/hooks/chat" {label="chat" "src/renderer/src/hooks/chat/useProjectManager.ts" [label=<useProjectManager.ts> tooltip="useProjectManager.ts" URL="src/renderer/src/hooks/chat/useProjectManager.ts" fillcolor="#ddfeff"] } } } } }
+    "src/renderer/src/hooks/chat/useProjectManager.ts" -> "src/renderer/src/constants/cacheKeys.ts"
+    "src/renderer/src/hooks/chat/useProjectManager.ts" -> "src/renderer/src/hooks/usePersistedState.ts"
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" subgraph "cluster_src/renderer/src/hooks/chat" {label="chat" "src/renderer/src/hooks/chat/useServerStatus.ts" [label=<useServerStatus.ts> tooltip="useServerStatus.ts" URL="src/renderer/src/hooks/chat/useServerStatus.ts" fillcolor="#ddfeff"] } } } } }
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" subgraph "cluster_src/renderer/src/hooks/chat" {label="chat" "src/renderer/src/hooks/chat/useSessionManager.ts" [label=<useSessionManager.ts> tooltip="useSessionManager.ts" URL="src/renderer/src/hooks/chat/useSessionManager.ts" fillcolor="#ddfeff"] } } } } }
+    "src/renderer/src/hooks/chat/useSessionManager.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/hooks/chat/useSessionManager.ts" -> "src/renderer/src/constants/cacheKeys.ts"
+    "src/renderer/src/hooks/chat/useSessionManager.ts" -> "src/renderer/src/hooks/usePersistedState.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useBinaryStatus.ts" [label=<useBinaryStatus.ts> tooltip="useBinaryStatus.ts" URL="src/renderer/src/hooks/useBinaryStatus.ts" fillcolor="#ddfeff"] } } } }
     "src/renderer/src/hooks/useBinaryStatus.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useChatCoordinator.ts" [label=<useChatCoordinator.ts> tooltip="useChatCoordinator.ts" URL="src/renderer/src/hooks/useChatCoordinator.ts" fillcolor="#ddfeff"] } } } }
     "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
-    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/utils/messageFormatter.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useChatCoordinatorContext.ts" [label=<useChatCoordinatorContext.ts> tooltip="useChatCoordinatorContext.ts" URL="src/renderer/src/hooks/useChatCoordinatorContext.ts" fillcolor="#ddfeff"] } } } }
-    "src/renderer/src/hooks/useChatCoordinatorContext.ts" -> "src/renderer/src/contexts/ChatCoordinatorContextDef.ts"
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/utils/messageFormatter.ts" [arrowhead="onormal" penwidth="1.0"]
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/hooks/chat/useMessageManager.ts"
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/hooks/chat/useProjectManager.ts"
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/hooks/chat/useServerStatus.ts"
+    "src/renderer/src/hooks/useChatCoordinator.ts" -> "src/renderer/src/hooks/chat/useSessionManager.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useDiscord.ts" [label=<useDiscord.ts> tooltip="useDiscord.ts" URL="src/renderer/src/hooks/useDiscord.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useOpencodeApiKeys.ts" [label=<useOpencodeApiKeys.ts> tooltip="useOpencodeApiKeys.ts" URL="src/renderer/src/hooks/useOpencodeApiKeys.ts" fillcolor="#ddfeff"] } } } }
     "src/renderer/src/hooks/useOpencodeApiKeys.ts" -> "src/preload/index.d.ts" [arrowhead="onormal" penwidth="1.0"]
+    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/usePersistedState.ts" [label=<usePersistedState.ts> tooltip="usePersistedState.ts" URL="src/renderer/src/hooks/usePersistedState.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useViewCoordination.tsx" [label=<useViewCoordination.tsx> tooltip="useViewCoordination.tsx" URL="src/renderer/src/hooks/useViewCoordination.tsx" fillcolor="#bbfeff"] } } } }
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/PlaceholderViews.tsx"
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/chat/ChatViewMain.tsx"
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/chat/ChatViewSidebar.tsx"
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/integrations/IntegrationsViewMain.tsx"
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/components/views/integrations/IntegrationsViewSidebar.tsx"
+    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/contexts/AppViewContext.tsx"
     "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/types/ViewTypes.ts"
-    "src/renderer/src/hooks/useViewCoordination.tsx" -> "src/renderer/src/hooks/useAppView.ts"
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/hooks" {label="hooks" "src/renderer/src/hooks/useWindowControls.ts" [label=<useWindowControls.ts> tooltip="useWindowControls.ts" URL="src/renderer/src/hooks/useWindowControls.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/main.tsx" [label=<main.tsx> tooltip="main.tsx" URL="src/renderer/src/main.tsx" fillcolor="#bbfeff"] } } }
     "src/renderer/src/main.tsx" -> "src/renderer/src/App.tsx"
     "src/renderer/src/main.tsx" -> "src/renderer/src/theme.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/providers" {label="providers" "src/renderer/src/providers/AppViewProvider.tsx" [label=<AppViewProvider.tsx> tooltip="AppViewProvider.tsx" URL="src/renderer/src/providers/AppViewProvider.tsx" fillcolor="#bbfeff"] } } } }
-    "src/renderer/src/providers/AppViewProvider.tsx" -> "src/renderer/src/contexts/AppViewContextDef.ts"
-    "src/renderer/src/providers/AppViewProvider.tsx" -> "src/renderer/src/types/ViewTypes.ts"
-    subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/providers" {label="providers" "src/renderer/src/providers/AvailableModelsProvider.tsx" [label=<AvailableModelsProvider.tsx> tooltip="AvailableModelsProvider.tsx" URL="src/renderer/src/providers/AvailableModelsProvider.tsx" fillcolor="#bbfeff"] } } } }
-    "src/renderer/src/providers/AvailableModelsProvider.tsx" -> "src/renderer/src/contexts/AvailableModelsContext.ts"
-    "src/renderer/src/providers/AvailableModelsProvider.tsx" -> "src/renderer/src/contexts/AvailableModelsContextDef.ts" [arrowhead="onormal" penwidth="1.0"]
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" "src/renderer/src/theme.ts" [label=<theme.ts> tooltip="theme.ts" URL="src/renderer/src/theme.ts" fillcolor="#ddfeff"] } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/types" {label="types" "src/renderer/src/types/ViewTypes.ts" [label=<ViewTypes.ts> tooltip="ViewTypes.ts" URL="src/renderer/src/types/ViewTypes.ts" fillcolor="#ddfeff"] } } } }
     subgraph "cluster_src" {label="src" subgraph "cluster_src/renderer" {label="renderer" subgraph "cluster_src/renderer/src" {label="src" subgraph "cluster_src/renderer/src/utils" {label="utils" "src/renderer/src/utils/messageFormatter.ts" [label=<messageFormatter.ts> tooltip="messageFormatter.ts" URL="src/renderer/src/utils/messageFormatter.ts" fillcolor="#ddfeff"] } } } }

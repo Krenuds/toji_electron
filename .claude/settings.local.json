@@ -53,7 +53,14 @@
       "Bash(del \"C:\\Users\\donth\\toji3\\src\\main\\toji\\opencode-server-patch.ts\")",
       "Bash(npm run typecheck:node:*)",
       "Bash(set)",
-      "Read(//c//**)"
+      "Read(//c//**)",
+      "Bash(npm run graph:full:*)",
+      "Bash(npm run graph:*)",
+      "Bash(git -C \"C:\\Users\\donth\\Documents\\toji_electron\" status)",
+      "Bash(git -C \"C:\\Users\\donth\\Documents\\toji_electron\" diff README.md --stat)",
+      "Bash(git -C \"C:\\Users\\donth\\Documents\\toji_electron\" log --oneline -3)",
+      "Bash(git -C \"C:\\Users\\donth\\Documents\\toji_electron\" add README.md)",
+      "Bash(git -C \"C:\\Users\\donth\\Documents\\toji_electron\" commit -m \"$(cat <<''EOF''\ndocs: rewrite README with mermaid architecture diagrams\n\n- Add 7 mermaid diagrams covering full system architecture\n- High-level overview, main process structure, chat data flow\n- Discord integration, voice processing pipeline, dev workflow\n- Clean up broken doc links, add Discord commands table\n- Simplify technology stack to table format\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
