@@ -1,55 +1,227 @@
 # Toji3
 
-> **⚠️ Proof of Concept**: This is an early-stage proof of concept demonstrating the integration of OpenCode AI SDK with Discord and desktop interfaces. The full production version is under active development.
+AI-Powered Development Desktop Application with OpenCode Integration and Discord Bot
 
-## About
+## Overview
 
-Toji3 is an AI-powered development assistant desktop application that bridges the gap between conversational AI and your development workflow. Built on top of the [OpenCode SDK](https://github.com/sst/opencode), Toji3 provides a multi-interface approach to AI-assisted development through both a desktop GUI and Discord bot integration.
+Toji3 is an Electron desktop application that brings AI-assisted development to your workflow through a native GUI and Discord integration. It wraps the [OpenCode SDK](https://github.com/sst/opencode) to provide multi-project AI sessions with voice capabilities.
 
-The application acts as a sophisticated wrapper around OpenCode, managing multiple project contexts, AI sessions, and providing seamless integration with Discord for team-based development workflows. It features real-time voice communication, project management, and session persistence, allowing developers to maintain context across conversations and collaborate naturally through voice or text.
+```mermaid
+flowchart LR
+    subgraph Desktop["Desktop App"]
+        UI[React UI]
+        Main[Electron Main]
+    end
 
-Key capabilities include:
+    subgraph AI["AI Backend"]
+        OC[OpenCode Server]
+        LLM[Claude/GPT]
+    end
 
-- **Desktop Interface**: Native Electron app with React-based UI for managing AI sessions and projects
-- **Discord Integration**: Full-featured bot that exposes OpenCode capabilities in Discord servers
-- **Voice Communication**: Real-time speech-to-text and text-to-speech for natural voice conversations with AI
-- **Project Context Management**: Organize conversations by project with automatic OpenCode server management
-- **Session Persistence**: All conversations are preserved and can be resumed at any time
-- **MCP (Model Context Protocol) Support**: Extensible tool system for Discord channel management and more
+    subgraph Discord["Discord"]
+        Bot[Discord Bot]
+        Voice[Voice Channels]
+    end
+
+    UI <-->|IPC| Main
+    Main <-->|SDK| OC
+    OC <-->|API| LLM
+    Main <-->|discord.js| Bot
+    Bot <-->|Audio| Voice
+```
+
+## Features
+
+- **Multi-Project Sessions** - Run separate OpenCode servers per project with independent contexts
+- **Discord Bot Integration** - AI assistant accessible through Discord text and voice channels
+- **Voice Conversations** - Speech-to-text and text-to-speech via Docker-based Whisper and Piper
+- **MCP Tools** - Model Context Protocol tools for Discord channel management
+- **Project Initialization** - Automatic AGENTS.md generation for new projects
 
 ## Architecture
 
-Toji3 follows a **main-process-first architecture** where all business logic resides in the Electron main process, with interfaces (renderer, Discord bot) serving as thin presentation layers:
+### High-Level Architecture
 
+```mermaid
+flowchart TB
+    subgraph Renderer["Renderer Process - React"]
+        App[App.tsx]
+        Views[Views]
+        Hooks[Custom Hooks]
+        Contexts[React Contexts]
+    end
+
+    subgraph Preload["Preload Bridge"]
+        API[window.api]
+    end
+
+    subgraph Main["Main Process - Node.js"]
+        Handlers[IPC Handlers]
+        Toji[Toji Core]
+        Services[Services]
+        Plugins[Plugins]
+    end
+
+    subgraph External["External"]
+        OpenCode[OpenCode Servers]
+        DiscordAPI[Discord API]
+        Docker[Docker Services]
+    end
+
+    App --> Views
+    Views --> Hooks
+    Hooks --> Contexts
+    Hooks -->|window.api| API
+    API -->|IPC| Handlers
+    Handlers --> Toji
+    Handlers --> Services
+    Toji --> OpenCode
+    Services --> DiscordAPI
+    Services --> Docker
+    Plugins --> DiscordAPI
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         Main Process                        │
-│  ┌────────────┐  ┌──────────────┐  ┌────────────────────┐ │
-│  │ Toji Core  │  │ OpenCode SDK │  │ Discord Plugin     │ │
-│  │  - Sessions│  │  - Servers   │  │  - Voice Module    │ │
-│  │  - Projects│  │  - Clients   │  │  - Commands        │ │
-│  │  - Config  │  │  - Sessions  │  │  - MCP Services    │ │
-│  └────────────┘  └──────────────┘  └────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-           ↑                    ↑                    ↑
-           │ IPC                │ HTTP               │ Gateway
-           ↓                    ↓                    ↓
-  ┌─────────────────┐  ┌─────────────────┐  ┌───────────────┐
-  │ Renderer (React)│  │ OpenCode Server │  │ Discord API   │
-  │  - Chakra UI v3 │  │  - Port 4096+   │  │  - Voice/Text │
-  │  - TypeScript   │  │  - Per-Project  │  │  - Slash Cmds │
-  └─────────────────┘  └─────────────────┘  └───────────────┘
+
+### Main Process Structure
+
+```mermaid
+flowchart LR
+    subgraph Handlers["IPC Handlers"]
+        TH[toji.handlers]
+        PH[project.handlers]
+        OH[opencode.handlers]
+        DH[discord.handlers]
+        VH[voice.handlers]
+    end
+
+    subgraph Core["Toji Core"]
+        PM[ProjectManager]
+        SM[ServerManager]
+        SessM[SessionManager]
+        CM[ConfigManager]
+        MCP[McpManager]
+    end
+
+    subgraph Services
+        OCS[OpenCodeService]
+        DS[DiscordService]
+        VSM[VoiceServiceManager]
+    end
+
+    TH --> PM
+    TH --> SM
+    TH --> SessM
+    PH --> PM
+    OH --> OCS
+    DH --> DS
+    VH --> VSM
+    SM --> OCS
+    DS --> MCP
+```
+
+### Data Flow: Chat Session
+
+```mermaid
+sequenceDiagram
+    participant UI as React UI
+    participant Hook as useChatCoordinator
+    participant IPC as IPC Handler
+    participant Toji as Toji Core
+    participant OC as OpenCode Server
+    participant LLM as Claude API
+
+    UI->>Hook: sendMessage(text)
+    Hook->>IPC: toji:chat
+    IPC->>Toji: chat(sessionId, message)
+    Toji->>OC: session.prompt()
+    OC->>LLM: API Request
+    LLM-->>OC: Streaming Response
+    OC-->>Toji: Event Stream
+    Toji-->>IPC: Forward Events
+    IPC-->>Hook: IPC Events
+    Hook-->>UI: Update Messages
+```
+
+### Discord Integration
+
+```mermaid
+flowchart TB
+    subgraph Discord["Discord"]
+        User[User Message]
+        VC[Voice Channel]
+    end
+
+    subgraph Plugin["Discord Plugin"]
+        DP[DiscordPlugin]
+        SlashMod[SlashCommandModule]
+        VM[VoiceModule]
+        DPM[DiscordProjectManager]
+    end
+
+    subgraph TojiCore["Toji Core"]
+        Sessions[SessionManager]
+        MCPTools[MCP Tools]
+    end
+
+    User -->|Text| DP
+    VC -->|Audio| VM
+    DP --> SlashMod
+    DP --> DPM
+    SlashMod --> Sessions
+    DPM --> Sessions
+    VM -->|STT| Sessions
+    Sessions -->|Response| DP
+    Sessions -->|TTS| VM
+    MCPTools --> DP
+```
+
+### Voice Processing Pipeline
+
+```mermaid
+flowchart LR
+    subgraph Input["Audio Input"]
+        UserSpeech[User Speech]
+        Opus1[Opus Decoder]
+    end
+
+    subgraph STT["Speech-to-Text"]
+        Whisper[Whisper Docker]
+    end
+
+    subgraph AIProc["AI Processing"]
+        OCSession[OpenCode Session]
+    end
+
+    subgraph TTS["Text-to-Speech"]
+        Piper[Piper Docker]
+    end
+
+    subgraph Output["Audio Output"]
+        FFmpeg[FFmpeg Transcode]
+        Opus2[Opus Encoder]
+        BotVoice[Bot Voice]
+    end
+
+    UserSpeech -->|Opus| Opus1
+    Opus1 -->|PCM 16kHz| Whisper
+    Whisper -->|Text| OCSession
+    OCSession -->|Response| Piper
+    Piper -->|WAV| FFmpeg
+    FFmpeg -->|PCM| Opus2
+    Opus2 --> BotVoice
 ```
 
 ### Technology Stack
 
-- **Electron 37.2**: Desktop application framework with Node.js integration
-- **React 19.1**: Modern UI with hooks and concurrent features
-- **TypeScript 5.8**: Strict typing across the entire codebase
-- **Chakra UI v3**: Component library for consistent, accessible design
-- **OpenCode SDK 0.9.6**: AI session management and conversation handling
-- **Discord.js 14**: Full Discord API integration with voice support
-- **Docker Services**: Whisper (STT) and Piper (TTS) for voice capabilities
+| Layer | Technology |
+|-------|------------|
+| Desktop Framework | Electron 37 |
+| Build Tool | electron-vite |
+| Frontend | React 19, TypeScript 5.8 |
+| UI Components | Chakra UI v3 |
+| AI Integration | OpenCode SDK |
+| Discord | discord.js 14 |
+| Voice | @discordjs/voice, Whisper, Piper |
+| MCP | @modelcontextprotocol/sdk |
 
 ## Installation
 
@@ -136,6 +308,17 @@ Toji3 follows a **main-process-first architecture** where all business logic res
    - TypeScript watch mode for type checking
 
 #### Development Workflow
+
+```mermaid
+flowchart LR
+    A[Format] --> B[Implement]
+    B --> C[Lint]
+    C --> D[Typecheck]
+    D --> E[Test in Dev]
+    E --> F{Pass?}
+    F -->|Yes| G[Commit]
+    F -->|No| B
+```
 
 ```bash
 # Format code (Prettier)
@@ -449,32 +632,45 @@ See LICENSE file for details.
 
 ## Documentation
 
-### 📚 Complete Documentation Index
+### Technical Specifications
 
-See [`docs/README.md`](docs/README.md) for the complete documentation index.
+See [`SPEC/`](SPEC/) folder for detailed technical specifications:
 
-### 🔧 Refactoring Documentation
+- [SPEC/FRONTEND.md](SPEC/FRONTEND.md) - Frontend development guide
+- [SPEC/OPENCODE.md](SPEC/OPENCODE.md) - OpenCode SDK reference
+- [SPEC/DISCORD_VOICE_SYSTEM.md](SPEC/DISCORD_VOICE_SYSTEM.md) - Voice system design
+- [SPEC/STTTTS.md](SPEC/STTTTS.md) - STT/TTS implementation details
 
-- **Architecture Assessment**: [`docs/refactoring/ARCHITECTURAL_ASSESSMENT.md`](docs/refactoring/ARCHITECTURAL_ASSESSMENT.md)
-- **Bug Inventory**: [`docs/refactoring/BUGS_AND_ISSUES.md`](docs/refactoring/BUGS_AND_ISSUES.md)
-- **Refactoring Plan**: [`docs/refactoring/REFACTORING_PLAN.md`](docs/refactoring/REFACTORING_PLAN.md)
-- **Complete Summary**: [`docs/refactoring/REFACTORING_COMPLETE_SUMMARY.md`](docs/refactoring/REFACTORING_COMPLETE_SUMMARY.md)
+### Architecture Graphs
 
-### 📖 Usage Guides
+Generate fresh architecture diagrams:
 
-- **Kilo Code Usage**: [`docs/guides/KILO_CODE_USAGE.md`](docs/guides/KILO_CODE_USAGE.md)
-- **Context Optimization**: [`docs/guides/KILO_CODE_CONTEXT_OPTIMIZATION.md`](docs/guides/KILO_CODE_CONTEXT_OPTIMIZATION.md)
+```bash
+npm run graph
+```
 
-### 📋 Technical Specifications
+Output files in `graphs/`:
+- `architecture.svg` - Visual dependency graph (open in browser)
+- `architecture.dot` - Source graph definition
 
-See [`SPEC/`](SPEC/) folder for detailed technical specifications.
+## Discord Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| `/init` | Initialize AI for the current channel |
+| `/clear` | Clear conversation history |
+| `/project list` | List available projects |
+| `/project switch <name>` | Switch to a different project |
+| `/voice join` | Join voice channel for voice chat |
+| `/voice leave` | Leave voice channel |
+| `/admin status` | Show bot status |
+| `/help` | Show available commands |
 
 ## Support
 
-- **Documentation**: See [`docs/`](docs/) and [`SPEC/`](SPEC/) folders
 - **Issues**: [GitHub Issues](https://github.com/krenuds/toji3/issues)
 - **Architecture Diagrams**: Run `npm run graph` to generate
 
----
+## License
 
-**Note**: This proof of concept demonstrates the feasibility of the architecture and integration patterns. The production version will include significant enhancements to reliability, scalability, and user experience.
+MIT
